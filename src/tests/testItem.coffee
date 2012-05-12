@@ -1,4 +1,4 @@
-Item = require '../model/Item'
+Item = require '../main/model/Item'
 item = null
 
 module.exports = 

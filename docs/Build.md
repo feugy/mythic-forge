@@ -27,13 +27,13 @@ The project layout is the following:
 Create a customize build system with the following configuration:
 
   {
-	"cmd": ["coffee","--watch","--output", "lib", "src"],
-	"working_dir": "$project_path/$project_base_name",
-	
-	"windows": {
-      "cmd": ["coffee.cmd","--watch","--output", "lib", "src"],
-	  "encoding": "cp1252"
-  	}
+    "cmd": ["coffee", "--compile", "--watch","--output", "lib", "src"],
+    "working_dir": "$project_path/$project_base_name",
+    
+    "windows": {
+        "cmd": ["coffee.cmd", "--compile", --watch","--output", "lib", "src"],
+        "encoding": "cp1252"
+      }
   }
 
 Associate your project with it, and hit one time `Ctrl+B`: the src files will be compiled into the lib folder.
