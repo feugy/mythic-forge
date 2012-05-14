@@ -6,7 +6,7 @@ module.exports =
     Item.collection.drop ->
       end()
 
-  shouldItemBeCreated: (test) -> 
+  'should item be created': (test) -> 
     # given a new Item
     item = new Item()
     item.x = 10
@@ -35,7 +35,7 @@ module.exports =
       item.save ->
         end()
 
-    shouldItemBeRemoved: (test) ->
+    'should item be removed': (test) ->
       # when removing an item
       item.remove ->
 
@@ -44,7 +44,7 @@ module.exports =
         test.equal docs.length, 0
         test.done()
 
-    shouldItemBeUpdated: (test) ->
+    'should item be updated': (test) ->
       # when modifying and saving an item
       item.x = -100
       item.save ->
