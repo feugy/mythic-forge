@@ -116,12 +116,15 @@ module.exports =
         # creates three items of this type.
         item1 = new Item()
         item1.set 'typeId', type._id
+        item1.set 'affluent', []
         item1.save ->
           item2 = new Item()
           item2.set 'typeId', type._id
+          item2.set 'affluent', []
           item2.save ->
             item3 = new Item()
             item3.set 'typeId', type._id
+            item3.set 'affluent', []
             item3.save ->
               end()
 

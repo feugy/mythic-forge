@@ -1,0 +1,26 @@
+# Prototype TODOs
+
+- Map items and their types
+    - **[done]** CRUD in database
+    - Dynamic properties
+        - **[done]** declaration and enforcement 
+        - **[done]** type-checking
+        - links resolution at server side
+        - links resolution at client side
+    - Modifications propagation
+- Rule engine 
+    - **[done]** file system storage and compilation
+    - **[done]** runtime resolution and execution at server side
+    - runtime resolution at client side
+    - items creation and removal
+    - items updates
+    - transactional behaviour
+- Web layer
+    - map items CRUD invokation
+    - rule engine invokation
+    - rules retrieval
+    - map items modification propagation
+- Game client
+    - map displayal
+    - rules resolution
+    - application of map items modifications 
