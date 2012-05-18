@@ -57,7 +57,7 @@ ItemSchema.statics.multiResolve = (items, callback) ->
         # Do not resolve objects that were previously resolved
         logger.debug "found #{value} in property #{prop}"
         ids.push value
-      else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
+      else if def.type is 'array' and value?.length > 0 and typeof value[0] is 'string'
         # Do not resolve arrays that were previously resolved
         logger.debug "found #{value} in property #{prop}"
         ids = ids.concat value
@@ -83,7 +83,7 @@ ItemSchema.statics.multiResolve = (items, callback) ->
           logger.debug "replace with object #{link?._id} in property #{prop}"
           # do not use setter to avoid marking the instance as modified.
           item._doc[prop] = link
-        else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
+        else if def.type is 'array' and value?.length > 0 and typeof value[0] is 'string'
           for id, i in value
             link = null
             for l in linked
@@ -157,8 +157,9 @@ processLinks = (item, properties) ->
     if property.type is 'object'
       item.set(name, value._id.toString()) if value isnt null and typeof value is 'object' and '_id' of value
     else if property.type is 'array'
-      for linked, i in value
-        value[i] = if typeof linked is 'object' and '_id' of linked then linked._id.toString() else linked
+      if value
+        for linked, i in value
+          value[i] = if typeof linked is 'object' and '_id' of linked then linked._id.toString() else linked
         
 # save middleware: enforce the existence of each property. 
 # Could be declared in the schema, or in the type's properties
@@ -177,19 +178,20 @@ ItemSchema.pre 'save', (next) ->
       next(new Error "Unable to save item #{@_id}. Property #{attr}: #{err}") if err?
     else unless attr of ItemSchema.paths
       next new Error "Unable to save item #{@_id}: unknown property #{attr}"
-    
+
   # set the default values
   for prop, value of @type.get 'properties'
     if undefined is @get prop
       @set prop, if value.type is 'array' then [] else if value.type is 'object' then null else value.def
+
   # replace links by them _ids
   processLinks this, properties
-  # replace type with its id, for storing in Mongo.
+  # replace type with its id, for storing in Mongo, without using setters.
   save = @type
-  @type = @type._id
+  @_doc.type = @type._id
   next()
   # restore save to allow reference reuse.
-  @type = save
+  @_doc.type = save
 
 # init middleware: retrieve the type corresponding to the stored id.
 #

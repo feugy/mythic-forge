@@ -12,8 +12,8 @@
     - **[done]** file system storage and compilation
     - **[done]** runtime resolution and execution at server side
     - runtime resolution at client side
-    - items creation and removal
-    - items updates
+    - **[done]** items creation and removal
+    - **[done]** items updates
     - transactional behaviour
 - Web layer
     - map items CRUD invokation

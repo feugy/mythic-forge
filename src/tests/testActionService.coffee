@@ -16,41 +16,41 @@ item3= null
 
 module.exports = 
 
+  setUp: (end) ->
+    # Empties the compiled and root folders content
+    utils.cleanFolder compiledRoot, (err) -> utils.cleanFolder root, (err) -> end()
+
   'given 3 items and a dumb rule':
     setUp: (end) ->
-      # Empties the compiled folder content
-      utils.cleanFolder compiledRoot, (err) ->
-        # Empties the root folder content
-        utils.cleanFolder root, (err) ->
-          # Creates a dumb rule that always match
-          script = new Executable 'rule1', """Rule = require '../main/model/Rule'
-          class MyRule extends Rule
-            constructor: ->
-              @name= 'rule 1'
-            canExecute: (actor, target, callback) =>
-              callback null, true;
-            execute: (actor, target, callback) =>
-              callback null, 'hello !'
-          module.exports = new MyRule()"""
-          script.save (err) ->
-            # Creates a type
-            throw new Error err if err?
-            new ItemType({name: 'character'}).save (err, saved) ->
+      # Creates a dumb rule that always match
+      script = new Executable 'rule1', """Rule = require '../main/model/Rule'
+      class MyRule extends Rule
+        constructor: ->
+          @name= 'rule 1'
+        canExecute: (actor, target, callback) =>
+          callback null, true;
+        execute: (actor, target, callback) =>
+          callback null, 'hello !'
+      module.exports = new MyRule()"""
+      script.save (err) ->
+        # Creates a type
+        throw new Error err if err?
+        new ItemType({name: 'character'}).save (err, saved) ->
+          throw new Error err if err?
+          type1 = saved
+          # Drops existing items
+          Item.collection.drop ->
+            # Creates 3 items
+            new Item({x:0, y:0, type: type1}).save (err, saved) ->
               throw new Error err if err?
-              type1 = saved
-              # Drops existing items
-              Item.collection.drop ->
-                # Creates 3 items
-                new Item({x:0, y:0, type: type1}).save (err, saved) ->
+              item1 = saved
+              new Item({x:1, y:2, type: type1}).save (err, saved) ->
+                throw new Error err if err?
+                item2 = saved
+                new Item({x:1, y:2, type: type1}).save (err, saved) ->
                   throw new Error err if err?
-                  item1 = saved
-                  new Item({x:1, y:2, type: type1}).save (err, saved) ->
-                    throw new Error err if err?
-                    item2 = saved
-                    new Item({x:1, y:2, type: type1}).save (err, saved) ->
-                      throw new Error err if err?
-                      item3 = saved
-                      end(err)
+                  item3 = saved
+                  end(err)
 
     'should rule be applicable on empty coordinates': (test) ->
       # when resolving applicable rules at a coordinate with no items
@@ -160,77 +160,187 @@ module.exports =
               test.equal 2, items[0].x
               test.done()
 
-  'given 2 items and a rule that resolve links and modify things':
-    setUp: (end) ->
-      # Empties the compiled folder content
-      utils.cleanFolder compiledRoot, (err) ->
-        # Empties the root folder content
-        utils.cleanFolder root, (err) ->
-          # Creates a rule that need links resolution
-          script = new Executable 'rule3', """Rule = require '../main/model/Rule'
-          class DriveLeft extends Rule
-            constructor: ->
-              @name= 'rule 3'
-            canExecute: (actor, target, callback) =>
-              target.resolve ->
-                callback null, target.get('pilot').equals actor
-            execute: (actor, target, callback) =>
-              target.resolve ->
-                target.x++
-                target.get('pilot').x++
-                callback null, 'driven left'
-          module.exports = new DriveLeft()"""
-          script.save (err) ->
-            # Creates a character type and a car type
+  'should linked object be modified and saved by a rule': (test) ->
+    # given a rule that need links resolution
+    script = new Executable 'rule3', """Rule = require '../main/model/Rule'
+    class DriveLeft extends Rule
+      constructor: ->
+        @name= 'rule 3'
+      canExecute: (actor, target, callback) =>
+        target.resolve ->
+          callback null, target.get('pilot').equals actor
+      execute: (actor, target, callback) =>
+        target.resolve ->
+          target.x++
+          target.get('pilot').x++
+          callback null, 'driven left'
+    module.exports = new DriveLeft()"""
+    script.save (err) ->
+      # given a character type and a car type
+      throw new Error err if err?
+      type1 = new ItemType({name: 'character'})
+      type1.setProperty 'name', 'string', ''
+      type1.save (err, saved) ->
+        throw new Error err if err?
+        type1 = saved
+        type2 = new ItemType({name: 'car'})
+        type2.setProperty 'pilot', 'object', 'Item'
+        type2.save (err, saved) ->
+          throw new Error err if err?
+          type2 = saved
+          # given 3 items
+          new Item({x:9, y:0, type: type1, name:'Michel Vaillant'}).save (err, saved) ->
             throw new Error err if err?
-            type1 = new ItemType({name: 'character'})
-            type1.setProperty 'name', 'string', ''
-            type1.save (err, saved) ->
+            item1 = saved
+            new Item({x:9, y:0, type: type2, pilot:item1}).save (err, saved) ->
               throw new Error err if err?
-              type1 = saved
-              type2 = new ItemType({name: 'car'})
-              type2.setProperty 'pilot', 'object', 'Item'
-              type2.save (err, saved) ->
-                throw new Error err if err?
-                type2 = saved
-                # Drops existing items
-                Item.collection.drop ->
-                  # Creates 3 items
-                  new Item({x:0, y:0, type: type1, name:'Michel Vaillant'}).save (err, saved) ->
-                    throw new Error err if err?
-                    item1 = saved
-                    new Item({x:0, y:0, type: type2, pilot:item1}).save (err, saved) ->
-                      throw new Error err if err?
-                      item2 = saved
-                      end(err)
+              item2 = saved
+              
+              # given the rules that are applicable for a target 
+              service.resolve item1, item2, (err, results)->
+                if err?
+                  test.fail "Unable to resolve rules: #{err}"
+                  return test.done();
 
-    'should rule execution modifies item in database': (test) ->
-      # given the rules that are applicable for a target 
-      service.resolve item1, item2, (err, results)->
-        if err?
-          test.fail "Unable to resolve rules: #{err}"
-          return test.done();
+                if results[item2._id].length isnt 1
+                  test.fail 'the rule 2 was not resolved'
+                  return test.done()
 
-        if results[item2._id].length isnt 1
-          test.fail 'the rule 2 was not resolved'
-          return test.done()
+                # when executing this rule on that target
+                service.execute results[item2._id][0], item1, item2, (err, result)->
+                  if err?
+                    test.fail "Unable to execute rules: #{err}"
+                    return test.done();
 
-        # when executing this rule on that target
-        service.execute results[item2._id][0], item1, item2, (err, result)->
-          if err?
-            test.fail "Unable to execute rules: #{err}"
-            return test.done();
+                  # then the rule is executed.
+                  test.equal result, 'driven left'
+                  # then the item was modified on database
+                  Item.find {x:10}, (err, items) =>
+                    test.equal 2, items.length
+                    test.equal 10, items[0].x
+                    test.equal 10, items[0].x
+                    test.done()
 
-          # then the rule is executed.
-          test.equal result, 'driven left'
-          # then the item was modified
-          test.equal 1, item2.x
-          test.equal 1, item1.x
-          # then the item was modified on database
-          Item.find {x:1}, (err, items) =>
-            test.equal 2, items.length
-            console.dir items
-            test.equal item1.equals items[0]
-            test.equal item2.equals items[1]
-            test.done()
+  'should rule create new objects': (test) ->
+    # given a rule that creates an object
+    script = new Executable 'rule4', """Rule = require '../main/model/Rule'
+    Item = require '../main/model/Item'
+    module.exports = new (class AddPart extends Rule
+      constructor: ->
+        @name= 'rule 4'
+      canExecute: (actor, target, callback) =>
+        actor.resolve ->
+          callback null, actor.get('stock').length is 0
+      execute: (actor, target, callback) =>
+        part = new Item {type:actor.type, name: 'part'}
+        @created.push part
+        actor.resolve ->
+          actor.set 'stock', [part]
+          callback null, 'part added'
+    )()"""
+    script.save (err) ->
+      # given a type
+      throw new Error err if err?
+      type1 = new ItemType({name: 'container'})
+      type1.setProperty 'name', 'string', ''
+      type1.setProperty 'stock', 'array', 'Item'
+      type1.save (err, saved) ->
+        # given one item
+        new Item({type: type1, name:'base'}).save (err, saved) ->
+          throw new Error err if err?
+          item1 = saved
+              
+          # given the rules that are applicable for himself
+          service.resolve item1, item1, (err, results)->
+            if err?
+              test.fail "Unable to resolve rules: #{err}"
+              return test.done();
 
+            if results[item1._id].length isnt 1
+              test.fail 'the rule 4 was not resolved'
+              return test.done()
+
+            # when executing this rule on that target
+            service.execute results[item1._id][0], item1, item1, (err, result)->
+              if err?
+                test.fail "Unable to execute rules: #{err}"
+                return test.done();
+
+              # then the rule is executed.
+              test.equal result, 'part added'
+              # then the container contains a new object
+              test.equal 1, item1.get('stock').length
+              item1.resolve ->
+                test.equal 'part', item1.get('stock')[0].get 'name'
+                # then the item was created on database
+                Item.findOne {type: type1._id, name: 'part'}, (err, created) =>
+                  if err? or not(created?)
+                    test.fail "Item not created"
+                    return test.done();
+                  # then the container was modified on database
+                  Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
+                    test.equals 1, existing.get('stock').length
+                    test.ok created._id.equals existing.get('stock')[0]
+                    test.done()
+
+  'should rule delete existing objects': (test) ->
+    # given a rule that creates an object
+    script = new Executable 'rule5', """Rule = require '../main/model/Rule'
+    module.exports = new (class RemovePart extends Rule
+      constructor: ->
+        @name= 'rule 5'
+      canExecute: (actor, target, callback) =>
+        actor.resolve ->
+          callback null, (part for part in actor.get('stock') when target.equals(part))?
+      execute: (actor, target, callback) =>
+        @removed.push target
+        callback null, 'part removed'
+    )()"""
+    script.save (err) ->
+      # given a type
+      throw new Error err if err?
+      type1 = new ItemType({name: 'container'})
+      type1.setProperty 'name', 'string', ''
+      type1.setProperty 'stock', 'array', 'Item'
+      type1.save (err, saved) ->
+        # given two items, the second linked to the first
+        new Item({type: type1, name:'part'}).save (err, saved) ->
+          throw new Error err if err?
+          item2 = saved
+          new Item({type: type1, name:'base', stock:[item2]}).save (err, saved) ->
+            throw new Error err if err?
+            item1 = saved  
+
+            # given the rules that are applicable for the both items
+            service.resolve item1, item2, (err, results)->
+              if err?
+                test.fail "Unable to resolve rules: #{err}"
+                return test.done();
+
+              if results[item2._id].length isnt 1
+                test.fail 'the rule 5 was not resolved'
+                return test.done()
+
+              # when executing this rule on that target
+              service.execute results[item2._id][0], item1, item2, (err, result)->
+                if err?
+                  test.fail "Unable to execute rules: #{err}"
+                  return test.done();
+
+                # then the rule is executed.
+                test.equal result, 'part removed'
+                # then the item does not exist in database anymore
+                Item.findOne {type: type1._id, name: 'part'}, (err, existing) =>
+                  if err?
+                    test.fail "Item not created"
+                    return test.done();
+                  test.ok existing is null
+                  # then the container does not contain the part
+                  Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
+                    if err?
+                      test.fail "Item not created"
+                      return test.done();
+                    existing.resolve ->
+                      test.equal 1, existing.get('stock').length
+                      test.equal null, existing.get('stock')[0]
+                      test.done()

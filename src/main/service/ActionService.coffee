@@ -61,15 +61,47 @@ class _ActionService
       rule.execute actor, target, (err, result) => 
         return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
 
-        # TODO: removes objects from mongo
-        saved = [actor, target]
-        # TODO: save new objects into mongo
-        # TODO Look for modified linked objects
-        async.forEach [actor, target], ((item, end) -> item.save (err)-> end err), (err) -> 
+        saved = []
+        # removes objects from mongo
+        logger.debug "remove item #{item._id}" for item in rule.removed
+        async.forEach rule.removed, ((item, end) -> item.remove (err)-> end err), (err) => 
           return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
-          # everything was fine
-          callback(null, result)
+          # adds new objects to be saved
+          saved = saved.concat rule.created
+          # looks for modified linked objects
+          @_filterModified actor, saved
+          @_filterModified target, saved
+          # saves the whole in MongoDB
+          logger.debug "save modified item #{item._id}" for item in saved
+          async.forEach saved, ((item, end) -> item.save (err)-> end err), (err) => 
+            return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+            # everything was fine
+            callback(null, result)
  
+  # **private**
+  # Return the linked items that are marked as modified.
+  #
+  # @param item [Item] root item that begins the analysis
+  # @return an array (may be empty) of modified items
+  _filterModified: (item, modified) =>
+    # do not process if already known
+    return if item in modified 
+    # will be save if at least one path is modified
+    modified.push(item) if item?.modifiedPaths?.length
+    properties = item.type.get('properties')
+    for prop, def of properties
+      if def.type is 'object'
+        value = item.get prop
+        # recurse if needed on linked object that are resolved
+        @_filterModified(value, modified) if value? and (typeof value) isnt 'string'
+      else if def.type is 'array'
+        values = item.get prop
+        if values
+          for value, i in values
+            # recurse if needed on linked object that are resolved
+            @_filterModified(value, modified) if value? and (typeof value) isnt 'string'
+
+
   # **private**
   # Effectively resolve the applicable actions of the given actor at the specified coordinate.
   #
@@ -111,14 +143,14 @@ class _ActionService
           try
             rule.canExecute actor, target, (err, isApplicable) ->
               # exit at the first resolution error
-              return callback "Failed to resolve rule #{rule._id}: #{err}" if err?
+              return callback "Failed to resolve rule #{rule.name}: #{err}" if err?
               if isApplicable
                 logger.debug "rule #{rule.name} applies"
                 results[target._id].push(rule) 
               end() 
           catch err
             # exit at the first resolution error
-            return callback "Failed to resolve rule #{rule._id}: #{err}"
+            return callback "Failed to resolve rule #{rule.name}: #{err}"
 
         # resolve all rules for this target.
         async.forEach rules, filterRule, resolutionEnd
