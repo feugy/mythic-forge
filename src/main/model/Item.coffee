@@ -1,6 +1,7 @@
 mongoose = require 'mongoose'
 conn = require '../dao/connection'
 ItemType = require './ItemType'
+logger = require('../logger').getLogger 'models'
 
 ObjectId = mongoose.Schema.ObjectId
 
@@ -14,8 +15,16 @@ ItemSchema = new mongoose.Schema({
     x: {type: Number, default: null}
     y: {type: Number, default: null}
     imageNum: {type: Number, default: 0}
-    typeId: {type: ObjectId, required: true}
+    type: {type: {}, required: true}
   }, {strict:false})
+
+# Override the equals() method defined in Document, to check correctly the equality between _ids, 
+# with their `equals()` method and not with the strict equality operator.
+#
+# @param other [Object] other object against which the current object is compared
+# @return true if both objects have the same _id, false otherwise
+ItemSchema.methods.equals = (object) ->
+  @get('_id').equals object?.get('_id')
 
 # This method retrieves linked Item in properties.
 # All `object` and `array` properties are resolved. 
@@ -36,54 +45,56 @@ ItemSchema.methods.resolve = (callback) ->
 # @option callback err [String] an error message if an error occured.
 # @option callback items [Array<Item>] the items on which linked items were resolved.
 ItemSchema.statics.multiResolve = (items, callback) ->
-  # first, get item types
-  ItemType.find {_id: {$in:(item.typeId for item in items)}}, (err, types) ->
-    return callback("Unable to resolve linked on #{items}. Error while retrieving types: #{err}") if err?
-    ids = []
+  ids = []
+  # identify each linked properties 
+  for item in items
+    logger.debug "search linked ids in item #{item._id}"
+    # gets the corresponding properties definitions
+    properties = item.type.get 'properties'
+    for prop, def of properties
+      value = item.get(prop)
+      if def.type is 'object' and typeof value is 'string'
+        # Do not resolve objects that were previously resolved
+        logger.debug "found #{value} in property #{prop}"
+        ids.push value
+      else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
+        # Do not resolve arrays that were previously resolved
+        logger.debug "found #{value} in property #{prop}"
+        ids = ids.concat value
+  
+  # now that we have the linked ids, get the corresponding items.
+  return callback(null, items) unless ids.length > 0
+
+  Item.find {_id: {$in: ids}}, (err, linked) ->
+    return callback("Unable to resolve linked on #{items}. Error while retrieving linked: #{err}") if err?
     
-    # then identify each linked properties 
+    # process again each properties to replace ObjectIds with real objects, and remove unknown ids
     for item in items
-      # gets the corresponding properties definitions
-      (properties = type.get('properties'); break) for type in types when type._id.equals item.typeId
+      properties = item.type.get 'properties'
+      logger.debug "replace linked ids in item #{item._id}"
       for prop, def of properties
         value = item.get(prop)
         if def.type is 'object' and typeof value is 'string'
-          # Do not resolve objects that were previously resolved
-          ids.push value
+          link = null
+          for l in linked
+            if l._id.equals value
+              link = l
+              break
+          logger.debug "replace with object #{link?._id} in property #{prop}"
+          # do not use setter to avoid marking the instance as modified.
+          item._doc[prop] = link
         else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
-          # Do not resolve arrays that were previously resolved
-          ids = ids.concat value
-    
-    # now that we have the linked ids, get the corresponding items.
-    return callback(null, items) unless ids.length > 0
-
-    Item.find {_id: {$in: ids}}, (err, linked) ->
-      return callback("Unable to resolve linked on #{items}. Error while retrieving linked: #{err}") if err?
-      
-      # process again each properties to replace ObjectIds with real objects, and remove unknown ids
-      for item in items
-        (properties = type.get('properties'); break) for type in types when type._id.equals item.typeId
-        for prop, def of properties
-          value = item.get(prop)
-          if def.type is 'object' and typeof value is 'string'
+          for id, i in value
             link = null
             for l in linked
-              if l._id.equals value
+              if l._id.equals id
                 link = l
                 break
             # do not use setter to avoid marking the instance as modified.
-            item._doc[prop] = link
-          else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
-            for id, i in value
-              link = null
-              for l in linked
-                if l._id.equals id
-                  link = l
-                  break
-              # do not use setter to avoid marking the instance as modified.
-              value[i] = link
-      # done !
-      callback null, items
+            logger.debug "replace with object #{link?._id} position #{i} in property #{prop}"
+            value[i] = link
+    # done !
+    callback null, items
 
 # checkType() enforce that a property value does not violate its corresponding definition.
 #
@@ -156,29 +167,43 @@ processLinks = (item, properties) ->
 # @param next [Function] function that must be called to proceed with other middleware.
 # Calling it with an argument indicates the the validation failed and cancel the item save.
 ItemSchema.pre 'save', (next) ->
-  item = this
+  properties = @type.get 'properties'
+  # get through all existing attributes
+  attrs = Object.keys @_doc;
+  for attr in attrs
+    # not in schema, nor in type
+    if attr of properties
+      err = Item.checkType @get(attr), properties[attr] 
+      next(new Error "Unable to save item #{@_id}. Property #{attr}: #{err}") if err?
+    else unless attr of ItemSchema.paths
+      next new Error "Unable to save item #{@_id}: unknown property #{attr}"
+    
+  # set the default values
+  for prop, value of @type.get 'properties'
+    if undefined is @get prop
+      @set prop, if value.type is 'array' then [] else if value.type is 'object' then null else value.def
+  # replace links by them _ids
+  processLinks this, properties
+  # replace type with its id, for storing in Mongo.
+  save = @type
+  @type = @type._id
+  next()
+  # restore save to allow reference reuse.
+  @type = save
+
+# init middleware: retrieve the type corresponding to the stored id.
+#
+# @param item [Item] the initialized item.
+# @param next [Function] function that must be called to proceed with other middleware.
+# Calling it with an argument indicates the the validation failed and cancel the item save.
+ItemSchema.pre 'init', (next, item) ->
   # loads the type
-  ItemType.findOne {_id: item.typeId}, (err, type) ->
-    next(new Error "Unable to save item #{item._id}. Error while resolving its type: #{err}") if err?
-    next(new Error "Unable to save item #{item._id} because there is no type with id #{item.typeId}") unless type?
-    properties = type.get 'properties'
-    # get through all existing attributes
-    attrs = Object.keys item._doc;
-    for attr in attrs
-      # not in schema, nor in type
-      if attr of properties
-        err = ItemSchema.statics.checkType item.get(attr), properties[attr] 
-        next(new Error "Unable to save item #{item._id}. Property #{attr}: #{err}") if err?
-      else unless attr of ItemSchema.paths
-        next new Error "Unable to save item #{item._id}: unknown property #{attr}"
-      
-    # set the default values
-    for prop, value of type.get 'properties'
-      if undefined is item.get prop
-        item.set prop, if type is 'array' then [] else if type is 'object' then null else value.def
-    # replace links by them _ids
-    processLinks item, properties
-    next()
+  ItemType.findOne {_id: item.type}, (err, type) ->
+    return next(new Error "Unable to save item #{item._id}. Error while resolving its type: #{err}") if err?
+    return next(new Error "Unable to save item #{item._id} because there is no type with id #{item.type}") unless type?    
+    # Do the replacement.
+    item.type = type
+    next();
 
 # Export the Class.
 Item = conn.model 'item', ItemSchema

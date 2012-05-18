@@ -129,27 +129,22 @@ module.exports =
 
   'given a type and some items': 
     setUp: (end) ->
-      # creates a type with a string property 'color' and an array property 'affluent'.
-      type = new ItemType()
-      type.name = 'river'
+      # creates a type with a string property 'color' and an array property 'affluents'.
+      type = new ItemType {name: 'river'}
       type.setProperty 'color', 'string', 'blue'
       type.setProperty 'affluents', 'array', 'Item'
       type.save (err, saved) -> 
+        throw new Error(err) if err?
         type = saved
         # creates three items of this type.
-        item1 = new Item()
-        item1.set 'typeId', type._id
-        item1.set 'affluents', []
-        item1.save ->
-          item2 = new Item()
-          item2.set 'typeId', type._id
-          item2.set 'affluents', []
-          item2.save ->
-            item3 = new Item()
-            item3.set 'typeId', type._id
-            item3.set 'affluents', []
-            item3.save ->
-              end()
+        item1 = new Item {type: type, affluents: []}
+        item1.save (err) ->
+          throw new Error(err) if err?
+          item2 = new Item {type: type, affluents: []}
+          item2.save (err) ->
+            throw new Error(err) if err?
+            item3 = new Item {type: type, affluents: []}
+            item3.save (err) -> end()
 
     'should existing items be updated when setting a type property': (test) ->
       # when setting a property to a type
@@ -157,7 +152,7 @@ module.exports =
       type.setProperty 'depth', 'integer', defaultDepth
       type.save (err) -> 
         block = ->
-          Item.find {typeId: type._id}, (err, items) ->
+          Item.find {type: type._id}, (err, items) ->
             for item in items
               test.equal defaultDepth, item.get 'depth'
             test.done()
@@ -169,7 +164,7 @@ module.exports =
       type.unsetProperty 'color'
       type.save (err) -> 
         block = ->
-          Item.find {typeId: type._id}, (err, items) ->
+          Item.find {type: type._id}, (err, items) ->
             for item in items
               test.ok undefined is item.get('color'), 'color still present'
             test.done()

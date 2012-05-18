@@ -8,9 +8,11 @@ service = require('../main/service/ActionService').get()
 root = 'D:/Programmation/Workspace2/mythic-forge-proto/game'
 compiledRoot = 'D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled'
  
-item1 = null
-item2 = null
-item3 = null
+type1= null
+type2= null
+item1= null
+item2= null
+item3= null
 
 module.exports = 
 
@@ -30,32 +32,25 @@ module.exports =
             execute: (actor, target, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
-
           script.save (err) ->
-            if err?
-              throw new Error err
-            type = new ItemType()
-            type.name = 'character'
-            type.save ->
+            # Creates a type
+            throw new Error err if err?
+            new ItemType({name: 'character'}).save (err, saved) ->
+              throw new Error err if err?
+              type1 = saved
               # Drops existing items
               Item.collection.drop ->
                 # Creates 3 items
-                item1 = new Item()
-                item1.x = 0
-                item1.y = 0
-                item1.typeId = type._id
-                item1.save ->
-                  item2 = new Item()
-                  item2.x = 1
-                  item2.y = 2
-                  item2.typeId = type._id
-                  item2.save ->
-                    item3 = new Item()
-                    item3.x = 1
-                    item3.y = 2
-                    item3.typeId = type._id
-                    item3.save ->
-                       end(err)
+                new Item({x:0, y:0, type: type1}).save (err, saved) ->
+                  throw new Error err if err?
+                  item1 = saved
+                  new Item({x:1, y:2, type: type1}).save (err, saved) ->
+                    throw new Error err if err?
+                    item2 = saved
+                    new Item({x:1, y:2, type: type1}).save (err, saved) ->
+                      throw new Error err if err?
+                      item3 = saved
+                      end(err)
 
     'should rule be applicable on empty coordinates': (test) ->
       # when resolving applicable rules at a coordinate with no items
@@ -122,7 +117,7 @@ module.exports =
           test.equal result, 'hello !'
           test.done()
 
-    'should rule execution modified item in database': (test) ->
+    'should rule execution modifies item in database': (test) ->
       # given a rule that modified coordinates
       script = new Executable 'rule2', """Rule = require '../main/model/Rule'
       class MoveRule extends Rule
@@ -164,3 +159,78 @@ module.exports =
               test.equal 1, items.length
               test.equal 2, items[0].x
               test.done()
+
+  'given 2 items and a rule that resolve links and modify things':
+    setUp: (end) ->
+      # Empties the compiled folder content
+      utils.cleanFolder compiledRoot, (err) ->
+        # Empties the root folder content
+        utils.cleanFolder root, (err) ->
+          # Creates a rule that need links resolution
+          script = new Executable 'rule3', """Rule = require '../main/model/Rule'
+          class DriveLeft extends Rule
+            constructor: ->
+              @name= 'rule 3'
+            canExecute: (actor, target, callback) =>
+              target.resolve ->
+                callback null, target.get('pilot').equals actor
+            execute: (actor, target, callback) =>
+              target.resolve ->
+                target.x++
+                target.get('pilot').x++
+                callback null, 'driven left'
+          module.exports = new DriveLeft()"""
+          script.save (err) ->
+            # Creates a character type and a car type
+            throw new Error err if err?
+            type1 = new ItemType({name: 'character'})
+            type1.setProperty 'name', 'string', ''
+            type1.save (err, saved) ->
+              throw new Error err if err?
+              type1 = saved
+              type2 = new ItemType({name: 'car'})
+              type2.setProperty 'pilot', 'object', 'Item'
+              type2.save (err, saved) ->
+                throw new Error err if err?
+                type2 = saved
+                # Drops existing items
+                Item.collection.drop ->
+                  # Creates 3 items
+                  new Item({x:0, y:0, type: type1, name:'Michel Vaillant'}).save (err, saved) ->
+                    throw new Error err if err?
+                    item1 = saved
+                    new Item({x:0, y:0, type: type2, pilot:item1}).save (err, saved) ->
+                      throw new Error err if err?
+                      item2 = saved
+                      end(err)
+
+    'should rule execution modifies item in database': (test) ->
+      # given the rules that are applicable for a target 
+      service.resolve item1, item2, (err, results)->
+        if err?
+          test.fail "Unable to resolve rules: #{err}"
+          return test.done();
+
+        if results[item2._id].length isnt 1
+          test.fail 'the rule 2 was not resolved'
+          return test.done()
+
+        # when executing this rule on that target
+        service.execute results[item2._id][0], item1, item2, (err, result)->
+          if err?
+            test.fail "Unable to execute rules: #{err}"
+            return test.done();
+
+          # then the rule is executed.
+          test.equal result, 'driven left'
+          # then the item was modified
+          test.equal 1, item2.x
+          test.equal 1, item1.x
+          # then the item was modified on database
+          Item.find {x:1}, (err, items) =>
+            test.equal 2, items.length
+            console.dir items
+            test.equal item1.equals items[0]
+            test.equal item2.equals items[1]
+            test.done()
+

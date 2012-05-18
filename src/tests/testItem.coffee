@@ -7,10 +7,10 @@ type = null
 
 module.exports = 
   setUp: (end) ->
-    type = new ItemType()
-    type.set 'name', 'plain'
+    type = new ItemType({name: 'plain'})
     type.setProperty 'rocks', 'integer', 100
-    type.save ->
+    type.save (err, saved) ->
+      throw new Error err if err?
       Item.collection.drop -> end()
 
   tearDown: (end) ->
@@ -18,10 +18,7 @@ module.exports =
 
   'should item be created': (test) -> 
     # given a new Item
-    item = new Item()
-    item.set 'x', 10
-    item.set 'y', -5
-    item.set 'typeId', type._id
+    item = new Item {x: 10, y:-3, type:type}
 
     # when saving it
     item.save (err) ->
@@ -35,13 +32,12 @@ module.exports =
         test.equal docs.length, 1
         # then it's values were saved
         test.equal 10, docs[0].get 'x'
-        test.equal -5, docs[0].get 'y'
+        test.equal -3, docs[0].get 'y'
         test.done()
 
   'should new item have default properties values': (test) ->
     # when creating an item of this type
-    item = new Item()
-    item.set 'typeId', type._id
+    item = new Item {type: type}
     item.save (err)->
       # then the default value was set
       test.equal 100, item.get 'rocks'
@@ -49,10 +45,7 @@ module.exports =
 
   'given an Item': 
     setUp: (end) ->
-      item = new Item()
-      item.set 'x', 150
-      item.set 'y', 300
-      item.set 'typeId', type._id
+      item = new Item {x: 150, y: 300, type: type}
       item.save ->
         end()
 
@@ -101,18 +94,17 @@ module.exports =
 
   'given a type with object properties and several Items': 
     setUp: (end) ->
-      type = new ItemType()
-      type.set 'name', 'river'
+      type = new ItemType {name: 'river'}
       type.setProperty 'name', 'string', ''
       type.setProperty 'end', 'object', 'Item'
       type.setProperty 'affluents', 'array', 'Item'
       type.save ->
         Item.collection.drop -> 
-          item = new Item {name: 'Rhône', end: null, typeId: type._id, affluents:[]}
+          item = new Item {name: 'Rhône', end: null, type: type, affluents:[]}
           item.save (err, saved) ->
             throw new Error(err) if err?
             item = saved
-            item2 = new Item {name: 'Durance', end: item, typeId: type._id, affluents:[]}
+            item2 = new Item {name: 'Durance', end: item, type: type, affluents:[]}
             item2.save (err, saved) -> 
               throw new Error(err) if err?
               item2 = saved

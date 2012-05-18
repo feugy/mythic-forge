@@ -61,7 +61,10 @@ class _ActionService
       rule.execute actor, target, (err, result) => 
         return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
 
-        # TODO: save and remove objects into mongo
+        # TODO: removes objects from mongo
+        saved = [actor, target]
+        # TODO: save new objects into mongo
+        # TODO Look for modified linked objects
         async.forEach [actor, target], ((item, end) -> item.save (err)-> end err), (err) -> 
           return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
           # everything was fine
@@ -94,6 +97,7 @@ class _ActionService
         obj = require executable.compiledPath
         rules.push obj if obj? and utils.isA obj, Rule
 
+      logger.debug "#{rules.length} candidate rules"
       # Evaluates the number of target. No targets ? leave immediately.
       remainingTargets = targets.length
       callback null, results unless remainingTargets > 0
@@ -104,11 +108,17 @@ class _ActionService
 
         # function applied to filter rules that apply to the current target.
         filterRule = (rule, end) ->
-          rule.canExecute actor, target, (err, isApplicable) ->
+          try
+            rule.canExecute actor, target, (err, isApplicable) ->
+              # exit at the first resolution error
+              return callback "Failed to resolve rule #{rule._id}: #{err}" if err?
+              if isApplicable
+                logger.debug "rule #{rule.name} applies"
+                results[target._id].push(rule) 
+              end() 
+          catch err
             # exit at the first resolution error
-            callback "Failed to resolve rule #{rule._id}: #{err}" if err?
-            results[target._id].push(rule) if isApplicable
-            end() 
+            return callback "Failed to resolve rule #{rule._id}: #{err}"
 
         # resolve all rules for this target.
         async.forEach rules, filterRule, resolutionEnd

@@ -20,7 +20,7 @@ ItemTypeSchema.methods.setProperty = (name, type, def) ->
     when 'array' then def = []
     when 'object' then def = null
   # Modifiy instances.
-  require('./Item').find {typeId: @_id}, (err, items) =>
+  require('./Item').find {type: @_id}, (err, items) =>
     for item in items
       if not(name of item)
         item.set name, def
@@ -36,7 +36,7 @@ ItemTypeSchema.methods.unsetProperty = (name) ->
   delete @get('properties')[name]
   @markModified 'properties'
   # Modifiy instances.
-  require('./Item').find {typeId: @_id}, (err, items) =>
+  require('./Item').find {type: @_id}, (err, items) =>
     for item in items
       item.set name, undefined
       delete item._doc[name]
