@@ -5,7 +5,7 @@
     - Dynamic properties
         - **[done]** declaration and enforcement 
         - **[done]** type-checking
-        - links resolution at server side
+        - **[done]** links resolution at server side
         - links resolution at client side
     - Modifications propagation
 - Rule engine 

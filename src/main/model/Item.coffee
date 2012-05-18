@@ -17,6 +17,74 @@ ItemSchema = new mongoose.Schema({
     typeId: {type: ObjectId, required: true}
   }, {strict:false})
 
+# This method retrieves linked Item in properties.
+# All `object` and `array` properties are resolved. 
+# Properties that aims at unexisting items are reset to null.
+#
+# @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
+# @option callback err [String] an error message if an error occured.
+# @option callback item [Item] the root item on which linked items were resolved.
+ItemSchema.methods.resolve = (callback) ->
+  ItemSchema.statics.multiResolve [this], (err, items) =>
+    callback err,  if items?.length then items[0] else null
+
+# This static version of resolve performs multiple linked items resolution in one operation.
+# See resolve() for more information.
+#
+# @param items [Array<Item>] an array that contains items which are resoluved.
+# @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
+# @option callback err [String] an error message if an error occured.
+# @option callback items [Array<Item>] the items on which linked items were resolved.
+ItemSchema.statics.multiResolve = (items, callback) ->
+  # first, get item types
+  ItemType.find {_id: {$in:(item.typeId for item in items)}}, (err, types) ->
+    return callback("Unable to resolve linked on #{items}. Error while retrieving types: #{err}") if err?
+    ids = []
+    
+    # then identify each linked properties 
+    for item in items
+      # gets the corresponding properties definitions
+      (properties = type.get('properties'); break) for type in types when type._id.equals item.typeId
+      for prop, def of properties
+        value = item.get(prop)
+        if def.type is 'object' and typeof value is 'string'
+          # Do not resolve objects that were previously resolved
+          ids.push value
+        else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
+          # Do not resolve arrays that were previously resolved
+          ids = ids.concat value
+    
+    # now that we have the linked ids, get the corresponding items.
+    return callback(null, items) unless ids.length > 0
+
+    Item.find {_id: {$in: ids}}, (err, linked) ->
+      return callback("Unable to resolve linked on #{items}. Error while retrieving linked: #{err}") if err?
+      
+      # process again each properties to replace ObjectIds with real objects, and remove unknown ids
+      for item in items
+        (properties = type.get('properties'); break) for type in types when type._id.equals item.typeId
+        for prop, def of properties
+          value = item.get(prop)
+          if def.type is 'object' and typeof value is 'string'
+            link = null
+            for l in linked
+              if l._id.equals value
+                link = l
+                break
+            # do not use setter to avoid marking the instance as modified.
+            item._doc[prop] = link
+          else if def.type is 'array' and value.length > 0 and typeof value[0] is 'string'
+            for id, i in value
+              link = null
+              for l in linked
+                if l._id.equals id
+                  link = l
+                  break
+              # do not use setter to avoid marking the instance as modified.
+              value[i] = link
+      # done !
+      callback null, items
+
 # checkType() enforce that a property value does not violate its corresponding definition.
 #
 # @param value [Object] the checked value.
@@ -64,9 +132,23 @@ ItemSchema.statics.checkType = (value,  property) ->
     when 'string' then checkString()
     when 'text' then checkString()
     else err = "#{property.type} isn't a valid type"
-
   err
 
+# Walk through properties and replace linked object with their ids if necessary
+#
+# @param item [Item] the processed item
+# @param properties [Object] the propertes definition, a map index with property names and that contains for each property:
+# @option properties type [String] the awaited type. Could be: string, text, boolean, integer, float, date, array or object
+# @option properties def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
+processLinks = (item, properties) ->
+  for name, property of properties
+    value = item.get name
+    if property.type is 'object'
+      item.set(name, value._id.toString()) if value isnt null and typeof value is 'object' and '_id' of value
+    else if property.type is 'array'
+      for linked, i in value
+        value[i] = if typeof linked is 'object' and '_id' of linked then linked._id.toString() else linked
+        
 # save middleware: enforce the existence of each property. 
 # Could be declared in the schema, or in the type's properties
 # Inside the middleware, `this` aims at the saved item.
@@ -92,8 +174,12 @@ ItemSchema.pre 'save', (next) ->
       
     # set the default values
     for prop, value of type.get 'properties'
-      item.set(prop, value.def) if undefined is item.get prop
+      if undefined is item.get prop
+        item.set prop, if type is 'array' then [] else if type is 'object' then null else value.def
+    # replace links by them _ids
+    processLinks item, properties
     next()
 
 # Export the Class.
-module.exports = conn.model 'item', ItemSchema
+Item = conn.model 'item', ItemSchema
+module.exports = Item

@@ -10,7 +10,31 @@ module.exports =
     # empty items and types.
     Item.collection.drop -> ItemType.collection.drop -> end()
 
-  'should type be created': (test) -> 
+  'should type\'s properties be distinct': (test) ->
+    # given a type with a property
+    type = new ItemType({name: 'vehicule'})
+    type.setProperty 'wheels', 'integer', 4
+    type.save (err) ->
+      if (err?)
+        throw new Error err
+        test.done()
+      # when creating another type with distinct property
+      type2 = new ItemType({name: 'animal'})
+      type2.setProperty 'mammal', 'boolean', true
+      type2.save (err) ->
+        if (err?)
+          throw new Error err
+          test.done()
+        # then their properties ar not mixed
+        keys = Object.keys(type.get('properties'))
+        keys2 = Object.keys(type2.get('properties'))
+        test.equal 1, keys.length 
+        test.equal 'wheels', keys[0] 
+        test.equal 1, keys2.length
+        test.equal 'mammal', keys2[0]
+        test.done()
+
+   'should type be created': (test) -> 
     # given a new ItemType
     type = new ItemType()
     name = 'montain'
@@ -76,10 +100,9 @@ module.exports =
       # when updating a property 
       type.setProperty 'color', 'integer', 10
       type.save (err, saved) ->
-
         # then the property was updated
-        test.equal 'integer',  saved.get('properties').depth?.type
-        test.equal 10,  saved.get('properties').depth?.def
+        test.equal 'integer',  saved.get('properties').color?.type
+        test.equal 10,  saved.get('properties').color?.def
         test.done()
 
     'should type properties be removed': (test) ->
@@ -110,21 +133,21 @@ module.exports =
       type = new ItemType()
       type.name = 'river'
       type.setProperty 'color', 'string', 'blue'
-      type.setProperty 'affluent', 'array', 'Item'
+      type.setProperty 'affluents', 'array', 'Item'
       type.save (err, saved) -> 
         type = saved
         # creates three items of this type.
         item1 = new Item()
         item1.set 'typeId', type._id
-        item1.set 'affluent', []
+        item1.set 'affluents', []
         item1.save ->
           item2 = new Item()
           item2.set 'typeId', type._id
-          item2.set 'affluent', []
+          item2.set 'affluents', []
           item2.save ->
             item3 = new Item()
             item3.set 'typeId', type._id
-            item3.set 'affluent', []
+            item3.set 'affluents', []
             item3.save ->
               end()
 

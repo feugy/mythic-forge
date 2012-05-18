@@ -6,12 +6,7 @@ ItemTypeSchema = new mongoose.Schema
   name: {type: String, required: true}
   images: [Number]
   properties: 
-    type: mongoose.Schema.Types.Mixed
     default: {}
-    set: (val) ->
-      # because Mongoose do not trace modifications on mixed attributes
-      @markModified 'properties'
-      val
 
 # setProperty() adds or updates a property.
 #
@@ -19,8 +14,11 @@ ItemTypeSchema = new mongoose.Schema
 # @param type [Object] primitive type of the property's values 
 # @param def [Object] default value affected to the type instances.
 ItemTypeSchema.methods.setProperty = (name, type, def) ->
-  @properties[name] = {type: type, def: def}
+  @get('properties')[name] = {type: type, def: def}
   @markModified 'properties'
+  switch type
+    when 'array' then def = []
+    when 'object' then def = null
   # Modifiy instances.
   require('./Item').find {typeId: @_id}, (err, items) =>
     for item in items
@@ -34,8 +32,8 @@ ItemTypeSchema.methods.setProperty = (name, type, def) ->
 #
 # @param name [String] the unic name of the property.
 ItemTypeSchema.methods.unsetProperty = (name) ->
-  throw new Error "Unknown property #{name} for item type #{@name}" unless @properties[name]?
-  delete @properties[name]
+  throw new Error "Unknown property #{name} for item type #{@name}" unless @get('properties')[name]?
+  delete @get('properties')[name]
   @markModified 'properties'
   # Modifiy instances.
   require('./Item').find {typeId: @_id}, (err, items) =>

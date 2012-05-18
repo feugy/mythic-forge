@@ -1,24 +1,23 @@
 {
-	"name": "mythic-forge-proto",
-	"version": "0.1.0",
-	"author": "Feugy <damien.feugas@gmail.com",
-	"description": "A online multiplayer, role-playing 2D game engine",
-	"repository": {
-    	"type": "git",
-    	"url": "https://github.com/feugy/mythic-forge.git"
-  	},
-  	"dependencies": {  
-      "coffee-script": "1.3.1",
-      "mongoose": "2.6.3",
-      "async": "0.1.18"
-  	},
-  	"devDependencies": {
-      "nodeunit": "0.7.4",
-      "mongodb": "1.0.0",
-      "winston": "0.5.11"
-  	},
-    "scripts": {
-      "test": "nodeunit lib/tests" 
-    },
-  	"licence": "LGPL v3"
+  "name": "mythic-forge-proto",
+  "version": "0.1.0",
+  "author": "Feugy <damien.feugas@gmail.com",
+  "description": "A online multiplayer, role-playing 2D game engine",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feugy/mythic-forge.git"
+  },
+  "dependencies": {  
+    "coffee-script": "1.3.1",
+    "mongoose": "2.6.3",
+    "async": "0.1.18",
+    "winston": "0.5.11"
+  },
+  "devDependencies": {
+    "nodeunit": "0.7.4"
+  },
+  "scripts": {
+    "test": "nodeunit lib/tests" 
+  },
+  "licence": "LGPL v3"
 }
