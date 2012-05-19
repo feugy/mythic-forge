@@ -32,7 +32,7 @@ module.exports =
         transports: [ 
           new winston.transports.Console 
             padLevels: true
-            level: 'debug' # TODO read configuration on a file ?
+            level: 'warn' # TODO read configuration on a file ?
             colorize: 'true'
         ]
 

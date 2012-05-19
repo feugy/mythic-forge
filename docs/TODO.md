@@ -16,7 +16,7 @@
     - **[done]** items updates
     - transactional behaviour
 - Web layer
-    - map items CRUD invokation
+    - **[almost done]** map items CRUD invokation
     - rule engine invokation
     - rules retrieval
     - map items modification propagation

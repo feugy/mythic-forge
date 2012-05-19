@@ -24,7 +24,7 @@ ItemSchema = new mongoose.Schema({
 # @param other [Object] other object against which the current object is compared
 # @return true if both objects have the same _id, false otherwise
 ItemSchema.methods.equals = (object) ->
-  @get('_id').equals object?.get('_id')
+  @_id.equals object?._id
 
 # This method retrieves linked Item in properties.
 # All `object` and `array` properties are resolved. 

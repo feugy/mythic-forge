@@ -11,13 +11,20 @@
     "coffee-script": "1.3.1",
     "mongoose": "2.6.3",
     "async": "0.1.18",
-    "winston": "0.5.11"
+    "winston": "0.5.11",
+    "socket.io": "0.9.6",
+    "express": "2.5.9"
   },
   "devDependencies": {
-    "nodeunit": "0.7.4"
+    "nodeunit": "0.7.4",
+    "request": "2.9.202",
+    "socket.io-client": "0.9.6"
   },
   "scripts": {
     "test": "nodeunit lib/tests" 
+  },
+  "bin": {
+    "server": "./bin/server"
   },
   "licence": "LGPL v3"
 }
