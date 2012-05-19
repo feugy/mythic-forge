@@ -90,6 +90,9 @@ class _RuleService
         rule = rule for rule in rules[target._id] when rule.name is ruleName
         return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}" unless rule?
         
+        # reinitialize creation and removal arrays.
+        rule.created = []
+        rule.removed = []
         # otherwise, execute the rule
         rule.execute actor, target, (err, result) => 
           return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
@@ -146,7 +149,7 @@ class _RuleService
   _resolve: (actor, targets, callback) =>
     results = {} 
     remainingTargets = 0
-
+    
     # function called at the end of a target resolution.
     # if no target remains, the final callback is invoked.
     resolutionEnd = ->
@@ -191,7 +194,7 @@ class _RuleService
                   end() 
               catch err
                 # exit at the first resolution error
-                return callback "Failed to resolve rule #{rule.name}: #{err}"
+                return callback "Failed to resolve rule #{rule.name}. Received exception #{err}"
 
             # resolve all rules for this target.
             async.forEach rules, filterRule, resolutionEnd

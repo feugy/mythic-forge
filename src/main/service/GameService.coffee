@@ -1,4 +1,5 @@
 Item = require '../model/Item'
+ruleService = require('./RuleService').get()
 logger = require('../logger').getLogger 'service'
 
 # The GameService allow all operations needed by the game interface.
@@ -16,11 +17,26 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback items [Array<Item>] list of retrieved items. May be empty.
   consultMap: (lowX, lowY, upX, upY, callback) =>
+    logger.debug "Consult map between #{lowX}:#{lowY} and #{upX}:#{upY}"
     Item.where('x').gte(lowX)
       .where('x').lte(upX)
       .where('y').gte(lowY)
       .where('y').lte(upY)
       .run callback
+
+  # Trigger the rule engine resolution
+  # 
+  # @see {RuleService.resolve}
+  resolveRules: () =>
+    logger.debug 'Trigger rules resolution'
+    ruleService.resolve.apply ruleService, arguments
+
+  # Trigger the rule engine execution
+  # 
+  # @see {RuleService.execute}
+  executeRule: () =>
+    logger.debug 'Trigger rules execution'
+    ruleService.execute.apply ruleService, arguments
 
   # @todo just a simple test
   greetings: (name, callback) =>

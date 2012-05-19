@@ -18,6 +18,8 @@ class Rule
 
   # Construct a rule, with a friendly name.
   constructor: (@name) ->
+    removed= []
+    created= []
  
   # This method indicates wheter or not the rule apply to a given situation.
   # This method must be overloaded by sub-classes

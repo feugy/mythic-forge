@@ -22,7 +22,8 @@ io.of('/game').on 'connection', (socket) ->
     do(method) ->
       socket.on method, ->
         # add return callback to incoming arguments
-        args = Array.prototype.slice.call arguments
+        originalArgs = Array.prototype.slice.call arguments
+        args = originalArgs.concat()
         args.push ->
           logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
           # returns the callback arguments
@@ -31,7 +32,7 @@ io.of('/game').on 'connection', (socket) ->
           socket.emit.apply socket, returnArgs
 
         # invoke the service layer with arguments 
-        logger.debug "processing #{method} message"
+        logger.debug "processing #{method} message with arguments #{originalArgs}"
         gameService[method].apply gameService, args
 
 # Exports the application.

@@ -4,9 +4,6 @@ Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/RuleService').get()
 utils = require '../main/utils'
-    
-root =  utils.confKey 'executable.source'
-compiledRoot =  utils.confKey 'executable.target'
  
 type1= null
 type2= null
@@ -18,7 +15,9 @@ module.exports =
 
   setUp: (end) ->
     # Empties the compilation and source folders content
-    testUtils.cleanFolder compiledRoot, (err) -> testUtils.cleanFolder root, (err) -> end()
+    testUtils.cleanFolder utils.confKey('executable.target'), (err) -> 
+      testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+        end()
 
   'given 3 items and a dumb rule':
     setUp: (end) ->
@@ -55,9 +54,8 @@ module.exports =
     'should rule be applicable on empty coordinates': (test) ->
       # when resolving applicable rules at a coordinate with no items
       service.resolve item1._id, -1, 0, (err, results)->
-        if err?
-          test.fail "Unable to resolve rules: #{err}"
-          return test.done();
+        throw new Error "Unable to resolve rules: #{err}" if err?
+
         test.ok results isnt null and results isnt undefined
         # then the no item found at the coordinate
         for key of results 
@@ -67,9 +65,7 @@ module.exports =
     'should rule be applicable on coordinates': (test) ->
       # when resolving applicable rules at a coordinate
       service.resolve item1._id, 1, 2, (err, results)->
-        if err?
-          test.fail "Unable to resolve rules: #{err}"
-          return test.done();
+        throw new Error "Unable to resolve rules: #{err}" if err?
         
         test.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
@@ -87,9 +83,7 @@ module.exports =
     'should rule be applicable on target': (test) ->
       # when resolving applicable rules for a target
       service.resolve item1._id, item2._id, (err, results)->
-        if err?
-          test.fail "Unable to resolve rules: #{err}"
-          return test.done();
+        throw new Error "Unable to resolve rules: #{err}" if err?
          
         test.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
@@ -102,15 +96,11 @@ module.exports =
     'should rule be executed for target': (test) ->
       # given an applicable rule for a target 
       service.resolve item1._id, item2._id, (err, results)->
-        if err?
-          test.fail "Unable to resolve rules: #{err}"
-          return test.done();
+        throw new Error "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
         service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
-          if err?
-            test.fail "Unable to execute rules: #{err}"
-            return test.done();
+          throw new Error "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
           test.equal result, 'hello !'
@@ -130,14 +120,11 @@ module.exports =
       module.exports = new MoveRule()"""
 
       script.save (err) ->
-        if err?
-          throw new Error err
+        throw new Error err if err?
 
         # given the rules that are applicable for a target 
         service.resolve item1._id, item2._id, (err, results)->
-          if err?
-            test.fail "Unable to resolve rules: #{err}"
-            return test.done();
+          throw new Error "Unable to resolve rules: #{err}" if err?
 
           test.equal 2, results[item2._id].length
           rule = rule for rule in results[item2._id] when rule.name is 'rule 2'
@@ -195,19 +182,12 @@ module.exports =
               
               # given the rules that are applicable for a target 
               service.resolve item1._id, item2._id, (err, results)->
-                if err?
-                  test.fail "Unable to resolve rules: #{err}"
-                  return test.done();
-
-                if results[item2._id].length isnt 1
-                  test.fail 'the rule 2 was not resolved'
-                  return test.done()
+                throw new Error "Unable to resolve rules: #{err}" if err?
+                throw new Error 'the rule 2 was not resolved' if results[item2._id].length isnt 1
 
                 # when executing this rule on that target
                 service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
-                  if err?
-                    test.fail "Unable to execute rules: #{err}"
-                    return test.done();
+                  throw new Error "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
                   test.equal result, 'driven left'
@@ -247,27 +227,19 @@ module.exports =
               
           # given the rules that are applicable for himself
           service.resolve item1._id, item1._id, (err, results)->
-            if err?
-              test.fail "Unable to resolve rules: #{err}"
-              return test.done();
-
-            if results[item1._id].length isnt 1
-              test.fail 'the rule 4 was not resolved'
-              return test.done()
+            throw new Error "Unable to resolve rules: #{err}" if err?
+            throw new Error 'the rule 4 was not resolved' if results[item1._id].length isnt 1
 
             # when executing this rule on that target
             service.execute results[item1._id][0].name, item1._id, item1._id, (err, result)->
-              if err?
-                test.fail "Unable to execute rules: #{err}"
-                return test.done();
+              throw new Error "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
               test.equal result, 'part added'
                 # then the item was created on database
               Item.findOne {type: type1._id, name: 'part'}, (err, created) =>
-                if err? or not(created?)
-                  test.fail "Item not created"
-                  return test.done();
+                throw new Error "Item not created" if err? or not(created?)
+
                 # then the container was modified on database
                 Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
                   test.equals 1, existing.get('stock').length
@@ -303,33 +275,24 @@ module.exports =
 
             # given the rules that are applicable for the both items
             service.resolve item1._id, item2._id, (err, results)->
-              if err?
-                test.fail "Unable to resolve rules: #{err}"
-                return test.done();
-
-              if results[item2._id].length isnt 1
-                test.fail 'the rule 5 was not resolved'
-                return test.done()
+              throw new Error "Unable to resolve rules: #{err}" if err?
+              throw new Error 'the rule 5 was not resolved' if results[item2._id].length isnt 1
 
               # when executing this rule on that target
               service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
-                if err?
-                  test.fail "Unable to execute rules: #{err}"
-                  return test.done();
+                throw new Error "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
                 test.equal result, 'part removed'
                 # then the item does not exist in database anymore
                 Item.findOne {type: type1._id, name: 'part'}, (err, existing) =>
-                  if err?
-                    test.fail "Item not created"
-                    return test.done();
+                  throw new Error "Item not created" if err?
+
                   test.ok existing is null
                   # then the container does not contain the part
                   Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
-                    if err?
-                      test.fail "Item not created"
-                      return test.done();
+                    throw new Error "Item not created" if err?
+
                     existing.resolve ->
                       test.equal 1, existing.get('stock').length
                       test.equal null, existing.get('stock')[0]

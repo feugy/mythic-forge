@@ -35,7 +35,10 @@ ItemSchema.methods.equals = (object) ->
 # @option callback item [Item] the root item on which linked items were resolved.
 ItemSchema.methods.resolve = (callback) ->
   ItemSchema.statics.multiResolve [this], (err, items) =>
-    callback err,  if items?.length then items[0] else null
+    result = null
+    if items and items?.length is 1
+      result = items[0]
+    callback err, result
 
 # This static version of resolve performs multiple linked items resolution in one operation.
 # See resolve() for more information.

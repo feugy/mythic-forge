@@ -17,7 +17,7 @@
     - transactional behaviour
 - Web layer
     - **[almost done]** map items CRUD invokation
-    - rule engine invokation
+    - **[done]** rule engine invokation
     - rules retrieval
     - map items modification propagation
 - Game client
