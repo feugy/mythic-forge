@@ -2,7 +2,7 @@ testUtils = require './utils/testUtils'
 Executable = require '../main/model/Executable'
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
-service = require('../main/service/ActionService').get()
+service = require('../main/service/RuleService').get()
 utils = require '../main/utils'
     
 root =  utils.confKey 'executable.source'
@@ -54,11 +54,10 @@ module.exports =
 
     'should rule be applicable on empty coordinates': (test) ->
       # when resolving applicable rules at a coordinate with no items
-      service.resolve item1, -1, 0, (err, results)->
+      service.resolve item1._id, -1, 0, (err, results)->
         if err?
           test.fail "Unable to resolve rules: #{err}"
           return test.done();
-        
         test.ok results isnt null and results isnt undefined
         # then the no item found at the coordinate
         for key of results 
@@ -67,7 +66,7 @@ module.exports =
 
     'should rule be applicable on coordinates': (test) ->
       # when resolving applicable rules at a coordinate
-      service.resolve item1, 1, 2, (err, results)->
+      service.resolve item1._id, 1, 2, (err, results)->
         if err?
           test.fail "Unable to resolve rules: #{err}"
           return test.done();
@@ -87,7 +86,7 @@ module.exports =
         
     'should rule be applicable on target': (test) ->
       # when resolving applicable rules for a target
-      service.resolve item1, item2, (err, results)->
+      service.resolve item1._id, item2._id, (err, results)->
         if err?
           test.fail "Unable to resolve rules: #{err}"
           return test.done();
@@ -102,13 +101,13 @@ module.exports =
 
     'should rule be executed for target': (test) ->
       # given an applicable rule for a target 
-      service.resolve item1, item2, (err, results)->
+      service.resolve item1._id, item2._id, (err, results)->
         if err?
           test.fail "Unable to resolve rules: #{err}"
           return test.done();
 
         # when executing this rule on that target
-        service.execute results[item2._id][0], item1, item2, (err, result)->
+        service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
           if err?
             test.fail "Unable to execute rules: #{err}"
             return test.done();
@@ -124,7 +123,7 @@ module.exports =
         constructor: ->
           @name= 'rule 2'
         canExecute: (actor, target, callback) =>
-          callback null, target.x.valueOf() == 1
+          callback null, target.get('x').valueOf() is 1
         execute: (actor, target, callback) =>
           target.x++
           callback null, 'target moved'
@@ -135,25 +134,23 @@ module.exports =
           throw new Error err
 
         # given the rules that are applicable for a target 
-        service.resolve item1, item2, (err, results)->
+        service.resolve item1._id, item2._id, (err, results)->
           if err?
             test.fail "Unable to resolve rules: #{err}"
             return test.done();
 
           test.equal 2, results[item2._id].length
-          rule = (rule for rule in results[item2._id] when rule.name == 'rule 2')[0];
+          rule = rule for rule in results[item2._id] when rule.name is 'rule 2'
           test.ok rule isnt null
 
           # when executing this rule on that target
-          service.execute rule, item1, item2, (err, result)->
+          service.execute rule.name, item1._id, item2._id, (err, result)->
             if err?
               test.fail "Unable to execute rules: #{err}"
               return test.done();
 
             # then the rule is executed.
             test.equal result, 'target moved'
-            # then the item was modified
-            test.equal 2, item2.x
             # then the item was modified on database
             Item.find {x:2}, (err, items) =>
               test.equal 1, items.length
@@ -197,7 +194,7 @@ module.exports =
               item2 = saved
               
               # given the rules that are applicable for a target 
-              service.resolve item1, item2, (err, results)->
+              service.resolve item1._id, item2._id, (err, results)->
                 if err?
                   test.fail "Unable to resolve rules: #{err}"
                   return test.done();
@@ -207,7 +204,7 @@ module.exports =
                   return test.done()
 
                 # when executing this rule on that target
-                service.execute results[item2._id][0], item1, item2, (err, result)->
+                service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
                   if err?
                     test.fail "Unable to execute rules: #{err}"
                     return test.done();
@@ -229,14 +226,12 @@ module.exports =
       constructor: ->
         @name= 'rule 4'
       canExecute: (actor, target, callback) =>
-        actor.resolve ->
-          callback null, actor.get('stock').length is 0
+        callback null, actor.get('stock').length is 0
       execute: (actor, target, callback) =>
         part = new Item {type:actor.type, name: 'part'}
         @created.push part
-        actor.resolve ->
-          actor.set 'stock', [part]
-          callback null, 'part added'
+        actor.set 'stock', [part]
+        callback null, 'part added'
     )()"""
     script.save (err) ->
       # given a type
@@ -251,7 +246,7 @@ module.exports =
           item1 = saved
               
           # given the rules that are applicable for himself
-          service.resolve item1, item1, (err, results)->
+          service.resolve item1._id, item1._id, (err, results)->
             if err?
               test.fail "Unable to resolve rules: #{err}"
               return test.done();
@@ -261,27 +256,23 @@ module.exports =
               return test.done()
 
             # when executing this rule on that target
-            service.execute results[item1._id][0], item1, item1, (err, result)->
+            service.execute results[item1._id][0].name, item1._id, item1._id, (err, result)->
               if err?
                 test.fail "Unable to execute rules: #{err}"
                 return test.done();
 
               # then the rule is executed.
               test.equal result, 'part added'
-              # then the container contains a new object
-              test.equal 1, item1.get('stock').length
-              item1.resolve ->
-                test.equal 'part', item1.get('stock')[0].get 'name'
                 # then the item was created on database
-                Item.findOne {type: type1._id, name: 'part'}, (err, created) =>
-                  if err? or not(created?)
-                    test.fail "Item not created"
-                    return test.done();
-                  # then the container was modified on database
-                  Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
-                    test.equals 1, existing.get('stock').length
-                    test.ok created._id.equals existing.get('stock')[0]
-                    test.done()
+              Item.findOne {type: type1._id, name: 'part'}, (err, created) =>
+                if err? or not(created?)
+                  test.fail "Item not created"
+                  return test.done();
+                # then the container was modified on database
+                Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
+                  test.equals 1, existing.get('stock').length
+                  test.ok created._id.equals existing.get('stock')[0]
+                  test.done()
 
   'should rule delete existing objects': (test) ->
     # given a rule that creates an object
@@ -290,8 +281,7 @@ module.exports =
       constructor: ->
         @name= 'rule 5'
       canExecute: (actor, target, callback) =>
-        actor.resolve ->
-          callback null, (part for part in actor.get('stock') when target.equals(part))?
+        callback null, (part for part in actor.get('stock') when target.equals(part))?
       execute: (actor, target, callback) =>
         @removed.push target
         callback null, 'part removed'
@@ -312,7 +302,7 @@ module.exports =
             item1 = saved  
 
             # given the rules that are applicable for the both items
-            service.resolve item1, item2, (err, results)->
+            service.resolve item1._id, item2._id, (err, results)->
               if err?
                 test.fail "Unable to resolve rules: #{err}"
                 return test.done();
@@ -322,7 +312,7 @@ module.exports =
                 return test.done()
 
               # when executing this rule on that target
-              service.execute results[item2._id][0], item1, item2, (err, result)->
+              service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
                 if err?
                   test.fail "Unable to execute rules: #{err}"
                   return test.done();

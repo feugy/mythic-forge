@@ -1,8 +1,8 @@
 # Logger's levels.
 logLevels:
-  service: debug
-  model: debug
-  web: debug
+  service: warn
+  model: warn
+  web: warn
 
 # MongoDB connection
 mongo:

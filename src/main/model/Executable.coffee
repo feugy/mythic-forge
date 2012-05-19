@@ -25,7 +25,11 @@ createPath compiledRoot
 # Executable are Javascript executable script, defined at runtime and serialized on the file-system
 class Executable
 
-  # Find all existing rules.
+  # Find all existing executables.
+  #
+  # @param callback [Function] invoked when all executables were retrieved
+  # @option callback err [String] an error message if an error occured. null otherwise
+  # @option callback executables [Array<Executable>] list (may be empty) of executables
   @find: (callback) ->
     fs.readdir root, (err, files) ->
       return callback "Error while listing executables: #{err}" if err?
