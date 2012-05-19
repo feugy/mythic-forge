@@ -1,12 +1,12 @@
-utils = require './utils/testUtils'
+testUtils = require './utils/testUtils'
 Executable = require '../main/model/Executable'
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/ActionService').get()
-     
-# TODO : configuration
-root = 'D:/Programmation/Workspace2/mythic-forge-proto/game'
-compiledRoot = 'D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled'
+utils = require '../main/utils'
+    
+root =  utils.confKey 'executable.source'
+compiledRoot =  utils.confKey 'executable.target'
  
 type1= null
 type2= null
@@ -17,8 +17,8 @@ item3= null
 module.exports = 
 
   setUp: (end) ->
-    # Empties the compiled and root folders content
-    utils.cleanFolder compiledRoot, (err) -> utils.cleanFolder root, (err) -> end()
+    # Empties the compilation and source folders content
+    testUtils.cleanFolder compiledRoot, (err) -> testUtils.cleanFolder root, (err) -> end()
 
   'given 3 items and a dumb rule':
     setUp: (end) ->

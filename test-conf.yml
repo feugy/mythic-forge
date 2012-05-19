@@ -1,0 +1,15 @@
+# Logger's levels.
+logLevels:
+  service: debug
+  model: debug
+  web: debug
+
+# MongoDB connection
+mongo:
+  host: localhost
+  db: mythic-forge-tests
+
+# Executable scripts
+executable:
+  source: D:/Programmation/Workspace2/mythic-forge-proto/lib/game-test
+  target: D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled-test

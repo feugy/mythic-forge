@@ -1,4 +1,5 @@
 winston = require 'winston'
+util = require './utils'
 
 levels = 
   debug: 0
@@ -32,7 +33,7 @@ module.exports =
         transports: [ 
           new winston.transports.Console 
             padLevels: true
-            level: 'warn' # TODO read configuration on a file ?
+            level: util.confKey "logLevels.#{name}", 'info' # read from configuration file
             colorize: 'true'
         ]
 

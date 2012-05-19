@@ -1,0 +1,15 @@
+# Logger's levels.
+logLevels:
+  service: warn
+  model: warn
+  web: warn
+
+# MongoDB connection
+mongo:
+  host: localhost
+  db: mythic-forge
+
+# Executable scripts
+executable:
+  source: D:/Programmation/Workspace2/mythic-forge-proto/game
+  target: D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled

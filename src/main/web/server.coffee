@@ -1,4 +1,4 @@
-logger = require('../logger').getLogger 'services'
+logger = require('../logger').getLogger 'web'
 express = require "express"
 gameService = require('../service/GameService').get()
 # creates a single server, and configure socket.io with it.

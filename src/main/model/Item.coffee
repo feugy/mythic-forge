@@ -1,7 +1,7 @@
 mongoose = require 'mongoose'
 conn = require '../dao/connection'
 ItemType = require './ItemType'
-logger = require('../logger').getLogger 'models'
+logger = require('../logger').getLogger 'model'
 
 ObjectId = mongoose.Schema.ObjectId
 

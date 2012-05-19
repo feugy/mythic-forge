@@ -1,17 +1,15 @@
 Executable = require '../main/model/Executable'
-utils = require './utils/testUtils'
+testUtils = require './utils/testUtils'
+utils = require '../main/utils'
 executable = null
-
-# TODO : configuration
-root = 'D:/Programmation/Workspace2/mythic-forge-proto/game'
-compiledRoot = 'D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled'
+   
+root =  utils.confKey 'executable.source'
+compiledRoot =  utils.confKey 'executable.target'
 
 module.exports = 
   setUp: (end) ->
-    # Empty the root folder content
-    utils.cleanFolder root, (err) ->
-      # Empties the compiled folder content
-      utils.cleanFolder compiledRoot, (err) -> end(err)
+    # Empty the source and compilation folders content
+    testUtils.cleanFolder root, (err) -> testUtils.cleanFolder compiledRoot, (err) -> end(err)
       
   'should executable be created': (test) -> 
     # given a new executable

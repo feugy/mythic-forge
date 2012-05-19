@@ -1,5 +1,5 @@
 Item = require '../model/Item'
-logger = require('../logger').getLogger 'services'
+logger = require('../logger').getLogger 'service'
 
 # The GameService allow all operations needed by the game interface.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.

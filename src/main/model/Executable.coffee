@@ -2,21 +2,23 @@ fs = require 'fs'
 path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
-logger = require('../logger').getLogger 'models'
+logger = require('../logger').getLogger 'model'
+utils = require '../utils'
 
-# TODO : configuration
-root = 'D:/Programmation/Workspace2/mythic-forge-proto/game'
-compiledRoot = 'D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled'
-encoding = 'utf8'
-ext = '.coffee'
+root = utils.confKey 'executable.source'
+compiledRoot = utils.confKey 'executable.target'
+encoding = utils.confKey 'executable.encoding', 'utf8'
+ext = utils.confKey 'executable.extension','.coffee'
 
 # Enforce the folder existence.
+# This function IS intended to be synchonous, because the folder needs to exists before exporting the class.
 createPath = (folderPath, name) ->
-  path.exists folderPath, (exists) ->
-    if not exists
-      fs.mkdir folderPath, (err) ->
-        throw "Unable to create the Executable #{name} folder '#{folderPath}': #{err}" if err?
-        logger.info "Executable name folder '#{folderPath}' successfully created"
+  if not path.existsSync folderPath
+    try 
+      fs.mkdirSync folderPath
+      logger.info "Executable name folder '#{folderPath}' successfully created"
+    catch err
+      throw "Unable to create the Executable #{name} folder '#{folderPath}': #{err}"
 createPath root
 createPath compiledRoot
 

@@ -3,7 +3,7 @@ Executable = require '../model/Executable'
 async = require 'async'
 Item = require '../model/Item'
 utils = require '../utils'
-logger = require('../logger').getLogger 'services'
+logger = require('../logger').getLogger 'service'
 
 # The ActionService is somehow the rule engine: it indicates which action are applicables at a given situation 
 #
