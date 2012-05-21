@@ -7,7 +7,7 @@
         - **[done]** type-checking
         - **[done]** links resolution at server side
         - links resolution at client side
-    - Modifications propagation
+    - **[done]** Modifications propagation
 - Rule engine 
     - **[done]** file system storage and compilation
     - **[done]** runtime resolution and execution at server side

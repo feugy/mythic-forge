@@ -6,7 +6,8 @@ ItemTypeSchema = new mongoose.Schema
   name: {type: String, required: true}
   images: [Number]
   properties: 
-    default: {}
+    type: {}
+    default: -> {} # use a function to force instance variable
 
 # setProperty() adds or updates a property.
 #

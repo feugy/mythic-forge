@@ -1,5 +1,6 @@
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
+watcher = require('../main/model/ModelWatcher').get()
 
 item1 = null
 item2 = null
@@ -147,6 +148,12 @@ module.exports =
             item3.save (err) -> end()
 
     'should existing items be updated when setting a type property': (test) ->
+      updates = []
+      # then a modification event was issued
+      watcher.on 'updated', (updated)->
+        updates.push updated._id+''
+        test.equal 30, updated.depth
+
       # when setting a property to a type
       defaultDepth = 30
       type.setProperty 'depth', 'integer', defaultDepth
@@ -155,10 +162,17 @@ module.exports =
           Item.find {type: type._id}, (err, items) ->
             for item in items
               test.equal defaultDepth, item.get 'depth'
+              test.ok item._id+'' in updates
             test.done()
         setTimeout block, 50
 
     'should existing items be updated when removing a type property': (test) ->
+      updates = []
+      # then a modification event was issued
+      watcher.on 'updated', (updated)->
+        updates.push updated._id+''
+        test.ok updated.color is undefined
+
       # when setting a property to a type
       defaultDepth = 30
       type.unsetProperty 'color'
@@ -167,5 +181,6 @@ module.exports =
           Item.find {type: type._id}, (err, items) ->
             for item in items
               test.ok undefined is item.get('color'), 'color still present'
+              test.ok item._id+'' in updates
             test.done()
         setTimeout block, 50

@@ -1,5 +1,6 @@
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
+watcher = require('../main/model/ModelWatcher').get()
 
 item = null
 item2 = null
@@ -20,6 +21,10 @@ module.exports =
     # given a new Item
     item = new Item {x: 10, y:-3, type:type}
 
+    # then a creation event was issued
+    watcher.once 'created', (created)->
+      test.ok created.equals item
+
     # when saving it
     item.save (err) ->
       if err? 
@@ -33,6 +38,7 @@ module.exports =
         # then it's values were saved
         test.equal 10, docs[0].get 'x'
         test.equal -3, docs[0].get 'y'
+        test.expect 4
         test.done()
 
   'should new item have default properties values': (test) ->
@@ -50,15 +56,25 @@ module.exports =
         end()
 
     'should item be removed': (test) ->
+      # then a removal event was issued
+      watcher.once 'removed', (removed)->
+        test.ok removed.equals item
+
       # when removing an item
       item.remove ->
 
-      # then it's in mongo anymore
-      Item.find {}, (err, docs) ->
-        test.equal docs.length, 0
-        test.done()
+        # then it's in mongo anymore
+        Item.find {}, (err, docs) ->
+          test.equal docs.length, 0
+          test.expect 2
+          test.done()
 
     'should item be updated': (test) ->
+      # then a modification event was issued
+      watcher.once 'updated', (updated)->
+        test.ok item.equals updated
+        test.equal -100, updated.x
+
       # when modifying and saving an item
       item.set 'x', -100
       item.save ->
@@ -69,9 +85,15 @@ module.exports =
           # then only the relevant values were modified
           test.equal -100, docs[0].get 'x'
           test.equal 300, docs[0].get 'y'
+          test.expect 5
           test.done()
 
     'should dynamic property be modified': (test) ->
+      # then a modification event was issued
+      watcher.once 'updated', (updated)->
+        test.ok item.equals updated
+        test.equal 200, updated.rocks
+
       # when modifying a dynamic property
       item.set 'rocks', 200
       item.save ->
@@ -81,6 +103,7 @@ module.exports =
           test.equal 150, doc.get 'x'
           test.equal 300, doc.get 'y'
           test.equal 200, doc.get 'rocks'
+          test.expect 5
           test.done()
 
     'should item cannot be saved with unknown property': (test) ->

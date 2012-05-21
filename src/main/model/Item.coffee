@@ -1,10 +1,17 @@
 mongoose = require 'mongoose'
 conn = require '../dao/connection'
 ItemType = require './ItemType'
+modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 
 ObjectId = mongoose.Schema.ObjectId
 
+# We use the post-save middleware to propagate creation and saves.
+# But within this function, all instances have lost their "isNew" status
+# thus we store that status from the pre-save middleware, to use it in the post-save
+# middleware 
+wasNew = {}
+modifiedPaths = {}
 
 # Define the schema for map items
 # Do not use strict schema, because ItemType will add dynamic fields, and will because
@@ -164,7 +171,7 @@ processLinks = (item, properties) ->
         for linked, i in value
           value[i] = if typeof linked is 'object' and '_id' of linked then linked._id.toString() else linked
         
-# save middleware: enforce the existence of each property. 
+# pre-save middleware: enforce the existence of each property. 
 # Could be declared in the schema, or in the type's properties
 # Inside the middleware, `this` aims at the saved item.
 #
@@ -187,6 +194,10 @@ ItemSchema.pre 'save', (next) ->
     if undefined is @get prop
       @set prop, if value.type is 'array' then [] else if value.type is 'object' then null else value.def
 
+  # stores the isNew status.
+  wasNew[@_id] = @isNew
+  modifiedPaths[@_id] = @modifiedPaths.concat()
+
   # replace links by them _ids
   processLinks this, properties
   # replace type with its id, for storing in Mongo, without using setters.
@@ -196,7 +207,17 @@ ItemSchema.pre 'save', (next) ->
   # restore save to allow reference reuse.
   @_doc.type = save
 
-# init middleware: retrieve the type corresponding to the stored id.
+# post-save middleware: now that the instance was properly saved, propagate its modifications
+#
+ItemSchema.post 'save', () ->
+  modelWatcher.change (if wasNew[@_id] then 'create' else 'save'), this, modifiedPaths[@_id]
+
+# post-remove middleware: now that the instace was properly removed, propagate the removal.
+#
+ItemSchema.post 'remove', () ->
+  modelWatcher.change 'remove', this
+
+# pre-init middleware: retrieve the type corresponding to the stored id.
 #
 # @param item [Item] the initialized item.
 # @param next [Function] function that must be called to proceed with other middleware.
