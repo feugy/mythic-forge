@@ -42,8 +42,8 @@ class _GameService
   greetings: (name, callback) =>
     callback null, "Hi #{name} ! My name is Joe"
 
+_instance = undefined
 class GameService
-  _instance = undefined
   @get: ->
     _instance ?= new _GameService()
 

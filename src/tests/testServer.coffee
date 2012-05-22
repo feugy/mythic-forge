@@ -120,17 +120,14 @@ module.exports =
 
             # then an deletion is received for jack
             socket2.once 'deletion', (item) ->
-              console.log "deletion received for #{item._id}"
               test.ok john.equals item
 
             # then an creation is received for peter
             socket2.on 'creation', (item) ->
-              console.log "creation received for #{item._id}"
               test.equal 'Peter', item.name
 
             # then an update is received on john's name
             socket2.once 'update', (item) ->
-              console.log "update received for #{item._id}"
               test.ok jack._id.equals item._id
               test.equal 'Joe', item.name
 

@@ -33,8 +33,7 @@ class _ModelWatcher extends EventEmitter
       throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
 
     logger.debug "change propagation: #{operation} of instance #{parameter._id}"
-    debugger;
-    @emit('change', operation, parameter)
+    @emit 'change', operation, parameter
 
 class ModelWatcher
   _instance = undefined

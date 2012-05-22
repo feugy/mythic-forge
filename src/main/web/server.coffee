@@ -4,7 +4,7 @@ gameService = require('../service/GameService').get()
 # creates a single server, and configure socket.io with it.
 app = express.createServer()
 io = require('socket.io').listen app, {logger: logger}
-modelWatcher = require('../model/ModelWatcher').get()
+watcher = require('../model/ModelWatcher').get()
 
 # `GET /konami`
 #
@@ -41,7 +41,8 @@ io.of('/game').on 'connection', (socket) ->
 #
 # @see {ModelWatcher.change}
 updateNS = io.of('/updates')
-modelWatcher.on 'change', (operation, instance) ->
+
+watcher.on 'change', (operation, instance) ->
   logger.debug "broadcast of #{operation} on #{instance._id}"
   updateNS.emit operation, instance
 

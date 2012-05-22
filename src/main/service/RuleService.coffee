@@ -3,6 +3,7 @@ Executable = require '../model/Executable'
 async = require 'async'
 Item = require '../model/Item'
 utils = require '../utils'
+path = require 'path'
 logger = require('../logger').getLogger 'service'
 
 # Local cache of existing rules.
@@ -163,7 +164,9 @@ class _RuleService
       rules = []
       # and for each of them, extract their rule.
       for executable in executables
-        obj = require executable.compiledPath
+        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+        # and singleton (like ModuleWatcher) will be broken.
+        obj = require '.\\'+ path.relative module.filename, executable.compiledPath
         rules.push obj if obj? and utils.isA obj, Rule
 
       logger.debug "#{rules.length} candidate rules"
