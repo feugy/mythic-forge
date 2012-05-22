@@ -8,26 +8,33 @@ class _ModelWatcher extends EventEmitter
 
   # Method invoked when an instance has created, modified or removed
   #
-  # @param operation [String] one of "create", "save" or "remove"
+  # Will trigger an event "change" with as first parameter the operation name,
+  # and as second the changed instance. 
+  # 
+  # For creation and deletion, the whole instance is passed to the event, minus the
+  # type which is replaced by its _id.
+  # For update, only the _id, type's _id and modified fields are propagated.
+  #
+  # @param operation [String] one of "creation", "update" or "deletion"
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, instance, modified) =>
-    switch operation
-      when 'create'
-        logger.debug "creation of instance #{instance._id}"
-        @emit "created", instance
-      when 'save'
-        # for update, only emit modified datas
-        modifications = 
-          _id: instance._id
-          type: instance.get 'type'
-        modifications[path] = instance.get path for path in modified
-        logger.debug "update of instance #{instance._id}"
-        @emit "updated", modifications
-      when 'remove' 
-        logger.debug "removal of instance #{instance._id}"
-        @emit "removed", instance
-      else throw new Error "Unknown operation #{operation} on instance #{instance._id}"
+    parameter = {}
+    parameter[key] = value for own key,value of instance._doc
+    if operation is 'update'
+      # for update, only emit modified datas
+      parameter = 
+        _id: instance._id
+        type: instance.type?._id
+      parameter[path] = instance.get path for path in modified
+    else if operation is 'creation' or 'deletion'
+      parameter.type = parameter.type?._id
+    else 
+      throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
+
+    logger.debug "change propagation: #{operation} of instance #{parameter._id}"
+    debugger;
+    @emit('change', operation, parameter)
 
 class ModelWatcher
   _instance = undefined

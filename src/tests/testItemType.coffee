@@ -150,9 +150,10 @@ module.exports =
     'should existing items be updated when setting a type property': (test) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'updated', (updated)->
-        updates.push updated._id+''
-        test.equal 30, updated.depth
+      watcher.on 'change', (operation, instance)->
+        updates.push instance._id+''
+        test.equal 'update', operation
+        test.equal 30, instance.depth
 
       # when setting a property to a type
       defaultDepth = 30
@@ -169,9 +170,10 @@ module.exports =
     'should existing items be updated when removing a type property': (test) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'updated', (updated)->
-        updates.push updated._id+''
-        test.ok updated.color is undefined
+      watcher.on 'change', (operation, instance)->
+        test.equal 'update', operation
+        updates.push instance._id+''
+        test.ok instance.color is undefined
 
       # when setting a property to a type
       defaultDepth = 30

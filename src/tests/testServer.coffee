@@ -37,7 +37,7 @@ module.exports =
       socket = socketClient.connect "#{rootUrl}/game"
 
       # then an answer is returned !
-      socket.on 'greetings-resp', (err, response) ->
+      socket.once 'greetings-resp', (err, response) ->
         throw new Error err if err?
         test.equal 'Hi Patrick ! My name is Joe', response
         test.done()
@@ -66,7 +66,7 @@ module.exports =
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then john and jack are returned
-        socket.on 'consultMap-resp', (err, items) ->
+        socket.once 'consultMap-resp', (err, items) ->
           throw new Error err if err?
           test.equal 2, items.length
           test.ok jack.equals items[0]
@@ -82,12 +82,16 @@ module.exports =
           testUtils.cleanFolder utils.confKey('executable.target'), (err) -> 
             testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
               script = new Executable 'rename', """Rule = require '../main/model/Rule'
+                Item = require '../main/model/Item'
+
                 module.exports = new (class RenameRule extends Rule
                   constructor: ->
                     @name= 'rename'
                   canExecute: (actor, target, callback) =>
-                    callback null, target.get('name') is 'John'
+                    callback null, target.get('name') is 'Jack'
                   execute: (actor, target, callback) =>
+                    @created.push new Item({type: target.type, name:'Peter'})
+                    @removed.push actor
                     target.set('name', 'Joe')
                     callback null, 'target renamed'
                 )()"""
@@ -96,27 +100,45 @@ module.exports =
                 throw new Error err if err?
                 end()
 
-        'should rule be resolved and executed': (test) ->
-          # given a connected socket.io client
+        'should rule be resolved and executed, and modification propagated': (test) ->
+          # given several connected socket.io clients
           socket = socketClient.connect "#{rootUrl}/game"
+          socket2 = socketClient.connect "#{rootUrl}/updates"
 
           # then the rename rule is returned
-          socket.on 'resolveRules-resp', (err, results) ->
+          socket.once 'resolveRules-resp', (err, results) ->
             throw new Error err if err?
-            test.ok john._id of results
-            test.equal 'rename', results[john._id][0].name
+            test.ok jack._id of results
+            test.equal 'rename', results[jack._id][0].name
 
             # then john is renamed in joe
-            socket.on 'executeRule-resp', (err, result) ->
+            socket.once 'executeRule-resp', (err, result) ->
               throw new Error err if err?
               test.equal 'target renamed', result
+              test.expect 7
               test.done()
 
-            # when executing the rename rule for john
-            socket.emit 'executeRule', results[john._id][0].name, john._id, john._id
+            # then an deletion is received for jack
+            socket2.once 'deletion', (item) ->
+              console.log "deletion received for #{item._id}"
+              test.ok john.equals item
 
-          # when resolving rules for john
-          socket.emit 'resolveRules', john._id, john._id
+            # then an creation is received for peter
+            socket2.on 'creation', (item) ->
+              console.log "creation received for #{item._id}"
+              test.equal 'Peter', item.name
+
+            # then an update is received on john's name
+            socket2.once 'update', (item) ->
+              console.log "update received for #{item._id}"
+              test.ok jack._id.equals item._id
+              test.equal 'Joe', item.name
+
+            # when executing the rename rule for john on jack
+            socket.emit 'executeRule', results[jack._id][0].name, john._id, jack._id
+
+          # when resolving rules for john on jack
+          socket.emit 'resolveRules', john._id, jack._id
 
   tearDown: (end) ->
     server.close()

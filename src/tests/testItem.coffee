@@ -22,8 +22,9 @@ module.exports =
     item = new Item {x: 10, y:-3, type:type}
 
     # then a creation event was issued
-    watcher.once 'created', (created)->
-      test.ok created.equals item
+    watcher.once 'change', (operation, instance)->
+      test.equal 'creation', operation
+      test.ok item.equals instance
 
     # when saving it
     item.save (err) ->
@@ -38,7 +39,7 @@ module.exports =
         # then it's values were saved
         test.equal 10, docs[0].get 'x'
         test.equal -3, docs[0].get 'y'
-        test.expect 4
+        test.expect 5
         test.done()
 
   'should new item have default properties values': (test) ->
@@ -57,8 +58,9 @@ module.exports =
 
     'should item be removed': (test) ->
       # then a removal event was issued
-      watcher.once 'removed', (removed)->
-        test.ok removed.equals item
+      watcher.once 'change', (operation, instance)->
+        test.equal 'deletion', operation
+        test.ok item.equals instance
 
       # when removing an item
       item.remove ->
@@ -66,14 +68,15 @@ module.exports =
         # then it's in mongo anymore
         Item.find {}, (err, docs) ->
           test.equal docs.length, 0
-          test.expect 2
+          test.expect 3
           test.done()
 
     'should item be updated': (test) ->
       # then a modification event was issued
-      watcher.once 'updated', (updated)->
-        test.ok item.equals updated
-        test.equal -100, updated.x
+      watcher.once 'change', (operation, instance)->
+        test.equal 'update', operation
+        test.ok item.equals instance
+        test.equal -100, instance.x
 
       # when modifying and saving an item
       item.set 'x', -100
@@ -85,14 +88,15 @@ module.exports =
           # then only the relevant values were modified
           test.equal -100, docs[0].get 'x'
           test.equal 300, docs[0].get 'y'
-          test.expect 5
+          test.expect 6
           test.done()
 
     'should dynamic property be modified': (test) ->
       # then a modification event was issued
-      watcher.once 'updated', (updated)->
-        test.ok item.equals updated
-        test.equal 200, updated.rocks
+      watcher.once 'change', (operation, instance)->
+        test.equal 'update', operation
+        test.ok item.equals instance
+        test.equal 200, instance.rocks
 
       # when modifying a dynamic property
       item.set 'rocks', 200
@@ -103,7 +107,7 @@ module.exports =
           test.equal 150, doc.get 'x'
           test.equal 300, doc.get 'y'
           test.equal 200, doc.get 'rocks'
-          test.expect 5
+          test.expect 6
           test.done()
 
     'should item cannot be saved with unknown property': (test) ->

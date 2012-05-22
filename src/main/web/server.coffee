@@ -1,10 +1,10 @@
 logger = require('../logger').getLogger 'web'
-express = require "express"
+express = require 'express'
 gameService = require('../service/GameService').get()
 # creates a single server, and configure socket.io with it.
 app = express.createServer()
-io = require("socket.io").listen app, {logger: logger}
-
+io = require('socket.io').listen app, {logger: logger}
+modelWatcher = require('../model/ModelWatcher').get()
 
 # `GET /konami`
 #
@@ -34,6 +34,16 @@ io.of('/game').on 'connection', (socket) ->
         # invoke the service layer with arguments 
         logger.debug "processing #{method} message with arguments #{originalArgs}"
         gameService[method].apply gameService, args
+
+# 'updates' namespace will broadcast all modifications on the database.
+# The event name will be 'creation', 'update' or 'deletion', and as parameter,
+# the concerned instance (only the modified parts for an update)
+#
+# @see {ModelWatcher.change}
+updateNS = io.of('/updates')
+modelWatcher.on 'change', (operation, instance) ->
+  logger.debug "broadcast of #{operation} on #{instance._id}"
+  updateNS.emit operation, instance
 
 # Exports the application.
 module.exports = app

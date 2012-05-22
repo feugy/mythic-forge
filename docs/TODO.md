@@ -19,7 +19,7 @@
     - **[almost done]** map items CRUD invokation
     - **[done]** rule engine invokation
     - rules retrieval
-    - map items modification propagation
+    - **[almost done]** map items modification propagation
 - Game client
     - map displayal
     - rules resolution

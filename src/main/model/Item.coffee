@@ -210,12 +210,12 @@ ItemSchema.pre 'save', (next) ->
 # post-save middleware: now that the instance was properly saved, propagate its modifications
 #
 ItemSchema.post 'save', () ->
-  modelWatcher.change (if wasNew[@_id] then 'create' else 'save'), this, modifiedPaths[@_id]
+  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), this, modifiedPaths[@_id]
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
 #
 ItemSchema.post 'remove', () ->
-  modelWatcher.change 'remove', this
+  modelWatcher.change 'deletion', this
 
 # pre-init middleware: retrieve the type corresponding to the stored id.
 #
