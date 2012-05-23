@@ -31,8 +31,9 @@ Create a customize build system with the following configuration:
       "working_dir": "$project_path/$project_base_name",
       
       "windows": {
-          "cmd": ["coffee.cmd", "--compile", --watch","--output", "lib", "src"],
-          "encoding": "cp1252"
+          "cmd": ["xcopy", "src\\game", "lib\\game", "/E", "/Y", "/EXCLUDE:.xcopy", "&", "coffee.cmd", "--compile", "--watch","--output", "lib", "src"],
+          "encoding": "cp1252",
+          "shell": true
         }
     }
 
