@@ -15,10 +15,10 @@
     - **[done]** items creation and removal
     - **[done]** items updates
     - transactional behaviour
-- Web layer
-    - **[almost done]** map items CRUD invokation
+- **[done]** Web layer
+    - **[done]** map items CRUD invokation
     - **[done]** rule engine invokation
-    - rules retrieval
+    - **[done]** rules retrieval
     - **[done]** map items modification propagation
 - Game client
     - map displayal

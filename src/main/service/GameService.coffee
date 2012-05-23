@@ -1,4 +1,6 @@
 Item = require '../model/Item'
+ItemType = require '../model/ItemType'
+Executable = require '../model/Executable'
 ruleService = require('./RuleService').get()
 logger = require('../logger').getLogger 'service'
 
@@ -6,6 +8,28 @@ logger = require('../logger').getLogger 'service'
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 #
 class _GameService
+
+  # Retrieve Item types by their ids
+  #
+  # @param ids [Array<String>] array of ids
+  # @param callback [Function] callback executed when types where retrieved. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback types [Array<ItemType>] list of retrieved types. May be empty.
+  getTypes: (ids, callback) =>
+    logger.debug "Consult types with ids: #{ids}"
+    ItemType.find {_id: {$in: ids}}, callback
+
+  # Retrieve Items by their ids. Each item links are resolved.
+  #
+  # @param ids [Array<String>] array of ids
+  # @param callback [Function] callback executed when items where retrieved. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback types [Array<Item>] list of retrieved items. May be empty.
+  getItems: (ids, callback) =>
+    logger.debug "Consult items with ids: #{ids}"
+    Item.find {_id: {$in: ids}}, (err, items) ->
+      return callback err, null if err?
+      Item.multiResolve items, callback
 
   # Retrieve all items that belongs to a map within given coordinates.
   #
@@ -38,9 +62,14 @@ class _GameService
     logger.debug 'Trigger rules execution'
     ruleService.execute.apply ruleService, arguments
 
-  # @todo just a simple test
-  greetings: (name, callback) =>
-    callback null, "Hi #{name} ! My name is Joe"
+  # Returns the executable's content to allow rule execution on client side
+  #
+  # @param callback [Function] callback executed when executables where retrieved. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback items [Array<Executable>] list of retrieved executables. May be empty.
+  getExecutables: (callback) =>
+    logger.debug 'Consult all executables'
+    Executable.find callback
 
 _instance = undefined
 class GameService

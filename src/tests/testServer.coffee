@@ -12,6 +12,7 @@ rootUrl = "http://localhost:#{port}"
 character = null
 jack = null
 john = null
+script = null
 
 module.exports = 
 
@@ -31,19 +32,6 @@ module.exports =
         test.equal 200, res.statusCode
         test.equal '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>', body
         test.done()
-
-    'should the greetings be invoked': (test) ->
-      # given a connected socket.io client
-      socket = socketClient.connect "#{rootUrl}/game"
-
-      # then an answer is returned !
-      socket.once 'greetings-resp', (err, response) ->
-        throw new Error err if err?
-        test.equal 'Hi Patrick ! My name is Joe', response
-        test.done()
-
-      # when saying hello...
-      socket.emit 'greetings', 'Patrick'
 
     'given a type and two characters':
       setUp: (end) ->
@@ -70,11 +58,54 @@ module.exports =
           throw new Error err if err?
           test.equal 2, items.length
           test.ok jack.equals items[0]
+          test.equal 'Jack', items[0].name
           test.ok john.equals items[1]
+          test.equal 'John', items[1].name
           test.done()
 
         # when consulting the map
         socket.emit 'consultMap', 0, 0, 10, 10
+
+      'should types be retrieved': (test) ->
+        # given a connected socket.io client
+        socket = socketClient.connect "#{rootUrl}/game"
+
+        # then the character type is retrieved
+        socket.once 'getTypes-resp', (err, types) ->
+          throw new Error err if err?
+          test.equal 1, types.length
+          test.ok character.get('_id').equals types[0]._id
+          test.equal character.get('name'), types[0].name
+          test.ok 'name' of types[0].properties
+          test.equal character.get('properties').name.type, types[0].properties.name.type
+          test.done()
+
+        # when retrieving types by ids
+        socket.emit 'getTypes', [character._id]
+
+      'should items be retrieved': (test) ->
+        # given a connected socket.io client
+        socket = socketClient.connect "#{rootUrl}/game"
+
+        # then the items are retrieved with their types
+        socket.once 'getItems-resp', (err, items) ->
+          throw new Error err if err?
+          test.equal 2, items.length
+          test.ok jack.equals items[0]
+          test.equal 'Jack', items[0].name
+          test.ok john.equals items[1]
+          test.equal 'John', items[1].name
+          test.ok character._id.equals items[0].type._id
+          test.ok 'name' of items[0].type.properties
+          test.equal character.get('properties').name.type, items[0].type.properties.name.type
+          test.ok character._id.equals items[1].type._id
+          test.ok 'name' of items[1].type.properties
+          test.equal character.get('properties').name.type, items[1].type.properties.name.type
+          test.done()
+          # TODO tests link resolution
+
+        # when retrieving items by ids
+        socket.emit 'getItems', [jack._id, john._id]
 
       'given a rule':
         setUp: (end) ->
@@ -99,6 +130,21 @@ module.exports =
               script.save (err) ->
                 throw new Error err if err?
                 end()
+
+        'should executable content be retrieved': (test) ->
+          # given a connected socket.io client
+          socket = socketClient.connect "#{rootUrl}/game"
+
+          # then the items are retrieved with their types
+          socket.once 'getExecutables-resp', (err, executables) ->
+            throw new Error err if err?
+            test.equal 1, executables.length
+            test.equal script._id, executables[0]._id
+            test.equal script.content, executables[0].content
+            test.done()
+
+          # when retrieving executables
+          socket.emit 'getExecutables'       
 
         'should rule be resolved and executed, and modification propagated': (test) ->
           # given several connected socket.io clients
@@ -140,4 +186,3 @@ module.exports =
   tearDown: (end) ->
     server.close()
     end()
-
