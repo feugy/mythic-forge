@@ -11,9 +11,22 @@ This is the configuration I set up to work properly.
   2. NodeJS
   3. CoffeeScript
 
+# Node global utilities
+
+Obviously, node is required and must be installed on your system.
+Once done, install the following package globally (means executable are available anywhere from command line)
+
+  npm install -g coffee-script
+  npm install -g nodeunit
+
+# MongoDB
+
+Mythic-forge make an intensive usage of mongoDB. You'll need to install it and keep it running.
+For windows users, follow the [official instructions](http://www.mongodb.org/display/DOCS/Windows+Service)
+
 # Project layout
 
-Create a project, and add a folder in it.
+Create a project, and add the source root folder in it.
 The project layout is the following:
 
     docs/ > Project documentation 
@@ -28,7 +41,7 @@ Create a customize build system with the following configuration:
 
     {
       "cmd": ["coffee", "--compile", "--watch","--output", "lib", "src"],
-      "working_dir": "$project_path/$project_base_name",
+      "working_dir": "YOUR SOURCE FOLDER ABSOLUTE PATH",
       
       "windows": {
           "cmd": ["xcopy", "src\\game", "lib\\game", "/E", "/Y", "/EXCLUDE:.xcopy", "&", "coffee.cmd", "--compile", "--watch","--output", "lib", "src"],

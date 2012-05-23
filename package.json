@@ -22,7 +22,8 @@
     "socket.io-client": "0.9.6"
   },
   "scripts": {
-    "test": "(set NODE_ENV=test) & nodeunit lib/tests" 
+    "test": "(set NODE_ENV=test) & nodeunit lib/tests", 
+    "postinstall": "coffee.cmd --compile --output lib src"
   },
   "bin": {
     "server": "./bin/server"
