@@ -44,7 +44,7 @@ Create a customize build system with the following configuration:
       "working_dir": "YOUR SOURCE FOLDER ABSOLUTE PATH",
       
       "windows": {
-          "cmd": ["xcopy", "src\\game", "lib\\game", "/E", "/Y", "/EXCLUDE:.xcopy", "&", "coffee.cmd", "--compile", "--watch","--output", "lib", "src"],
+          "cmd": ["coffee.cmd", "--compile", "--watch","--output", "lib", "src"],
           "encoding": "cp1252",
           "shell": true
         }
