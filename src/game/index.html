@@ -3,9 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <title>Game client</title>
-    <script data-main="js/Router" src="http://cdnjs.cloudflare.com/ajax/libs/require.js/0.26.0/require.min.js"></script>
+    <script data-main="js/Router" src="js/lib/require-1.0.8.js"></script>
+    <style type="text/css">
+      .map {
+        text-align: center;
+      }
+      .map > span {
+        display:inline-block;
+      }
+    </style>
   </head>
   <body>
-    <a data-route='hello' href='#'>say hello</a>
+    <div class="map"></map>
   </body>
 </html>

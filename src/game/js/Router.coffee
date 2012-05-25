@@ -3,24 +3,32 @@ define [
   'lib/underscore'
   'lib/backbone'
   'model/Item'
-  ], ($, _, Backbone, Item) ->
+  'view/MapView'
+  ], ($, _, Backbone, Item, MapView) ->
 
   Item.collection.on 'add', (added, items) ->
     console.log "new item #{added.get('_id')} #{added.get('name')}"
 
-  Router = Backbone.Router.extend
+  class Router extends Backbone.Router
 
     routes:
       # Define some URL routes
-      'hello': 'sayHello'
+      'home': 'displayMapView'
 
-    # Object constructor, called by Backbone.
+    views:
+      map: new MapView()
+
+    # Object constructor.
     #
-    # for links that have a route specified (attribute data-route), prevent link default action and
+    # For links that have a route specified (attribute data-route), prevent link default action and
     # and trigger route navigation.
-    initialize: ->
+    #
+    # Starts history tracking in pushState mode
+    constructor: ->
+      super()
       Backbone.history.start pushState: true
 
+      # route link special behaviour
       $('a[data-route]').on 'click', (e) =>
         e.preventDefault()
         route = $(e.target).data 'route'
@@ -29,8 +37,10 @@ define [
 
       # consult the map
       Item.collection.fetch {lowX:0, lowY:0, upX:10, upY:10}
+      # display map first
+      @navigate 'home', trigger: true
 
-    sayHello: =>
-      $('body').append '<p>Hello</p>'
+    displayMapView: =>
+      $('.map').append @views.map.render().$el
 
   app = new Router()
