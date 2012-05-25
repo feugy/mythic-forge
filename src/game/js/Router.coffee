@@ -5,6 +5,9 @@ define [
   'model/Item'
   ], ($, _, Backbone, Item) ->
 
+  Item.collection.on 'add', (added, items) ->
+    console.log "new item #{added.get('_id')} #{added.get('name')}"
+
   Router = Backbone.Router.extend
 
     routes:
@@ -25,7 +28,7 @@ define [
         @navigate route, trigger: true
 
       # consult the map
-      Item.fetchByCoord 0, 0, 10, 10
+      Item.collection.fetch {lowX:0, lowY:0, upX:10, upY:10}
 
     sayHello: =>
       $('body').append '<p>Hello</p>'

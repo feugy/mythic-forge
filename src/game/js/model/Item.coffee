@@ -1,45 +1,65 @@
-define ['lib/backbone', 'connector'], (Backbone, connector) ->
+define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
 
-
-  # item local cache. Items are stored by ids.
-  cache = {}
-
-  class Item extends Backbone.Model
+  # Client cache of items.
+  # Wired to the server through socket.io
+  class Items extends Backbone.Collection
 
     # **private**
-    # static flag to avoid multiple concurrent server call.
-    @_fetchRunning: false
+    # flag to avoid multiple concurrent server call.
+    _fetchRunning: false
 
-    # Gets items of a given map between coordinates
+    constructor: (@model, @options) ->
+      super model, options
+      # connect server response callbacks
+      sockets.game.on 'consultMap-resp', @_onSync
+
+    # Provide a custom sync method to wire Items to the server.
+    # Allows to retrieve items by coordinates.
     #
-    # @param lowX [Number] abscissa lower bound (included)
-    # @param lowY [Number] ordinate lower bound (included)
-    # @param upX [Number] abscissa upper bound (included)
-    # @param upY [Number] ordinate upper bound (included)  
-    @fetchByCoord: (lowX, lowY, upX, upY) =>
-      return if @_fetchRunning
-      @_fetchRunning = true
-      console.log "Consult map items between #{lowX}:#{lowY} and #{upX}:#{upY}"
-      # emit the message on the socket.
-      connector.gameSocket.emit 'consultMap', lowX, lowY, upX, upY
+    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
+    # @param collection [Items] the current collection
+    # @param args [Object] arguments
+    # @option args lowX [Number] abscissa lower bound (included)
+    # @option args lowY [Number] ordinate lower bound (included)
+    # @option args upX [Number] abscissa upper bound (included)
+    # @option args upY [Number] ordinate upper bound (included)  
+    sync: (method, instance, args) =>
+      switch method
+        when 'read'
+          return if @_fetchRunning
+          @_fetchRunning = true
+          console.log "Consult map items between #{args.lowX}:#{args.lowY} and #{args.upX}:#{args.upY}"
+          # emit the message on the socket.
+          sockets.game.emit 'consultMap', args.lowX, args.lowY, args.upX, args.upY
+
+        else 
+          throw new Error "Unsupported #{method} operation on Items"
 
     # **private**
     # Return callback of consultMap server operation.
     #
     # @param err [String] error string. null if no error occured
-    # @param rawItems [Array<Item>] array (may be empty) of concerned items.
-    @_onConsultMap: (err, rawItems) =>
-      return console.err "Fail to retrieve map content: #{err}" if err?
-      console.log "#{rawItems.length} map item(s) received"
-      # instanciate models from the rawItems
-      items = []
-      for rawItem in rawItems
-        item = new Item rawItem
-        cache[item.get('_id')] = item
-        items.push item
-      # propagate results.
-      connector.dispatcher.trigger 'onFetchByCoord', items
-      @_fetchRunning = false
+    # @param items [Array<Item>] array (may be empty) of concerned items.
+    _onSync: (err, items) =>
+      if @_fetchRunning
+        return console.err "Fail to retrieve map content: #{err}" if err?
+        console.log "#{items.length} map item(s) received"
+        # add them to the collection (Item model will be created)
+        @add items
+        @_fetchRunning = false
+
+    # Override of the inherited method to disabled default behaviour.
+    # DO NOT reset anything on fetch.
+    reset: =>
+
+
+  # Modelisation of a single Item.
+  # Not wired to the server : use collections Items instead
+  class Item extends Backbone.Model
+
+    # item local cache.
+    # A Backbone.Collection subclass that handle Items retrieval with `fetch()`
+    @collection = new Items @
 
     # Item constructor.
     #
@@ -47,8 +67,5 @@ define ['lib/backbone', 'connector'], (Backbone, connector) ->
     constructor: (attributes) ->
       super attributes 
       @idAttribute = '_id'
-
-  # connect server response callbacks
-  connector.gameSocket.on 'consultMap-resp', Item._onConsultMap
 
   return Item
