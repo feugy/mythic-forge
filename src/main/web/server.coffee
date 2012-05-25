@@ -64,7 +64,6 @@ app.use '/js', express.static path.join publicFolder, 'js'
 app.get '*', (req, res, next) ->
   if req.url.indexOf('/js') is 0
     return next()
-  console.log 'serve root'
   fs.createReadStream(path.join(publicFolder, 'index.html')).pipe res
 
 # Exports the application.
