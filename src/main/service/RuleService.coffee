@@ -18,7 +18,8 @@ class _RuleService
   # RuleService constructor.
   # Gets the existing executables, and store their rules.
   constructor: ->
-    # @todo 
+    # Reset the local cache
+    Executable.resetAll()
 
   # Resolves the applicable rules for a given situation.
   #

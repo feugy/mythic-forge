@@ -1,15 +1,16 @@
 Executable = require '../main/model/Executable'
 testUtils = require './utils/testUtils'
 utils = require '../main/utils'
+path = require 'path'
+fs = require 'fs'
 executable = null
    
 root =  utils.confKey 'executable.source'
-compiledRoot =  utils.confKey 'executable.target'
 
 module.exports = 
   setUp: (end) ->
     # Empty the source and compilation folders content
-    testUtils.cleanFolder root, (err) -> testUtils.cleanFolder compiledRoot, (err) -> end(err)
+    testUtils.cleanFolder root, (err) -> Executable.resetAll -> end(err)
       
   'should executable be created': (test) -> 
     # given a new executable
@@ -19,15 +20,12 @@ module.exports =
     
     # when saving it
     executable.save (err) ->
-      if err? 
-        test.fail "Can't save executable: #{err}"
-        return test.done()
+      throw new Error "Can't save executable: #{err}" if err?
 
       # then it is in the file system
       Executable.find (err, executables) ->
-        if err? 
-          test.fail "Can't find executables: #{err}"
-          return test.done()
+        throw new Error "Can't find executable: #{err}" if err?
+
         # then it's the only one executable
         test.equal executables.length, 1
         # then it's values were saved
@@ -46,9 +44,7 @@ module.exports =
       executable.remove ->
         # then it's in the folder anymore
         Executable.find (err, executables) -> 
-          if err? 
-              test.fail "Can't find executables: #{err}"
-              return test.done()
+          throw new Error "Can't find executable file: #{err}" if err?
           test.equal executables.length, 0
           test.done()
 
@@ -57,11 +53,8 @@ module.exports =
       newContent = '# I have accents ! ééàà'
       executable.content = newContent
       executable.save ->
-
         Executable.find (err, executables) ->
-          if err? 
-            test.fail "Can't find executables: #{err}"
-            return test.done()
+          throw new Error "Can't find executable file: #{err}" if err?
           # then it's the only one executable
           test.equal executables.length, 1
           # then only the relevant values were modified

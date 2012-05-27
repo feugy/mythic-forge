@@ -12,18 +12,81 @@ ext = utils.confKey 'executable.extension','.coffee'
 
 # Enforce the folder existence.
 # This function IS intended to be synchonous, because the folder needs to exists before exporting the class.
-createPath = (folderPath, name) ->
+#
+# @param folderPath [String] path to the checked folder
+# @param forceRemove [boolean] if specifed and true, first erase the folder.
+createPath = (folderPath, forceRemove) ->
+  # force Removal if specified
+  if forceRemove
+    files = fs.readdirSync folderPath
+    fs.unlinkSync path.join folderPath, file for file in files
+    fs.rmdirSync folderPath 
+
   if not path.existsSync folderPath
     try 
       fs.mkdirSync folderPath
-      logger.info "Executable name folder '#{folderPath}' successfully created"
+      logger.info "Executable folder '#{folderPath}' successfully created"
     catch err
       throw "Unable to create the Executable #{name} folder '#{folderPath}': #{err}"
+
 createPath root
-createPath compiledRoot
+
+# Do a single compilation of a source file.
+#
+# @param executable [Executable] the executable to compile
+# @param callback [Function] end callback, invoked when the compilation is done with the following parameters
+# @option callback err [String] an error message. Null if no error occured
+# @option callback executable [Executable] the compiled executable
+compileFile = (executable, callback) ->
+  try 
+    js = coffee.compile executable.content
+  catch exc
+    return callback "Error while compilling executable #{executable._id}: #{exc}"
+  # Eventually, write a copy with a js extension
+  fs.writeFile executable.compiledPath, js, (err) =>
+    return callback "Error while saving compiled executable #{executable._id}: #{err}" if err?
+    logger.debug "executable #{executable._id} successfully compiled"
+    # store it in local cache.
+    executables[executable._id] = executable
+    callback null, executable
+
+# local cache of executables
+executables = {}
 
 # Executable are Javascript executable script, defined at runtime and serialized on the file-system
 class Executable
+
+  # Reset the executable local cache. It recompiles all existing executables
+  #
+  # @param callback [Function] invoked when the reset is done.
+  # @option callback err [String] an error callback. Null if no error occured.
+  @resetAll: (callback) ->
+    # clean local files, and compiled scripts
+    executables = {}
+    createPath compiledRoot, true
+
+    fs.readdir root, (err, files) ->
+      return callback "Error while listing executables: #{err}" if err?
+
+      readFile = (file, end) -> 
+        # only take coffeescript in account
+        if ext isnt path.extname file
+          return end()
+        # creates an empty executable
+        executable = new Executable file.replace ext, ''
+
+        fs.readFile executable.path, encoding, (err, content) ->
+          return callback "Error while reading executable '#{executable._id}': #{err}" if err?
+          # complete the executable content, and add it to the array.
+          executable.content = content
+          compileFile executable, (err, executable) ->
+            return callback "Compilation failed: #{err}" if err?
+            end()
+
+      # each individual file must be read
+      async.forEach files, readFile, (err) -> 
+        logger.debug 'Local executables cached successfully reseted' unless err?
+        callback err
 
   # Find all existing executables.
   #
@@ -31,27 +94,10 @@ class Executable
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback executables [Array<Executable>] list (may be empty) of executables
   @find: (callback) ->
-    fs.readdir root, (err, files) ->
-      return callback "Error while listing executables: #{err}" if err?
-      
-      executables = []
-      
-      readFile = (file, end) -> 
-        # only take coffeescript in account
-        if ext isnt path.extname file
-          return end()
-
-        # creates an empty executable
-        executable = new Executable file.replace ext, ''
-        fs.readFile executable.path, encoding, (err, content) ->
-          return callback "Error while reading executable '#{executable._id}': #{err}" if err?
-          # complete the executable content, and add it to the array.
-          executable.content = content
-          executables.push executable
-          end()
-
-      # each individual file must be read
-      async.forEach files, readFile, (err) -> callback(null, executables)
+    # just take the local cache and transforms it into an array.
+    array = []
+    array.push executable for _id, executable of executables
+    callback null, array
 
   # The unic file name of the executable, which is also its id.
   _id: null
@@ -82,16 +128,8 @@ class Executable
     fs.writeFile @path, @content, encoding, (err) =>
       return callback "Error while saving executable #{@_id}: #{err}" if err?
       logger.debug "executable #{@_id} successfully saved"
-      # Now, compile it to js
-      try 
-        js = coffee.compile @content
-      catch err2
-        return callback "Error while compilling executable #{@_id}: #{err2}"
-      # Eventually, write a copy with a js extension
-      fs.writeFile @compiledPath, js, (err3) =>
-        return callback "Error while saving compiled executable #{@_id}: #{err3}" if err3?
-        logger.debug "executable #{@_id} successfully compiled"
-        callback null, this
+      # Trigger the compilation.
+      compileFile this, callback
 
   # Remove an existing executable.
   # 
@@ -103,9 +141,10 @@ class Executable
       return callback "Error while removing executable #{@_id}: this executable does not exists" if not exists
       fs.unlink @path, (err) =>
         return callback "Error while removing executable #{@_id}: #{err}" if err?
-        fs.unlink @compiledPath, (err2) =>
-          return callback "Error while removing compiled executable #{@_id}: #{err2}" if err2?
+        fs.unlink @compiledPath, (err) =>
+          return callback "Error while removing compiled executable #{@_id}: #{err}" if err?
           logger.debug "executable #{@_id} successfully removed"
+          delete executables[@_id]
           callback null, this
 
 module.exports = Executable
