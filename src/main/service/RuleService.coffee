@@ -19,7 +19,7 @@ class _RuleService
   # Gets the existing executables, and store their rules.
   constructor: ->
     # Reset the local cache
-    Executable.resetAll()
+    Executable.resetAll ->
 
   # Resolves the applicable rules for a given situation.
   #
