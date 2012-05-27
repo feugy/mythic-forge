@@ -21,6 +21,6 @@
     - **[done]** rules retrieval
     - **[done]** map items modification propagation
 - Game client
-    - map displayal
+    - **[done]** map displayal
     - rules resolution
     - application of map items modifications 

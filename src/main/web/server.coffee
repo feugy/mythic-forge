@@ -58,11 +58,13 @@ app.use express.compiler
     src: publicFolder,
     dest: publicFolder,
     enable: ['coffeescript']
-# js files will be statically served...
+# js, images and style files will be statically served...
 app.use '/js', express.static path.join publicFolder, 'js'
-# ...but SPA root need to be treaten differently, because of pushState
+app.use '/assets', express.static path.join publicFolder, 'assets'
+app.use '/style', express.static path.join publicFolder, 'style'
+## ...but SPA root need to be treaten differently, because of pushState
 app.get '*', (req, res, next) ->
-  if req.url.indexOf('/js') is 0
+  if req.url.indexOf('/js') is 0 or req.url.indexOf('/assets') is 0 or req.url.indexOf('/style') is 0
     return next()
   fs.createReadStream(path.join(publicFolder, 'index.html')).pipe res
 

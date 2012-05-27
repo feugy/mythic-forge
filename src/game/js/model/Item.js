@@ -18,12 +18,15 @@
         this.options = options;
         this.reset = __bind(this.reset, this);
 
+        this._onUpdate = __bind(this._onUpdate, this);
+
         this._onSync = __bind(this._onSync, this);
 
         this.sync = __bind(this.sync, this);
 
         Items.__super__.constructor.call(this, model, options);
         sockets.game.on('consultMap-resp', this._onSync);
+        sockets.updates.on('update', this._onUpdate);
       }
 
       Items.prototype.sync = function(method, instance, args) {
@@ -42,13 +45,28 @@
 
       Items.prototype._onSync = function(err, items) {
         if (this._fetchRunning) {
+          this._fetchRunning = false;
           if (err != null) {
             return console.err("Fail to retrieve map content: " + err);
           }
           console.log("" + items.length + " map item(s) received");
-          this.add(items);
-          return this._fetchRunning = false;
+          return this.add(items);
         }
+      };
+
+      Items.prototype._onUpdate = function(changes) {
+        var item, key, value;
+        item = this.get(changes._id);
+        if (item == null) {
+          return;
+        }
+        for (key in changes) {
+          value = changes[key];
+          if (key !== '_id' && key !== 'type') {
+            item.set(key, value);
+          }
+        }
+        return this.emit('update', item);
       };
 
       Items.prototype.reset = function() {};
@@ -64,9 +82,10 @@
 
       Item.collection = new Items(Item);
 
+      Item.prototype.idAttribute = '_id';
+
       function Item(attributes) {
         Item.__super__.constructor.call(this, attributes);
-        this.idAttribute = '_id';
       }
 
       return Item;

@@ -4,19 +4,20 @@ define [
   'lib/backbone'
   'model/Item'
   'view/MapView'
-  ], ($, _, Backbone, Item, MapView) ->
-
-  Item.collection.on 'add', (added, items) ->
-    console.log "new item #{added.get('_id')} #{added.get('name')}"
+  'service/RuleService'
+  ], ($, _, Backbone, Item, MapView, RuleService) ->
 
   class Router extends Backbone.Router
 
     routes:
       # Define some URL routes
-      'home': 'displayMapView'
+      'map': 'displayMapView'
 
-    views:
-      map: new MapView()
+    # The mapView singleton  
+    mapView: null
+
+    # The ruleService singleton
+    ruleService: null
 
     # Object constructor.
     #
@@ -26,6 +27,16 @@ define [
     # Starts history tracking in pushState mode
     constructor: ->
       super()
+      # instanciates singletons.
+      @ruleService = new RuleService this
+      @mapView = new MapView {
+        # bind the map and the content of the item collection
+        collection: Item.collection
+        originX: 0
+        originY: 0
+        router: this
+      }
+
       Backbone.history.start pushState: true
 
       # route link special behaviour
@@ -36,11 +47,16 @@ define [
         @navigate route, trigger: true
 
       # consult the map
-      Item.collection.fetch {lowX:0, lowY:0, upX:10, upY:10}
+      Item.collection.fetch {
+        lowX: @mapView.originX
+        lowY: @mapView.originY
+        upX: @mapView.originX+10
+        upY: @mapView.originY+10
+      }
       # display map first
-      @navigate 'home', trigger: true
+      @navigate 'map', trigger: true
 
     displayMapView: =>
-      $('.map').append @views.map.render().$el
+      $('.map').append @mapView.render().$el
 
   app = new Router()

@@ -27,12 +27,12 @@ class _RuleService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] applicable rules, stored in array and indexed with the target'id on which they apply
   #
-  # @overload resolve(actor, x, y, callback)
+  # @overload resolve(actorId, x, y, callback)
   #   Resolves applicable rules at a specified coordinate
   #   @param x [Number] the targeted x coordinate
   #   @param y [Number] the targeted y coordinate
   #
-  # @overload resolve(actor, target, callback)
+  # @overload resolve(actorId, targetId, callback)
   #   Resolves applicable rules at for a specific target
   #   @param targetId [ObjectId] the targeted item's id
   resolve: (actorId, args..., callback) =>
