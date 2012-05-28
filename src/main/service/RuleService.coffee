@@ -2,6 +2,7 @@ Rule = require '../model/Rule'
 Executable = require '../model/Executable'
 async = require 'async'
 Item = require '../model/Item'
+Field = require '../model/Field'
 utils = require '../utils'
 path = require 'path'
 logger = require('../logger').getLogger 'service'
@@ -51,7 +52,6 @@ class _RuleService
         @_resolve actor, [target], callback
     else if args.length is 2 
       # targets must be resolved with a query.
-      #Item.findOne {_id: actorId}, (err, actor) =>
       Item.find {$or:[{_id: actorId},{x: args[0], y:args[1]}]}, (err, results) =>
         return callback "Cannot resolve rules. Failed to retrieve actor (#{actorId}) or items at position x:#{args[0]} y:#{args[1]}: #{err}" if err?
         actor = null
@@ -61,8 +61,13 @@ class _RuleService
             results.splice i, 1
             break
         return callback "No actor with id #{actorId}" unless actor?
-        logger.debug "resolve rules for actor #{actorId} at x:#{args[0]} y:#{args[1]}"
-        @_resolve actor, results, callback
+        return callback "Cannot resolve rules for actor #{actorId} on map if it does not have a map !" unless actor.map?
+        # Gets also field at the coordinate
+        Field.findOne {map: actor.map._id, x:args[0], y:args[1]}, (err, field) =>
+          return callback "Cannot resolve rules. Failed to retrieve field at position x:#{args[0]} y:#{args[1]}: #{err}" if err?
+          results.splice 0, 0, field if field?
+          logger.debug "resolve rules for actor #{actorId} at x:#{args[0]} y:#{args[1]}"
+          @_resolve actor, results, callback
     else 
       throw new Error "resolve() must be call directly with a target, or with coordinates"
 
@@ -181,8 +186,8 @@ class _RuleService
  
         # process all targets in parallel.
         for target in targets
-          # resolve target
-          target.resolve (err) ->
+          # second part of the resolution, after target have been resolved
+          process= (err) ->
             return callback "Cannot resolve rule because target's (#{target._id}) linked item cannot be resolve: #{err}" if err?
             results[target._id] = []
 
@@ -199,9 +204,15 @@ class _RuleService
               catch err
                 # exit at the first resolution error
                 return callback "Failed to resolve rule #{rule.name}. Received exception #{err}"
-
+            
             # resolve all rules for this target.
             async.forEach rules, filterRule, resolutionEnd
+                    
+          # resolve items, but not fields
+          if target.resolve
+            target.resolve process
+          else 
+            process null
 
 class RuleService
   _instance = undefined

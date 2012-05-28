@@ -1,22 +1,30 @@
 testUtils = require './utils/testUtils'
 Executable = require '../main/model/Executable'
 Item = require '../main/model/Item'
+Map = require '../main/model/Map'
+Field = require '../main/model/Field'
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/RuleService').get()
 utils = require '../main/utils'
  
+map = null
 type1= null
 type2= null
 item1= null
 item2= null
 item3= null
+field1 = null
 
 module.exports = 
 
   setUp: (end) ->
     # Empties the compilation and source folders content
     testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
-      Executable.resetAll -> end()
+      Executable.resetAll -> 
+        Field.collection.drop ->
+          Map.collection.drop ->
+            map = new Map {name: 'map-Test'}
+            map.save -> end()
 
   'given 3 items and a dumb rule':
     setUp: (end) ->
@@ -39,16 +47,20 @@ module.exports =
           # Drops existing items
           Item.collection.drop ->
             # Creates 3 items
-            new Item({x:0, y:0, type: type1}).save (err, saved) ->
+            new Item({map: map, x:0, y:0, type: type1}).save (err, saved) ->
               throw new Error err if err?
               item1 = saved
-              new Item({x:1, y:2, type: type1}).save (err, saved) ->
+              new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
                 throw new Error err if err?
                 item2 = saved
-                new Item({x:1, y:2, type: type1}).save (err, saved) ->
+                new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
                   throw new Error err if err?
                   item3 = saved
-                  end(err)
+                  # Creates a field
+                  new Field({map: map, x:1, y:2}).save (err, saved) ->
+                    throw new Error err if err?
+                    field1 = saved
+                    end(err)
 
     'should rule be applicable on empty coordinates': (test) ->
       # when resolving applicable rules at a coordinate with no items
@@ -75,6 +87,11 @@ module.exports =
         # then the dumb rule has matched the third item
         test.ok item3._id of results, 'The item3\'s id is not in results'
         match = results[item3._id]
+        test.equal 1, match.length
+        test.equal 'rule 1', match[0]?.name
+        # then the dumb rule has matched the field
+        test.ok field1._id of results, 'The field1\'s id is not in results'
+        match = results[field1._id]
         test.equal 1, match.length
         test.equal 'rule 1', match[0]?.name
         test.done()
