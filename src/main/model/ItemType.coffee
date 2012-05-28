@@ -65,24 +65,22 @@ ItemTypeSchema.statics.findCached = (id, callback) ->
 
 # post-save middleware: now that the instance was properly saved, update the cache.
 #
-ItemTypeSchema.post 'save', () ->
+ItemTypeSchema.post 'save', ->
   # updates the cache
   cache[@_id] = this
+  
 
 # post-remove middleware: now that the instace was properly removed, update the cache.
 #
-ItemTypeSchema.post 'remove', () ->
+ItemTypeSchema.post 'remove', ->
   # updates the cache
   delete cache[@_id]
 
-# pre-init middleware: populate the cache
+# post-init middleware: populate the cache
 #
-# @param type [ItemType] the initialized type.
-# @param next [Function] function that must be called to proceed with other middleware.
-ItemTypeSchema.pre 'init', (next, type) ->
+ItemTypeSchema.post 'init', ->
   # Store in cache
-  cache[type._id] = type
-  next()
+  cache[@._id] = this
 
 # Export the Class.
 module.exports = conn.model 'itemType', ItemTypeSchema

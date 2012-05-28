@@ -1,7 +1,9 @@
 Item = require '../model/Item'
+Field = require '../model/Field'
 ItemType = require '../model/ItemType'
 Executable = require '../model/Executable'
 ruleService = require('./RuleService').get()
+ObjectId = require('mongodb').BSONPure.ObjectID
 logger = require('../logger').getLogger 'service'
 
 # The GameService allow all operations needed by the game interface.
@@ -33,20 +35,37 @@ class _GameService
 
   # Retrieve all items that belongs to a map within given coordinates.
   #
+  # @param mapId [String] id of the concerned map.
   # @param lowX [Number] abscissa lower bound (included)
   # @param lowY [Number] ordinate lower bound (included)
   # @param upX [Number] abscissa upper bound (included)
   # @param upY [Number] ordinate upper bound (included)  
   # @param callback [Function] callback executed when items where retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
-  # @option callback items [Array<Item>] list of retrieved items. May be empty.
-  consultMap: (lowX, lowY, upX, upY, callback) =>
-    logger.debug "Consult map between #{lowX}:#{lowY} and #{upX}:#{upY}"
-    Item.where('x').gte(lowX)
+  # @option callback items [Array<Item>] list of retrieved items. May be empty
+  # @option callback fields [Array<Field>] list of retrieved fields. May be empty
+  consultMap: (mapId, lowX, lowY, upX, upY, callback) =>
+    unless mapId? and lowX? and lowY? and upX? and upY? and callback?
+      return callback 'All parameters are mandatory' 
+
+    logger.debug "Consult map #{mapId} between #{lowX}:#{lowY} and #{upX}:#{upY}"
+    # first get the items
+    Item.where('map', new ObjectId(''+mapId))
+      .where('x').gte(lowX)
       .where('x').lte(upX)
       .where('y').gte(lowY)
       .where('y').lte(upY)
-      .run callback
+      .run (err, items) ->
+        return callback err, [], [] if err?
+        # then gets the fields
+        Field.where('map', new ObjectId(''+mapId))
+          .where('x').gte(lowX)
+          .where('x').lte(upX)
+          .where('y').gte(lowY)
+          .where('y').lte(upY)
+          .run (err, fields) ->
+            return callback err, [], [] if err?
+            callback null, items, fields
 
   # Trigger the rule engine resolution
   # 

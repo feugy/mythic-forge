@@ -36,8 +36,8 @@
               return;
             }
             this._fetchRunning = true;
-            console.log("Consult map items between " + args.lowX + ":" + args.lowY + " and " + args.upX + ":" + args.upY);
-            return sockets.game.emit('consultMap', args.lowX, args.lowY, args.upX, args.upY);
+            console.log("Consult map " + args.map + " between " + args.lowX + ":" + args.lowY + " and " + args.upX + ":" + args.upY);
+            return sockets.game.emit('consultMap', args.map, args.lowX, args.lowY, args.upX, args.upY);
           default:
             throw new Error("Unsupported " + method + " operation on Items");
         }
@@ -54,8 +54,11 @@
         }
       };
 
-      Items.prototype._onUpdate = function(changes) {
+      Items.prototype._onUpdate = function(className, changes) {
         var item, key, value;
+        if (className !== 'Item') {
+          return;
+        }
         item = this.get(changes._id);
         if (item == null) {
           return;
@@ -66,7 +69,7 @@
             item.set(key, value);
           }
         }
-        return this.emit('update', item);
+        return this.trigger('update', item);
       };
 
       Items.prototype.reset = function() {};
@@ -85,8 +88,13 @@
       Item.prototype.idAttribute = '_id';
 
       function Item(attributes) {
+        this.equals = __bind(this.equals, this);
         Item.__super__.constructor.call(this, attributes);
       }
+
+      Item.prototype.equals = function(other) {
+        return this.id === (other != null ? other.id : void 0);
+      };
 
       return Item;
 

@@ -88,38 +88,54 @@ class _RuleService
       actor = result for result in results when result._id.equals actorId
       target = result for result in results when result._id.equals targetId
       return callback "No actor with id #{actorId}" unless actor?
-      return callback "No target with id #{args[0]}" unless target?
-      logger.debug "execute rule #{ruleName} of #{actor._id} for #{target._id}"
-      # then resolve rules
-      @_resolve actor, [target], (err, rules) =>
-        # if the rule does not apply, leave right now
-        return callback "Cannot resolve rule #{ruleName}: #{err}" if err?
-        rule = rule for rule in rules[target._id] when rule.name is ruleName
-        return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}" unless rule?
-        
-        # reinitialize creation and removal arrays.
-        rule.created = []
-        rule.removed = []
-        # otherwise, execute the rule
-        rule.execute actor, target, (err, result) => 
-          return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
 
-          saved = []
-          # removes objects from mongo
-          logger.debug "remove item #{item._id}" for item in rule.removed
-          async.forEach rule.removed, ((item, end) -> item.remove (err)-> end err), (err) => 
-            return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
-            # adds new objects to be saved
-            saved = saved.concat rule.created
-            # looks for modified linked objects
-            @_filterModified actor, saved
-            @_filterModified target, saved
-            # saves the whole in MongoDB
-            logger.debug "save modified item #{item._id}" for item in saved
-            async.forEach saved, ((item, end) -> item.save (err)-> end err), (err) => 
+      # second part of the process
+      process = =>
+        logger.debug "execute rule #{ruleName} of #{actor._id} for #{target._id}"
+        # then resolve rules
+        @_resolve actor, [target], (err, rules) =>
+          # if the rule does not apply, leave right now
+          return callback "Cannot resolve rule #{ruleName}: #{err}" if err?
+          rule = rule for rule in rules[target._id] when rule.name is ruleName
+          return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}" unless rule?
+          
+          # reinitialize creation and removal arrays.
+          rule.created = []
+          rule.removed = []
+          # otherwise, execute the rule
+          try 
+            rule.execute actor, target, (err, result) => 
               return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
-              # everything was fine
-              callback(null, result)
+
+              saved = []
+              # removes objects from mongo
+              logger.debug "remove item #{item._id}" for item in rule.removed
+              async.forEach rule.removed, ((item, end) -> item.remove (err)-> end err), (err) => 
+                return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+                # adds new objects to be saved
+                saved = saved.concat rule.created
+                # looks for modified linked objects
+                @_filterModified actor, saved
+                @_filterModified target, saved
+                # saves the whole in MongoDB
+                logger.debug "save modified item #{item._id}" for item in saved
+                async.forEach saved, ((item, end) -> item.save (err)-> end err), (err) => 
+                  return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+                  # everything was fine
+                  callback(null, result)
+          catch exc
+            callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{exc}"
+
+      if target?
+        process()
+      else 
+        # target could be also a field
+        Field.findOne {_id: targetId}, (err, result) =>
+          return callback "Cannot execute rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
+          return callback "No target with id #{targetId}" unless result?
+          target = result
+          process()
+
  
   # **private**
   # Return the linked items that are marked as modified.
@@ -127,6 +143,8 @@ class _RuleService
   # @param item [Item] root item that begins the analysis
   # @return an array (may be empty) of modified items
   _filterModified: (item, modified) =>
+    # do not process if not an item
+    return unless item.type?
     # do not process if already known
     return if item in modified 
     # will be save if at least one path is modified

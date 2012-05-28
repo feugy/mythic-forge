@@ -46,13 +46,14 @@ define [
         console.log "Run client route: #{route}"
         @navigate route, trigger: true
 
-      # consult the map
-      Item.collection.fetch {
+      # consult the map TODO: do not hardcode map
+      Item.collection.fetch
+        map: '4fc334d5f184130eda1b61fc'
         lowX: @mapView.originX
         lowY: @mapView.originY
         upX: @mapView.originX+10
         upY: @mapView.originY+10
-      }
+      
       # display map first
       @navigate 'map', trigger: true
 

@@ -29,9 +29,9 @@ define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
         when 'read'
           return if @_fetchRunning
           @_fetchRunning = true
-          console.log "Consult map items between #{args.lowX}:#{args.lowY} and #{args.upX}:#{args.upY}"
+          console.log "Consult map #{args.map} between #{args.lowX}:#{args.lowY} and #{args.upX}:#{args.upY}"
           # emit the message on the socket.
-          sockets.game.emit 'consultMap', args.lowX, args.lowY, args.upX, args.upY
+          sockets.game.emit 'consultMap', args.map, args.lowX, args.lowY, args.upX, args.upY
 
         else 
           throw new Error "Unsupported #{method} operation on Items"
@@ -52,8 +52,10 @@ define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
     # **private**
     # Callback invoked when a database update is received.
     #
+    # @param className [String] the modified object className
     # @param changes [Object] new changes for a given item.
-    _onUpdate: (changes) =>
+    _onUpdate: (className, changes) =>
+      return unless className is 'Item'
       # first, get the cached item and quit if not found
       item = @get changes._id
       return unless item?
@@ -61,7 +63,7 @@ define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
       for key, value of changes
         item.set key, value if key isnt '_id' and key isnt 'type'
       # emit a change.
-      @emit 'update', item
+      @trigger 'update', item
 
 
     # Override of the inherited method to disabled default behaviour.
@@ -85,5 +87,12 @@ define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes 
+
+    # An equality method that tests ids.
+    #
+    # @param other [Object] the object against which the current item is tested
+    # @return true if both object have the samge ids, and false otherwise.
+    equals: (other) =>
+      @.id is other?.id
 
   return Item

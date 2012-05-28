@@ -48,6 +48,7 @@ define [
     # events mapping
     events:
       'click .layer.interactive': 'hitMap'
+      'click .rule-trigger': 'triggerRule'
 
     # **private**
     # Items layer jQuery element.
@@ -98,16 +99,19 @@ define [
       @_width = @_hexW*11.5+1
       @_height = @_hexH*8.5+1
 
+      perspective = $ '<div class="perspective"></div>'
+      @$el.append perspective
+
       # creates the canvas element      
       canvas = $ "<canvas width=\"#{@_width}\" height=\"#{@_height}\"></canvas>"
-      @$el.append canvas
+      perspective.append canvas
 
       # then creates the item layer
       @_itemsLayer = $ '<div class="layer items"></div>'
-      @$el.append @_itemsLayer 
+      perspective.append @_itemsLayer 
 
       # at last, add an interractive layer
-      @$el.append '<div class="layer interactive"></div>'
+      perspective.append '<div class="layer interactive"></div>'
   
       ctx = canvas[0].getContext('2d')
       ctx.fillStyle = '#aaa'
@@ -181,7 +185,12 @@ define [
         bottom: @_hexH*(@originY+10-y)*0.75
         '-moz-transform': "skewX(#{correction}deg)"
         '-webkit-transform': "skewX(#{correction}deg)"
-      
+      # moves also selected indicator
+      if @selected?.equals item
+        @_itemsLayer.find('.selected').css
+          left: img.css 'left'
+          bottom: img.css 'bottom'
+
     # Method that selects an item for rules resolution and execution.
     # If the item specified is already selected, unselect it.
     # the `selectedChanged` event is published on the router.
@@ -257,7 +266,6 @@ define [
       # or it's the good hexagon :)
 
       console.log "mouse #{mouse.x}:#{mouse.y} -> #{col}:#{row}"
-
       # now find an item with the relevant coordinates
       items = Item.collection.where {x: col, y:row}
       if items.length > 0
@@ -267,19 +275,39 @@ define [
         # trigger the resolution event
         @router.trigger 'resolveRules', @selected.id, col, row
 
+    # trigger the rule resolution from a contextual menu.
+    #
+    # @param event [Event] the click event.
+    triggerRule: (event) =>
+      return unless @selected?
+      ruleName = $(event.target).data 'name'
+      targetId = $(event.target).data 'target'
+      # Delegates to someone else the execution.
+      @router.trigger 'executeRule', ruleName, @selected.id, targetId
+      @$el.find('.menu.rules').remove()
 
     # Display a menu with the different applicable rules for the actor.
     #
-    # @param actorId [String] id of the concerned actor.
-    # @param results [Object] the matching rules, stored in arrays and grouped by target ids.
-    _onRuleResolved: (actorId, results) =>
+    # @param args [Object] resolution arguments: 
+    # @option args actorId [String] id of the concerned actor
+    # @option args x [Number] x coordinate of the resolution
+    # @option args y [Number] y coordinate of the resolution
+    # @param results [Object] the matching rules, stored in arrays and grouped by target ids
+    _onRuleResolved: (args, results) =>
+      @$el.find('.menu.rules').remove()
       # retrieve the actor.
-      actor = Item.collection.get actorId
+      actor = Item.collection.get args.actorId
       return unless actor?
       # gets the actor corresponding image
-      img = @$el.find "img.#{actorId}"
+      img = @$el.find "img.#{args.actorId}"
       return if img.length is 0
-      console.log "Display applicable rules for actor #{actorId}"
-      console.dir results
+      str = ''
+      for id, rules of results
+        str += "<li class=\"rule-trigger\" data-target=\"#{id}\" data-name=\"#{rule.name}\">#{rule.name}</li>" for rule in rules
+      if str.length isnt 0
+        $("<div class=\"menu rules\"><ul>#{str}</ul></div>").css
+          left: args.x*@_hexW
+          top: args.y*@_hexH
+        .appendTo @$el
 
   return MapView

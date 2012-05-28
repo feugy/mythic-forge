@@ -1,46 +1,68 @@
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
+Map = require '../main/model/Map'
+Field = require '../main/model/Field'
 service = require('../main/service/GameService').get()
      
 type = null
 item1 = null
 item2 = null
 item3 = null
+map = null
+field1 = null
+field2 = null
 
 module.exports = 
 
   setUp: (end) ->
     # cleans ItemTypes and Items
-    ItemType.collection.drop -> Item.collection.drop -> 
-      # given an item type
-      type = new ItemType {name: 'character'}
-      type.setProperty 'name', 'string', ''
-      type.setProperty 'health', 'integer', 10
-      type.save (err, saved) ->
+    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Field.collection.drop ->
+      # given a map
+      new Map({name: 'test-game'}).save (err, saved) ->
         throw new Error err if err?
-        type = saved
-        new Item({type: type, name: 'Jack', x:0, y:0}).save (err, saved) ->
+        map = saved
+        # given an item type
+        type = new ItemType {name: 'character'}
+        type.setProperty 'name', 'string', ''
+        type.setProperty 'health', 'integer', 10
+        type.save (err, saved) ->
           throw new Error err if err?
-          item1 = saved
-          new Item({type: type, name: 'John', x:10, y:10}).save (err, saved) ->
+          type = saved
+          new Item({map: map, type: type, name: 'Jack', x:0, y:0}).save (err, saved) ->
             throw new Error err if err?
-            item2 = saved
-            new Item({type: type, name: 'Peter'}).save (err, saved) ->
+            item1 = saved
+            new Item({map: map, type: type, name: 'John', x:10, y:10}).save (err, saved) ->
               throw new Error err if err?
-              item3 = saved
-              end()
+              item2 = saved
+              new Item({map: map, type: type, name: 'Peter'}).save (err, saved) ->
+                throw new Error err if err?
+                item3 = saved
+                new Field({map: map, x:5, y:3}).save (err, saved) ->
+                  throw new Error err if err?
+                  field1 = saved
+                  new Field({map: map, x:-2, y:-10}).save (err, saved) ->
+                    throw new Error err if err?
+                    field2 = saved
+                    end()
 
   'should consultMap returned only relevant items': (test) ->
     # when retrieving items within coordinate -5:-5 and 5:5
-    service.consultMap -5, -5, 5, 5, (err, items) ->
+    service.consultMap map._id, -5, -5, 5, 5, (err, items, fields) ->
+      throw new Error "Can't consultMap: #{err}" if err?
       # then only item1 is returned
       test.equal 1, items.length
       test.ok item1.equals items[0]
+      # then only field1 returned
+      test.equal 1, fields.length
+      test.ok field1.equals fields[0]
       test.done()
         
   'should consultMap returned nothing if no item found': (test) ->
     # when retrieving items within coordinate -1:-1 and -5:-5
-    service.consultMap -1, -1, -5, -5, (err, items) ->
+    service.consultMap map._id, -1, -1, -5, -5, (err, items, fields) ->
+      throw new Error "Can't consultMap: #{err}" if err?
       # then no items returned
       test.equal 0, items.length
+      # then no fields returned
+      test.equal 0, fields.length
       test.done()

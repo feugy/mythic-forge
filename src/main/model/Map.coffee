@@ -54,7 +54,7 @@ MapSchema.pre 'save', (next) ->
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
 #
-MapSchema.post 'save', () ->
+MapSchema.post 'save', ->
   # updates the cache
   cache[@_id] = this
   # propagate changes
@@ -62,7 +62,7 @@ MapSchema.post 'save', () ->
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
 #
-MapSchema.post 'remove', () ->
+MapSchema.post 'remove', ->
   # updates the cache
   delete cache[@_id]
   # propagate changes
@@ -70,12 +70,9 @@ MapSchema.post 'remove', () ->
 
 # pre-init middleware: populate the cache
 #
-# @param map [Map] the initialized map.
-# @param next [Function] function that must be called to proceed with other middleware.
-MapSchema.pre 'init', (next, map) ->
+MapSchema.post 'init', ->
   # Store in cache
-  cache[map._id] = map
-  next()
+  cache[@_id] = this
 
 # Export the Class.
 Map = conn.model 'map', MapSchema

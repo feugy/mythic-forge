@@ -1,7 +1,7 @@
 # Prototype TODOs
 
 - Map items and their types
-    - **[done]** CRUD in database
+    - **[done]** CRUD in database (Items, Fields, Maps)
     - Dynamic properties
         - **[done]** declaration and enforcement 
         - **[done]** type-checking
@@ -20,7 +20,7 @@
     - **[done]** rule engine invokation
     - **[done]** rules retrieval
     - **[done]** map items modification propagation
-- Game client
+- **[done]** Game client
     - **[done]** map displayal
-    - rules resolution
-    - application of map items modifications 
+    - **[done]** rules resolution
+    - **[done]** application of map items modifications 

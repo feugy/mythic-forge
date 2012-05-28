@@ -1,5 +1,6 @@
 .map {
   text-align: center;
+  font-family: Verdana, Arial, no-serif;
 }
 
 .map > span {
@@ -8,10 +9,12 @@
   padding: 0;
   font-size: 0;
   display:inline-block;
+}
+.map .perspective {
   -moz-perspective: 600px;
   -webkit-perspective: 600px;
 }
-.map > span > * {
+.map .perspective > * {
   -moz-transform: rotateX(4deg);
   -webkit-transform: rotateX(4deg);
 }
@@ -35,5 +38,22 @@
   position: absolute;
   margin-bottom: -15px;
   -moz-transform: rotateX(54deg);
-  -webkit-transform: rotateX(54deg);
+  -webkit-transform: rotateX(54deg) translateZ(-2px);
+}
+
+.map .menu {
+  position: absolute;
+  font-size: 12px;
+  background-color: #FFF;
+  box-shadow: 0 0 3px #333;
+  padding: 4px;
+  text-align: left;
+}
+.map .menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 5px;
+}
+.map .menu li {
+  cursor: pointer;
 }
