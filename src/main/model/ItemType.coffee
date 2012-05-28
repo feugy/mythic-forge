@@ -1,5 +1,6 @@
 mongoose = require 'mongoose'
 conn = require '../dao/connection'
+logger = require('../logger').getLogger 'model'
 
 # Define the schema for map item types
 ItemTypeSchema = new mongoose.Schema
@@ -8,6 +9,9 @@ ItemTypeSchema = new mongoose.Schema
   properties: 
     type: {}
     default: -> {} # use a function to force instance variable
+
+# local cache.
+cache = {}
 
 # setProperty() adds or updates a property.
 #
@@ -22,6 +26,7 @@ ItemTypeSchema.methods.setProperty = (name, type, def) ->
     when 'object' then def = null
   # Modifiy instances.
   require('./Item').find {type: @_id}, (err, items) =>
+    logger.debug "Update property #{name} of #{items.length} item(s) for type #{@._id}"
     for item in items
       if not(name of item)
         item.set name, def
@@ -38,11 +43,46 @@ ItemTypeSchema.methods.unsetProperty = (name) ->
   @markModified 'properties'
   # Modifiy instances.
   require('./Item').find {type: @_id}, (err, items) =>
+    logger.debug "Remove property #{name} of #{items.length} item(s) for type #{@._id}"
     for item in items
       item.set name, undefined
       delete item._doc[name]
       item.save (err) =>
         throw new Error "Unable to save item #{item._id} of type #{@_id} while removing property #{name}: #{err}" if err?
+
+# This special finder maintains an in-memory cache of types, to faster type retrieval by ids.
+# If the id isn't found in cache, search in database.
+#
+# @param id [String] the type id.
+# @param callback [Function] the callback function, that takes two parameters
+# @option callback err [String] an error string, or null if no error occured
+# @option callback type [ItemType] the found type, or null if no type found for the id
+ItemTypeSchema.statics.findCached = (id, callback) ->
+  # first look in the cache
+  return callback null, cache[id] if id of cache
+  # nothing in the cache: search in database
+  @findOne {_id: id}, callback
+
+# post-save middleware: now that the instance was properly saved, update the cache.
+#
+ItemTypeSchema.post 'save', () ->
+  # updates the cache
+  cache[@_id] = this
+
+# post-remove middleware: now that the instace was properly removed, update the cache.
+#
+ItemTypeSchema.post 'remove', () ->
+  # updates the cache
+  delete cache[@_id]
+
+# pre-init middleware: populate the cache
+#
+# @param type [ItemType] the initialized type.
+# @param next [Function] function that must be called to proceed with other middleware.
+ItemTypeSchema.pre 'init', (next, type) ->
+  # Store in cache
+  cache[type._id] = type
+  next()
 
 # Export the Class.
 module.exports = conn.model 'itemType', ItemTypeSchema

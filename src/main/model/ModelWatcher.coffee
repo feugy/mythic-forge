@@ -16,24 +16,25 @@ class _ModelWatcher extends EventEmitter
   # For update, only the _id, type's _id and modified fields are propagated.
   #
   # @param operation [String] one of "creation", "update" or "deletion"
+  # @param className [String] classname of the modified instance
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
-  change: (operation, instance, modified) =>
+  change: (operation, className, instance, modified) =>
     parameter = {}
     parameter[key] = value for own key,value of instance._doc
+    # do not embed the linked map and type for items and fields
+    parameter.type = parameter.type?._id if className is 'Item'
+    parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
     if operation is 'update'
       # for update, only emit modified datas
       parameter = 
         _id: instance._id
-        type: instance.type?._id
       parameter[path] = instance.get path for path in modified
-    else if operation is 'creation' or 'deletion'
-      parameter.type = parameter.type?._id
-    else 
+    else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
 
     logger.debug "change propagation: #{operation} of instance #{parameter._id}"
-    @emit 'change', operation, parameter
+    @emit 'change', operation, className, parameter
 
 class ModelWatcher
   _instance = undefined

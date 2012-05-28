@@ -150,8 +150,9 @@ module.exports =
     'should existing items be updated when setting a type property': (test) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation, instance)->
+      watcher.on 'change', (operation, className, instance)->
         updates.push instance._id+''
+        test.equal 'Item', className
         test.equal 'update', operation
         test.equal 30, instance.depth
 
@@ -170,7 +171,8 @@ module.exports =
     'should existing items be updated when removing a type property': (test) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation, instance)->
+      watcher.on 'change', (operation,className, instance)->
+        test.equal 'Item', className
         test.equal 'update', operation
         updates.push instance._id+''
         test.ok instance.color is undefined

@@ -22,30 +22,31 @@ module.exports =
     item = new Item {x: 10, y:-3, type:type}
 
     # then a creation event was issued
-    watcher.once 'change', (operation, instance)->
+    watcher.once 'change', (operation, className, instance)->
+      test.equal 'Item', className
       test.equal 'creation', operation
       test.ok item.equals instance
 
     # when saving it
     item.save (err) ->
-      if err? 
-        test.fail "Can't save item: #{err}"
-        return test.done()
+      throw new Error "Can't save item: #{err}" if err?
 
       # then it is in mongo
       Item.find {}, (err, docs) ->
+        throw new Error "Can't find item: #{err}" if err?
         # then it's the only one document
         test.equal docs.length, 1
         # then it's values were saved
         test.equal 10, docs[0].get 'x'
         test.equal -3, docs[0].get 'y'
-        test.expect 5
+        test.expect 6
         test.done()
 
   'should new item have default properties values': (test) ->
     # when creating an item of this type
     item = new Item {type: type}
     item.save (err)->
+      throw new Error "Can't save item: #{err}" if err?
       # then the default value was set
       test.equal 100, item.get 'rocks'
       test.done()
@@ -58,23 +59,27 @@ module.exports =
 
     'should item be removed': (test) ->
       # then a removal event was issued
-      watcher.once 'change', (operation, instance)->
+      watcher.once 'change', (operation, className, instance)->
+        test.equal 'Item', className
         test.equal 'deletion', operation
         test.ok item.equals instance
 
       # when removing an item
       item.remove ->
 
-        # then it's in mongo anymore
+        # then it's not in mongo anymore
         Item.find {}, (err, docs) ->
+          throw new Error "Can't find item: #{err}" if err?
           test.equal docs.length, 0
-          test.expect 3
+          test.expect 4
           test.done()
 
     'should item be updated': (test) ->
       # then a modification event was issued
-      watcher.once 'change', (operation, instance)->
+      watcher.once 'change', (operation, className, instance)->
+        test.equal 'Item', className
         test.equal 'update', operation
+        test.equal 'Item', className
         test.ok item.equals instance
         test.equal -100, instance.x
 
@@ -83,17 +88,19 @@ module.exports =
       item.save ->
 
         Item.find {}, (err, docs) ->
+          throw new Error "Can't find item: #{err}" if err?
           # then it's the only one document
           test.equal docs.length, 1
           # then only the relevant values were modified
           test.equal -100, docs[0].get 'x'
           test.equal 300, docs[0].get 'y'
-          test.expect 6
+          test.expect 8
           test.done()
 
     'should dynamic property be modified': (test) ->
       # then a modification event was issued
-      watcher.once 'change', (operation, instance)->
+      watcher.once 'change', (operation, className, instance)->
+        test.equal 'Item', className
         test.equal 'update', operation
         test.ok item.equals instance
         test.equal 200, instance.rocks
@@ -103,11 +110,12 @@ module.exports =
       item.save ->
 
         Item.findOne {_id: item._id}, (err, doc) ->
+          throw new Error "Can't find item: #{err}" if err?
           # then only the relevant values were modified
           test.equal 150, doc.get 'x'
           test.equal 300, doc.get 'y'
           test.equal 200, doc.get 'rocks'
-          test.expect 6
+          test.expect 7
           test.done()
 
     'should item cannot be saved with unknown property': (test) ->
@@ -129,21 +137,21 @@ module.exports =
         Item.collection.drop -> 
           item = new Item {name: 'Rhône', end: null, type: type, affluents:[]}
           item.save (err, saved) ->
-            throw new Error(err) if err?
+            throw new Error err  if err?
             item = saved
             item2 = new Item {name: 'Durance', end: item, type: type, affluents:[]}
             item2.save (err, saved) -> 
-              throw new Error(err) if err?
+              throw new Error err  if err?
               item2 = saved
               item.set 'affluents', [item2]
               item.save (err) ->
-                throw new Error(err) if err?
+                throw new Error err  if err?
                 end()
 
     'should id be stored for linked object': (test) ->
       # when retrieving an item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
-        test.ifError err
+        throw new Error "Can't find item: #{err}" if err?
         # then linked items are replaced by their ids
         test.ok item._id.equals doc.get('end')
         test.done();
@@ -151,7 +159,7 @@ module.exports =
     'should ids be stored for linked arrays': (test) ->
       # when resolving an item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
-        test.ifError err
+        throw new Error "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
         test.equal 1, doc.get('affluents').length
         test.ok item2._id.equals doc.get('affluents')[0]
@@ -160,10 +168,10 @@ module.exports =
     'should resolve retrieves linked objects': (test) ->
       # given a unresolved item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
-        test.ifError err
+        throw new Error "Can't find item: #{err}" if err?
         # when resolving it
         doc.resolve (err, doc) ->
-          test.ifError err
+          throw new Error "Can't resolve links: #{err}" if err?
           # then linked items are provided
           test.ok item._id.equals doc.get('end')._id
           test.equal item.get('name'), doc.get('end').get('name')
@@ -174,10 +182,10 @@ module.exports =
     'should resolve retrieves linked arrays': (test) ->
       # given a unresolved item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
-        test.ifError err
+        throw new Error "Can't find item: #{err}" if err?
         # when resolving it
         doc.resolve (err, doc) ->
-          test.ifError err
+          throw new Error "Can't resolve links: #{err}" if err?
           # then linked items are provided
           test.equal 1, doc.get('affluents').length
           linked = doc.get('affluents')[0]
@@ -190,10 +198,10 @@ module.exports =
     'should multi-resolve retrieves all properties of all objects': (test) ->
       # given a unresolved items
       Item.where().asc('name').run (err, docs) ->
-        test.ifError err
+        throw new Error "Can't find item: #{err}" if err?
         # when resolving them
         Item.multiResolve docs, (err, docs) ->
-          test.ifError err
+          throw new Error "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
           test.ok item._id.equals docs[0].get('end')._id
           test.equal item.get('name'), docs[0].get('end').get('name')

@@ -1,6 +1,7 @@
 mongoose = require 'mongoose'
 conn = require '../dao/connection'
 ItemType = require './ItemType'
+Map = require './Map'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 
@@ -17,12 +18,21 @@ modifiedPaths = {}
 # Do not use strict schema, because ItemType will add dynamic fields, and will because
 # we manually check the field existence with the save middleware.
 ItemSchema = new mongoose.Schema({
-    uid: ObjectId
-    mapId: ObjectId
-    x: {type: Number, default: null}
-    y: {type: Number, default: null}
-    imageNum: {type: Number, default: 0}
-    type: {type: {}, required: true}
+    # link to map
+    map: {}
+    x: 
+      type: Number
+      default: null
+    y: 
+      type: Number
+      default: null
+    imageNum: 
+      type: Number
+      default: 0
+    # link to type
+    type: 
+      type: {}
+      required: true
   }, {strict:false})
 
 # Override the equals() method defined in Document, to check correctly the equality between _ids, 
@@ -201,21 +211,24 @@ ItemSchema.pre 'save', (next) ->
   # replace links by them _ids
   processLinks this, properties
   # replace type with its id, for storing in Mongo, without using setters.
-  save = @type
-  @_doc.type = @type._id
+  saveType = @type
+  saveMap = @map
+  @_doc.type = saveType?._id
+  @_doc.map = saveMap?._id
   next()
   # restore save to allow reference reuse.
-  @_doc.type = save
+  @_doc.type = saveType
+  @_doc.map = saveMap
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
 #
 ItemSchema.post 'save', () ->
-  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), this, modifiedPaths[@_id]
+  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Item', this, modifiedPaths[@_id]
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
 #
 ItemSchema.post 'remove', () ->
-  modelWatcher.change 'deletion', this
+  modelWatcher.change 'deletion', 'Item', this
 
 # pre-init middleware: retrieve the type corresponding to the stored id.
 #
@@ -223,13 +236,20 @@ ItemSchema.post 'remove', () ->
 # @param next [Function] function that must be called to proceed with other middleware.
 # Calling it with an argument indicates the the validation failed and cancel the item save.
 ItemSchema.pre 'init', (next, item) ->
-  # loads the type
-  ItemType.findOne {_id: item.type}, (err, type) ->
-    return next(new Error "Unable to save item #{item._id}. Error while resolving its type: #{err}") if err?
-    return next(new Error "Unable to save item #{item._id} because there is no type with id #{item.type}") unless type?    
+  # loads the type from local cache
+  ItemType.findCached item.type, (err, type) ->
+    return next(new Error "Unable to init item #{item._id}. Error while resolving its type: #{err}") if err?
+    return next(new Error "Unable to init item #{item._id} because there is no type with id #{item.type}") unless type?    
     # Do the replacement.
     item.type = type
-    next();
+    next() unless item.map?
+    Map.findCached item.map, (err, map) ->
+      return next(new Error "Unable to init item #{item._id}. Error while resolving its map: #{err}") if err?
+      return next(new Error "Unable to init item #{item._id} because there is no map with id #{item.map}") unless map?    
+      # Do the replacement.
+      item.map = map
+      next()
+
 
 # Export the Class.
 Item = conn.model 'item', ItemSchema

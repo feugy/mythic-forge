@@ -17,7 +17,7 @@ ext = utils.confKey 'executable.extension','.coffee'
 # @param forceRemove [boolean] if specifed and true, first erase the folder.
 createPath = (folderPath, forceRemove) ->
   # force Removal if specified
-  if forceRemove
+  if forceRemove and path.existsSync folderPath
     files = fs.readdirSync folderPath
     fs.unlinkSync path.join folderPath, file for file in files
     fs.rmdirSync folderPath 

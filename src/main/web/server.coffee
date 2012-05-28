@@ -48,9 +48,9 @@ io.of('/game').on 'connection', (socket) ->
 # @see {ModelWatcher.change}
 updateNS = io.of('/updates')
 
-watcher.on 'change', (operation, instance) ->
+watcher.on 'change', (operation, className, instance) ->
   logger.debug "broadcast of #{operation} on #{instance._id}"
-  updateNS.emit operation, instance
+  updateNS.emit operation, className, instance
 
 # on-the-fly express compilation and static file configuration
 publicFolder = path.join __dirname, '../../../src/game'

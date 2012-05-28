@@ -15,9 +15,8 @@ module.exports =
 
   setUp: (end) ->
     # Empties the compilation and source folders content
-    testUtils.cleanFolder utils.confKey('executable.target'), (err) -> 
-      testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
-        end()
+    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+      Executable.resetAll -> end()
 
   'given 3 items and a dumb rule':
     setUp: (end) ->
@@ -183,7 +182,7 @@ module.exports =
               # given the rules that are applicable for a target 
               service.resolve item1._id, item2._id, (err, results)->
                 throw new Error "Unable to resolve rules: #{err}" if err?
-                throw new Error 'the rule 2 was not resolved' if results[item2._id].length isnt 1
+                throw new Error 'the rule 3 was not resolved' if results[item2._id].length isnt 1
 
                 # when executing this rule on that target
                 service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->

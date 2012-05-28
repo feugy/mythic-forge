@@ -110,8 +110,8 @@ module.exports =
       'given a rule':
         setUp: (end) ->
           # Empties the compilation and source folders content
-          testUtils.cleanFolder utils.confKey('executable.target'), (err) -> 
-            testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+          testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+            Executable.resetAll -> 
               script = new Executable 'rename', """Rule = require '../main/model/Rule'
                 Item = require '../main/model/Item'
 
@@ -161,20 +161,23 @@ module.exports =
             socket.once 'executeRule-resp', (err, result) ->
               throw new Error err if err?
               test.equal 'target renamed', result
-              test.expect 7
+              test.expect 10
               test.done()
 
             # then an deletion is received for jack
-            socket2.once 'deletion', (item) ->
+            socket2.once 'deletion', (className, item) ->
+              test.equal 'Item', className
               test.ok john.equals item
 
             # then an creation is received for peter
-            socket2.on 'creation', (item) ->
+            socket2.on 'creation', (className, item) ->
+              test.equal 'Item', className
               test.equal 'Peter', item.name
 
             # then an update is received on john's name
-            socket2.once 'update', (item) ->
+            socket2.once 'update', (className, item) ->
               test.ok jack._id.equals item._id
+              test.equal 'Item', className
               test.equal 'Joe', item.name
 
             # when executing the rename rule for john on jack
