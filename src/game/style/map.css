@@ -38,7 +38,7 @@
   position: absolute;
   margin-bottom: -15px;
   -moz-transform: rotateX(54deg);
-  -webkit-transform: rotateX(54deg) translateZ(-2px);
+  -webkit-transform: rotateX(54deg);
 }
 
 .map .menu {

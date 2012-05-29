@@ -41,6 +41,9 @@ define [
     # The router will act as an event bus.
     router: null
 
+    # The images loader
+    imagesLoader: null
+
     # the selected item. Null until an item is selected
     # the `selectedChanged` event is emitted when this attribute changes.
     selected: null
@@ -73,6 +76,8 @@ define [
     # The view constructor.
     #
     # @param options [Object] view's attributes. 
+    # @option options router [Router] the event bus
+    # @option options imagesLoader [ImagesLoader] the images loader
     # @option options originX [Number] displayed game coordinate abscissa   
     # @option options originY [Number] displayed game coordinate ordinate
     constructor: (options) ->
@@ -81,7 +86,9 @@ define [
       @collection.on 'add', @displayItem
       @collection.on 'update', @displayItem
       @router = options.router
+      @imagesLoader = options.imagesLoader
       @router.on 'rulesResolved', @_onRuleResolved
+      @router.on 'imageLoaded', @_onImageLoaded
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # draw a canvas with hexagons and coordinates.
@@ -171,9 +178,10 @@ define [
       console.log "display on map #{item.get('_id')} #{item.get('name')} at #{item.get('x')}:#{item.get('y')}"
 
       # creates an image 
-      img = $ "<img data-id=\"#{item.id}\" \
-          class=\"item #{item.id} #{item.get('type')._id}\" \
-          src=\"assets/#{item.get 'imageNum'}.png\"/>"
+      src = "#{@router.origin}/assets/#{item.get 'imageNum'}.png"
+      img = $ "<img data-src=\"#{src}\" data-id=\"#{item.id}\" class=\"item #{item.id} #{item.get('type')._id}\"/>"
+      @imagesLoader.load src
+
       @_itemsLayer.append img
       # depth correction
       x = item.get 'x'
@@ -309,5 +317,31 @@ define [
           left: args.x*@_hexW
           top: args.y*@_hexH
         .appendTo @$el
+
+    # Handler of image loading. Displays image on the map.
+    #
+    # @param success [Boolean] true if the image was correctly loaded
+    # @param url [String] the image url
+    # @param imageData [Object] if success, the image binary data
+    _onImageLoaded: (success, url, imageData) =>
+      if success
+        imgs = @$el.find "img[data-src=\"#{url}\"]"
+        for img in imgs
+          img = $(img)
+          clone = $(imageData).clone()
+          clone.attr 'class', img.attr 'class'
+          clone.data 'id', img.data 'id'
+          clone.css 
+            left: img.css 'left'
+            bottom: img.css 'bottom'
+            # because of Chrome strange behaviour
+            display: 'none'
+            '-moz-transform': img.css '-moz-transform'
+            '-webkit-transform': img.css '-webkit-transform'
+          img.replaceWith clone
+          # because of Chrome strange behaviour
+          do (clone) ->
+            setTimeout (-> clone.css 'display', ''), 20
+          
 
   return MapView
