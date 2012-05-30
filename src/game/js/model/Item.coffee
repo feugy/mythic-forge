@@ -1,4 +1,7 @@
-define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
+define [
+  'backbone'
+  'model/sockets'
+], (Backbone, sockets) ->
 
   # Client cache of items.
   # Wired to the server through socket.io

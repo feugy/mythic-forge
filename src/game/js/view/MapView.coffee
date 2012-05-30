@@ -1,6 +1,6 @@
 define [
-  'lib/backbone'
-  'lib/jquery'
+  'backbone'
+  'jquery'
   'model/Item'
   'model/Field'
 ], (Backbone, $, Item, Field) ->
@@ -98,15 +98,15 @@ define [
         collection.on 'update', @displayElement
       @router.on 'rulesResolved', @_onRuleResolved
       @router.on 'imageLoaded', @_onImageLoaded
-      # consult the map content.      
-      @map.consult {x: @originX, y: @originY}, {x: @originX+10, y: @originY+10}
+      @router.on 'key', @_onKeyUp
 
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # draw a canvas with hexagons and coordinates.
     render: =>
+      # consult the map content.      
+      @map.consult {x: @originX, y: @originY}, {x: @originX+10, y: @originY+10}
       @$el.empty()
-      console.log "Render map view #{@cid}"
       # horizontal hexagons: side length of an hexagon.
       s = 50
       # dimensions of the square that embed an hexagon.
@@ -423,5 +423,45 @@ define [
       ctx.lineTo x+@_hexW*.5, y
       ctx.strokeStyle = '#f00'
       ctx.stroke()
+
+    # Key handler. Trigger the move rule on adjacent fields if possible.
+    #
+    # @param key [Object] description of the key press.
+    # @option key code [Number] key code pressed
+    # @option key shift [Boolean] true id shift is pressed
+    # @option key ctrl [Boolean] true id control is pressed
+    # @option key meta [Boolean] true id meta is pressed
+    _onKeyUp: (key) =>
+      return unless @selected?
+      targetId = null
+      pos = 
+        x: @selected.get 'x'
+        y: @selected.get 'y'
+      switch key.code
+        # numpad 1
+        when 97 
+          pos.x-- if pos.y % 2 is 0
+          pos.y++
+        # numpad 4
+        when 100 then pos.x--
+        # numpad 7
+        when 103
+          pos.x-- if pos.y % 2 is 0
+          pos.y--
+        # numpad 3
+        when 99
+          pos.x++ if pos.y % 2 is 1
+          pos.y++
+        # numpad 6
+        when 102 then pos.x++
+        # numpad 9
+        when 105
+          pos.x++ if pos.y % 2 is 1
+          pos.y--
+        else 
+          return
+      # trigger the rule move if possible.
+      targets = Field.collection.where pos
+      @router.trigger 'executeRule', 'move', @selected.id, targets[0].id if targets.length is 1
 
   return MapView

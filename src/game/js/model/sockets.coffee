@@ -1,5 +1,5 @@
 define [
-  'lib/socket.io'
+  'socket.io'
 ], (io) ->
   origin = (''+window.location).replace window.location.pathname, ''
   

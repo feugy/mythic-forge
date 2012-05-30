@@ -1,5 +1,5 @@
 define [
-  'lib/backbone'
+  'backbone'
   'model/sockets'
 ], (Backbone, sockets) ->
 
