@@ -144,7 +144,7 @@ class _RuleService
   # @return an array (may be empty) of modified items
   _filterModified: (item, modified) =>
     # do not process if not an item
-    return unless item.type?
+    return unless item instanceof Item
     # do not process if already known
     return if item in modified 
     # will be save if at least one path is modified

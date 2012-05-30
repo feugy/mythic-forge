@@ -1,42 +1,38 @@
 define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
 
-  # Client cache of items.
+  # Client cache of fields.
   # Wired to the server through socket.io
-  class Items extends Backbone.Collection
+  class Fields extends Backbone.Collection
 
     constructor: (@model, @options) ->
       super model, options
       # connect server response callbacks
       sockets.updates.on 'update', @_onUpdate
 
-    # Provide a custom sync method to wire Items to the server.
-    # Allows to retrieve items by coordinates.
+    # Provide a custom sync method to wire Maps to the server.
+    # Not implemented
     #
     # @param method [String] the CRUD method ("create", "read", "update", or "delete")
     # @param collection [Items] the current collection
     # @param args [Object] arguments
-    # @option args lowX [Number] abscissa lower bound (included)
-    # @option args lowY [Number] ordinate lower bound (included)
-    # @option args upX [Number] abscissa upper bound (included)
-    # @option args upY [Number] ordinate upper bound (included)  
-    sync: (method, instance, args) =>
-      throw new Error "Unsupported #{method} operation on Items"
+    sync: (method, instance, args) => 
+      throw new Error "Unsupported #{method} operation on Fields"
 
     # **private**
     # Callback invoked when a database update is received.
     #
     # @param className [String] the modified object className
-    # @param changes [Object] new changes for a given item.
+    # @param changes [Object] new changes for a given field.
     _onUpdate: (className, changes) =>
-      return unless className is 'Item'
-      # first, get the cached item and quit if not found
-      item = @get changes._id
-      return unless item?
+      return unless className is 'Field'
+      # first, get the cached field and quit if not found
+      field = @get changes._id
+      return unless field?
       # then, update the local cache.
       for key, value of changes
-        item.set key, value if key isnt '_id' and key isnt 'type'
+        field.set key, value if key isnt '_id'
       # emit a change.
-      @trigger 'update', item
+      @trigger 'update', field
 
 
     # Override of the inherited method to disabled default behaviour.
@@ -44,18 +40,18 @@ define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
     reset: =>
 
 
-  # Modelisation of a single Item.
-  # Not wired to the server : use collections Items instead
-  class Item extends Backbone.Model
+  # Modelisation of a single Field.
+  # Not wired to the server : use collections Fields instead
+  class Field extends Backbone.Model
 
-    # item local cache.
-    # A Backbone.Collection subclass that handle Items retrieval with `fetch()`
-    @collection = new Items @
+    # field local cache.
+    # A Backbone.Collection subclass that handle Fields retrieval with `fetch()`
+    @collection = new Fields @
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
 
-    # Item constructor.
+    # Field constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
@@ -63,9 +59,9 @@ define ['lib/backbone', 'model/sockets'], (Backbone, sockets) ->
 
     # An equality method that tests ids.
     #
-    # @param other [Object] the object against which the current item is tested
+    # @param other [Object] the object against which the current field is tested
     # @return true if both object have the samge ids, and false otherwise.
     equals: (other) =>
       @.id is other?.id
 
-  return Item
+  return Field
