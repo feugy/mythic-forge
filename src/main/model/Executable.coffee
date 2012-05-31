@@ -27,7 +27,7 @@ createPath = (folderPath, forceRemove) ->
       fs.mkdirSync folderPath
       logger.info "Executable folder '#{folderPath}' successfully created"
     catch err
-      throw "Unable to create the Executable #{name} folder '#{folderPath}': #{err}"
+      throw "Unable to create the Executable folder '#{folderPath}': #{err}"
 
 createPath root
 
