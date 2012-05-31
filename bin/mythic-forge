@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+
+// Launches the static server on the 80 port
+require('../lib/main/web/staticServer').listen(80);
+// And the application server on port 443
+require('../lib/main/web/server').listen(443);

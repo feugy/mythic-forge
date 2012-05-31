@@ -26,7 +26,7 @@
     "postinstall": "coffee.cmd --compile --output lib src"
   },
   "bin": {
-    "server": "./bin/server"
+    "mythic-forge": "./bin/mythic-forge"
   },
   "licence": "LGPL v3"
 }

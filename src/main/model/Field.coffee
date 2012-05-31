@@ -4,8 +4,6 @@ modelWatcher = require('./ModelWatcher').get()
 Map = require './Map'
 logger = require('../logger').getLogger 'model'
 
-ObjectId = mongoose.Schema.ObjectId
-
 # We use the post-save middleware to propagate creation and saves.
 # But within this function, all instances have lost their "isNew" status
 # thus we store that status from the pre-save middleware, to use it in the post-save

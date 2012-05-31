@@ -4,6 +4,8 @@ logLevels:
   model: warn
   web: warn
 
+# SSL certificates. Do not specify them to use plain Http.
+
 # MongoDB connection
 mongo:
   host: localhost

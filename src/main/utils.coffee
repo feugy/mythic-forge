@@ -39,7 +39,7 @@ module.exports =
   # before any other operation. The configuration is then cached.
   # 
   # The configuration file read is named 'xxx-conf.yaml', where xxx is the value of NODE_ENV (dev if not defined) 
-  # and located in the current execution folder
+  # and located in a "conf" folder under the execution root.
   #
   # @param key [String] the path to the requested key, splited with dots.
   # @param def [Object] the default value, used if key not present. 
@@ -47,7 +47,7 @@ module.exports =
   # @return the expected key.
   confKey: (key, def) ->
     if conf is null
-      confPath = pathUtil.resolve "./#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
+      confPath = pathUtil.resolve "./conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
       try 
         conf = yaml.load fs.readFileSync confPath, 'utf8'
       catch err
@@ -59,7 +59,7 @@ module.exports =
     for step, i in path
       unless step of obj
         # missing key or step
-        throw new Error "The #{key} key is not defined in the configuration file" unless def?
+        throw new Error "The #{key} key is not defined in the configuration file" if def is undefined
         return def
       unless i is last
         # goes deeper

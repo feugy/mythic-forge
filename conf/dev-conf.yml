@@ -4,6 +4,11 @@ logLevels:
   model: warn
   web: warn
 
+# SSL certificates. Do not specify them to use plain Http.
+ssl:
+  certificate: conf/ssl/localhost.crt
+  key: conf/ssl/localhost.key
+
 # MongoDB connection
 mongo:
   host: localhost
@@ -11,5 +16,5 @@ mongo:
 
 # Executable scripts
 executable:
-  source: D:/Programmation/Workspace2/mythic-forge-proto/game
+  source: D:/Programmation/Workspace2/proto-game
   target: D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled

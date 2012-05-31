@@ -4,6 +4,12 @@ logLevels:
   model: warn
   web: warn
 
+# SSL certificates. Do not specify them to use plain Http.
+ssl:
+  certificate: conf/ssl/www.mythic-forge.com.crt
+  key: conf/ssl/www.mythic-forge.com.key
+  ca: conf/ssl/www.mythic-forge.com.ca
+
 # MongoDB connection
 mongo:
   host: localhost

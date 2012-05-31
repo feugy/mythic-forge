@@ -8,6 +8,9 @@
         - **[done]** links resolution at server side
         - links resolution at client side
     - **[done]** Modifications propagation
+- Player
+    - CRUD in database
+    - authentication
 - Rule engine 
     - **[done]** file system storage and compilation
     - **[done]** runtime resolution and execution at server side
@@ -15,12 +18,16 @@
     - **[done]** items creation and removal
     - **[done]** items updates
     - transactional behaviour
-- **[done]** Web layer
+    - turn rules
+- Web layer
     - **[done]** map items CRUD invokation
     - **[done]** rule engine invokation
     - **[done]** rules retrieval
     - **[done]** map items modification propagation
-- **[done]** Game client
+    - secured websocket
+- Game client
     - **[done]** map displayal
     - **[done]** rules resolution
     - **[done]** application of map items modifications 
+    - create a new player and display its map
+    - bot mode

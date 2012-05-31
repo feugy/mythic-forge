@@ -1,4 +1,0 @@
-#!/usr/bin/env node
-
-// Just launches the server on the 80 port
-require('../lib/main/web/server').listen(80);

@@ -1,12 +1,29 @@
 logger = require('../logger').getLogger 'web'
 express = require 'express'
-gameService = require('../service/GameService').get()
-path = require 'path'
+utils = require '../utils'
 fs = require 'fs'
-# creates a single server, and configure socket.io with it.
-app = express.createServer()
-io = require('socket.io').listen app, {logger: logger}
+gameService = require('../service/GameService').get()
 watcher = require('../model/ModelWatcher').get()
+
+# If an ssl certificate is found, use it.
+app = null
+certPath = utils.confKey 'ssl.certificate', null
+keyPath = utils.confKey 'ssl.key', null
+if certPath? and keyPath?
+  caPath = utils.confKey 'ssl.ca', null
+  logger.info "use SSL certificates: #{certPath}, #{keyPath} and #{if caPath? then caPath else 'no certificate chain'}"
+  # Creates the server with SSL certificates
+  opt = 
+    cert: fs.readFileSync(certPath).toString()
+    key: fs.readFileSync(keyPath).toString()
+  opt.ca = fs.readFileSync(caPath).toString() if caPath?
+  app = express.createServer opt
+else 
+  # Creates a plain web server
+  app = express.createServer()
+
+# Configure socket.io with it
+io = require('socket.io').listen app, {logger: logger}
 
 # `GET /konami`
 #
@@ -51,22 +68,6 @@ updateNS = io.of('/updates')
 watcher.on 'change', (operation, className, instance) ->
   logger.debug "broadcast of #{operation} on #{instance._id}"
   updateNS.emit operation, className, instance
-
-# on-the-fly express compilation and static file configuration
-publicFolder = path.join __dirname, '../../../src/game'
-app.use express.compiler
-    src: publicFolder,
-    dest: publicFolder,
-    enable: ['coffeescript']
-# js, images and style files will be statically served...
-app.use '/js', express.static path.join publicFolder, 'js'
-app.use '/assets', express.static path.join publicFolder, 'assets'
-app.use '/style', express.static path.join publicFolder, 'style'
-## ...but SPA root need to be treaten differently, because of pushState
-app.get '*', (req, res, next) ->
-  if req.url.indexOf('/js') is 0 or req.url.indexOf('/assets') is 0 or req.url.indexOf('/style') is 0
-    return next()
-  fs.createReadStream(path.join(publicFolder, 'index.html')).pipe res
 
 # Exports the application.
 module.exports = app
