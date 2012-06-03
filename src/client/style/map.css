@@ -1,18 +1,15 @@
 .map {
   text-align: center;
   font-family: Verdana, Arial, no-serif;
-}
-
-.map > span {
-  position: relative;
   margin-top: 50px;
   padding: 0;
   font-size: 0;
-  display:inline-block;
 }
 .map .perspective {
   -moz-perspective: 600px;
   -webkit-perspective: 600px;
+  position: relative;
+  display: inline-block;
 }
 .map .perspective > * {
   -moz-transform: rotateX(4deg);

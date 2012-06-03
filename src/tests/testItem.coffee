@@ -79,7 +79,6 @@ module.exports =
       watcher.once 'change', (operation, className, instance)->
         test.equal 'Item', className
         test.equal 'update', operation
-        test.equal 'Item', className
         test.ok item.equals instance
         test.equal -100, instance.x
 
@@ -94,7 +93,7 @@ module.exports =
           # then only the relevant values were modified
           test.equal -100, docs[0].get 'x'
           test.equal 300, docs[0].get 'y'
-          test.expect 8
+          test.expect 7
           test.done()
 
     'should dynamic property be modified': (test) ->

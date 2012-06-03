@@ -3,6 +3,7 @@ express = require 'express'
 utils = require '../utils'
 fs = require 'fs'
 gameService = require('../service/GameService').get()
+playerService = require('../service/PlayerService').get()
 watcher = require('../model/ModelWatcher').get()
 
 # If an ssl certificate is found, use it.
@@ -32,14 +33,13 @@ io = require('socket.io').listen app, {logger: logger}
 app.get '/konami', (req, res) ->
   res.send '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
 
-# socket.io `game` namespace 
+# This methods exposes all service methods in a given namespace.
 #
-# configure the differents message allowed
-# 'game' namespace is associated to GameService
-# @see {GameService.consultMap}
-io.of('/game').on 'connection', (socket) ->
-  # exposes all gameService methods
-  for method of gameService.__proto__
+# @param service [Object] the service instance which is exposed.
+# @param socket [Object] the socket namespace that will expose service methods.
+exposeMethods = (service, socket) ->
+  # exposes all methods
+  for method of service.__proto__
     do(method) ->
       socket.on method, ->
         # add return callback to incoming arguments
@@ -54,7 +54,23 @@ io.of('/game').on 'connection', (socket) ->
 
         # invoke the service layer with arguments 
         logger.debug "processing #{method} message with arguments #{originalArgs}"
-        gameService[method].apply gameService, args
+        service[method].apply service, args
+
+# socket.io `game` namespace 
+#
+# configure the differents message allowed
+# 'game' namespace is associated to GameService
+# @see {GameService}
+io.of('/game').on 'connection', (socket) ->
+  exposeMethods gameService, socket
+
+# socket.io `player` namespace 
+#
+# configure the differents message allowed
+# 'player' namespace is associated to PlayerService
+# @see {PlayerService}
+io.of('/player').on 'connection', (socket) ->
+  exposeMethods playerService, socket
 
 # socket.io `updates` namespace 
 #

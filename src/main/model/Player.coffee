@@ -18,6 +18,14 @@ PlayerSchema = new mongoose.Schema
     default: null
 
 
+# Override the equals() method defined in Document, to check correctly the equality between _ids, 
+# with their `equals()` method and not with the strict equality operator.
+#
+# @param other [Object] other object against which the current object is compared
+# @return true if both objects have the same _id, false otherwise
+PlayerSchema.methods.equals = (object) ->
+  @_id.equals object?._id
+
 # We use the post-save middleware to propagate creation and saves.
 # But within this function, all instances have lost their "isNew" status
 # thus we store that status from the pre-save middleware, to use it in the post-save

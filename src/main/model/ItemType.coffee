@@ -16,7 +16,7 @@ cache = {}
 # setProperty() adds or updates a property.
 #
 # @param name [String] the unic name of the property.
-# @param type [Object] primitive type of the property's values 
+# @param type [String] primitive type of the property's values. Could be: string, text, boolean, integer, float, date, array or object
 # @param def [Object] default value affected to the type instances.
 ItemTypeSchema.methods.setProperty = (name, type, def) ->
   @get('properties')[name] = {type: type, def: def}

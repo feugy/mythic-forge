@@ -9,8 +9,8 @@
         - links resolution at client side
     - **[done]** Modifications propagation
 - Player
-    - CRUD in database
-    - authentication
+    - **[done]** CRUD in database
+    - **[done]** connection
 - Rule engine 
     - **[done]** file system storage and compilation
     - **[done]** runtime resolution and execution at server side
@@ -24,7 +24,7 @@
     - **[done]** rule engine invokation
     - **[done]** rules retrieval
     - **[done]** map items modification propagation
-    - secured websocket
+    - **[done]** secured websocket
 - Game client
     - **[done]** map displayal
     - **[done]** rules resolution

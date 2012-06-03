@@ -1,6 +1,7 @@
 server = require '../main/web/server'
 socketClient = require 'socket.io-client'
 Item = require '../main/model/Item'
+Player = require '../main/model/Player'
 Map = require '../main/model/Map'
 ItemType = require '../main/model/ItemType'
 Executable = require '../main/model/Executable'
@@ -15,6 +16,7 @@ jack = null
 john = null
 script = null
 map = null
+player = null
 
 module.exports = 
 
@@ -190,6 +192,43 @@ module.exports =
 
           # when resolving rules for john on jack
           socket.emit 'resolveRules', john._id, jack._id
+
+    'given a player':
+
+      setUp: (end) ->
+        Player.collection.drop -> 
+          new Player({login:'Léo'}).save (err, saved) ->
+            throw new Error err if err?
+            player = saved 
+            end()
+
+      'should player log-in': (test) ->
+        # given several connected socket.io clients
+        socket = socketClient.connect "#{rootUrl}/player"
+
+        # then the player is returned
+        socket.once 'getByLogin-resp', (err, account, item) ->
+          throw new Error err if err?
+          test.ok player.equals account
+          test.ok null is item
+          test.done()
+
+        # when login with the existing account
+        socket.emit 'getByLogin', player.get 'login'
+
+      'should new player register' : (test) ->
+        # given several connected socket.io clients
+        socket = socketClient.connect "#{rootUrl}/player"
+
+        # then the player is created
+        socket.once 'register-resp', (err, account) ->
+          throw new Error err if err?
+          test.equal 'Loïc', account.login
+          test.ok null is account.characterId
+          test.done()
+
+        # when creating a new account
+        socket.emit 'register', 'Loïc'
 
   tearDown: (end) ->
     server.close()

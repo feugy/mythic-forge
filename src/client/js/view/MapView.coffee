@@ -92,7 +92,7 @@ define [
     # @param originX [Number] displayed game coordinate abscissa   
     # @param originY [Number] displayed game coordinate ordinate
     constructor: (@map, @originX, @originY, @router, collections, @imagesLoader) ->
-      super {tagName: 'span'}
+      super {tagName: 'div'}
       for collection in collections
         collection.on 'add', @displayElement
         collection.on 'update', @displayElement
@@ -106,7 +106,7 @@ define [
     render: =>
       # consult the map content.      
       @map.consult {x: @originX, y: @originY}, {x: @originX+10, y: @originY+10}
-      @$el.empty()
+      @$el.empty().addClass 'map'
       # horizontal hexagons: side length of an hexagon.
       s = 50
       # dimensions of the square that embed an hexagon.

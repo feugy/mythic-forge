@@ -82,7 +82,7 @@ define [
         @trigger 'key', {code: event.which, shift: event.shiftKey, ctrl: event.ctrlKey, meta: event.metaKey} 
 
     displayMapView: =>
-      $('.map').append @mapView.render().$el
+      $('body').append @mapView.render().$el
 
   app = new Router()
   return app
