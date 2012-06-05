@@ -3,17 +3,19 @@ Executable = require '../main/model/Executable'
 Item = require '../main/model/Item'
 Map = require '../main/model/Map'
 Field = require '../main/model/Field'
+Player = require '../main/model/Player'
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/RuleService').get()
 utils = require '../main/utils'
  
-map = null
+map= null
+player= null
 type1= null
 type2= null
 item1= null
 item2= null
 item3= null
-field1 = null
+field1= null
 
 module.exports = 
 
@@ -25,6 +27,52 @@ module.exports =
           Map.collection.drop ->
             map = new Map {name: 'map-Test'}
             map.save -> end()
+
+  'given a player and a dumb rule':
+    setUp: (end) ->
+      # Creates a dumb rule that always match
+      script = new Executable 'rule0', """Rule = require '../main/model/Rule'
+      class MyRule extends Rule
+        constructor: ->
+          @name= 'rule 0'
+        canExecute: (actor, target, callback) =>
+          callback null, true;
+        execute: (actor, target, callback) =>
+          callback null, 'hello !'
+      module.exports = new MyRule()"""
+      script.save (err) ->
+        # Creates a type
+        throw new Error err if err?
+        Player.collection.drop ->
+          new Player({login: 'Loïc'}).save (err, saved) ->
+            throw new Error err if err?
+            player = saved
+            end()
+
+    'should rule be applicable on player': (test) ->
+      # when resolving applicable rules for the player
+      service.resolve player._id, (err, results)->
+        throw new Error "Unable to resolve rules: #{err}" if err?
+
+        test.ok results isnt null and results isnt undefined
+        # then the rule must have matched
+        test.ok player._id of results
+        test.equal 1, results[player._id].length
+        test.equal 'rule 0', results[player._id][0].name 
+        test.done()
+
+    'should rule be executed for player': (test) ->
+      # given an applicable rule for a target 
+      service.resolve player._id, (err, results)->
+        throw new Error "Unable to resolve rules: #{err}" if err?
+
+        # when executing this rule on that target
+        service.execute results[player._id][0].name, player._id, (err, result)->
+          throw new Error "Unable to execute rules: #{err}" if err?
+
+          # then the rule is executed.
+          test.equal result, 'hello !'
+          test.done()
 
   'given 3 items and a dumb rule':
     setUp: (end) ->
@@ -60,7 +108,7 @@ module.exports =
                   new Field({map: map, x:1, y:2}).save (err, saved) ->
                     throw new Error err if err?
                     field1 = saved
-                    end(err)
+                    end()
 
     'should rule be applicable on empty coordinates': (test) ->
       # when resolving applicable rules at a coordinate with no items

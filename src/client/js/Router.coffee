@@ -24,15 +24,18 @@ define [
   'model/Item'
   'model/Field'
   'view/MapView'
+  'view/HomeView'
   'service/RuleService'
+  'service/PlayerService'
   'service/ImagesLoader'
-  ], ($, Backbone, Map, Item, Field, MapView, RuleService, ImagesLoader) ->
+  ], ($, Backbone, Map, Item, Field, MapView, HomeView, RuleService, PlayerService, ImagesLoader) ->
 
   class Router extends Backbone.Router
 
     routes:
       # Define some URL routes
-      'map': 'displayMapView'
+      'map': 'map'
+      'home': 'home'
 
     # Equalivalent to webkit's `window.location.origin`
     origin: (''+window.location).replace window.location.pathname, ''
@@ -42,6 +45,9 @@ define [
 
     # The ruleService singleton
     ruleService: null
+
+    # The player service singleton
+    playerService: null
 
     # The images loader singleton
     imagesLoader: null
@@ -56,13 +62,11 @@ define [
       super()
       # instanciates singletons.
       @ruleService = new RuleService this
+      @playerService = new PlayerService this
       @imagesLoader = new ImagesLoader this
       
-      # consult the map TODO do not hardcode
-      map = new Map {_id: '4fc334d5f184130eda1b61fc', name: 'world' }
-
       # bind the map and the content of the items and fields collections
-      @mapView = new MapView map, 0, 0, this, [Item.collection, Field.collection], @imagesLoader
+      @homeView = new HomeView this
 
       Backbone.history.start pushState: true
 
@@ -74,15 +78,25 @@ define [
         @navigate route, trigger: true
       
       # display map first
-      @navigate 'map', trigger: true
+      @navigate 'home', trigger: true
 
       # global key handler
       $(window).on 'keyup', (event) =>
         # broadcast on the event bus.
         @trigger 'key', {code: event.which, shift: event.shiftKey, ctrl: event.ctrlKey, meta: event.metaKey} 
 
-    displayMapView: =>
-      $('body').append @mapView.render().$el
+    # Displays map view
+    map: =>
+      # go back to home if no player connected
+      return @navigate 'home', true if @playerService.connected is null
+      # bind the map and the content of the items and fields collections
+      @mapView = new MapView @playerService.connected.get('character'), 0, 0, this, [Item.collection, Field.collection], @imagesLoader
+      # displays it    
+      $('body').empty().append @mapView.render().$el
+
+    # Displays home view
+    home: =>
+      $('body').empty().append @homeView.render().$el
 
   app = new Router()
   return app

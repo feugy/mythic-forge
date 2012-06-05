@@ -27,7 +27,7 @@ module.exports =
 
   'should player be created': (test) -> 
     # given a new Player
-    player = new Player {login:'Joe', characterId:item._id}
+    player = new Player {login:'Joe', character:item}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
@@ -46,13 +46,13 @@ module.exports =
         test.equal docs.length, 1
         # then it's values were saved
         test.equal 'Joe', docs[0].get 'login'
-        test.equal item._id.toString(), docs[0].get('characterId').toString()
+        test.ok item.equals docs[0].get('character')
         test.expect 6
         test.done()
 
   'given a Player': 
     setUp: (end) ->
-      player = new Player {login:'Jack', characterId:item._id}
+      player = new Player {login:'Jack', character:item}
       player.save -> end()
 
     'should player be removed': (test) ->
@@ -78,10 +78,10 @@ module.exports =
         test.equal 'Player', className
         test.equal 'update', operation
         test.ok player.equals instance
-        test.ok null is instance.characterId
+        test.ok null is instance.character
 
       # when modifying and saving a player
-      player.set 'characterId', null
+      player.set 'character', null
       player.save ->
 
         Player.find {}, (err, docs) ->
@@ -90,6 +90,6 @@ module.exports =
           test.equal docs.length, 1
           # then only the relevant values were modified
           test.equal 'Jack', docs[0].get 'login'
-          test.ok null is docs[0].get 'characterId'
+          test.ok null is docs[0].get 'character'
           test.expect 7
           test.done()

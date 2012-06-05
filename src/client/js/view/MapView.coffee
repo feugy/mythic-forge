@@ -30,8 +30,8 @@ define [
   #
   class MapView extends Backbone.View
 
-    # The map displayed.
-    map: null,
+    # The character to display.
+    character: null,
 
     # Displayed game coordinate abscissa
     originX: 0 
@@ -44,10 +44,6 @@ define [
 
     # The images loader
     imagesLoader: null
-
-    # the selected item. Null until an item is selected
-    # the `selectedChanged` event is emitted when this attribute changes.
-    selected: null
 
     # events mapping
     events:
@@ -85,13 +81,13 @@ define [
 
     # The view constructor.
     #
-    # @param router [Router] the event bus
-    # @param map [Map] map to display.
-    # @param collections [Array<Backbone.Collection>] Collections on which this view is bound
-    # @param imagesLoader [ImagesLoader] the images loader
+    # @param character [Item] embodied character to display on map.
     # @param originX [Number] displayed game coordinate abscissa   
     # @param originY [Number] displayed game coordinate ordinate
-    constructor: (@map, @originX, @originY, @router, collections, @imagesLoader) ->
+    # @param router [Router] the event bus
+    # @param collections [Array<Backbone.Collection>] Collections on which this view is bound
+    # @param imagesLoader [ImagesLoader] the images loader
+    constructor: (@character, @originX, @originY, @router, collections, @imagesLoader) ->
       super {tagName: 'div'}
       for collection in collections
         collection.on 'add', @displayElement
@@ -105,7 +101,7 @@ define [
     # draw a canvas with hexagons and coordinates.
     render: =>
       # consult the map content.      
-      @map.consult {x: @originX, y: @originY}, {x: @originX+10, y: @originY+10}
+      @character.get('map').consult {x: @originX, y: @originY}, {x: @originX+10, y: @originY+10}
       @$el.empty().addClass 'map'
       # horizontal hexagons: side length of an hexagon.
       s = 50
@@ -219,14 +215,18 @@ define [
           'z-index': y*2+x 
 
         # moves also selected indicator
-        if @selected?.equals element
+        if @character.equals element
+          @character = element
           selected = @_itemsLayer.find('.selected').detach()
+          if selected.length is 0
+            selected = $ '<div class="selected"></div>'
           selected.css
             left: left
             bottom: bottom
           setTimeout =>
+            # for chrome. Immediate modification hides the underneath item.
             @_itemsLayer.prepend(selected)
-          , 50
+          , 100
       else 
         # this is a field. Load its image, and await for it.
         src = "#{@router.origin}/assets/sand-#{element.get 'imageNum'}.png"
@@ -234,38 +234,10 @@ define [
         @_fieldsByImg[src].push element
         @imagesLoader.load src
 
-    # Method that selects an item for rules resolution and execution.
-    # If the item specified is already selected, unselect it.
-    # the `selectedChanged` event is published on the router.
-    #
-    # @param item [Item] the item to select.
-    selectItem: (item) =>
-      return unless item?
-      # gets the corresponding image
-      img = @$el.find "img.#{item.id}"
-      return if img.length is 0
-
-      # remove previous selection.
-      @_itemsLayer.find('.selected').remove()
-      # deselect the current selected item
-      if @selected?.id isnt item.id
-        # and add a new selected item
-        selected = $ '<div class="selected"></div>'
-        selected.css 
-          left: img.css 'left'
-          bottom: img.css 'bottom'
-        @_itemsLayer.prepend selected
-      else 
-        item = null
-
-      @selected = item
-      console.log "selected item: #{@selected?.id}"
-      @router.trigger 'selectedChanged', @selected
-
     # Method bound to a click on the map.
     # Find the corresponding hexagon.
     # If a item is on it, select it with the selectItem() method.
-    # Otherwise, and if an item is selected, triggers the event `resolveRules` on the router
+    # Otherwise, triggers the event `resolveRules` on the router
     # 
     # @param event [Event] click event on the element
     hitMap: (event) =>
@@ -280,19 +252,18 @@ define [
       if items.length > 0
         # we found someone: select it.
         @selectItem items[0]
-      else if @selected?
+      else
         # trigger the resolution event
-        @router.trigger 'resolveRules', @selected.id, pos.x, pos.y
+        @router.trigger 'resolveRules', @character.id, pos.x, pos.y
 
     # trigger the rule resolution from a contextual menu.
     #
     # @param event [Event] the click event.
     triggerRule: (event) =>
-      return unless @selected?
       ruleName = $(event.target).data 'name'
       targetId = $(event.target).data 'target'
       # Delegates to someone else the execution.
-      @router.trigger 'executeRule', ruleName, @selected.id, targetId
+      @router.trigger 'executeRule', ruleName, @character.id, targetId
       @$el.find('.menu.rules').remove()
 
     # Display a menu with the different applicable rules for the actor.
@@ -432,11 +403,10 @@ define [
     # @option key ctrl [Boolean] true id control is pressed
     # @option key meta [Boolean] true id meta is pressed
     _onKeyUp: (key) =>
-      return unless @selected?
       targetId = null
       pos = 
-        x: @selected.get 'x'
-        y: @selected.get 'y'
+        x: @character.get 'x'
+        y: @character.get 'y'
       switch key.code
         # numpad 1
         when 97 
@@ -462,6 +432,6 @@ define [
           return
       # trigger the rule move if possible.
       targets = Field.collection.where pos
-      @router.trigger 'executeRule', 'move', @selected.id, targets[0].id if targets.length is 1
+      @router.trigger 'executeRule', 'move', @character.id, targets[0].id if targets.length is 1
 
   return MapView

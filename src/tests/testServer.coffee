@@ -207,10 +207,9 @@ module.exports =
         socket = socketClient.connect "#{rootUrl}/player"
 
         # then the player is returned
-        socket.once 'getByLogin-resp', (err, account, item) ->
+        socket.once 'getByLogin-resp', (err, account) ->
           throw new Error err if err?
           test.ok player.equals account
-          test.ok null is item
           test.done()
 
         # when login with the existing account
@@ -224,7 +223,7 @@ module.exports =
         socket.once 'register-resp', (err, account) ->
           throw new Error err if err?
           test.equal 'Loïc', account.login
-          test.ok null is account.characterId
+          test.ok null is account.character
           test.done()
 
         # when creating a new account

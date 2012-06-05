@@ -63,6 +63,11 @@ define [
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes 
+      # Construct a Map around the raw map.
+      if attributes?.map?
+        # to avoid circular dependencies
+        Map = require('model/Map')
+        @set 'map', new Map attributes.map
 
     # An equality method that tests ids.
     #

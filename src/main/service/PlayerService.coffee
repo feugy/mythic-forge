@@ -28,18 +28,18 @@ class _PlayerService
   # @param callback [Function] callback executed when player was retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
-  # @option callback character [Item] the corresponding character. May be null.
   getByLogin: (login, callback) =>
-    logger.debug "Consult player by login: #{login}"
-    Player.findOne {login: login}, (err, player) -> 
-      return callback err, null, null if err?
-      return callback null, player, null unless player?.characterId?
-      # resolve character
-      Item.findOne {_id: player.characterId}, (err, item) ->
-        return callback "Can't retrieved the player's character: #{err}" if err?
-        item.resolve (err, item) ->
-          return callback "Can't resolved the player's character: #{err}" if err?
-          callback err, player, item
+    logger.debug "consult player by login: #{login}"
+    Player.findOne {login: login}, (err, player) =>
+      return callback err, null if err?
+      if player?.get('character')?
+        logger.debug 'resolves its character'
+        # resolve the character
+        player.get('character').resolve (err) =>
+          return callback err, null if err?
+          callback null, player
+      else 
+        callback null, player
 
 _instance = undefined
 class PlayerService

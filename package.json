@@ -24,7 +24,7 @@
   },
   "scripts": {
     "test": "(set NODE_ENV=test) & nodeunit lib/tests", 
-    "postinstall": "coffee.cmd --compile --output lib src"
+    "postinstall": "coffee --compile --output lib src"
   },
   "bin": {
     "mythic-forge": "./bin/mythic-forge"

@@ -31,31 +31,42 @@ define [
 
     # Triggers rules resolution for a given actor
     #
-    # @param actorId [String] the concerned actor Id
+    # @overload resolve(playerId)
+    #   Resolves applicable rules for a spacific player
+    #   @param playerId [ObjectId] the player id
     #
     # @overload resolve(actorId, x, y)
     #   Resolves applicable rules at a specified coordinate
+    #   @param actorId [String] the concerned actor Id
     #   @param x [Number] the targeted x coordinate
     #   @param y [Number] the targeted y coordinate
     #
     # @overload resolve(actorId, targetId)
     #   Resolves applicable rules at for a specific target
+    #   @param actorId [String] the concerned actor Id
     #   @param targetId [ObjectId] the targeted item's id
-    resolve: (actorId, args...) =>
+    resolve: (args...) =>
       return if @_resolveArgs?
-      if args.length is 2
+      if args.length is 1
         @_resolveArgs = 
-          actorId: actorId
-          x: args[0]
-          y: args[1]
-        console.log "resolve rules for #{actorId} at #{@_resolveArgs.x}:#{@_resolveArgs.y}"
-        sockets.game.emit 'resolveRules', actorId, @_resolveArgs.x, @_resolveArgs.y
+          playerId: args[0]
+        console.log "resolve rules for player #{@_resolveArgs.playerId}"
+        sockets.game.emit 'resolveRules', @_resolveArgs.playerId
+      else if args.length is 2
+        @_resolveArgs = 
+          actorId: args[0]
+          targetId: args[1]
+        console.log "resolve rules for #{@_resolveArgs.actorId} and target #{@_resolveArgs.targetId}"
+        sockets.game.emit 'resolveRules', @_resolveArgs.actorId, @_resolveArgs.targetId
+      else if args.length is 3
+        @_resolveArgs = 
+          actorId: args[0]
+          x: args[1]
+          y: args[2]
+        console.log "resolve rules for #{@_resolveArgs.actorId} at #{@_resolveArgs.x}:#{@_resolveArgs.y}"
+        sockets.game.emit 'resolveRules', @_resolveArgs.actorId, @_resolveArgs.x, @_resolveArgs.y
       else 
-        @_resolveArgs = 
-          actorId: actorId
-          targetId: args[0]
-        console.log "resolve rules for #{actorId} and target #{@_resolveArgs.targetId}"
-        sockets.game.emit 'resolveRules', actorId, @_resolveArgs.targetId
+        throw new Error "Cant't resolve rules with arguments #{arguments}"
 
     # Rules resolution handler. 
     # trigger an event `rulesResolved` on the router if success.
@@ -67,7 +78,7 @@ define [
         if err?
           @_resolveArgs = null
           return console.error "Fail to resolve rules: #{err}" 
-        console.log "rules resolution ended for actor #{@_resolveArgs.actorId}"
+        console.log "rules resolution ended for #{if @_resolveArgs.actorId? then 'actor '+@_resolveArgs.actorId else 'player '+@_resolveArgs.playerId}"
         @router.trigger 'rulesResolved', @_resolveArgs, results
         # reset to allow further calls.
         @_resolveArgs = null
@@ -75,17 +86,36 @@ define [
     # Triggers a specific rule execution for a given actor on a target
     #
     # @param ruleName [String] the rule name
-    # @param actorId [String] the concerned actor ud
-    # @param targetId [ObjectId] the targeted id
-    execute: (ruleName, actorId, targetId) =>
+
+    # @overload execute(ruleName, playerId)
+    #   Executes rule for a player
+    #   @param playerId [String] the concerned player Id
+    #
+    # @overload execute(ruleName, actorId, targetId)
+    #   Executes rule for an actor and a target
+    #   @param actorId [ObjectId] the concerned actor Id
+    #   @param targetId [ObjectId] the targeted item's id
+    execute: (ruleName, args...) =>
       return if @_executeArgs?
-      @_executeArgs = 
-        ruleName: ruleName
-        actorId: actorId
-        targetId: targetId
+      if args.length is 1
+        @_executeArgs = 
+          ruleName: ruleName
+          playerId: args[0]
+
+        console.log "execute rule #{ruleName} for player #{@_executeArgs.playerId}"
+        sockets.game.emit 'executeRule', ruleName, @_executeArgs.playerId
+
+      else if args.length is 2
+        @_executeArgs = 
+          ruleName: ruleName
+          actorId: args[0]
+          targetId: args[1]
       
-      console.log "execute rule #{ruleName} for #{actorId} and target #{targetId}"
-      sockets.game.emit 'executeRule', ruleName, actorId, targetId
+        console.log "execute rule #{ruleName} for #{@_executeArgs.actorId} and target #{@_executeArgs.targetId}"
+        sockets.game.emit 'executeRule', ruleName, @_executeArgs.actorId, @_executeArgs.targetId
+      
+      else 
+        throw new Error "Cant't execute rule with arguments #{arguments}"
 
     # Rules execution handler. 
     # trigger an event `rulesExecuted` on the router if success.
@@ -98,7 +128,7 @@ define [
           @_executeArgs = null
           return console.error "Fail to execute rule: #{err}" 
         console.log "rule #{@_executeArgs.ruleName} successfully executed for actor #{@_executeArgs.actorId} and target #{@_executeArgs.targetId}"
-        @router.trigger 'rulesResolved', @_executeArgs, result
+        @router.trigger 'rulesExecuted', @_executeArgs, result
         # reset to allow further calls.
         @_executeArgs = null
 

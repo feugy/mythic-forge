@@ -34,13 +34,13 @@ module.exports =
       throw new Error "Can't register: #{err}" if err?
       # then a player is returned
       test.equal 'Jack', player.get 'login'
-      test.ok null is player.get 'characterId'
+      test.ok null is player.get 'character'
       test.done()
 
   'given an existing player':
 
     setUp: (end) ->
-      new Player({login: 'Joe', characterId: item2._id}).save (err, saved) ->
+      new Player({login: 'Joe', character: item2}).save (err, saved) ->
         throw new Error err if err?
         player = saved
         end()
@@ -55,12 +55,12 @@ module.exports =
         
     'should getByLogin returned player': (test) ->
       # when retrieving the player by login
-      service.getByLogin player.get('login'), (err, account, character) ->
+      service.getByLogin player.get('login'), (err, account) ->
         throw new Error "Can't get by login: #{err}" if err?
         # then the player was retrieved
         test.ok player.equals account
         # then the character was retrieved
-        test.ok item2.equals character
+        test.ok item2.equals account.get 'character'
         # then the character linked has been resolved
-        test.ok item1.equals character.get('friends')[0]
+        test.ok item1.equals account.get('character').get('friends')[0]
         test.done()
