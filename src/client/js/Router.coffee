@@ -38,7 +38,7 @@ define [
       'home': 'home'
 
     # Equalivalent to webkit's `window.location.origin`
-    origin: (''+window.location).replace window.location.pathname, ''
+    origin: (''+window.location).replace(new RegExp(window.location.pathname+'$'), '')
 
     # The mapView singleton  
     mapView: null

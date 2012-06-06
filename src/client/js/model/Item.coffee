@@ -1,7 +1,8 @@
 define [
   'backbone'
   'model/sockets'
-], (Backbone, sockets) ->
+  'model/ItemType'
+], (Backbone, sockets, ItemType) ->
 
   # Client cache of items.
   # Wired to the server through socket.io
@@ -11,19 +12,26 @@ define [
       super model, options
       # connect server response callbacks
       sockets.updates.on 'update', @_onUpdate
+      sockets.updates.on 'creation', @_onAdd
 
     # Provide a custom sync method to wire Items to the server.
-    # Allows to retrieve items by coordinates.
+    # Disabled.
     #
     # @param method [String] the CRUD method ("create", "read", "update", or "delete")
     # @param collection [Items] the current collection
     # @param args [Object] arguments
-    # @option args lowX [Number] abscissa lower bound (included)
-    # @option args lowY [Number] ordinate lower bound (included)
-    # @option args upX [Number] abscissa upper bound (included)
-    # @option args upY [Number] ordinate upper bound (included)  
     sync: (method, instance, args) =>
       throw new Error "Unsupported #{method} operation on Items"
+
+    # **private**
+    # Callback invoked when a database creation is received.
+    #
+    # @param className [String] the modified object className
+    # @param item [Object] created item.
+    _onAdd: (className, item) =>
+      return unless className is 'Item'
+      # add the created raw item. An event will be triggered
+      @add item
 
     # **private**
     # Callback invoked when a database update is received.
@@ -68,6 +76,31 @@ define [
         # to avoid circular dependencies
         Map = require('model/Map')
         @set 'map', new Map attributes.map
+      # Construct a Type around the raw map.
+      if attributes?.type?
+        if typeof attributes.type is 'string'
+          # resolve by id
+          type = ItemType.collection.get attributes.type
+          # not found on client: get it from server
+          unless type?
+            ItemType.collection.on 'add', @_onTypeFetched
+            ItemType.collection.fetch attributes.type
+          else 
+            @set 'type', type
+        else 
+          # contruct with all data.
+          @set 'type', new ItemType attributes.type
+
+    # Handler of type retrieval. Updates the current type with last values
+    #
+    # @param type [ItemType] an added type.      
+    _onTypeFetched: (type) =>
+      if type.id is @get 'type'
+        console.log "type #{type.id} successfully fetched from server for item #{@id}"
+        # remove handler
+        ItemType.collection.off 'add', @_onTypeFetched
+        # update the type object
+        @set 'type', type
 
     # An equality method that tests ids.
     #

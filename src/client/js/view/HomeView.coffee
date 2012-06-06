@@ -10,6 +10,7 @@ define [
     # events mapping
     events:
       'submit #loginForm': '_onLogin'
+      'click .bot-mode': '_onBotMode'
 
     # last login.
     _login: null
@@ -27,6 +28,7 @@ define [
     # Draws the login form.
     render: =>
       @$el.append '<form id="loginForm"><label>Login: </label><input type="text" name="login" placeholder="Your login"/><input type="submit" value="connect"/></form>'
+      @$el.append '<a href="#" class="bot-mode">Enable bot-mode</a>'
       # for chaining purposes
       return @
 
@@ -53,5 +55,11 @@ define [
         return alert "Authentication failure: #{err}"
       # all is fine: display map.
       @router.navigate 'map', trigger: true
+
+    # Bot mode registers a random account and start moving randomly.
+    _onBotMode: (event) =>
+      @_login = "bot-#{Math.floor Math.random()*10001}"
+      @router.trigger 'register', @_login
+      false
 
   return HomeView

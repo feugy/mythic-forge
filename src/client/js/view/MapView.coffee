@@ -49,7 +49,7 @@ define [
     events:
       'click .layer.interactive': 'hitMap'
       'click .rule-trigger': 'triggerRule'
-      'mousemove .layer.interactive': '_drawIndicator' 
+      'mousemove .layer.interactive': '_drawIndicators' 
 
     # **private**
     # Items layer jQuery element.
@@ -95,6 +95,7 @@ define [
       @router.on 'rulesResolved', @_onRuleResolved
       @router.on 'imageLoaded', @_onImageLoaded
       @router.on 'key', @_onKeyUp
+      setInterval @_randomMove, 500 if 0 is @character.get('name').indexOf 'bot-'
 
 
     # The `render()` method is invoked by backbone to display view content at screen.
@@ -178,6 +179,10 @@ define [
       ctx.strokeStyle = '#eee'
       ctx.stroke()
 
+      # first displayal of character
+      @displayElement @character
+      @_drawIndicators()
+
       # for chaining purposes
       @
 
@@ -194,39 +199,16 @@ define [
         console.log "display on map #{element.id} #{element.get 'name'} at #{element.get 'x'}:#{element.get 'y'}"
 
         # creates an image 
-        src = "#{@router.origin}/assets/#{element.get('type').name}-#{element.get 'imageNum'}.png"
-        img = $ "<img data-src=\"#{src}\" data-id=\"#{element.id}\" class=\"item #{element.id} #{element.get('type')._id}\"/>"
+        src = "#{@router.origin}/assets/#{element.get('type').get('name')}-#{element.get 'imageNum'}.png"
+        img = $ "<img data-src=\"#{src}\" data-id=\"#{element.id}\"/>"
         @imagesLoader.load src
-        x = element.get 'x'
-        y = element.get 'y'
-        left = @_hexW*(x+ if y%2 then 0.5 else 0)
-        bottom = @_hexH*(@originY+10-y)*0.75
-
         @_itemsLayer.append img
-        # depth correction
-        correction = -(0.8*x-4)
-        # absolute positionning it the item layer
-        img.css 
-          left: left
-          bottom: bottom
-          '-moz-transform': "skewX(#{correction}deg)"
-          '-webkit-transform': "skewX(#{correction}deg)"
-          # y is more important than x in z-index
-          'z-index': y*2+x 
 
-        # moves also selected indicator
+        # replace current character if needed
         if @character.equals element
           @character = element
-          selected = @_itemsLayer.find('.selected').detach()
-          if selected.length is 0
-            selected = $ '<div class="selected"></div>'
-          selected.css
-            left: left
-            bottom: bottom
-          setTimeout =>
-            # for chrome. Immediate modification hides the underneath item.
-            @_itemsLayer.prepend(selected)
-          , 100
+          @_drawIndicators()
+
       else 
         # this is a field. Load its image, and await for it.
         src = "#{@router.origin}/assets/sand-#{element.get 'imageNum'}.png"
@@ -236,8 +218,7 @@ define [
 
     # Method bound to a click on the map.
     # Find the corresponding hexagon.
-    # If a item is on it, select it with the selectItem() method.
-    # Otherwise, triggers the event `resolveRules` on the router
+    # Triggers the event `resolveRules` on the router
     # 
     # @param event [Event] click event on the element
     hitMap: (event) =>
@@ -247,14 +228,8 @@ define [
         y: if $.browser.webkit then event.offsetY else event.originalEvent.layerY
 
       pos = @_mousePosition mouse
-      # now find an item with the relevant coordinates
-      items = Item.collection.where pos
-      if items.length > 0
-        # we found someone: select it.
-        @selectItem items[0]
-      else
-        # trigger the resolution event
-        @router.trigger 'resolveRules', @character.id, pos.x, pos.y
+      # now trigger rules at this position.
+      @router.trigger 'resolveRules', @character.id, pos.x, pos.y
 
     # trigger the rule resolution from a contextual menu.
     #
@@ -317,14 +292,28 @@ define [
           for img in imgs
             img = $(img)
             clone = $(imageData).clone()
-            clone.attr 'class', img.attr 'class'
             clone.data 'id', img.data 'id'
+            # gets the element displayed
+            element = Item.collection.get img.data 'id'
+            clone.addClass "item #{element.id} #{element.get('type')._id}"
+
+            # positionnate the image.
+            x = element.get 'x'
+            y = element.get 'y'
+            left = @_hexW*(x+ if y%2 then 0.5 else 0)
+            bottom = @_hexH*(@originY+10-y)*0.75
+
+            # depth correction
+            correction = -(0.8*x-4)
+            # absolute positionning it the item layer
             clone.css 
-              left: img.css 'left'
-              bottom: img.css 'bottom'
-              '-moz-transform': img.css '-moz-transform'
-              '-webkit-transform': img.css '-webkit-transform'
-              'z-index': img.css 'z-index'
+              left: left
+              bottom: bottom
+              '-moz-transform': "skewX(#{correction}deg)"
+              '-webkit-transform': "skewX(#{correction}deg)"
+              # y is more important than x in z-index
+              'z-index': y*2+x 
+            
             img.replaceWith clone
     
     # Return the coordinate of the hexagon under the mouse position.
@@ -368,23 +357,46 @@ define [
       # or it's the good hexagon :)
       {x: col, y:row}
 
-    # Handler that displays an hexagonal indicator under the mouse.
+    # Handler that displays hexagonal indicators under the mouse and the current character.
     #
     # @param event [Event] mouse mouve event.      
-    _drawIndicator: (event) =>
-      return unless @_moveJumper++ % 3 is 0
-      # gets the mouse position.
-      mouse =
-        x: if $.browser.webkit then event.offsetX else event.originalEvent.layerX
-        y: if $.browser.webkit then event.offsetY else event.originalEvent.layerY
-      pos = @_mousePosition mouse
+    _drawIndicators: (event) => 
+      if event?
+        return unless @_moveJumper++ % 3 is 0
+        # gets the mouse position.
+        mouse =
+          x: if $.browser.webkit then event.offsetX else event.originalEvent.layerX
+          y: if $.browser.webkit then event.offsetY else event.originalEvent.layerY
+        pos = @_mousePosition mouse
+        x = pos.x * @_hexW + if pos.y%2 is 0 then 0 else @_hexW*0.5
+        y = pos.y * @_hexH * 0.75
+
+        # erases previous indicator
+        ctx = @$el.find('.hover').attr('width', @_width)[0].getContext '2d'
+
+        ctx.beginPath()
+        # draws an hexagon
+        ctx.moveTo x+@_hexW*.5, y
+        ctx.lineTo x, y+@_hexH*.25
+        ctx.lineTo x, y+@_hexH*.75
+        ctx.lineTo x+@_hexW*.5, y+@_hexH
+        ctx.lineTo x+@_hexW, y+@_hexH*.75
+        ctx.lineTo x+@_hexW, y+@_hexH*.25
+        ctx.lineTo x+@_hexW*.5, y
+        ctx.closePath()
+        ctx.strokeStyle = '#88A09D'
+        ctx.stroke()
+      else 
+        ctx = @$el.find('.hover').attr('width', @_width)[0].getContext '2d'
+      
+      # gets the character position.
+      pos = {x:@character.get('x'), y:@character.get('y')}
       x = pos.x * @_hexW + if pos.y%2 is 0 then 0 else @_hexW*0.5
       y = pos.y * @_hexH * 0.75
-
-      # erases previous indicator
-      ctx = @$el.find('.hover').attr('width', @_width)[0].getContext '2d'
       
-      # draws an hexagon
+      ctx.globalAlpha = 0.3
+      ctx.beginPath()
+      # draws an hexagon under it
       ctx.moveTo x+@_hexW*.5, y
       ctx.lineTo x, y+@_hexH*.25
       ctx.lineTo x, y+@_hexH*.75
@@ -392,8 +404,9 @@ define [
       ctx.lineTo x+@_hexW, y+@_hexH*.75
       ctx.lineTo x+@_hexW, y+@_hexH*.25
       ctx.lineTo x+@_hexW*.5, y
-      ctx.strokeStyle = '#f00'
-      ctx.stroke()
+      ctx.closePath()
+      ctx.fillStyle = '#88A09D'
+      ctx.fill()
 
     # Key handler. Trigger the move rule on adjacent fields if possible.
     #
@@ -433,5 +446,35 @@ define [
       # trigger the rule move if possible.
       targets = Field.collection.where pos
       @router.trigger 'executeRule', 'move', @character.id, targets[0].id if targets.length is 1
+
+    # Performs a random move.
+    _randomMove: =>
+      pos = 
+        x: @character.get 'x'
+        y: @character.get 'y'
+      # possible keys
+      moves = [97, 100, 103, 99, 102, 105]
+      notAllowed = []
+
+      # remove key strokes that will go beyond map border
+      if pos.x is 10
+        notAllowed[99] = true
+        notAllowed[102] = true
+        notAllowed[105] = true
+      else if pos.x is 0  
+        notAllowed[97] = true
+        notAllowed[100] = true
+        notAllowed[103] = true  
+      if pos.y is 10
+        notAllowed[99] = true
+        notAllowed[97] = true
+      else if pos.y is 0  
+        notAllowed[103] = true
+        notAllowed[105] = true      
+      # choose randomly
+      key = moves[Math.floor(Math.random()*6)]
+      key = moves[Math.floor(Math.random()*6)] while notAllowed[key]
+      # now, move
+      @_onKeyUp {code:key}
 
   return MapView
