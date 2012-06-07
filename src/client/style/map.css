@@ -26,6 +26,9 @@
 .map .layer .item {
   position: absolute;
   width: 100px;
+  -webkit-transition: all 250ms;
+  -moz-transition: all 250ms;
+  transition: all 250ms;
 } 
 
 .map .menu {

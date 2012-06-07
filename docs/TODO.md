@@ -29,5 +29,5 @@
     - **[done]** map displayal
     - **[done]** rules resolution
     - **[done]** application of map items modifications 
-    - create a new player and display its map
-    - bot mode
+    - **[done]** create a new player and display its map
+    - **[done]** bot mode

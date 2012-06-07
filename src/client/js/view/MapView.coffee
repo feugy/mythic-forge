@@ -91,7 +91,7 @@ define [
       super {tagName: 'div'}
       for collection in collections
         collection.on 'add', @displayElement
-        collection.on 'update', @displayElement
+        collection.on 'update', @_onElementUpdated
       @router.on 'rulesResolved', @_onRuleResolved
       @router.on 'imageLoaded', @_onImageLoaded
       @router.on 'key', @_onKeyUp
@@ -264,6 +264,50 @@ define [
           left: args.x*@_hexW
           top: args.y*@_hexH
         .appendTo @$el
+
+    # Update an element rendering to reflect a change.
+    _onElementUpdated: (element) =>
+      x = element.get('x')
+      y = element.get('y')
+      return unless element instanceof Item
+
+      # first of all, update the current element.
+      if @character.equals element
+        @character = element
+        @_drawIndicators() 
+
+      map = element.get('map')
+      # get previous rendering
+      rendering = @_itemsLayer.find(".#{element.id}")
+      # removes it if the item was removed from map, or has left the displayed coordinates
+      if x is null or y is null or 
+      not(@character.get('map').equals map) or x < @originX or x > @originX+10 or
+      y < @originY or y > @originY+10
+        # @todo
+        console.log "#{element.get 'name'} not on map (#{map?.id}, #{x}:#{y}) anymore"
+        return rendering.remove() 
+
+      # adds it if it's new on the map
+      return @displayElment element if rendering.length is 0
+
+      # or update it
+      oldLeft = parseFloat rendering.css('left')
+      oldBottom = parseFloat rendering.css('bottom')
+      left = @_hexW*(x+ if y%2 then 0.5 else 0)
+      bottom = @_hexH*(@originY+10-y)*0.75
+      console.debug "#{element.get 'name'} from #{oldLeft}:#{oldBottom} to #{left}:#{bottom}"
+      # did it moved ?
+      return unless oldLeft isnt left or oldBottom isnt bottom
+
+      correction = -(0.8*x-4)
+      # yes ! moves it
+      rendering.css 
+        left: left
+        bottom: bottom
+        '-moz-transform': "skewX(#{correction}deg)"
+        '-webkit-transform': "skewX(#{correction}deg)"
+        # y is more important than x in z-index
+        'z-index': y*2+x 
 
     # Handler of image loading. Displays image on the map.
     #

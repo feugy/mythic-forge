@@ -24,7 +24,9 @@ class _ModelWatcher extends EventEmitter
     parameter[key] = value for own key,value of instance._doc
     # do not embed the linked map and type for items and fields
     parameter.type = parameter.type?._id if className is 'Item'
-    parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
+    unless modified and 'map' in modified
+      # but send the map if it changed
+      parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
     if operation is 'update'
       # for update, only emit modified datas
       parameter = 

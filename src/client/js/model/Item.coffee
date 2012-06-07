@@ -45,7 +45,8 @@ define [
       return unless item?
       # then, update the local cache.
       for key, value of changes
-        item.set key, value if key isnt '_id' and key isnt 'type'
+        item.set key, value if key isnt '_id' and key isnt 'type' and key isnt 'map'
+
       # emit a change.
       @trigger 'update', item
 
@@ -75,7 +76,18 @@ define [
       if attributes?.map?
         # to avoid circular dependencies
         Map = require('model/Map')
-        @set 'map', new Map attributes.map
+        if typeof attributes.map is 'string'
+          # gets by id
+          map = Map.collection.get attributes.map
+          unless map
+            # trick: do not retrieve map, and just construct with empty name.
+            @set 'map', new Map {_id: attributes.map}
+          else 
+            @set 'map', map
+        else
+          # or construct directly
+          @set 'map', new Map attributes.map
+
       # Construct a Type around the raw map.
       if attributes?.type?
         if typeof attributes.type is 'string'

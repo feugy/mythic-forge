@@ -1,7 +1,7 @@
 define [
   'socket.io'
 ], (io) ->
-  origin = "https://#{window.location.host}"
+  origin = "https://#{window.location.host}:443"
   
   return {
     # multiplexed socket for game method RPC

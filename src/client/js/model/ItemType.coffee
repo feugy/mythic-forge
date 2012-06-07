@@ -41,7 +41,7 @@ define [
   class ItemType extends Backbone.Model
 
     # type local cache.
-    # A Backbone.Collection subclass that handle Items retrieval with `fetch()`
+    # A Backbone.Collection subclass that handle types retrieval with `fetch()`
     @collection = new ItemTypes @
 
     # bind the Backbone attribute and the MongoDB attribute
