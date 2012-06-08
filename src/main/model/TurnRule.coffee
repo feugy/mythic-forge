@@ -16,16 +16,14 @@
     You should have received a copy of the GNU Lesser Public License
 ###
 
-# Game rules are constituted by two main functions:
+# Turn rules are particular rules that provides two main functions:
 #
-#     canExecute(actor, target): Boolean
-# which is invoked each time the rule engine needs to identify if the rule apply to a given situation
-# 
-#     execute(actor, target)
+#     select(callback)
+# which is invoked to select a set of Element on which the rule will apply on.
+#     execute(target, callback)
 # which is invoked when the rule must be effectivly applied.
 #
-# `canExecute()` is intended to be invoked on server and client side, and must not modifiy anything.
-class Rule
+class TurnRule
 
   # All objects created by the rule must be added to this array to be saved in database
   created: []
@@ -38,30 +36,27 @@ class Rule
     @removed= []
     @created= []
  
-  # This method indicates wheter or not the rule apply to a given situation.
-  # Beware: `canExecute`  is intended to be invoked on server and client side, thus, database access are not allowed.
+  # This method select a set of element on which execute will be applied.
+  # Objects can be read directly from database, but modification is not allowed.
   # This method must be overloaded by sub-classes
   #
   # @param actor [Item] the concerned actor
   # @param target [Item] the concerned target
   # @param callback [Function] called when the rule is applied, with two arguments:
   #   @param err [String] error string. Null if no error occured
-  #   @param apply [Boolean] true if the rule apply, false otherwise.
-  canExecute: (actor, target, callback) =>
-    throw "#{module.filename}.canExecute() is not implemented yet !"
+  #   @param targets [Array<Object>] list of targeted object, null or empty if the rule does not apply.
+  select: (callback) =>
+    throw "#{module.filename}.select() is not implemented yet !"
 
-  # This method effectively contains the rule's logic.
-  # It's invoked by the rule engine when the rule is applied.
-  # Nothing can be saved directly in database, but target, acotr and their linked objects could be modified and will
+  # This method execute the rule on a targeted object.
+  # Nothing can be saved directly in database, but target and its linked objects could be modified and will
   # be saved at the end of the execution.
   # This method must be overloaded by sub-classes
   #
-  # @param actor [Item] the concerned actor
-  # @param target [Item] the concerned target
-  # @param callback [Function] called when the rule is applied, with one arguments:
+  # @param target [Object] the targeted object
+  # @param callback [Function] called when the rule is applied, with two arguments:
   #   @param err [String] error string. Null if no error occured
-  #   @param result [Object] an arbitrary result of this rule.
-  execute: (actor, target, callback) =>
+  execute: (target, callback) =>
     throw "#{module.filename}.execute() is not implemented yet !"
 
-module.exports = Rule
+module.exports = TurnRule

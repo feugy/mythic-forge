@@ -16,16 +16,13 @@
     You should have received a copy of the GNU Lesser Public License
  ###
 
- define [
-  'socket.io'
-], (io) ->
-  origin = "https://#{window.location.host}:443"
-  
-  return {
-    # multiplexed socket for game method RPC
-    game: io.connect "#{origin}/game", {secure: true}
-    # multiplexed socket for game method RPC
-    player: io.connect "#{origin}/player", {secure: true}
-    # broadcast socket for database updates
-    updates: io.connect "#{origin}/updates", {secure: true}
-  }
+mongoose = require 'mongoose'
+utils = require '../utils'
+
+host = utils.confKey 'mongo.host', 'localhost'
+port = utils.confKey 'mongo.port', 27017
+db = utils.confKey 'mongo.db' 
+
+# Connect to the 'mythic-forge' database. Will be created if necessary.
+# The connection is exported.
+module.exports = mongoose.createConnection "mongodb://#{host}:#{port}/#{db}"

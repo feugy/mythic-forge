@@ -18,3 +18,7 @@ mongo:
 executable:
   source: D:/Programmation/Workspace2/proto-game
   target: D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled
+
+# Turns execution settings. Frequency in seconds
+turn:
+  frequency: 5

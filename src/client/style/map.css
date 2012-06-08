@@ -1,4 +1,22 @@
-.map {
+/*
+  Copyright 2010,2011,2012 Damien Feugas
+  
+    This file is part of Mythic-Forge.
+
+    Myth is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Myth is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser Public License for more details.
+
+    You should have received a copy of the GNU Lesser Public License
+*/
+
+ .map {
   text-align: center;
   font-family: Verdana, Arial, no-serif;
   margin-top: 50px;
@@ -26,9 +44,9 @@
 .map .layer .item {
   position: absolute;
   width: 100px;
-  -webkit-transition: all 250ms;
-  -moz-transition: all 250ms;
-  transition: all 250ms;
+  -webkit-transition: bottom 250ms,left 250ms;
+  -moz-transition: bottom 250ms,left 250ms;
+  transition: bottom 250ms,left 250ms;
 } 
 
 .map .menu {

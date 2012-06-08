@@ -1,3 +1,21 @@
+###
+  Copyright 2010,2011,2012 Damien Feugas
+  
+    This file is part of Mythic-Forge.
+
+    Myth is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Myth is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser Public License for more details.
+
+    You should have received a copy of the GNU Lesser Public License
+###
+
 Rule = require '../model/Rule'
 Executable = require '../model/Executable'
 async = require 'async'
@@ -11,6 +29,14 @@ logger = require('../logger').getLogger 'service'
 # Local cache of existing rules.
 # Rules are stored with their name as index.
 rules = {}
+# frequency, in seconds.
+frequency = utils.confKey 'turn.frequency'
+
+# Compute the remaining time in milliseconds before the next turn execution
+#
+# @return number of milliseconds before the next turn.
+nextTurn= () ->
+  (frequency-new Date().getSeconds()%frequency)*1000-(new Date().getMilliseconds())
 
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
 #
@@ -21,7 +47,9 @@ class _RuleService
   # Gets the existing executables, and store their rules.
   constructor: ->
     # Reset the local cache
-    Executable.resetAll ->
+    Executable.resetAll =>
+      # Trigger first turn execution
+      setTimeout @triggerTurn, nextTurn(), true
         
   # Resolves the applicable rules for a given situation.
   #
@@ -179,6 +207,16 @@ class _RuleService
     else 
       throw new Error 'execute() must be call with player id or actor and target ids'
  
+  # Trigger a turn by executing turn rules
+  #
+  # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
+  # 
+  triggerTurn: (_auto = false) =>
+    logger.debug 'triggers turn rules...'
+    # @Todo
+    logger.debug 'end of turn'
+    setTimeout @triggerTurn, nextTurn(), true if _auto
+
   # **private**
   # Populate the `modified` parameter array with models that have been modified.
   # For items, recursively check linked items.
@@ -281,6 +319,7 @@ class _RuleService
         actor.resolve process
       else 
         process null
+
 
 class RuleService
   _instance = undefined

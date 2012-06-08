@@ -1,4 +1,22 @@
-define [
+###
+  Copyright 2010,2011,2012 Damien Feugas
+  
+    This file is part of Mythic-Forge.
+
+    Myth is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Myth is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser Public License for more details.
+
+    You should have received a copy of the GNU Lesser Public License
+ ###
+
+ define [
   'backbone'
   'jquery'
   'model/Item'
@@ -192,7 +210,7 @@ define [
     displayElement: (element) =>
       if element instanceof Item
         # removes previous rendering
-        @_itemsLayer.find(".#{element.id}").remove()
+        @_itemsLayer.find(".#{element.id},[data-id=#{element.id}]").remove()
         # do not display items that have not coordinates
         return if element.get('x') is null or element.get('y') is null
 
@@ -339,7 +357,8 @@ define [
             clone.data 'id', img.data 'id'
             # gets the element displayed
             element = Item.collection.get img.data 'id'
-            clone.addClass "item #{element.id} #{element.get('type')._id}"
+
+            clone.addClass "item #{element.id} #{element.get('type').id}"
 
             # positionnate the image.
             x = element.get 'x'
@@ -357,7 +376,6 @@ define [
               '-webkit-transform': "skewX(#{correction}deg)"
               # y is more important than x in z-index
               'z-index': y*2+x 
-            
             img.replaceWith clone
     
     # Return the coordinate of the hexagon under the mouse position.

@@ -15,3 +15,7 @@ mongo:
 executable:
   source: D:/Programmation/Workspace2/mythic-forge-proto/lib/game-test
   target: D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled-test
+
+# Turns execution settings. Frequency in seconds
+turn:
+  frequency: 5

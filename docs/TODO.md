@@ -17,6 +17,7 @@
     - runtime resolution at client side
     - **[done]** items creation and removal
     - **[done]** items updates
+    - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
     - turn rules
 - Web layer
