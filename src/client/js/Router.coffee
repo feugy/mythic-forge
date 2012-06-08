@@ -14,9 +14,9 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
- ###
+###
 
- requirejs.config 
+requirejs.config 
   map:
    '*': 
     'backbone': 'lib/backbone-0.9.2-min'

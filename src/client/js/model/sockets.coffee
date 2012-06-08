@@ -14,9 +14,9 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
- ###
+###
 
- define [
+define [
   'socket.io'
 ], (io) ->
   origin = "https://#{window.location.host}:443"
