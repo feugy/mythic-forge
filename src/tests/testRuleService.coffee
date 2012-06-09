@@ -379,3 +379,56 @@ module.exports =
                       test.equal 1, existing.get('stock').length
                       test.equal null, existing.get('stock')[0]
                       test.done()
+
+  'given an item type and an item': 
+
+    setUp: (end) ->
+      ItemType.collection.drop ->
+        Item.collection.drop ->
+          # given a type
+          throw new Error err if err?
+          type1 = new ItemType({name: 'dog'})
+          type1.setProperty 'name', 'string', ''
+          type1.setProperty 'fed', 'integer', 0
+          type1.save (err, saved) ->
+            type1 = saved
+            # given two items
+            new Item({type: type1, name:'lassie'}).save (err, saved) ->
+              throw new Error err if err?
+              item1 = saved
+              new Item({type: type1, name:'medor'}).save (err, saved) ->
+                throw new Error err if err?
+                item2 = saved
+                end()  
+
+    'should turn rule be executed': (test) ->
+      # given a turn rule on dogs
+      script = new Executable 'rule6', """TurnRule = require '../main/model/TurnRule'
+      Item = require '../main/model/Item'
+      ObjectId = require('mongodb').BSONPure.ObjectID
+
+      module.exports = new (class Dumb extends TurnRule
+        constructor: ->
+          @name= 'rule 6'
+        select: (callback) =>
+          Item.find {type: new ObjectId "#{type1._id}"}, callback
+        execute: (target, callback) =>
+          target.set 'fed', target.get('fed')+1
+          callback null, "\#{target.get 'name'} was fed"
+      )()"""
+      script.save (err) ->
+        throw new Error err if err?
+        Item.count {type: type1._id}, (err, count) =>
+          # when executing a trurn
+          service.triggerTurn (err)->
+            throw new Error "Unable to trigger turn: #{err}" if err?
+
+            # then the both dogs where fed
+            Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+              throw new Error "Unable to find item: #{err}" if err?
+              test.equal 1, existing.get 'fed'
+           
+              Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
+                throw new Error "Unable to find item: #{err}" if err?
+                test.equal 1, existing.get 'fed'
+                test.done()

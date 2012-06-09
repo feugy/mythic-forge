@@ -17,6 +17,7 @@
 ###
 
 Rule = require '../model/Rule'
+TurnRule = require '../model/TurnRule'
 Executable = require '../model/Executable'
 async = require 'async'
 Item = require '../model/Item'
@@ -49,7 +50,7 @@ class _RuleService
     # Reset the local cache
     Executable.resetAll =>
       # Trigger first turn execution
-      setTimeout @triggerTurn, nextTurn(), true
+      setTimeout @triggerTurn, nextTurn(), (->), true
         
   # Resolves the applicable rules for a given situation.
   #
@@ -209,13 +210,77 @@ class _RuleService
  
   # Trigger a turn by executing turn rules
   #
+  # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
+  # @option callback err [String] an error string. Null if no error occured.
   # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
   # 
-  triggerTurn: (_auto = false) =>
+  triggerTurn: (callback, _auto = false) =>
     logger.debug 'triggers turn rules...'
-    # @Todo
-    logger.debug 'end of turn'
-    setTimeout @triggerTurn, nextTurn(), true if _auto
+    
+    # read all existing executables. @todo: use cached rules.
+    Executable.find (err, executables) =>
+      throw new Error "Cannot collect rules: #{err}" if err?
+
+      rules = []
+      # and for each of them, extract their turn rule.
+      for executable in executables
+        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+        # and singleton (like ModuleWatcher) will be broken.
+        obj = require '.\\'+ path.relative module.filename, executable.compiledPath
+        rules.push obj if obj? and utils.isA obj, TurnRule
+
+      # @todo sort rules
+
+      # arrays of modified objects
+      saved = []
+      removed = []
+
+      # function that select target of a rule and execute it on them
+      selectAndExecute = (rule, end) =>
+        rule.select (err, targets) =>
+          # stop a first selection error.
+          return callback "Failed to select targets for rule #{rule.name}: #{err}" if err?
+          logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
+
+          # function that execute the current rule on a target
+          execute = (target, end) =>
+            rule.execute target, (err) =>
+              # stop a first execution error.
+              return callback "Failed to execute rule #{rule.name} on target #{target.get '_id'}: #{err}" if err?
+              # store modified object for later
+              saved = saved.concat rule.created
+              @_filterModified target, saved
+              removed = removed.concat rule.removed
+              end()
+
+          # execute on each target and leave at the end.
+          async.forEach targets, execute, end
+
+      # select and execute each turn rule
+      async.forEach rules, selectAndExecute, =>
+        # at the end, save and remove modified items
+        removeModel = (target, end) =>
+          logger.debug "remove model #{target.get '_id'}"
+          target.remove (err) =>
+            # stop a first execution error.
+            return callback "Failed to remove model #{target.get '_id'} at the end of the turn: #{err}" if err?
+            end()
+        # first removals
+        async.forEach removed, removeModel, => 
+          saveModel = (target, end) =>
+            logger.debug "save model #{target.get '_id'}"
+            target.save (err) =>
+              # stop a first execution error.
+              return callback "Failed to save model #{target.get '_id'} at the end of the turn: #{err}" if err?
+              end()
+          # then saves
+          async.forEach saved, saveModel, => 
+            logger.debug 'end of turn'
+            # trigger the next turn
+            setTimeout @triggerTurn, nextTurn(), callback, true if _auto
+            # return callback
+            callback null
+
 
   # **private**
   # Populate the `modified` parameter array with models that have been modified.
