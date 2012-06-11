@@ -32,3 +32,8 @@
     - **[done]** application of map items modifications 
     - **[done]** create a new player and display its map
     - **[done]** bot mode
+    - transitions
+        - image sprite specification (size, location)
+        - transition duration
+        - transition chain
+        - **[done]** image cache

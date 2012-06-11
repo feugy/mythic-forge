@@ -380,6 +380,15 @@ define [
               @_hexW,
               @_hexH
         else 
+          # Gets the image data with a canvas temporary element
+          canvas = $("<canvas></canvas>")[0];
+          canvas.width = imageData.width;
+          canvas.height = imageData.height;
+          # Copy the image contents to the canvas
+          ctx = canvas.getContext '2d'
+          ctx.drawImage imageData, 0, 0;
+          data = canvas.toDataURL 'image/png';
+
           # it's an item.
           imgs = @$el.find "img[data-src=\"#{url}\"]"
           for img in imgs
@@ -402,7 +411,7 @@ define [
               bottom: bottom
               '-moz-transform': "skewX(#{correction}deg)"
               '-webkit-transform': "skewX(#{correction}deg)"
-              'background-image': "url(#{url})"
+              'background-image': "url(#{data})"
               'background-position': "#{element.shiftLeft}px #{element.shiftTop}px"
               # y is more important than x in z-index
               'z-index': y*2+x 
