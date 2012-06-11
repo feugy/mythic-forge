@@ -113,7 +113,7 @@ define [
       @router.on 'rulesResolved', @_onRuleResolved
       @router.on 'imageLoaded', @_onImageLoaded
       @router.on 'key', @_onKeyUp
-      setInterval @_randomMove, 500 if 0 is @character.get('name').indexOf 'bot-'
+      setInterval @_randomMove, 750 if 0 is @character.get('name').indexOf 'bot-'
 
 
     # The `render()` method is invoked by backbone to display view content at screen.
@@ -308,6 +308,37 @@ define [
       # adds it if it's new on the map
       return @displayElment element if rendering.length is 0
 
+      # changes state if necessary
+      if element.get('state')? 
+        # @todo
+        console.log 'state changed'
+
+      # displays transition
+      if element.get('transition')?
+        start = new Date()
+        last = start
+
+        # frame animation: change sprite.
+        onFrame = (current) =>
+          # loop until the end of the animation
+          if current-start < 500
+            requestAnimationFrame onFrame 
+            # only animate all 50ms
+            if current-last >= 50
+              last = current
+              # move frame 
+              element.shiftLeft = if element.shiftLeft <= -700 then 0 else element.shiftLeft - 100
+              rendering.css 'backgroundPosition', "#{element.shiftLeft}px #{element.shiftTop}px"
+
+          else 
+            # end of the animation
+            element.transition = null
+            element.shiftLeft = 0
+            rendering.css 'backgroundPosition', "#{element.shiftLeft}px #{element.shiftTop}px"
+
+        # start the animation
+        onFrame start
+
       # or update it
       oldLeft = parseFloat rendering.css('left')
       oldBottom = parseFloat rendering.css('bottom')
@@ -353,12 +384,9 @@ define [
           imgs = @$el.find "img[data-src=\"#{url}\"]"
           for img in imgs
             img = $(img)
-            clone = $(imageData).clone()
-            clone.data 'id', img.data 'id'
             # gets the element displayed
             element = Item.collection.get img.data 'id'
-
-            clone.addClass "item #{element.id} #{element.get('type').id}"
+            clone = $ "<div data-id=\"#{element.id}\" class=\"item #{element.id} #{element.get('type').id}\">"
 
             # positionnate the image.
             x = element.get 'x'
@@ -374,6 +402,8 @@ define [
               bottom: bottom
               '-moz-transform': "skewX(#{correction}deg)"
               '-webkit-transform': "skewX(#{correction}deg)"
+              'background-image': "url(#{url})"
+              'background-position': "#{element.shiftLeft}px #{element.shiftTop}px"
               # y is more important than x in z-index
               'z-index': y*2+x 
             img.replaceWith clone

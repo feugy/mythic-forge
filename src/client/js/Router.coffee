@@ -46,6 +46,7 @@ define [
   'service/RuleService'
   'service/PlayerService'
   'service/ImagesLoader'
+  'lib/requestAnimationFrame-shim'
   ], ($, Backbone, Map, Item, Field, MapView, HomeView, RuleService, PlayerService, ImagesLoader) ->
 
   class Router extends Backbone.Router

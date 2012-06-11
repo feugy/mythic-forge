@@ -85,6 +85,12 @@ define [
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
 
+    # for transitions: the current background horizontal shift 
+    shiftLeft: 0
+
+    # for transitions: the current background vertical shift 
+    shiftTop: 0
+
     # Item constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.

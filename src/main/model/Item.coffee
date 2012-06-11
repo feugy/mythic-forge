@@ -45,6 +45,17 @@ ItemSchema = new mongoose.Schema({
     imageNum: 
       type: Number
       default: 0
+    # states give tips to clients for rendering the Item. They allow for exemple to display
+    # som lone-live animation. For example, 'sleep' state while display a snoring animation.
+    state: 
+      type: String
+      default: null
+    # transition are special actions that lives during the update of the item rendering.
+    # for exemple, it reflects the move animation while updating the map position
+    # client will reset it to null after the rendering was updated.
+    transition: 
+      type: String
+      default: null
     # link to type
     type: 
       type: {}
