@@ -22,8 +22,41 @@ logger = require('../logger').getLogger 'model'
 
 # Define the schema for map item types
 ItemTypeSchema = new mongoose.Schema
-  name: {type: String, required: true}
-  images: [Number]
+  # item name
+  name: 
+    type: String
+    required: true
+
+  # definition of item images, stored in an array
+  # @example each images is a set of sprites
+  #   image: {
+  #     # file path
+  #     file: {type: String, required: true}
+  #     # image width, in pixel
+  #     width: {type: Number, required: true}
+  #     # image height, in pixel
+  #     height: {type: Number, required: true}
+  #     # different sprites inside the images, stored by name
+  #     sprites: {type: {}, default: {}}
+  # @example a sprite inside an image.
+  #   sprite: {
+  #     # number of sprites
+  #     number: {type: Number, required: true}
+  #     # duration in milliseconds. Null for infinite sprite.
+  #     duration: {type:Number, default: null}
+  #     # true to allow move
+  #     move: {type:Boolean, default: false}
+  images: 
+    type: []
+    default: -> []
+
+  # item properties definition, stored by names
+  # @example property definition include
+  #   property: {
+  #     # property type, within: string, text, boolean, integer, float, date, array or object
+  #     type: {type: String, required: true}
+  #     # default value applied
+  #     def: {type: {}, required: true}
   properties: 
     type: {}
     default: -> {} # use a function to force instance variable

@@ -17,16 +17,14 @@
 ###
 
 define [
-  'backbone'
-  'underscore'
   'model/Player'
   'model/Item'
   'model/sockets'
-], (Backbone, _, Player, Item, sockets) ->
+], (Player, Item, sockets) ->
 
   # The PlayerService class provide registration facilities.
   #
-  class PlayerService extends Backbone.Events
+  class PlayerService
 
     # The currently connected player.
     connected: null

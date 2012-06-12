@@ -21,7 +21,8 @@ define [
   'jquery'
   'model/Item'
   'model/Field'
-], (Backbone, $, Item, Field) ->
+  'utils/Animation'
+], (Backbone, $, Item, Field, Animation) ->
 
   # **private**
   # Compute the location of the point C regarding the straight between A and B
@@ -68,6 +69,10 @@ define [
       'click .layer.interactive': 'hitMap'
       'click .rule-trigger': 'triggerRule'
       'mousemove .layer.interactive': '_drawIndicators' 
+
+    # **private**
+    # current animations
+    _anims: {}
 
     # **private**
     # Items layer jQuery element.
@@ -217,7 +222,8 @@ define [
         console.log "display on map #{element.id} #{element.get 'name'} at #{element.get 'x'}:#{element.get 'y'}"
 
         # creates an image 
-        src = "#{@router.origin}/assets/#{element.get('type').get('name')}-#{element.get 'imageNum'}.png"
+        image = element.get('type').get('images')[element.get('imageNum')]
+        src = "#{@router.origin}/assets/#{image.file}"
         img = $ "<img data-src=\"#{src}\" data-id=\"#{element.id}\"/>"
         @imagesLoader.load src
         @_itemsLayer.append img
@@ -229,7 +235,7 @@ define [
 
       else 
         # this is a field. Load its image, and await for it.
-        src = "#{@router.origin}/assets/sand-#{element.get 'imageNum'}.png"
+        src = "#{@router.origin}/assets/sand-0.png"
         @_fieldsByImg[src] ?= [];
         @_fieldsByImg[src].push element
         @imagesLoader.load src
@@ -308,6 +314,12 @@ define [
       # adds it if it's new on the map
       return @displayElment element if rendering.length is 0
 
+      # or update it
+      oldLeft = parseFloat rendering.css('left')
+      oldBottom = parseFloat rendering.css('bottom')
+      left = @_hexW*(x+ if y%2 then 0.5 else 0)
+      bottom = @_hexH*(@originY+10-y)*0.75
+
       # changes state if necessary
       if element.get('state')? 
         # @todo
@@ -315,86 +327,63 @@ define [
 
       # displays transition
       if element.get('transition')?
-        start = new Date()
-        last = start
+        anim = new Animation element, rendering
+        anim.on 'end', (animation) =>
+          # removes current animation
+          @_anims[animation.item.id].splice 0, 1
+          next = @_anims[animation.item.id][0]
+          # triggers next
+          if next
+            next.start()
 
-        # frame animation: change sprite.
-        onFrame = (current) =>
-          # loop until the end of the animation
-          if current-start < 500
-            requestAnimationFrame onFrame 
-            # only animate all 50ms
-            if current-last >= 50
-              last = current
-              # move frame 
-              element.shiftLeft = if element.shiftLeft <= -700 then 0 else element.shiftLeft - 100
-              rendering.css 'backgroundPosition', "#{element.shiftLeft}px #{element.shiftTop}px"
+        if oldLeft isnt left or oldBottom isnt bottom
+          console.debug "#{element.get 'name'} from #{oldLeft}:#{oldBottom} to #{left}:#{bottom}"
+          anim.left = left
+          anim.bottom = bottom
 
-          else 
-            # end of the animation
-            element.transition = null
-            element.shiftLeft = 0
-            rendering.css 'backgroundPosition', "#{element.shiftLeft}px #{element.shiftTop}px"
-
-        # start the animation
-        onFrame start
-
-      # or update it
-      oldLeft = parseFloat rendering.css('left')
-      oldBottom = parseFloat rendering.css('bottom')
-      left = @_hexW*(x+ if y%2 then 0.5 else 0)
-      bottom = @_hexH*(@originY+10-y)*0.75
-      console.debug "#{element.get 'name'} from #{oldLeft}:#{oldBottom} to #{left}:#{bottom}"
-      # did it moved ?
-      return unless oldLeft isnt left or oldBottom isnt bottom
-
-      correction = -(0.8*x-4)
-      # yes ! moves it
-      rendering.css 
-        left: left
-        bottom: bottom
-        '-moz-transform': "skewX(#{correction}deg)"
-        '-webkit-transform': "skewX(#{correction}deg)"
-        # y is more important than x in z-index
-        'z-index': y*2+x 
-
+        # start the animation and stores it
+        @_anims[element.id] = [] unless element.id of @_anims
+        if @_anims[element.id].length is 0
+          anim.start()
+        @_anims[element.id].push anim 
+      
+    # **private**
     # Handler of image loading. Displays image on the map.
     #
     # @param success [Boolean] true if the image was correctly loaded
     # @param url [String] the image url
-    # @param imageData [Object] if success, the image binary data
-    _onImageLoaded: (success, url, imageData) =>
+    # @param data [Object] if success, the image binary data
+    #
+    _onImageLoaded: (success, url, data) =>
       if success
         # It's a afield
         if url of @_fieldsByImg
           return if @_fieldsByImg.length is 0
           fields = @_fieldsByImg[url]
           ctx =@$el.find('.fields')[0].getContext '2d'
-          # Batch display of all concerned fields
-          for field in fields
-            # Draw image
-            shift = if field.get('y')%2 is 0 then 0 else @_hexW*0.5
-            ctx.drawImage imageData, 
-              @_hexW * (field.get('x')-@originX) + shift, 
-              @_hexH * .75 * (field.get('y')-@originY),
-              @_hexW,
-              @_hexH
+          img = $("<img src=\"#{data}\"/>")
+          img.on 'load', =>
+            # Batch display of all concerned fields
+            for field in fields
+              # Draw image
+              shift = if field.get('y')%2 is 0 then 0 else @_hexW*0.5
+              ctx.drawImage img[0], 
+                @_hexW * (field.get('x')-@originX) + shift, 
+                @_hexH * .75 * (field.get('y')-@originY),
+                @_hexW,
+                @_hexH
         else 
-          # Gets the image data with a canvas temporary element
-          canvas = $("<canvas></canvas>")[0];
-          canvas.width = imageData.width;
-          canvas.height = imageData.height;
-          # Copy the image contents to the canvas
-          ctx = canvas.getContext '2d'
-          ctx.drawImage imageData, 0, 0;
-          data = canvas.toDataURL 'image/png';
-
           # it's an item.
           imgs = @$el.find "img[data-src=\"#{url}\"]"
+          # gets image information on type.
+          image = null
+
           for img in imgs
             img = $(img)
             # gets the element displayed
             element = Item.collection.get img.data 'id'
+            image = element.get('type').get('images')[element.get('imageNum')] unless image?
+
             clone = $ "<div data-id=\"#{element.id}\" class=\"item #{element.id} #{element.get('type').id}\">"
 
             # positionnate the image.
@@ -409,10 +398,13 @@ define [
             clone.css 
               left: left
               bottom: bottom
+              width: image.width
+              height: image.height
               '-moz-transform': "skewX(#{correction}deg)"
               '-webkit-transform': "skewX(#{correction}deg)"
               'background-image': "url(#{data})"
               'background-position': "#{element.shiftLeft}px #{element.shiftTop}px"
+              'background-size': "auto #{image.width}px"
               # y is more important than x in z-index
               'z-index': y*2+x 
             img.replaceWith clone

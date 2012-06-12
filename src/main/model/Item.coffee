@@ -42,6 +42,7 @@ ItemSchema = new mongoose.Schema({
     y: 
       type: Number
       default: null
+    # image number in the images array of the corresponding item type.
     imageNum: 
       type: Number
       default: 0
@@ -56,6 +57,10 @@ ItemSchema = new mongoose.Schema({
     transition: 
       type: String
       default: null
+      set: (value) ->
+        # force transition to appear in modifiedPath, to allow propagation
+        @markModified('transition')
+        value
     # link to type
     type: 
       type: {}

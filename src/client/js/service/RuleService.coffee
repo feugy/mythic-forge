@@ -17,13 +17,12 @@
 ###
 
 define [
-  'backbone'
   'model/sockets'
-], (Backbone, sockets) ->
+], (sockets) ->
 
   # The RuleService class provide the rule engine on client side.
   #
-  class RuleService extends Backbone.Events
+  class RuleService
 
     # The router will act as a event bus.
     router: null

@@ -44,9 +44,17 @@ define [
       src = event.target.src.replace /\?\d*$/, ''
       # Remove event from pending array
       delete @_pendingImages[src]
+      # Gets the image data with a canvas temporary element
+      canvas = $("<canvas></canvas>")[0];
+      canvas.width = event.target.width;
+      canvas.height = event.target.height;
+      # Copy the image contents to the canvas
+      ctx = canvas.getContext '2d'
+      ctx.drawImage event.target, 0, 0;
+      data = canvas.toDataURL 'image/png';
       # Store result and emit on the event bus
-      @_cache[src] = event.target;
-      @router.trigger 'imageLoaded', true, src, event.target
+      @_cache[src] = data;
+      @router.trigger 'imageLoaded', true, src, data
   
     # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
     # @param event [Event] image loading fail event

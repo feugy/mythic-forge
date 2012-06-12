@@ -44,12 +44,6 @@
 .map .layer .item {
   position: absolute;
   background-repeat: no-repeat;
-  background-size: auto 100px;
-  width: 100px;
-  height: 100px;
-  -webkit-transition: bottom 500ms, left 500ms;
-  -moz-transition: bottom 500ms, left 500ms;
-  transition: bottom 500ms, left 500ms;
 } 
 
 .map .menu {
