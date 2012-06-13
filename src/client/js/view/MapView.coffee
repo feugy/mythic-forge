@@ -278,7 +278,7 @@ define [
       actor = Item.collection.get args.actorId
       return unless actor?
       # gets the actor corresponding image
-      img = @$el.find "img.#{args.actorId}"
+      img = @$el.find "div.#{args.actorId}"
       return if img.length is 0
       str = ''
       for id, rules of results
@@ -514,24 +514,26 @@ define [
         x: @character.get 'x'
         y: @character.get 'y'
       switch key.code
-        # numpad 1
-        when 97 
+        # numpad 1 or W
+        when 97, 87
           pos.x-- if pos.y % 2 is 0
           pos.y++
-        # numpad 4
-        when 100 then pos.x--
-        # numpad 7
-        when 103
+        # numpad 4 or Q
+        when 100, 81 
+          pos.x--
+        # numpad 7 or A
+        when 103, 65
           pos.x-- if pos.y % 2 is 0
           pos.y--
-        # numpad 3
-        when 99
+        # numpad 3 or C
+        when 99, 67
           pos.x++ if pos.y % 2 is 1
           pos.y++
-        # numpad 6
-        when 102 then pos.x++
-        # numpad 9
-        when 105
+        # numpad 6 or D
+        when 102, 68 
+          pos.x++
+        # numpad 9 or E
+        when 105, 69
           pos.x++ if pos.y % 2 is 1
           pos.y--
         else 
