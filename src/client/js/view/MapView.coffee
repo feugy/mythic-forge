@@ -402,8 +402,7 @@ define [
               '-moz-transform': "skewX(#{correction}deg)"
               '-webkit-transform': "skewX(#{correction}deg)"
               'background-image': "url(#{data})"
-              'background-position': "#{element.shiftLeft}px #{element.shiftTop}px"
-              'background-size': "auto #{image.width}px"
+              'background-position': "0px 0px"
               # y is more important than x in z-index
               'z-index': y*2+x 
             img.replaceWith clone

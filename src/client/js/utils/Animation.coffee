@@ -33,7 +33,8 @@ define [
       # if document is in background, animations will stop, so stop animations.
       time = null
     # trigger onFrame for each executing animations
-    anim._onFrame time for anim in _anims
+    for anim in _anims
+      anim._onFrame time if anim isnt undefined
 
   # starts the loop at begining of the game
   _loop new Date().getTime()
@@ -90,7 +91,9 @@ define [
       @_sprite = imageDef.sprites[transition]
       @_sprite.width = imageDef.width
       @_step= 0
-          
+      # set the sprite row
+      @item.shiftLeft = 0
+      @item.shiftTop = -@_sprite.vOffset          
 
     # Starts effectively the animation, and trigger the 'start' event.
     # 
