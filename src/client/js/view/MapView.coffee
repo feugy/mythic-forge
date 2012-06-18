@@ -343,9 +343,8 @@ define [
 
         # start the animation and stores it
         @_anims[element.id] = [] unless element.id of @_anims
-        if @_anims[element.id].length is 0
-          anim.start()
         @_anims[element.id].push anim 
+        anim.start() if @_anims[element.id].length is 1
       
     # **private**
     # Handler of image loading. Displays image on the map.

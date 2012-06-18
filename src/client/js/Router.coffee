@@ -17,22 +17,21 @@
 ###
 
 requirejs.config 
-  map:
-   '*': 
+  paths:
     'backbone': 'lib/backbone-0.9.2-min'
     'underscore': 'lib/underscore-1.3.3-min'
     'jquery': 'lib/jquery-1.7.2-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     
   shim:
-    'lib/backbone-0.9.2-min': 
+    'backbone': 
       deps: ['underscore', 'jquery']
       exports: 'Backbone'
-    'lib/underscore-1.3.3-min': 
+    'underscore': 
       exports: '_'
-    'lib/jquery-1.7.2-min': 
+    'jquery': 
       exports: '$'
-    'lib/socket.io-0.9.6-min': 
+    'socket.io': 
       exports: 'io'
 
 define [

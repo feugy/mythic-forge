@@ -19,8 +19,32 @@
 define [
   'backbone'
   'underscore'
-], (Backbone, _) ->
+  'jquery'
+], (Backbone, _, $) ->
 
+  # List of executing animations
+  _anims = []
+
+  # The unic animation loop
+  _loop = (time) ->
+    # request another animation frame for next rendering.
+    requestAnimationFrame _loop 
+    if document.hidden
+      # if document is in background, animations will stop, so stop animations.
+      time = null
+    # trigger onFrame for each executing animations
+    anim._onFrame time for anim in _anims
+
+  # starts the loop at begining of the game
+  _loop new Date().getTime()
+
+  # getter for document visibility
+  prefix = if $.browser.webkit then 'webkit' else 'moz'
+  # define a getter for page visibility
+  Object.defineProperty document, 'hidden', 
+    get: () ->
+      document[prefix+'Hidden']
+  
   # The Animation class performs the sprite animation loop for a given item.
   # It changes sprite, and moves the rendering if needed, all along the animation
   # Two events are triggered: 'start' and 'end'
@@ -71,7 +95,7 @@ define [
     # Starts effectively the animation, and trigger the 'start' event.
     # 
     start: =>
-      @_start = new Date()
+      @_start = new Date().getTime()
 
       # if we moved, compute the steps
       if @left?
@@ -81,20 +105,23 @@ define [
       # console.log "#{@item.id} animated, start"
       # Starts the animation, with an event and the first frame.
       @trigger 'start', @
-      @_onFrame @_start
+      if document.hidden
+        # document not visible: drop directly to last frame.
+        @_onFrame @_start+@_sprite.duration+1000
+      else 
+        # add it to animations
+        _anims.push @
 
     # **private**
     # Animation loop: request another animation frame, and if it's time to switch sprites,
     # alter the rendering.
     # At the end of the animation, triggers the 'end' event.
     #
-    # @param current [Date] the current time.
+    # @param current [Number] the current timestamp. Null to stop current animation.
     #
     _onFrame: (current) ->
       # loop until the end of the animation
-      if current-@_start < @_sprite.duration
-        requestAnimationFrame (time) => 
-          @_onFrame(time)
+      if current? and current-@_start < @_sprite.duration
         # only animate at needed frames
         if current-@_start >= (@_step+1)*@_sprite.duration/@_sprite.number
           # console.log "#{@item.id} animated, sprite #{@_step}"
@@ -115,6 +142,8 @@ define [
               bottom: @bottom-@_stepBottom*(@_sprite.number-@_step)
 
       else 
+        # removes from executing animations first.
+        _anims.splice _anims.indexOf(@), 1
         # console.log "#{@item.id} animated, end"
         # end of the animation: displays first sprite
         @item.shiftLeft = 0
