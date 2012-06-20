@@ -4,6 +4,7 @@ async = require 'async'
 coffee = require 'coffee-script'
 logger = require('../logger').getLogger 'model'
 utils = require '../utils'
+rimraf = require 'rimraf'
 
 root = utils.confKey 'executable.source'
 compiledRoot = utils.confKey 'executable.target'
@@ -17,11 +18,8 @@ ext = utils.confKey 'executable.extension','.coffee'
 # @param forceRemove [boolean] if specifed and true, first erase the folder.
 createPath = (folderPath, forceRemove) ->
   # force Removal if specified
-  if forceRemove and path.existsSync folderPath
-    files = fs.readdirSync folderPath
-    fs.unlinkSync path.join folderPath, file for file in files
-    fs.rmdirSync folderPath 
-
+  rimraf.sync folderPath if forceRemove and path.existsSync folderPath
+    
   if not path.existsSync folderPath
     try 
       fs.mkdirSync folderPath

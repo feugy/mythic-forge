@@ -94,6 +94,16 @@ describe 'RuleService tests', ->
           assert.equal result, 'hello !'
           done()
 
+    it 'should rule be exportable to client', (done) ->
+      # when exporting rules to client
+      service.export (err, rules) ->
+        throw new Error "Unable to export rules: #{err}" if err?
+
+        assert.equal 1, rules.length
+        assert.ok rules[0].indexOf 'execute' is 0
+        assert.ok rules[0].indexOf 'hello !' is 0
+        done()
+
   describe 'given 3 items and a dumb rule', ->
 
     beforeEach (done) ->
@@ -225,6 +235,7 @@ describe 'RuleService tests', ->
             assert.equal result, 'target moved'
             # then the item was modified on database
             Item.find {x:2}, (err, items) =>
+              throw new Error "failed to retrieve items: #{err}" if err?
               assert.equal 1, items.length
               assert.equal 2, items[0].x
               done()
@@ -278,6 +289,7 @@ describe 'RuleService tests', ->
                   assert.equal result, 'driven left'
                   # then the item was modified on database
                   Item.find {x:10}, (err, items) =>
+                    throw new Error "Unable to retrieve items: #{err}" if err?
                     assert.equal 2, items.length
                     assert.equal 10, items[0].x
                     assert.equal 10, items[0].x
@@ -433,5 +445,13 @@ describe 'RuleService tests', ->
            
               Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
                 throw new Error "Unable to find item: #{err}" if err?
-                assert.equal 1, existing.get('fed'), 'lassie wasn\'t fed'
+                assert.equal 1, existing.get('fed'), 'medor wasn\'t fed'
                 done()
+
+    it 'should not turn rule be exportable to client', (done) ->
+      # when exporting rules to client
+      service.export (err, rules) ->
+        throw new Error "Unable to export rules: #{err}" if err?
+
+        assert.equal 0, rules.length
+        done()

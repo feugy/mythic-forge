@@ -51,7 +51,6 @@ describe 'Executable tests', ->
         throw new Error "Can't find executable: #{err}" if err?
 
         # then it's the only one executable
-        console.dir executables
         assert.equal executables.length, 1
         # then it's values were saved
         assert.equal executables[0]._id, name

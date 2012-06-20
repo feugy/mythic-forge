@@ -25,6 +25,7 @@ Field = require '../model/Field'
 Player = require '../model/Player'
 utils = require '../utils'
 path = require 'path'
+fs = require 'fs'
 logger = require('../logger').getLogger 'service'
 
 # Local cache of existing rules.
@@ -51,6 +52,39 @@ class _RuleService
     Executable.resetAll =>
       # Trigger first turn execution
       setTimeout @triggerTurn, nextTurn(), (->), true
+
+        
+  # Exports existing rules to clients: turn rules are ignored and execute() function is not exposed.
+  #
+  # @param callback [Function] callback executed when rules where exported. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback rules [Array<String>] exported rules, in text
+  #
+  export: (callback) =>
+    # read all existing executables. @todo: use cached rules.
+    Executable.find (err, executables) =>
+      throw new Error "Cannot collect rules: #{err}" if err?
+
+      rules = []
+      readContent = (executable, done) =>
+        fs.readFile executable.compiledPath, (err, content) =>
+          return callback "Failed to export rules. Error while reading rule #{executable.compiledPath}: #{err}" if err?
+          content = content.toString()
+          if content.indexOf "})(Rule);" isnt -1
+            # removes the executable part
+            content = content.replace '    this.execute = __bind(this.execute, this);\n', ''
+
+            start = content.search /\s{4}.*\.prototype\.execute\s=\sfunction\(.*\)\s\{/i
+            end = content.indexOf '    };', start
+
+            content = content.substring(0, start)+content.substring end+6
+            # and keep the remaining code
+            rules.push content 
+          done()
+
+      # read content of all existing executables
+      async.forEach executables, readContent, (err) =>
+        callback err, rules
         
   # Resolves the applicable rules for a given situation.
   #

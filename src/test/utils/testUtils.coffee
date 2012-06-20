@@ -33,4 +33,6 @@ module.exports =
       remove = (file, done) ->
         fileName = p.join(path, file)
         fs.unlink fileName, done
-      async.forEach files, remove, callback
+      async.forEach files, remove, (err) ->
+        return callback err if err?
+        setTimeout callback, 5
