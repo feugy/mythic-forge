@@ -25,6 +25,7 @@ Player = require '../main/model/Player'
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/RuleService').get()
 utils = require '../main/utils'
+assert = require('chai').assert
  
 map= null
 player= null
@@ -35,19 +36,20 @@ item2= null
 item3= null
 field1= null
 
-module.exports = 
+describe 'RuleService tests', ->
 
-  setUp: (end) ->
+  beforeEach (done) ->
     # Empties the compilation and source folders content
     testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
       Executable.resetAll -> 
         Field.collection.drop ->
           Map.collection.drop ->
             map = new Map {name: 'map-Test'}
-            map.save -> end()
+            map.save -> done()
 
-  'given a player and a dumb rule':
-    setUp: (end) ->
+  describe 'given a player and a dumb rule', ->
+
+    beforeEach (done) ->
       # Creates a dumb rule that always match
       script = new Executable 'rule0', """Rule = require '../main/model/Rule'
       class MyRule extends Rule
@@ -65,21 +67,21 @@ module.exports =
           new Player({login: 'Loïc'}).save (err, saved) ->
             throw new Error err if err?
             player = saved
-            end()
+            done()
 
-    'should rule be applicable on player': (test) ->
+    it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
       service.resolve player._id, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
 
-        test.ok results isnt null and results isnt undefined
+        assert.ok results isnt null and results isnt undefined
         # then the rule must have matched
-        test.ok player._id of results
-        test.equal 1, results[player._id].length
-        test.equal 'rule 0', results[player._id][0].name 
-        test.done()
+        assert.ok player._id of results
+        assert.equal 1, results[player._id].length
+        assert.equal 'rule 0', results[player._id][0].name 
+        done()
 
-    'should rule be executed for player': (test) ->
+    it 'should rule be executed for player', (done) ->
       # given an applicable rule for a target 
       service.resolve player._id, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
@@ -89,11 +91,12 @@ module.exports =
           throw new Error "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
-          test.equal result, 'hello !'
-          test.done()
+          assert.equal result, 'hello !'
+          done()
 
-  'given 3 items and a dumb rule':
-    setUp: (end) ->
+  describe 'given 3 items and a dumb rule', ->
+
+    beforeEach (done) ->
       # Creates a dumb rule that always match
       script = new Executable 'rule1', """Rule = require '../main/model/Rule'
       class MyRule extends Rule
@@ -126,56 +129,56 @@ module.exports =
                   new Field({map: map, x:1, y:2}).save (err, saved) ->
                     throw new Error err if err?
                     field1 = saved
-                    end()
+                    done()
 
-    'should rule be applicable on empty coordinates': (test) ->
+    it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items
       service.resolve item1._id, -1, 0, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
 
-        test.ok results isnt null and results isnt undefined
+        assert.ok results isnt null and results isnt undefined
         # then the no item found at the coordinate
         for key of results 
-          test.fail 'results are not empty'
-        test.done()
+          assert.fail 'results are not empty'
+        done()
 
-    'should rule be applicable on coordinates': (test) ->
+    it 'should rule be applicable on coordinates', (done) ->
       # when resolving applicable rules at a coordinate
       service.resolve item1._id, 1, 2, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
         
-        test.ok results isnt null and results isnt undefined
+        assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        test.ok item2._id of results, 'The item2\'s id is not in results'
+        assert.ok item2._id of results, 'The item2\'s id is not in results'
         match = results[item2._id]
-        test.equal 1, match.length
-        test.equal 'rule 1', match[0]?.name
+        assert.equal 1, match.length
+        assert.equal 'rule 1', match[0]?.name
         # then the dumb rule has matched the third item
-        test.ok item3._id of results, 'The item3\'s id is not in results'
+        assert.ok item3._id of results, 'The item3\'s id is not in results'
         match = results[item3._id]
-        test.equal 1, match.length
-        test.equal 'rule 1', match[0]?.name
+        assert.equal 1, match.length
+        assert.equal 'rule 1', match[0]?.name
         # then the dumb rule has matched the field
-        test.ok field1._id of results, 'The field1\'s id is not in results'
+        assert.ok field1._id of results, 'The field1\'s id is not in results'
         match = results[field1._id]
-        test.equal 1, match.length
-        test.equal 'rule 1', match[0]?.name
-        test.done()
+        assert.equal 1, match.length
+        assert.equal 'rule 1', match[0]?.name
+        done()
         
-    'should rule be applicable on target': (test) ->
+    it 'should rule be applicable on target', (done) ->
       # when resolving applicable rules for a target
       service.resolve item1._id, item2._id, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
          
-        test.ok results isnt null and results isnt undefined
+        assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        test.ok item2._id of results, 'The item2\'s id is not in results'
+        assert.ok item2._id of results, 'The item2\'s id is not in results'
         match = results[item2._id]
-        test.equal 1, match.length
-        test.equal 'rule 1', match[0]?.name
-        test.done()
+        assert.equal 1, match.length
+        assert.equal 'rule 1', match[0]?.name
+        done()
 
-    'should rule be executed for target': (test) ->
+    it 'should rule be executed for target', (done) ->
       # given an applicable rule for a target 
       service.resolve item1._id, item2._id, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
@@ -185,10 +188,10 @@ module.exports =
           throw new Error "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
-          test.equal result, 'hello !'
-          test.done()
+          assert.equal result, 'hello !'
+          done()
 
-    'should rule execution modifies item in database': (test) ->
+    it 'should rule execution modifies item in database', (done) ->
       # given a rule that modified coordinates
       script = new Executable 'rule2', """Rule = require '../main/model/Rule'
       class MoveRule extends Rule
@@ -208,25 +211,25 @@ module.exports =
         service.resolve item1._id, item2._id, (err, results)->
           throw new Error "Unable to resolve rules: #{err}" if err?
 
-          test.equal 2, results[item2._id].length
+          assert.equal 2, results[item2._id].length
           rule = rule for rule in results[item2._id] when rule.name is 'rule 2'
-          test.ok rule isnt null
+          assert.ok rule isnt null
 
           # when executing this rule on that target
           service.execute rule.name, item1._id, item2._id, (err, result)->
             if err?
-              test.fail "Unable to execute rules: #{err}"
-              return test.done();
+              assert.fail "Unable to execute rules: #{err}"
+              return done();
 
             # then the rule is executed.
-            test.equal result, 'target moved'
+            assert.equal result, 'target moved'
             # then the item was modified on database
             Item.find {x:2}, (err, items) =>
-              test.equal 1, items.length
-              test.equal 2, items[0].x
-              test.done()
+              assert.equal 1, items.length
+              assert.equal 2, items[0].x
+              done()
 
-  'should linked object be modified and saved by a rule': (test) ->
+  it 'should linked object be modified and saved by a rule', (done) ->
     # given a rule that need links resolution
     script = new Executable 'rule3', """Rule = require '../main/model/Rule'
     class DriveLeft extends Rule
@@ -272,15 +275,15 @@ module.exports =
                   throw new Error "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
-                  test.equal result, 'driven left'
+                  assert.equal result, 'driven left'
                   # then the item was modified on database
                   Item.find {x:10}, (err, items) =>
-                    test.equal 2, items.length
-                    test.equal 10, items[0].x
-                    test.equal 10, items[0].x
-                    test.done()
+                    assert.equal 2, items.length
+                    assert.equal 10, items[0].x
+                    assert.equal 10, items[0].x
+                    done()
 
-  'should rule create new objects': (test) ->
+  it 'should rule create new objects', (done) ->
     # given a rule that creates an object
     script = new Executable 'rule4', """Rule = require '../main/model/Rule'
     Item = require '../main/model/Item'
@@ -317,18 +320,18 @@ module.exports =
               throw new Error "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
-              test.equal result, 'part added'
+              assert.equal result, 'part added'
                 # then the item was created on database
               Item.findOne {type: type1._id, name: 'part'}, (err, created) =>
                 throw new Error "Item not created" if err? or not(created?)
 
                 # then the container was modified on database
                 Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
-                  test.equals 1, existing.get('stock').length
-                  test.ok created._id.equals existing.get('stock')[0]
-                  test.done()
+                  assert.equal 1, existing.get('stock').length
+                  assert.ok created._id.equals existing.get('stock')[0]
+                  done()
 
-  'should rule delete existing objects': (test) ->
+  it 'should rule delete existing objects', (done) ->
     # given a rule that creates an object
     script = new Executable 'rule5', """Rule = require '../main/model/Rule'
     module.exports = new (class RemovePart extends Rule
@@ -365,24 +368,24 @@ module.exports =
                 throw new Error "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
-                test.equal result, 'part removed'
+                assert.equal result, 'part removed'
                 # then the item does not exist in database anymore
                 Item.findOne {type: type1._id, name: 'part'}, (err, existing) =>
                   throw new Error "Item not created" if err?
 
-                  test.ok existing is null
+                  assert.ok existing is null
                   # then the container does not contain the part
                   Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
                     throw new Error "Item not created" if err?
 
                     existing.resolve ->
-                      test.equal 1, existing.get('stock').length
-                      test.equal null, existing.get('stock')[0]
-                      test.done()
+                      assert.equal 1, existing.get('stock').length
+                      assert.equal null, existing.get('stock')[0]
+                      done()
 
-  'given an item type and an item': 
+  describe 'given an item type and an item', ->
 
-    setUp: (end) ->
+    beforeEach (done) ->
       ItemType.collection.drop ->
         Item.collection.drop ->
           # given a type
@@ -399,9 +402,9 @@ module.exports =
               new Item({type: type1, name:'medor'}).save (err, saved) ->
                 throw new Error err if err?
                 item2 = saved
-                end()  
+                done()  
 
-    'should turn rule be executed': (test) ->
+    it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
       script = new Executable 'rule6', """TurnRule = require '../main/model/TurnRule'
       Item = require '../main/model/Item'
@@ -426,9 +429,9 @@ module.exports =
             # then the both dogs where fed
             Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
               throw new Error "Unable to find item: #{err}" if err?
-              test.equal 1, existing.get 'fed'
+              assert.equal 1, existing.get('fed'), 'lassie wasn\'t fed'
            
               Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
                 throw new Error "Unable to find item: #{err}" if err?
-                test.equal 1, existing.get 'fed'
-                test.done()
+                assert.equal 1, existing.get('fed'), 'lassie wasn\'t fed'
+                done()

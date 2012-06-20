@@ -22,15 +22,21 @@ utils = require '../main/utils'
 path = require 'path'
 fs = require 'fs'
 executable = null
+assert = require('chai').assert
    
 root =  utils.confKey 'executable.source'
 
-module.exports = 
-  setUp: (end) ->
+describe 'Executable tests', -> 
+
+  beforeEach (done) ->
     # Empty the source and compilation folders content
-    testUtils.cleanFolder root, (err) -> Executable.resetAll -> end(err)
+    testUtils.cleanFolder root, (err) -> 
+      throw new Error err if err?
+      Executable.resetAll (err) -> 
+        throw new Error err if err?
+        done()
       
-  'should executable be created': (test) -> 
+  it 'should executable be created', (done) -> 
     # given a new executable
     content = 'console.log "hello world"'
     name = 'test1'
@@ -45,28 +51,30 @@ module.exports =
         throw new Error "Can't find executable: #{err}" if err?
 
         # then it's the only one executable
-        test.equal executables.length, 1
+        console.dir executables
+        assert.equal executables.length, 1
         # then it's values were saved
-        test.equal executables[0]._id, name
-        test.equal executables[0].content, content
-        test.done()
+        assert.equal executables[0]._id, name
+        assert.equal executables[0].content, content
+        done()
 
-  'given an executable': 
-    setUp: (end) ->
+  describe 'given an executable', -> 
+
+    beforeEach (done) ->
       executable = new Executable 'test2', 'console.log("hello world 2");'
       executable.save (err) ->
-        end()
+        done()
 
-    'should executable be removed': (test) ->
+    it 'should executable be removed', (done) ->
       # when removing an executable
       executable.remove ->
         # then it's in the folder anymore
         Executable.find (err, executables) -> 
           throw new Error "Can't find executable file: #{err}" if err?
-          test.equal executables.length, 0
-          test.done()
+          assert.equal executables.length, 0
+          done()
 
-    'should executable be updated': (test) ->
+    it 'should executable be updated', (done) ->
       # when modifying and saving a executable
       newContent = '# I have accents ! ééàà'
       executable.content = newContent
@@ -74,8 +82,8 @@ module.exports =
         Executable.find (err, executables) ->
           throw new Error "Can't find executable file: #{err}" if err?
           # then it's the only one executable
-          test.equal executables.length, 1
+          assert.equal executables.length, 1
           # then only the relevant values were modified
-          test.equal executables[0].content, newContent
-          test.equal executables[0]._id, 'test2'
-          test.done()
+          assert.equal executables[0].content, newContent
+          assert.equal executables[0]._id, 'test2'
+          done()

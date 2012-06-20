@@ -18,12 +18,13 @@
     "js-yaml": "0.3.7"
   },
   "devDependencies": {
-    "nodeunit": "0.7.4",
     "request": "2.9.202",
+    "mocha": "1.2.0",
+    "chai": "1.0.4",
     "socket.io-client": "0.9.6"
   },
   "scripts": {
-    "test": "(set NODE_ENV=test) & nodeunit lib/tests", 
+    "test": "(set NODE_ENV=test) & mocha --reporter spec lib/test", 
     "postinstall": "coffee --compile --output lib src"
   },
   "bin": {

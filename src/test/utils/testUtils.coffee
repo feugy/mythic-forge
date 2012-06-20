@@ -30,7 +30,7 @@ module.exports =
   #   @param err [String] error message. Null if no error occured.
   cleanFolder: (path, callback) ->
     fs.readdir path, (err, files) ->
-      if files?
-        removeFile = (file, callback) -> 
-          fs.unlink(p.join(path, file), (err)-> callback(err))
-        async.forEach files, removeFile, (err) -> callback(err)
+      remove = (file, done) ->
+        fileName = p.join(path, file)
+        fs.unlink fileName, done
+      async.forEach files, remove, callback

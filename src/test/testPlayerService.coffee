@@ -20,15 +20,16 @@ Player = require '../main/model/Player'
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/PlayerService').get()
+assert = require('chai').assert
      
 player = null
 type = null
 item1 = null
 item2 = null
 
-module.exports = 
+describe 'PlayerService tests', ->
 
-  setUp: (end) ->
+  beforeEach (done) ->
     # cleans Players, ItemTypes and Items
     Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> 
       # given an item type
@@ -44,41 +45,41 @@ module.exports =
           new Item({type: type, friends:[item1]}).save (err, saved) ->
             throw new Error err if err?
             item2 = saved
-            end()
+            done()
 
-  'should register creates an account': (test) ->
+  it 'should register creates an account', (done) ->
     # when registering an account with login Jack
     service.register 'Jack', (err, player) ->
       throw new Error "Can't register: #{err}" if err?
       # then a player is returned
-      test.equal 'Jack', player.get 'login'
-      test.ok null is player.get 'character'
-      test.done()
+      assert.equal 'Jack', player.get 'login'
+      assert.ok null is player.get 'character'
+      done()
 
-  'given an existing player':
+  describe 'given an existing player', ->
 
-    setUp: (end) ->
+    beforeEach (done) ->
       new Player({login: 'Joe', character: item2}).save (err, saved) ->
         throw new Error err if err?
         player = saved
-        end()
+        done()
         
-    'should register failed when reusing login': (test) ->
+    it 'should register failed when reusing login', (done) ->
       # when registering with used login
       service.register player.get('login'), (err, account) ->
         # then an error is triggered
-        test.equal "Login #{player.get 'login'} is already used", err
-        test.ok null is account
-        test.done()
+        assert.equal "Login #{player.get 'login'} is already used", err
+        assert.ok null is account
+        done()
         
-    'should getByLogin returned player': (test) ->
+    it 'should getByLogin returned player', (done) ->
       # when retrieving the player by login
       service.getByLogin player.get('login'), (err, account) ->
         throw new Error "Can't get by login: #{err}" if err?
         # then the player was retrieved
-        test.ok player.equals account
+        assert.ok player.equals account
         # then the character was retrieved
-        test.ok item2.equals account.get 'character'
+        assert.ok item2.equals account.get 'character'
         # then the character linked has been resolved
-        test.ok item1.equals account.get('character').get('friends')[0]
-        test.done()
+        assert.ok item1.equals account.get('character').get('friends')[0]
+        done()

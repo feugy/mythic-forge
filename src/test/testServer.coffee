@@ -26,6 +26,7 @@ Executable = require '../main/model/Executable'
 utils = require '../main/utils'
 request = require 'request'
 testUtils = require './utils/testUtils'
+assert = require('chai').assert
 
 port = 9090
 rootUrl = "http://localhost:#{port}"
@@ -36,27 +37,30 @@ script = null
 map = null
 player = null
 
-module.exports = 
+describe 'server tests', ->
 
-  setUp: (end) ->
+  before (done) ->
     # given a clean ItemTypes and Items collections
     ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop ->
       # given a working server
-      server.listen port, 'localhost', ->
-        console.log "test server started on port #{port}"
-        end()
+      server.listen port, 'localhost', done
 
-  'given a started server': 
+  after (done) ->
+    server.close()
+    done()
 
-    'should the server be responding': (test) ->
+  describe 'given a started server', ->
+
+    it 'should the server be responding', (done) ->
       request "#{rootUrl}/konami", (err, res, body) ->
         throw new Error err if err?
-        test.equal 200, res.statusCode
-        test.equal '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>', body
-        test.done()
+        assert.equal 200, res.statusCode
+        assert.equal '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>', body
+        done()
 
-    'given a map, a type and two characters':
-      setUp: (end) ->
+    describe 'given a map, a type and two characters', ->
+
+      beforeEach (done) ->
         new Map({name: 'server-test'}).save (err, saved) ->
           throw new Error err if err?
           map = saved
@@ -72,68 +76,69 @@ module.exports =
               new Item({map: map, type: character, name: 'John', x:10, y:10}).save (err, saved) ->
                 throw new Error err if err?
                 john = saved
-                end()
+                done()
 
-      'should the consultMap be invoked': (test) ->
+      it 'should the consultMap be invoked', (done) ->
         # given a connected socket.io client
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then john and jack are returned
         socket.once 'consultMap-resp', (err, items, fields) ->
           throw new Error err if err?
-          test.equal 2, items.length
-          test.ok jack.equals items[0]
-          test.equal 'Jack', items[0].name
-          test.ok john.equals items[1]
-          test.equal 'John', items[1].name
-          test.done()
+          assert.equal 2, items.length
+          assert.ok jack.equals items[0]
+          assert.equal 'Jack', items[0].name
+          assert.ok john.equals items[1]
+          assert.equal 'John', items[1].name
+          done()
 
         # when consulting the map
         socket.emit 'consultMap', map._id, 0, 0, 10, 10
 
-      'should types be retrieved': (test) ->
+      it 'should types be retrieved', (done) ->
         # given a connected socket.io client
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then the character type is retrieved
         socket.once 'getTypes-resp', (err, types) ->
           throw new Error err if err?
-          test.equal 1, types.length
-          test.ok character.get('_id').equals types[0]._id
-          test.equal character.get('name'), types[0].name
-          test.ok 'name' of types[0].properties
-          test.equal character.get('properties').name.type, types[0].properties.name.type
-          test.done()
+          assert.equal 1, types.length
+          assert.ok character.get('_id').equals types[0]._id
+          assert.equal character.get('name'), types[0].name
+          assert.ok 'name' of types[0].properties
+          assert.equal character.get('properties').name.type, types[0].properties.name.type
+          done()
 
         # when retrieving types by ids
         socket.emit 'getTypes', [character._id]
 
-      'should items be retrieved': (test) ->
+      it 'should items be retrieved', (done) ->
         # given a connected socket.io client
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then the items are retrieved with their types
         socket.once 'getItems-resp', (err, items) ->
           throw new Error err if err?
-          test.equal 2, items.length
-          test.ok jack.equals items[0]
-          test.equal 'Jack', items[0].name
-          test.ok john.equals items[1]
-          test.equal 'John', items[1].name
-          test.ok character._id.equals items[0].type._id
-          test.ok 'name' of items[0].type.properties
-          test.equal character.get('properties').name.type, items[0].type.properties.name.type
-          test.ok character._id.equals items[1].type._id
-          test.ok 'name' of items[1].type.properties
-          test.equal character.get('properties').name.type, items[1].type.properties.name.type
-          test.done()
+          assert.equal 2, items.length
+          assert.ok jack.equals items[0]
+          assert.equal 'Jack', items[0].name
+          assert.ok john.equals items[1]
+          assert.equal 'John', items[1].name
+          assert.ok character._id.equals items[0].type._id
+          assert.ok 'name' of items[0].type.properties
+          assert.equal character.get('properties').name.type, items[0].type.properties.name.type
+          assert.ok character._id.equals items[1].type._id
+          assert.ok 'name' of items[1].type.properties
+          assert.equal character.get('properties').name.type, items[1].type.properties.name.type
+          done()
           # TODO tests link resolution
 
         # when retrieving items by ids
         socket.emit 'getItems', [jack._id, john._id]
 
-      'given a rule':
-        setUp: (end) ->
+      describe 'given a rule', ->
+
+        beforeEach (done) ->
           # Empties the compilation and source folders content
           testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
             Executable.resetAll -> 
@@ -154,24 +159,24 @@ module.exports =
 
               script.save (err) ->
                 throw new Error err if err?
-                end()
+                done()
 
-        'should executable content be retrieved': (test) ->
+        it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client
           socket = socketClient.connect "#{rootUrl}/game"
 
           # then the items are retrieved with their types
           socket.once 'getExecutables-resp', (err, executables) ->
             throw new Error err if err?
-            test.equal 1, executables.length
-            test.equal script._id, executables[0]._id
-            test.equal script.content, executables[0].content
-            test.done()
+            assert.equal 1, executables.length
+            assert.equal script._id, executables[0]._id
+            assert.equal script.content, executables[0].content
+            done()
 
           # when retrieving executables
           socket.emit 'getExecutables'       
 
-        'should rule be resolved and executed, and modification propagated': (test) ->
+        it 'should rule be resolved and executed, and modification propagated', (done) ->
           # given several connected socket.io clients
           socket = socketClient.connect "#{rootUrl}/game"
           socket2 = socketClient.connect "#{rootUrl}/updates"
@@ -179,31 +184,41 @@ module.exports =
           # then the rename rule is returned
           socket.once 'resolveRules-resp', (err, results) ->
             throw new Error err if err?
-            test.ok jack._id of results
-            test.equal 'rename', results[jack._id][0].name
+            assert.ok jack._id of results
+            assert.equal 'rename', results[jack._id][0].name
 
+            deleted = false
+            created = false
+            updated = false
             # then john is renamed in joe
             socket.once 'executeRule-resp', (err, result) ->
               throw new Error err if err?
-              test.equal 'target renamed', result
-              test.expect 10
-              test.done()
+              assert.equal 'target renamed', result
+              setTimeout ->
+                assert.ok deleted, 'watcher wasn\'t invoked for deletion'
+                assert.ok created, 'watcher wasn\'t invoked for creation'
+                assert.ok updated, 'watcher wasn\'t invoked for update'
+                done()
+              , 1000
 
             # then an deletion is received for jack
             socket2.once 'deletion', (className, item) ->
-              test.equal 'Item', className
-              test.ok john.equals item
+              assert.equal 'Item', className
+              assert.ok john.equals item
+              deleted = true
 
             # then an creation is received for peter
-            socket2.on 'creation', (className, item) ->
-              test.equal 'Item', className
-              test.equal 'Peter', item.name
+            socket2.once 'creation', (className, item) ->
+              assert.equal 'Item', className
+              assert.equal 'Peter', item.name
+              created = true
 
             # then an update is received on john's name
             socket2.once 'update', (className, item) ->
-              test.ok jack._id.equals item._id
-              test.equal 'Item', className
-              test.equal 'Joe', item.name
+              assert.ok jack._id.equals item._id
+              assert.equal 'Item', className
+              assert.equal 'Joe', item.name
+              updated = true
 
             # when executing the rename rule for john on jack
             socket.emit 'executeRule', results[jack._id][0].name, john._id, jack._id
@@ -211,42 +226,38 @@ module.exports =
           # when resolving rules for john on jack
           socket.emit 'resolveRules', john._id, jack._id
 
-    'given a player':
+    describe 'given a player', ->
 
-      setUp: (end) ->
+      beforeEach (done) ->
         Player.collection.drop -> 
           new Player({login:'Léo'}).save (err, saved) ->
             throw new Error err if err?
             player = saved 
-            end()
+            done()
 
-      'should player log-in': (test) ->
+      it 'should player log-in', (done) ->
         # given several connected socket.io clients
         socket = socketClient.connect "#{rootUrl}/player"
 
         # then the player is returned
         socket.once 'getByLogin-resp', (err, account) ->
           throw new Error err if err?
-          test.ok player.equals account
-          test.done()
+          assert.ok player.equals account
+          done()
 
         # when login with the existing account
         socket.emit 'getByLogin', player.get 'login'
 
-      'should new player register' : (test) ->
+      it 'should new player register', (done) ->
         # given several connected socket.io clients
         socket = socketClient.connect "#{rootUrl}/player"
 
         # then the player is created
         socket.once 'register-resp', (err, account) ->
           throw new Error err if err?
-          test.equal 'Loïc', account.login
-          test.ok null is account.character
-          test.done()
+          assert.equal 'Loïc', account.login
+          assert.ok null is account.character
+          done()
 
         # when creating a new account
         socket.emit 'register', 'Loïc'
-
-  tearDown: (end) ->
-    server.close()
-    end()

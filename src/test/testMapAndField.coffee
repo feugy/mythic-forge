@@ -19,24 +19,29 @@
 Map = require '../main/model/Map'
 Field = require '../main/model/Field'
 watcher = require('../main/model/ModelWatcher').get()
+assert = require('chai').assert
+
+awaited = false
 
 map = null
 
-module.exports = 
-  setUp: (end) ->
-    Map.collection.drop -> Field.collection.drop -> end()
+describe 'Map and Field tests', -> 
+  beforeEach (done) ->
+    Map.collection.drop -> Field.collection.drop -> done()
 
-  'should map be created': (test) -> 
+  it 'should map be created', (done) -> 
     # given a new map
     map = new Map {name: 'map1'}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      test.equal 'Map', className
-      test.equal 'creation', operation
-      test.ok map.equals instance
+      assert.equal 'Map', className
+      assert.equal 'creation', operation
+      assert.ok map.equals instance
+      awaited = true
 
     # when saving it
+    awaited = false
     map.save (err) ->
       throw new Error "Can't save map: #{err}" if err?
 
@@ -44,54 +49,59 @@ module.exports =
       Map.find {}, (err, docs) ->
         throw new Error "Can't find map: #{err}" if err?
         # then it's the only one document
-        test.equal docs.length, 1
+        assert.equal docs.length, 1
         # then it's values were saved
-        test.equal 'map1', docs[0].get 'name'
-        test.expect 5
-        test.done()
+        assert.equal 'map1', docs[0].get 'name'
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
 
-  'given a map': 
-    setUp: (end) ->
+  describe 'given a map', ->
+
+    beforeEach (done) ->
       map = new Map {name: 'map2'}
-      map.save -> end()
+      map.save -> done()
 
-    'should map be removed': (test) ->
+    it 'should map be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Map', className
-        test.equal 'deletion', operation
-        test.ok map.equals instance
+        assert.equal 'Map', className
+        assert.equal 'deletion', operation
+        assert.ok map.equals instance
+        awaited = true
 
       # when removing a map
+      awaited = false
       map.remove ->
 
         # then it's not in mongo anymore
         Map.find {}, (err, docs) ->
-          test.equal docs.length, 0
-          test.expect 4
-          test.done()
+          assert.equal docs.length, 0
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
-    'should map be updated': (test) ->
+    it 'should map be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Map', className
-        test.equal 'update', operation
-        test.ok map.equals instance
-        test.equal 'map3', instance.name
+        assert.equal 'Map', className
+        assert.equal 'update', operation
+        assert.ok map.equals instance
+        assert.equal 'map3', instance.name
+        awaited = true
 
       # when modifying and saving an item
       map.set 'name', 'map3'
+      awaited = false
       map.save ->
 
         Map.find {}, (err, docs) ->
           # then it's the only one document
-          test.equal docs.length, 1
+          assert.equal docs.length, 1
           # then only the relevant values were modified
-          test.equal 'map3', docs[0].get 'name'
-          test.expect 6
-          test.done()
+          assert.equal 'map3', docs[0].get 'name'
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
-    'should field be created': (test) ->
+    it 'should field be created', (done) ->
       # when creating a field on the map
       field = new Field {map:map, x:0, y:0}
       field.save (err)->
@@ -99,14 +109,14 @@ module.exports =
         # then its retrievable by map
         Field.find {map: map._id}, (err, fields) ->
           throw new Error "Can't find field by map: #{err}" if err?
-          test.equal 1, fields.length
-          test.ok field.equals fields[0]
-          test.ok map.equals fields[0].get 'map'
-          test.equal 0, fields[0].get 'x'
-          test.equal 0, fields[0].get 'y'
-          test.done()
+          assert.equal 1, fields.length
+          assert.ok field.equals fields[0]
+          assert.ok map.equals fields[0].get 'map'
+          assert.equal 0, fields[0].get 'x'
+          assert.equal 0, fields[0].get 'y'
+          done()
 
-    'should field be removed': (test) ->
+    it 'should field be removed', (done) ->
       # given an exiting a field on the map
       field = new Field {map:map, x:10, y:10}
       field.save (err)->
@@ -117,10 +127,10 @@ module.exports =
           # then it's not in the map anymore
           Field.findOne {_id: field._id}, (err, field) ->
             throw new Error "Can't find field by id: #{err}" if err?
-            test.ok field is null
-            test.done()
+            assert.ok field is null
+            done()
 
-    'should field be updated': (test) ->
+    it 'should field be updated', (done) ->
       # given an exiting a field on the map
       field = new Field {map:map, x:10, y:10}
       field.save (err)->
@@ -132,8 +142,8 @@ module.exports =
           # then it's not in the map anymore
           Field.findOne {_id: field._id}, (err, result) ->
             throw new Error "Can't find field by id: #{err}" if err?
-            test.ok field?
-            test.equal 20, result.get('x')
-            test.equal 10, result.get('y')
-            test.ok map.equals result.get 'map'
-            test.done()
+            assert.ok field?
+            assert.equal 20, result.get('x')
+            assert.equal 10, result.get('y')
+            assert.ok map.equals result.get 'map'
+            done()

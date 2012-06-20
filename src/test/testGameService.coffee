@@ -21,6 +21,7 @@ ItemType = require '../main/model/ItemType'
 Map = require '../main/model/Map'
 Field = require '../main/model/Field'
 service = require('../main/service/GameService').get()
+assert = require('chai').assert
      
 type = null
 item1 = null
@@ -30,9 +31,9 @@ map = null
 field1 = null
 field2 = null
 
-module.exports = 
+describe 'GameService tests', -> 
 
-  setUp: (end) ->
+  beforeEach (done) ->
     # cleans ItemTypes and Items
     ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Field.collection.drop ->
       # given a map
@@ -61,26 +62,26 @@ module.exports =
                   new Field({map: map, x:-2, y:-10}).save (err, saved) ->
                     throw new Error err if err?
                     field2 = saved
-                    end()
+                    done()
 
-  'should consultMap returned only relevant items': (test) ->
+  it 'should consultMap returned only relevant items', (done) ->
     # when retrieving items within coordinate -5:-5 and 5:5
     service.consultMap map._id, -5, -5, 5, 5, (err, items, fields) ->
       throw new Error "Can't consultMap: #{err}" if err?
       # then only item1 is returned
-      test.equal 1, items.length
-      test.ok item1.equals items[0]
+      assert.equal 1, items.length
+      assert.ok item1.equals items[0]
       # then only field1 returned
-      test.equal 1, fields.length
-      test.ok field1.equals fields[0]
-      test.done()
+      assert.equal 1, fields.length
+      assert.ok field1.equals fields[0]
+      done()
         
-  'should consultMap returned nothing if no item found': (test) ->
+  it 'should consultMap returned nothing if no item found', (done) ->
     # when retrieving items within coordinate -1:-1 and -5:-5
     service.consultMap map._id, -1, -1, -5, -5, (err, items, fields) ->
       throw new Error "Can't consultMap: #{err}" if err?
       # then no items returned
-      test.equal 0, items.length
+      assert.equal 0, items.length
       # then no fields returned
-      test.equal 0, fields.length
-      test.done()
+      assert.equal 0, fields.length
+      done()

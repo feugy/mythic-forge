@@ -20,14 +20,17 @@ Player = require '../main/model/Player'
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 watcher = require('../main/model/ModelWatcher').get()
+assert = require('chai').assert
 
 
 player = null
 item = null
 type = null
+awaited = false
 
-module.exports = 
-  setUp: (end) ->
+describe 'Player tests', ->
+
+  beforeEach (done) ->
     # given an Item type, an item, and an empty Player collection.
     ItemType.collection.drop -> 
       new ItemType({name: 'character'}).save (err, saved) ->
@@ -38,22 +41,24 @@ module.exports =
           throw new Error err if err?
           item = saved
           Player.collection.drop ->
-            end()
+            done()
       
-  tearDown: (end) ->
-    Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> end()
+  afterEach (done) ->
+    Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> done()
 
-  'should player be created': (test) -> 
+  it 'should player be created', (done) -> 
     # given a new Player
     player = new Player {login:'Joe', character:item}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      test.equal 'Player', className
-      test.equal 'creation', operation
-      test.ok player.equals instance
+      assert.equal 'Player', className
+      assert.equal 'creation', operation
+      assert.ok player.equals instance
+      awaited = true
 
     # when saving it
+    awaited = false
     player.save (err) ->
       throw new Error "Can't save player: #{err}" if err?
 
@@ -61,53 +66,58 @@ module.exports =
       Player.find {}, (err, docs) ->
         throw new Error "Can't find player: #{err}" if err?
         # then it's the only one document
-        test.equal docs.length, 1
+        assert.equal docs.length, 1
         # then it's values were saved
-        test.equal 'Joe', docs[0].get 'login'
-        test.ok item.equals docs[0].get('character')
-        test.expect 6
-        test.done()
+        assert.equal 'Joe', docs[0].get 'login'
+        assert.ok item.equals docs[0].get('character')
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
 
-  'given a Player': 
-    setUp: (end) ->
+  describe 'given a Player', ->
+
+    beforeEach (done) ->
       player = new Player {login:'Jack', character:item}
-      player.save -> end()
+      player.save -> done()
 
-    'should player be removed': (test) ->
+    it 'should player be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Player', className
-        test.equal 'deletion', operation
-        test.ok player.equals instance
+        assert.equal 'Player', className
+        assert.equal 'deletion', operation
+        assert.ok player.equals instance
+        awaited = true
 
       # when removing a player
+      awaited = false
       player.remove ->
 
         # then it's not in mongo anymore
         Player.find {}, (err, docs) ->
           throw new Error "Can't find player: #{err}" if err?
-          test.equal docs.length, 0
-          test.expect 4
-          test.done()
+          assert.equal docs.length, 0
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
-    'should player be updated': (test) ->
+    it 'should player be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Player', className
-        test.equal 'update', operation
-        test.ok player.equals instance
-        test.ok null is instance.character
+        assert.equal 'Player', className
+        assert.equal 'update', operation
+        assert.ok player.equals instance
+        assert.ok null is instance.character
+        awaited = true
 
       # when modifying and saving a player
       player.set 'character', null
+      awaited = false
       player.save ->
 
         Player.find {}, (err, docs) ->
           throw new Error "Can't find player: #{err}" if err?
           # then it's the only one document
-          test.equal docs.length, 1
+          assert.equal docs.length, 1
           # then only the relevant values were modified
-          test.equal 'Jack', docs[0].get 'login'
-          test.ok null is docs[0].get 'character'
-          test.expect 7
-          test.done()
+          assert.equal 'Jack', docs[0].get 'login'
+          assert.ok null is docs[0].get 'character'
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()

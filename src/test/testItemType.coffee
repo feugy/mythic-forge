@@ -19,41 +19,44 @@
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 watcher = require('../main/model/ModelWatcher').get()
+assert = require('chai').assert
 
 item1 = null
 item2 = null
 item3 = null
 type = null
-module.exports = 
-  setUp: (end) ->
-    # empty items and types.
-    Item.collection.drop -> ItemType.collection.drop -> end()
 
-  'should type\'s properties be distinct': (test) ->
+describe 'ItemType tests', -> 
+
+  beforeEach (done) ->
+    # empty items and types.
+    Item.collection.drop -> ItemType.collection.drop -> done()
+
+  it 'should type\'s properties be distinct', (done) ->
     # given a type with a property
     type = new ItemType({name: 'vehicule'})
     type.setProperty 'wheels', 'integer', 4
     type.save (err) ->
       if (err?)
         throw new Error err
-        test.done()
+        done()
       # when creating another type with distinct property
       type2 = new ItemType({name: 'animal'})
       type2.setProperty 'mammal', 'boolean', true
       type2.save (err) ->
         if (err?)
           throw new Error err
-          test.done()
+          done()
         # then their properties ar not mixed
         keys = Object.keys(type.get('properties'))
         keys2 = Object.keys(type2.get('properties'))
-        test.equal 1, keys.length 
-        test.equal 'wheels', keys[0] 
-        test.equal 1, keys2.length
-        test.equal 'mammal', keys2[0]
-        test.done()
+        assert.equal 1, keys.length 
+        assert.equal 'wheels', keys[0] 
+        assert.equal 1, keys2.length
+        assert.equal 'mammal', keys2[0]
+        done()
 
-   'should type be created': (test) -> 
+   it 'should type be created', (done) -> 
     # given a new ItemType
     type = new ItemType()
     name = 'montain'
@@ -62,92 +65,93 @@ module.exports =
     # when saving it
     type.save (err, saved) ->
       if err? 
-        test.fail "Can't save type: #{err}"
-        return test.done()
+        assert.fail "Can't save type: #{err}"
+        return done()
 
       # then it is in mongo
       ItemType.find {}, (err, types) ->
         # then it's the only one document
-        test.equal types.length, 1
+        assert.equal types.length, 1
         # then it's values were saved
-        test.equal name, types[0].get 'name'
-        test.done()
+        assert.equal name, types[0].get 'name'
+        done()
 
-  'given a type with a property': 
-    setUp: (end) ->
+  describe 'given a type with a property', ->
+    beforeEach (done) ->
       # creates a type with a property color which is a string.
       type = new ItemType()
       type.set 'name', 'river'
       type.setProperty 'color', 'string', 'blue'
       type.save (err, saved) -> 
         type = saved
-        end()
+        done()
 
-    tearDown: (end) ->
+    afterEach (done) ->
       # removes the type at the end.
-      ItemType.collection.drop -> Item.collection.drop -> end()
+      ItemType.collection.drop -> Item.collection.drop -> done()
 
-    'should type be removed': (test) ->
+    it 'should type be removed', (done) ->
       # when removing an item
       type.remove ->
 
       # then it's in mongo anymore
       ItemType.find {}, (err, types) ->
-        test.equal types.length, 0
-        test.done()
+        assert.equal types.length, 0
+        done()
 
-    'should type properties be created': (test) ->
+    it 'should type properties be created', (done) ->
       # when adding a property
       type.setProperty 'depth', 'integer', 10
       type.save ->
 
         ItemType.find {}, (err, types) ->
           # then it's the only one document
-          test.equal types.length, 1
+          assert.equal types.length, 1
           # then only the relevant values were modified
-          test.equal 'river', types[0].get 'name'
-          test.ok 'depth' of types[0].get('properties'), 'no depth in properties'
-          test.equal 'integer',  types[0].get('properties').depth?.type
-          test.equal 10, types[0].get('properties').depth?.def
-          test.done()
+          assert.equal 'river', types[0].get 'name'
+          assert.ok 'depth' of types[0].get('properties'), 'no depth in properties'
+          assert.equal 'integer',  types[0].get('properties').depth?.type
+          assert.equal 10, types[0].get('properties').depth?.def
+          done()
 
-    'should type properties be updated': (test) ->
-      test.ok 'color' of type.get('properties'), 'no color in properties'
-      test.equal 'string',  type.get('properties').color?.type
-      test.equal 'blue',  type.get('properties').color?.def
+    it 'should type properties be updated', (done) ->
+      assert.ok 'color' of type.get('properties'), 'no color in properties'
+      assert.equal 'string',  type.get('properties').color?.type
+      assert.equal 'blue',  type.get('properties').color?.def
 
       # when updating a property 
       type.setProperty 'color', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
-        test.equal 'integer',  saved.get('properties').color?.type
-        test.equal 10,  saved.get('properties').color?.def
-        test.done()
+        assert.equal 'integer',  saved.get('properties').color?.type
+        assert.equal 10,  saved.get('properties').color?.def
+        done()
 
-    'should type properties be removed': (test) ->
+    it 'should type properties be removed', (done) ->
       # when removing a property
       type.unsetProperty 'color'
       type.save (err, saved) ->
         if err? 
-          test.fail "Can't save item: #{err}"
-          return test.done()
+          assert.fail "Can't save item: #{err}"
+          return done()
 
         # then the property was removed
-        test.ok not ('color' of saved.get('properties')), 'color still in properties'
-        test.done()
+        assert.ok not ('color' of saved.get('properties')), 'color still in properties'
+        done()
 
-    'should unknown type properties fail on remove': (test) ->
+    it 'should unknown type properties fail on remove', (done) ->
       try 
         # when removing an unknown property
         type.unsetProperty 'unknown'
-        test.fail 'Error must be raised when removing unknwown property'
+        assert.fail 'Error must be raised when removing unknwown property'
       catch err
         # then an error is thrown
-        test.equal 'Unknown property unknown for item type river', err?.message
-      test.done()
+        assert.equal 'Unknown property unknown for item type river', err?.message
+      done()
 
-  'given a type and some items': 
-    setUp: (end) ->
+  describe 'given a type and some items', ->
+
+    beforeEach (done) ->
       # creates a type with a string property 'color' and an array property 'affluents'.
       type = new ItemType {name: 'river'}
       type.setProperty 'color', 'string', 'blue'
@@ -163,16 +167,18 @@ module.exports =
           item2.save (err) ->
             throw new Error(err) if err?
             item3 = new Item {type: type, affluents: []}
-            item3.save (err) -> end()
+            item3.save (err) -> 
+              throw new Error(err) if err?
+              done()
 
-    'should existing items be updated when setting a type property': (test) ->
+    it 'should existing items be updated when setting a type property', (done) ->
       updates = []
       # then a modification event was issued
       watcher.on 'change', (operation, className, instance)->
         updates.push instance._id+''
-        test.equal 'Item', className
-        test.equal 'update', operation
-        test.equal 30, instance.depth
+        assert.equal 'Item', className
+        assert.equal 'update', operation
+        assert.equal 30, instance.depth
 
       # when setting a property to a type
       defaultDepth = 30
@@ -181,19 +187,20 @@ module.exports =
         block = ->
           Item.find {type: type._id}, (err, items) ->
             for item in items
-              test.equal defaultDepth, item.get 'depth'
-              test.ok item._id+'' in updates
-            test.done()
+              assert.equal defaultDepth, item.get 'depth'
+              assert.ok item._id+'' in updates
+            watcher.removeAllListeners 'change'
+            done()
         setTimeout block, 50
 
-    'should existing items be updated when removing a type property': (test) ->
+    it 'should existing items be updated when removing a type property', (done) ->
       updates = []
       # then a modification event was issued
       watcher.on 'change', (operation,className, instance)->
-        test.equal 'Item', className
-        test.equal 'update', operation
+        assert.equal 'Item', className
+        assert.equal 'update', operation
         updates.push instance._id+''
-        test.ok instance.color is undefined
+        assert.ok instance.color is undefined
 
       # when setting a property to a type
       defaultDepth = 30
@@ -202,7 +209,8 @@ module.exports =
         block = ->
           Item.find {type: type._id}, (err, items) ->
             for item in items
-              test.ok undefined is item.get('color'), 'color still present'
-              test.ok item._id+'' in updates
-            test.done()
+              assert.ok undefined is item.get('color'), 'color still present'
+              assert.ok item._id+'' in updates
+            watcher.removeAllListeners 'change'
+            done()
         setTimeout block, 50

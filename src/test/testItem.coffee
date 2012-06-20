@@ -19,33 +19,38 @@
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 watcher = require('../main/model/ModelWatcher').get()
+assert = require('chai').assert
 
 item = null
 item2 = null
 type = null
+awaited = false
 
-module.exports = 
-  setUp: (end) ->
+describe 'Item tests', -> 
+
+  beforeEach (done) ->
     type = new ItemType({name: 'plain'})
     type.setProperty 'rocks', 'integer', 100
     type.save (err, saved) ->
       throw new Error err if err?
-      Item.collection.drop -> end()
+      Item.collection.drop -> done()
 
-  tearDown: (end) ->
+  afterEach (end) ->
     ItemType.collection.drop -> Item.collection.drop -> end()
 
-  'should item be created': (test) -> 
+  it 'should item be created', (done) -> 
     # given a new Item
     item = new Item {x: 10, y:-3, type:type}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      test.equal 'Item', className
-      test.equal 'creation', operation
-      test.ok item.equals instance
+      assert.equal 'Item', className
+      assert.equal 'creation', operation
+      assert.ok item.equals instance
+      awaited = true
 
     # when saving it
+    awaited = false
     item.save (err) ->
       throw new Error "Can't save item: #{err}" if err?
 
@@ -53,99 +58,106 @@ module.exports =
       Item.find {}, (err, docs) ->
         throw new Error "Can't find item: #{err}" if err?
         # then it's the only one document
-        test.equal docs.length, 1
+        assert.equal docs.length, 1
         # then it's values were saved
-        test.equal 10, docs[0].get 'x'
-        test.equal -3, docs[0].get 'y'
-        test.expect 6
-        test.done()
+        assert.equal 10, docs[0].get 'x'
+        assert.equal -3, docs[0].get 'y'
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
 
-  'should new item have default properties values': (test) ->
+  it 'should new item have default properties values', (done) ->
     # when creating an item of this type
     item = new Item {type: type}
     item.save (err)->
       throw new Error "Can't save item: #{err}" if err?
       # then the default value was set
-      test.equal 100, item.get 'rocks'
-      test.done()
+      assert.equal 100, item.get 'rocks'
+      done()
 
-  'given an Item': 
-    setUp: (end) ->
+  describe 'given an Item', ->
+
+    beforeEach (done) ->
       item = new Item {x: 150, y: 300, type: type}
-      item.save ->
-        end()
+      item.save -> done()
 
-    'should item be removed': (test) ->
+    it 'should item be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Item', className
-        test.equal 'deletion', operation
-        test.ok item.equals instance
+        assert.equal 'Item', className
+        assert.equal 'deletion', operation
+        assert.ok item.equals instance
+        awaited = true
 
       # when removing an item
+      awaited = false
       item.remove ->
 
         # then it's not in mongo anymore
         Item.find {}, (err, docs) ->
           throw new Error "Can't find item: #{err}" if err?
-          test.equal docs.length, 0
-          test.expect 4
-          test.done()
+          assert.equal docs.length, 0
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
-    'should item be updated': (test) ->
+    it 'should item be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Item', className
-        test.equal 'update', operation
-        test.ok item.equals instance
-        test.equal -100, instance.x
+        assert.equal 'Item', className
+        assert.equal 'update', operation
+        assert.ok item.equals instance
+        assert.equal -100, instance.x
+        awaited = true
 
       # when modifying and saving an item
       item.set 'x', -100
+      awaited = false
       item.save ->
 
         Item.find {}, (err, docs) ->
           throw new Error "Can't find item: #{err}" if err?
           # then it's the only one document
-          test.equal docs.length, 1
+          assert.equal docs.length, 1
           # then only the relevant values were modified
-          test.equal -100, docs[0].get 'x'
-          test.equal 300, docs[0].get 'y'
-          test.expect 7
-          test.done()
+          assert.equal -100, docs[0].get 'x'
+          assert.equal 300, docs[0].get 'y'
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
-    'should dynamic property be modified': (test) ->
+    it 'should dynamic property be modified', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        test.equal 'Item', className
-        test.equal 'update', operation
-        test.ok item.equals instance
-        test.equal 200, instance.rocks
+        assert.equal 'Item', className
+        assert.equal 'update', operation
+        assert.ok item.equals instance
+        assert.equal 200, instance.rocks
+        awaited = true
 
       # when modifying a dynamic property
       item.set 'rocks', 200
+      awaited = false
       item.save ->
 
         Item.findOne {_id: item._id}, (err, doc) ->
           throw new Error "Can't find item: #{err}" if err?
           # then only the relevant values were modified
-          test.equal 150, doc.get 'x'
-          test.equal 300, doc.get 'y'
-          test.equal 200, doc.get 'rocks'
-          test.expect 7
-          test.done()
+          assert.equal 150, doc.get 'x'
+          assert.equal 300, doc.get 'y'
+          assert.equal 200, doc.get 'rocks'
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
-    'should item cannot be saved with unknown property': (test) ->
+    it 'should item cannot be saved with unknown property', (done) ->
       # when saving an item with an unknown property
       item.set 'test', true
       item.save (err)->
         # then an error is raised
-        test.fail 'An error must be raised when saving item with unknown property' if !err
-        test.ok err?.message.indexOf('unknown property test') isnt -1
-        test.done()
+        assert.fail 'An error must be raised when saving item with unknown property' if !err
+        assert.ok err?.message.indexOf('unknown property test') isnt -1
+        done()
 
-  'given a type with object properties and several Items': 
-    setUp: (end) ->
+  describe 'given a type with object properties and several Items', -> 
+
+    beforeEach (done) ->
       type = new ItemType {name: 'river'}
       type.setProperty 'name', 'string', ''
       type.setProperty 'end', 'object', 'Item'
@@ -163,26 +175,26 @@ module.exports =
               item.set 'affluents', [item2]
               item.save (err) ->
                 throw new Error err  if err?
-                end()
+                done()
 
-    'should id be stored for linked object': (test) ->
+    it 'should id be stored for linked object', (done) ->
       # when retrieving an item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
         throw new Error "Can't find item: #{err}" if err?
         # then linked items are replaced by their ids
-        test.ok item._id.equals doc.get('end')
-        test.done();
+        assert.ok item._id.equals doc.get('end')
+        done()
 
-    'should ids be stored for linked arrays': (test) ->
+    it 'should ids be stored for linked arrays', (done) ->
       # when resolving an item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
         throw new Error "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
-        test.equal 1, doc.get('affluents').length
-        test.ok item2._id.equals doc.get('affluents')[0]
-        test.done();
+        assert.equal 1, doc.get('affluents').length
+        assert.ok item2._id.equals doc.get('affluents')[0]
+        done()
 
-    'should resolve retrieves linked objects': (test) ->
+    it 'should resolve retrieves linked objects', (done) ->
       # given a unresolved item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
         throw new Error "Can't find item: #{err}" if err?
@@ -190,13 +202,13 @@ module.exports =
         doc.resolve (err, doc) ->
           throw new Error "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          test.ok item._id.equals doc.get('end')._id
-          test.equal item.get('name'), doc.get('end').get('name')
-          test.equal item.get('end'), doc.get('end').get('end')
-          test.equal item.get('affluents')[0], doc.get('end').get('affluents')[0]
-          test.done();
+          assert.ok item._id.equals doc.get('end')._id
+          assert.equal item.get('name'), doc.get('end').get('name')
+          assert.equal item.get('end'), doc.get('end').get('end')
+          assert.equal item.get('affluents')[0], doc.get('end').get('affluents')[0]
+          done()
 
-    'should resolve retrieves linked arrays': (test) ->
+    it 'should resolve retrieves linked arrays', (done) ->
       # given a unresolved item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
         throw new Error "Can't find item: #{err}" if err?
@@ -204,15 +216,15 @@ module.exports =
         doc.resolve (err, doc) ->
           throw new Error "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          test.equal 1, doc.get('affluents').length
+          assert.equal 1, doc.get('affluents').length
           linked = doc.get('affluents')[0]
-          test.ok item2._id.equals linked._id
-          test.equal item2.get('name'), linked.get('name')
-          test.equal item2.get('end'), linked.get('end')
-          test.equal 0, linked.get('affluents').length
-          test.done();
+          assert.ok item2._id.equals linked._id
+          assert.equal item2.get('name'), linked.get('name')
+          assert.equal item2.get('end'), linked.get('end')
+          assert.equal 0, linked.get('affluents').length
+          done()
 
-    'should multi-resolve retrieves all properties of all objects': (test) ->
+    it 'should multi-resolve retrieves all properties of all objects', (done) ->
       # given a unresolved items
       Item.where().asc('name').run (err, docs) ->
         throw new Error "Can't find item: #{err}" if err?
@@ -220,15 +232,15 @@ module.exports =
         Item.multiResolve docs, (err, docs) ->
           throw new Error "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
-          test.ok item._id.equals docs[0].get('end')._id
-          test.equal item.get('name'), docs[0].get('end').get('name')
-          test.equal item.get('end'), docs[0].get('end').get('end')
-          test.equal item.get('affluents')[0], docs[0].get('end').get('affluents')[0]
+          assert.ok item._id.equals docs[0].get('end')._id
+          assert.equal item.get('name'), docs[0].get('end').get('name')
+          assert.equal item.get('end'), docs[0].get('end').get('end')
+          assert.equal item.get('affluents')[0], docs[0].get('end').get('affluents')[0]
           # then the second item has resolved links
-          test.equal 1, docs[1].get('affluents').length
+          assert.equal 1, docs[1].get('affluents').length
           linked = docs[1].get('affluents')[0]
-          test.ok item2._id.equals linked._id
-          test.equal item2.get('name'), linked.get('name')
-          test.equal item2.get('end'), linked.get('end')
-          test.equal 0, linked.get('affluents').length
-          test.done();
+          assert.ok item2._id.equals linked._id
+          assert.equal item2.get('name'), linked.get('name')
+          assert.equal item2.get('end'), linked.get('end')
+          assert.equal 0, linked.get('affluents').length
+          done()

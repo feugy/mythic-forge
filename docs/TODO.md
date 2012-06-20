@@ -19,7 +19,7 @@
     - **[done]** items updates
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
-    - turn rules
+    - **[done]**turn rules
 - Web layer
     - **[done]** map items CRUD invokation
     - **[done]** rule engine invokation
@@ -32,8 +32,8 @@
     - **[done]** application of map items modifications 
     - **[done]** create a new player and display its map
     - **[done]** bot mode
-    - transitions
-        - image sprite specification (size, location)
-        - transition duration
-        - transition chain
+    - **[done]** transitions
+        - **[done]** image sprite specification (size, location)
+        - **[done]** transition duration
+        - **[done]** transition chain
         - **[done]** image cache
