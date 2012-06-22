@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 yaml = require 'js-yaml'
 fs = require 'fs'

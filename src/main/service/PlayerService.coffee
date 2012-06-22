@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 Player = require '../model/Player'
 Item = require '../model/Item'

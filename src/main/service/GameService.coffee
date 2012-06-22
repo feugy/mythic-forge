@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 Item = require '../model/Item'
 Field = require '../model/Field'
@@ -88,16 +89,23 @@ class _GameService
   # Trigger the rule engine resolution
   # 
   # @see {RuleService.resolve}
-  resolveRules: () =>
+  resolveRules: =>
     logger.debug 'Trigger rules resolution'
     ruleService.resolve.apply ruleService, arguments
 
   # Trigger the rule engine execution
   # 
   # @see {RuleService.execute}
-  executeRule: () =>
+  executeRule: =>
     logger.debug 'Trigger rules execution'
     ruleService.execute.apply ruleService, arguments
+
+  # Export client-side rules
+  # 
+  # @see {RuleService.export}
+  importRules: =>
+    logger.debug 'Export rules to client'
+    ruleService.export.apply ruleService, arguments
 
   # Returns the executable's content to allow rule execution on client side
   #

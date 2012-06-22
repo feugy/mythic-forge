@@ -21,8 +21,9 @@ testUtils = require './utils/testUtils'
 utils = require '../main/utils'
 path = require 'path'
 fs = require 'fs'
-executable = null
 assert = require('chai').assert
+
+executable = null
    
 root =  utils.confKey 'executable.source'
 

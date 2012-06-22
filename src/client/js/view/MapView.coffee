@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 define [
   'backbone'
@@ -253,7 +254,7 @@ define [
 
       pos = @_mousePosition mouse
       # now trigger rules at this position.
-      @router.trigger 'resolveRules', @character.id, pos.x, pos.y
+      @router.trigger 'resolveRulesLocally', @character.id, pos.x, pos.y
 
     # trigger the rule resolution from a contextual menu.
     #

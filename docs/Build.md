@@ -8,7 +8,7 @@ This is the configuration I set up to work properly.
 3. Restart the editor.
 4. Add following packages (Ctrl+Shift+P, and `Package Controll: Install Package`):
   1. Git
-  2. NodeJS
+  2. OnSaveBuild
   3. CoffeeScript
 
 # Node global utilities
@@ -40,17 +40,18 @@ The project layout is the following:
 Create a customize build system with the following configuration:
 
     {
-      "cmd": ["coffee", "--compile", "--watch","--output", "lib", "src"],
-      "working_dir": "YOUR SOURCE FOLDER ABSOLUTE PATH",
+      "cmd": ["coffee", "--bare", "--compile", "--output", "lib", "src"],
+      "working_dir": "$project_path/$project_base_name",
       
       "windows": {
-          "cmd": ["coffee.cmd", "--compile", "--watch","--output", "lib", "src"],
-          "encoding": "cp1252",
-          "shell": true
+          "cmd": ["coffee.cmd", "--bare", "--compile", "--output", "lib", "src"],
+          "encoding": "cp1252"
         }
     }
 
 Associate your project with it, and hit one time `Ctrl+B`: the src files will be compiled into the lib folder.
+If you edit the `Preferences > Package Settings > SublimeOnSaveBuild ` user settings, you'll be able to launch build on 
+`.coffee` file save.
 
 # NodeJS debugging.
 

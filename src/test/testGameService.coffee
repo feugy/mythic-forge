@@ -20,6 +20,9 @@ Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 Map = require '../main/model/Map'
 Field = require '../main/model/Field'
+utils = require '../main/utils'
+testUtils = require './utils/testUtils'
+Executable = require '../main/model/Executable'
 service = require('../main/service/GameService').get()
 assert = require('chai').assert
      
@@ -35,34 +38,38 @@ describe 'GameService tests', ->
 
   beforeEach (done) ->
     # cleans ItemTypes and Items
-    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Field.collection.drop ->
-      # given a map
-      new Map({name: 'test-game'}).save (err, saved) ->
+    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+      throw new Error err if err?
+      Executable.resetAll (err) -> 
         throw new Error err if err?
-        map = saved
-        # given an item type
-        type = new ItemType {name: 'character'}
-        type.setProperty 'name', 'string', ''
-        type.setProperty 'health', 'integer', 10
-        type.save (err, saved) ->
-          throw new Error err if err?
-          type = saved
-          new Item({map: map, type: type, name: 'Jack', x:0, y:0}).save (err, saved) ->
+        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Field.collection.drop ->
+          # given a map
+          new Map({name: 'test-game'}).save (err, saved) ->
             throw new Error err if err?
-            item1 = saved
-            new Item({map: map, type: type, name: 'John', x:10, y:10}).save (err, saved) ->
+            map = saved
+            # given an item type
+            type = new ItemType {name: 'character'}
+            type.setProperty 'name', 'string', ''
+            type.setProperty 'health', 'integer', 10
+            type.save (err, saved) ->
               throw new Error err if err?
-              item2 = saved
-              new Item({map: map, type: type, name: 'Peter'}).save (err, saved) ->
+              type = saved
+              new Item({map: map, type: type, name: 'Jack', x:0, y:0}).save (err, saved) ->
                 throw new Error err if err?
-                item3 = saved
-                new Field({map: map, x:5, y:3}).save (err, saved) ->
+                item1 = saved
+                new Item({map: map, type: type, name: 'John', x:10, y:10}).save (err, saved) ->
                   throw new Error err if err?
-                  field1 = saved
-                  new Field({map: map, x:-2, y:-10}).save (err, saved) ->
+                  item2 = saved
+                  new Item({map: map, type: type, name: 'Peter'}).save (err, saved) ->
                     throw new Error err if err?
-                    field2 = saved
-                    done()
+                    item3 = saved
+                    new Field({map: map, x:5, y:3}).save (err, saved) ->
+                      throw new Error err if err?
+                      field1 = saved
+                      new Field({map: map, x:-2, y:-10}).save (err, saved) ->
+                        throw new Error err if err?
+                        field2 = saved
+                        done()
 
   it 'should consultMap returned only relevant items', (done) ->
     # when retrieving items within coordinate -5:-5 and 5:5
@@ -84,4 +91,13 @@ describe 'GameService tests', ->
       assert.equal 0, items.length
       # then no fields returned
       assert.equal 0, fields.length
+      done()
+        
+  it 'should importRules returned nothing', (done) ->
+    # when importing rules
+    service.importRules (err, rules) ->
+      throw new Error "Can't importRules: #{err}" if err?
+      # then no rules were exported
+      for key of rules
+        assert.fail 'no rules may have been returned'
       done()

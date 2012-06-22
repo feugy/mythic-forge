@@ -99,9 +99,22 @@ describe 'RuleService tests', ->
       service.export (err, rules) ->
         throw new Error "Unable to export rules: #{err}" if err?
 
-        assert.equal 1, rules.length
-        assert.ok rules[0].indexOf 'execute' is 0
-        assert.ok rules[0].indexOf 'hello !' is 0
+        assert.ok 'rule0' of rules
+        rule = rules.rule0
+        # console.log ">>>\n#{rule}\n"
+
+        # then requires have been replaced by a single define
+        assert.equal 0, rule.indexOf('define(\'rule0\', [\'model/Rule\'], function(Rule){\n'), 'no define() call'
+        assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
+        assert.equal -1, rule.indexOf('require'), 'still require() in rule'
+        assert.equal -1, rule.indexOf(' Rule,'), 'still scope definition in rule'
+
+        # then module.exports was replaced by return
+        assert.equal -1, rule.indexOf('module.exports ='), 'still module.exports'
+        
+        # then the execute() funciton isnt available
+        assert.equal -1, rule.indexOf('execute'), 'still execute() in rule' 
+        assert.equal -1, rule.indexOf('hello !'), 'still execute() code in rule'
         done()
 
   describe 'given 3 items and a dumb rule', ->
@@ -452,6 +465,6 @@ describe 'RuleService tests', ->
       # when exporting rules to client
       service.export (err, rules) ->
         throw new Error "Unable to export rules: #{err}" if err?
-
-        assert.equal 0, rules.length
+        for key of rules
+          assert.fail 'no rules may have been returned'
         done()

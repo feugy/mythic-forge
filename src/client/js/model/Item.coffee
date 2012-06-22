@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 define [
   'backbone'
@@ -79,7 +80,7 @@ define [
   class Item extends Backbone.Model
 
     # item local cache.
-    # A Backbone.Collection subclass that handle Items retrieval with `fetch()`
+    # A Backbone.Collection subclass
     @collection = new Items @
 
     # bind the Backbone attribute and the MongoDB attribute

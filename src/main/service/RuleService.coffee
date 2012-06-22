@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 Rule = require '../model/Rule'
 TurnRule = require '../model/TurnRule'
@@ -40,6 +41,9 @@ frequency = utils.confKey 'turn.frequency'
 nextTurn= () ->
   (frequency-new Date().getSeconds()%frequency)*1000-(new Date().getMilliseconds())
 
+# Regular expression to extract dependencies from rules
+depReg = /(.*)\s=\srequire\((.*)\);\n/
+
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
 #
 # @Todo: refresh cache when executable changes... 
@@ -58,28 +62,46 @@ class _RuleService
   #
   # @param callback [Function] callback executed when rules where exported. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
-  # @option callback rules [Array<String>] exported rules, in text
+  # @option callback rules [Object] exported rules, in text, indexed by rule ids.
   #
   export: (callback) =>
     # read all existing executables. @todo: use cached rules.
     Executable.find (err, executables) =>
       throw new Error "Cannot collect rules: #{err}" if err?
 
-      rules = []
+      rules = {}
       readContent = (executable, done) =>
         fs.readFile executable.compiledPath, (err, content) =>
           return callback "Failed to export rules. Error while reading rule #{executable.compiledPath}: #{err}" if err?
           content = content.toString()
           if content.indexOf "})(Rule);" isnt -1
             # removes the executable part
-            content = content.replace '    this.execute = __bind(this.execute, this);\n', ''
+            content = content.replace '\n    this.execute = __bind(this.execute, this);\n', '\n'
 
-            start = content.search /\s{4}.*\.prototype\.execute\s=\sfunction\(.*\)\s\{/i
-            end = content.indexOf '    };', start
+            start = content.search /\s{2}.*\.prototype\.execute\s=\sfunction\(.*\)\s\{/i
+            end = content.indexOf('\n  };', start)-1
 
             content = content.substring(0, start)+content.substring end+6
+            # gets the required dependencies
+            deps = []
+            vars = []
+            while -1 isnt content.search depReg
+              # removes the require directive and extract relevant variable and path
+              content = content.replace depReg, (str, variable, dep)->
+                deps.push dep.replace /^'\.\.\/main\//, "'"
+                vars.push variable
+                return ''
+              # removes also the scope declaration
+              content = content.replace " #{vars[vars.length-1]},", ''
+
+            # replace module.exports by return
+            content = content.replace 'module.exports =', 'return'
+            
+            # adds the define part
+            content = "define('#{executable._id}', [#{deps.join ','}], function(#{vars.join ','}){\n#{content}\n});"
+            
             # and keep the remaining code
-            rules.push content 
+            rules[executable._id] = content 
           done()
 
       # read content of all existing executables

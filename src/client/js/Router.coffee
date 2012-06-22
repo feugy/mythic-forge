@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 requirejs.config 
   paths:
@@ -22,6 +23,7 @@ requirejs.config
     'underscore': 'lib/underscore-1.3.3-min'
     'jquery': 'lib/jquery-1.7.2-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
+    'async': 'lib/async-0.1.22-min'
     
   shim:
     'backbone': 
@@ -33,6 +35,8 @@ requirejs.config
       exports: '$'
     'socket.io': 
       exports: 'io'
+    'async': 
+      exports: 'async'
 
 define [
   'jquery' 

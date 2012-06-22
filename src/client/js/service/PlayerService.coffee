@@ -15,6 +15,7 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 define [
   'model/Player'
@@ -66,8 +67,9 @@ define [
         console.log "failed to authenticate: #{err}"
         return @router.trigger 'authenticated', err, null 
 
-      # success
+      # success: creates and keeps the player instance
       @connected = new Player player
+      Player.collection.add @connected
       console.log "authentication success for #{@connected.get 'login'}"
 
       @router.trigger 'authenticated', null, @connected

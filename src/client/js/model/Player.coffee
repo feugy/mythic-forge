@@ -15,14 +15,35 @@
 
     You should have received a copy of the GNU Lesser Public License
 ###
+'use strict'
 
 define [
   'backbone'
   'model/Item'
 ], (Backbone, Item) ->
 
+  # Client cache of players.
+  # Wired to the server through socket.io
+  class Players extends Backbone.Collection
+
+    constructor: (@model, @options) ->
+      super model, options
+
+    # Provide a custom sync method to wire Items to the server.
+    # Disabled.
+    #
+    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
+    # @param collection [Items] the current collection
+    # @param args [Object] arguments
+    sync: (method, instance, args) =>
+      throw new Error "Unsupported #{method} operation on Players"
+
   # Player account.
   class Player extends Backbone.Model
+
+    # player local cache.
+    # A Backbone.Collection subclass
+    @collection = new Players @
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
@@ -33,12 +54,12 @@ define [
     # The associated character. Null if no character associated yet.
     character: null
 
-    # Playr constructor.
+    # Player constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes 
-      # Construct an Item for the corresponding character
+      # constructs an Item for the corresponding character
       if attributes?.character?
         @set 'character', new Item attributes.character
 
