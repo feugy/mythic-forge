@@ -155,7 +155,9 @@ define [
         else 
           throw new Error "Can't locally resolve rules with arguments #{arguments}"
 
-        @_resolveInCache actor, targets
+        # TODO resolve actor and target in one call.
+        actor.resolve (err, actor) =>
+          @_resolveInCache actor, targets
       else 
         throw new Error "Can't locally resolve rules with arguments #{arguments}"
 

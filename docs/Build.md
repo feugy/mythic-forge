@@ -17,7 +17,7 @@ Obviously, node is required and must be installed on your system.
 Once done, install the following package globally (means executable are available anywhere from command line)
 
   npm install -g coffee-script
-  npm install -g nodeunit
+  npm install -g mocha
 
 # MongoDB
 
@@ -40,11 +40,11 @@ The project layout is the following:
 Create a customize build system with the following configuration:
 
     {
-      "cmd": ["coffee", "--bare", "--compile", "--output", "lib", "src"],
+      "cmd": ["coffee", "--bare", "--compile", "--output", "hyperion/lib", "hyperion/src"],
       "working_dir": "$project_path/$project_base_name",
       
       "windows": {
-          "cmd": ["coffee.cmd", "--bare", "--compile", "--output", "lib", "src"],
+          "cmd": ["coffee.cmd", "--bare", "--compile", "--output", "hyperion/lib", "hyperion/src"],
           "encoding": "cp1252"
         }
     }
@@ -67,4 +67,4 @@ Open with a webkit browser (chrome or safari): [http://localhost:8080/debug?port
 
 Then launch the program in debug mode (for example a unit test):
 
-    node --debug-brk node_modules\nodeunit\bin\nodeunit lib\tests\testActionService.js
+    node --debug-brk node_modules\mocha\bin\mocha hyperion\lib\tests

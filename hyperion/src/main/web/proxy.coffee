@@ -21,26 +21,37 @@ logger = require('../logger').getLogger 'web'
 express = require 'express'
 path = require 'path'
 fs = require 'fs'
+coffee = require 'coffee-script'
+utils = require '../utils'
 
 # creates a single server to serve static files
 app = express.createServer()
 
-# on-the-fly express compilation and static file configuration
-publicFolder = path.join __dirname, '../../../src/client'
-app.use express.compiler
-    src: publicFolder,
-    dest: publicFolder,
-    enable: ['coffeescript']
+publicFolder = utils.confKey 'server.staticFolder'
 
 # js, images and style files will be statically served...
-app.use '/js', express.static path.join publicFolder, 'js'
-app.use '/assets', express.static path.join publicFolder, 'assets'
-app.use '/style', express.static path.join publicFolder, 'style'
+staticPaths = ['js', 'assets', 'style']
+app.use "/#{staticPath}", express.static path.join publicFolder, staticPath for staticPath in staticPaths
+
+# on-the-fly express compilation. Must be after static configuration to avoid compiling js external libraries
+app.get /^(.*)\.js$/, (req, res, next) ->
+  # read the coffe corresponding file
+  file = path.join publicFolder, req.params[0]+'.coffee'
+  fs.readFile file, (err, content) => 
+    return res.send err, 404 if err?
+    # try to compile it
+    try 
+      res.header 'Content-Type', 'application/javascript'
+      res.send coffee.compile content.toString()
+    catch exc
+      console.error "Failed to compile #{file}: #{exc}"
+      res.send exc, 500
 
 ## ...but SPA root need to be treaten differently, because of pushState
 app.get '*', (req, res, next) ->
-  if req.url.indexOf('/js') is 0 or req.url.indexOf('/assets') is 0 or req.url.indexOf('/style') is 0
-    return next()
+  for staticPath in staticPaths
+    if req.url.indexOf("/#{staticPath}") is 0
+      return next()
   fs.createReadStream(path.join(publicFolder, 'index.html')).pipe res
 
 # Exports the application.

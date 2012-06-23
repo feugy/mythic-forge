@@ -4,10 +4,16 @@ logLevels:
   model: warn
   web: warn
 
+# Server's configuration
+server:
+  staticPort: 80
+  apiPort: 443  
+  staticFolder: ./atlas/src
+
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
-  certificate: conf/ssl/localhost.crt
-  key: conf/ssl/localhost.key
+  certificate: ./hyperion/conf/ssl/localhost.crt
+  key: ./hyperion/conf/ssl/localhost.key
 
 # MongoDB connection
 mongo:
@@ -16,9 +22,9 @@ mongo:
 
 # Executable scripts
 executable:
-  source: D:/Programmation/Workspace2/proto-game
-  target: D:/Programmation/Workspace2/mythic-forge-proto/lib/compiled
+  source: ../proto-game
+  target: ./hyperion/lib/compiled
 
 # Turns execution settings. Frequency in seconds
 turn:
-  frequency: 5
+  frequency: 60

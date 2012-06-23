@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+var utils = require('../lib/main/utils');
+
+// Launches the proxy server
+require('../lib/main/web/proxy').listen(utils.confKey('server.staticPort'));
+// And the api server
+require('../lib/main/web/server').listen(utils.confKey('server.apiPort'));
+

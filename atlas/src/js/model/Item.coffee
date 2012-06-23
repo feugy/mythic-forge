@@ -146,4 +146,43 @@ define [
     equals: (other) =>
       @.id is other?.id
 
+    # This method retrieves linked Item in properties.
+    # All `object` and `array` properties are resolved. 
+    # Properties that aims at unexisting items are reset to null.
+    #
+    # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
+    # @option callback err [String] an error message if an error occured.
+    # @option callback item [Item] the root item on which linked items were resolved.
+    resolve: (callback) =>
+      needResolution = false
+      # identify each linked properties 
+      console.debug "search linked ids in item #{@id}"
+      # gets the corresponding properties definitions
+      properties = @get('type').get 'properties'
+      for prop, def of properties
+        value = @get(prop)
+        if def.type is 'object' and typeof value is 'string'
+          # Do not resolve objects that were previously resolved
+          needResolution = true
+          break
+        else if def.type is 'array' and value?.length > 0 and typeof value[0] is 'string'
+          # Do not resolve arrays that were previously resolved
+          needResolution = true
+          break
+      
+      # exit immediately if no resolution needed  
+      return callback null, @ unless needResolution
+
+      # now that we have the linked ids, get the corresponding items.
+      sockets.game.once 'getItems-resp', (err, items) =>
+        return callback("Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}") if err?
+        # silentely update local cache
+        idx = @collection.indexOf @
+        @collection.add items[0], {at:idx, silent: true}
+        # end of resolution.
+        console.debug "linked ids for item #{@id} resolved"
+        callback null, items[0]
+
+      sockets.game.send 'getItems', [@id]
+
   return Item

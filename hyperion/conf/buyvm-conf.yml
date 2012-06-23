@@ -4,11 +4,17 @@ logLevels:
   model: warn
   web: warn
 
+# Server's configuration
+server:
+  staticPort: 80
+  apiPort: 443  
+  staticFolder: /home/damien/workspace/mythic-forge/hyperion/atlas/src
+
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
   certificate: conf/ssl/www.mythic-forge.com.crt
-  key: conf/ssl/www.mythic-forge.com.key
-  ca: conf/ssl/www.mythic-forge.com.ca
+  key: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.key
+  ca: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.ca
 
 # MongoDB connection
 mongo:
@@ -18,7 +24,7 @@ mongo:
 # Executable scripts
 executable:
   source: /home/damien/workspace/mythic-forge/game
-  target: /home/damien/workspace/mythic-forge/lib/compiled
+  target: /home/damien/workspace/mythic-forge/hyperion/lib/compiled
 
 # Turns execution settings. Frequency in seconds
 turn:

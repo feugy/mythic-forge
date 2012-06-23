@@ -66,7 +66,7 @@ module.exports =
   # @return the expected key.
   confKey: (key, def) ->
     if conf is null
-      confPath = pathUtil.resolve "./conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
+      confPath = pathUtil.resolve "#{__dirname}/../../conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
       try 
         conf = yaml.load fs.readFileSync confPath, 'utf8'
       catch err

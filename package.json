@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/feugy/mythic-forge.git"
   },
-  "dependencies": {  
+  "dependencies": {
     "coffee-script": "1.3.3",
     "mongoose": "2.6.3",
     "mongodb": "1.0.0",
@@ -25,11 +25,11 @@
     "socket.io-client": "0.9.6"
   },
   "scripts": {
-    "test": "(set NODE_ENV=test) & mocha --reporter spec lib/test", 
-    "postinstall": "coffee --bare --compile --output lib src"
+    "test": "(set NODE_ENV=test) & mocha --reporter spec hyperion/lib/test",
+    "postinstall": "coffee --bare --compile --output hyperion/lib hyperion/src"
   },
   "bin": {
-    "mythic-forge": "./bin/mythic-forge"
+    "hyperion": "./hyperion/bin/hyperion"
   },
   "licence": "LGPL v3"
 }
