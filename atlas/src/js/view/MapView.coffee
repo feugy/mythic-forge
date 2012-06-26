@@ -224,7 +224,7 @@ define [
 
         # creates an image 
         image = element.get('type').get('images')[element.get('imageNum')]
-        src = "#{@router.origin}/assets/#{image.file}"
+        src = "#{conf.baseUrl}/assets/#{image.file}"
         img = $ "<img data-src=\"#{src}\" data-id=\"#{element.id}\"/>"
         @imagesLoader.load src
         @_itemsLayer.append img
@@ -236,7 +236,7 @@ define [
 
       else 
         # this is a field. Load its image, and await for it.
-        src = "#{@router.origin}/assets/sand-0.png"
+        src = "#{conf.baseUrl}/assets/sand-0.png"
         @_fieldsByImg[src] ?= [];
         @_fieldsByImg[src].push element
         @imagesLoader.load src

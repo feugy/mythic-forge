@@ -24,6 +24,7 @@ requirejs.config
     'jquery': 'lib/jquery-1.7.2-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
+    'i18n': 'lib/i18n'
     
   shim:
     'backbone': 
@@ -41,32 +42,15 @@ requirejs.config
 define [
   'jquery' 
   'backbone'
-  'model/Map'
-  'model/Item'
-  'model/Field'
-  'view/MapView'
-  'view/HomeView'
-  'service/RuleService'
-  'service/PlayerService'
   'service/ImagesLoader'
-  'lib/requestAnimationFrame-shim'
-  ], ($, Backbone, Map, Item, Field, MapView, HomeView, RuleService, PlayerService, ImagesLoader) ->
+  'view/edition/Perspective'
+  ], ($, Backbone, ImagesLoader, EditionPerspectiveView) ->
 
   class Router extends Backbone.Router
 
     routes:
       # Define some URL routes
-      'map': 'map'
       'home': 'home'
-
-    # The mapView singleton  
-    mapView: null
-
-    # The ruleService singleton
-    ruleService: null
-
-    # The player service singleton
-    playerService: null
 
     # The images loader singleton
     imagesLoader: null
@@ -80,12 +64,9 @@ define [
     constructor: ->
       super()
       # instanciates singletons.
-      @ruleService = new RuleService this
-      @playerService = new PlayerService this
       @imagesLoader = new ImagesLoader this
       
-      # bind the map and the content of the items and fields collections
-      @homeView = new HomeView this
+      @editionPerspective = new EditionPerspectiveView this
 
       Backbone.history.start {pushState: true, root: conf.basePath}
 
@@ -99,23 +80,9 @@ define [
       # display map first
       @navigate 'home', trigger: true
 
-      # global key handler
-      $(window).on 'keyup', (event) =>
-        # broadcast on the event bus.
-        @trigger 'key', {code: event.which, shift: event.shiftKey, ctrl: event.ctrlKey, meta: event.metaKey} 
-
-    # Displays map view
-    map: =>
-      # go back to home if no player connected
-      return @navigate 'home', true if @playerService.connected is null
-      # bind the map and the content of the items and fields collections
-      @mapView = new MapView @playerService.connected.get('character'), 0, 0, this, [Item.collection, Field.collection], @imagesLoader
-      # displays it    
-      $('body').empty().append @mapView.render().$el
-
     # Displays home view
     home: =>
-      $('body').empty().append @homeView.render().$el
+      $('body').empty().append @editionPerspective.render().$el
 
   app = new Router()
   return app

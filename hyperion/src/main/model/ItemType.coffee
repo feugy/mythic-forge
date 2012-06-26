@@ -62,6 +62,14 @@ ItemTypeSchema = new mongoose.Schema
     type: {}
     default: -> {} # use a function to force instance variable
 
+# Override the equals() method defined in Document, to check correctly the equality between _ids, 
+# with their `equals()` method and not with the strict equality operator.
+#
+# @param other [Object] other object against which the current object is compared
+# @return true if both objects have the same _id, false otherwise
+ItemTypeSchema.methods.equals = (object) ->
+  @_id.equals object?._id
+  
 # local cache.
 cache = {}
 

@@ -20,12 +20,13 @@
 define [
   'socket.io'
 ], (io) ->
-  
   return {
-    # multiplexed socket for game method RPC
+    # multiplexed socket for game methods RPC
     game: io.connect "#{conf.apiBaseUrl}/game", {secure: true}
-    # multiplexed socket for game method RPC
+    # multiplexed socket for registration methods RPC
     player: io.connect "#{conf.apiBaseUrl}/player", {secure: true}
+    # multiplexed socket for admin methods RPC
+    admin: io.connect "#{conf.apiBaseUrl}/admin", {secure: true}
     # broadcast socket for database updates
     updates: io.connect "#{conf.apiBaseUrl}/updates", {secure: true}
   }

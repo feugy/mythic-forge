@@ -37,3 +37,8 @@
         - **[done]** transition duration
         - **[done]** transition chain
         - **[done]** image cache
+
+# Final TODOs
+
+- Hyperion
+    - ImageService to upload and associate images to types

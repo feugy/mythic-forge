@@ -16,7 +16,8 @@
     "socket.io": "0.9.6",
     "express": "2.5.9",
     "js-yaml": "0.3.7",
-    "rimraf": "2.0.2"
+    "rimraf": "2.0.2",
+    "stylus": "0.27.2"
   },
   "devDependencies": {
     "request": "2.9.202",

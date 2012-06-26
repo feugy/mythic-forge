@@ -6,9 +6,10 @@ logLevels:
 
 # Server's configuration
 server:
+  host: localhost
   staticPort: 80
   apiPort: 443  
-  staticFolder: ./atlas/src
+  gameFolder: ./atlas/src
 
 # SSL certificates. Do not specify them to use plain Http.
 

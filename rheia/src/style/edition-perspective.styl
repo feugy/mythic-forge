@@ -1,0 +1,80 @@
+// TODO: remove later
+html
+body 
+  height 100%
+
+.edition.perspective
+  position relative
+  width 100%
+  height 100%
+
+  .row 
+    // Grid system freely inspired by http://semantic.gs/examples/fluid/fluid.html 
+    padding = 15px
+    columnWidth = 60px
+    columns = 12
+    leftSpan = 2
+    gridWidth = (columnWidth+padding)*columns
+    totalWidth = 100%
+    hMargin = totalWidth*((padding*0.5)/gridWidth)
+
+    // Compute the cell width
+    // @param num [Number] number of column spaned.
+    getWidth(num)
+      totalWidth * ((((padding+columnWidth)*num) - padding)/gridWidth)
+
+    position absolute
+    top padding
+    left padding*0.5
+    right padding*0.5
+    bottom padding
+
+    .cell
+      float left
+      height 100%
+
+    .left
+      width getWidth(leftSpan)
+      margin0 hMargin
+      //background red
+
+    .right 
+      width getWidth(columns - leftSpan)
+      margin 0 hMargin
+      //background blue
+
+  // explorer behaviour
+  .explorer 
+
+    dt 
+      hoverable()
+      font-size 1.1em
+      padding 5px 2px
+
+      // type icons 
+      > i
+        display: inline-block
+        background-image url(images/icons-25.png)
+        background-repeat no-repeat
+        height 25px 
+        width 25px
+        vertical-align -0.5em
+        margin-right: 5px
+
+    for icon, i in maps eventTypes itemTypes fieldTypes _ _ rules turnRules
+      dt.{icon} > i
+        background-position -25px*i -75px
+
+    // open/close icons
+    dt::before
+      content ''
+      display: inline-block
+      background-image url(images/tree.png)
+      background-repeat no-repeat
+      height 18px 
+      width 18px
+      vertical-align middle
+      margin-right: 5px
+
+    dt.open::before
+      background-position -18px 0px

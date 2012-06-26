@@ -261,3 +261,27 @@ describe 'server tests', ->
 
         # when creating a new account
         socket.emit 'register', 'Loïc'
+
+    describe 'given a type', ->
+
+      before (done) ->
+        ItemType.collection.drop ->
+          new ItemType({name: 'character'}).save (err, saved) ->
+            throw new Error err if err?
+            character = saved
+            done()
+
+      it 'should the type be listed', (done) ->
+        # given a connected socket.io client
+        socket = socketClient.connect "#{rootUrl}/admin"
+
+        # then john and jack are returned
+        socket.once 'list-resp', (err, modelName, list) ->
+          throw new Error err if err?
+          assert.equal 1, list.length
+          assert.equal modelName, 'ItemType'
+          assert.ok character.equals list[0]
+          done()
+
+        # when consulting the map
+        socket.emit 'list', 'ItemType'
