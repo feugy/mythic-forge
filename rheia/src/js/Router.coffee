@@ -21,7 +21,9 @@ requirejs.config
   paths:
     'backbone': 'lib/backbone-0.9.2-min'
     'underscore': 'lib/underscore-1.3.3-min'
+    'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
+    'jquery-ui': 'lib/jquery-ui-1.8.21.min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
     'i18n': 'lib/i18n'
@@ -40,11 +42,17 @@ requirejs.config
       exports: 'async'
 
 define [
+  'underscore'
+  'underscore.string'
   'jquery' 
+  'jquery-ui' 
   'backbone'
   'service/ImagesLoader'
   'view/edition/Perspective'
-  ], ($, Backbone, ImagesLoader, EditionPerspectiveView) ->
+  ], (_, _string, $, $ui, Backbone, ImagesLoader, EditionPerspectiveView) ->
+
+  # Mix in non-conflict functions to Underscore namespace if you want
+  _.mixin _string.exports()
 
   class Router extends Backbone.Router
 
@@ -71,11 +79,11 @@ define [
       Backbone.history.start {pushState: true, root: conf.basePath}
 
       # route link special behaviour
-      $('a[data-route]').on 'click', (e) =>
+      ###$('a[data-route]').on 'click', (e) =>
         e.preventDefault()
         route = $(e.target).data 'route'
         console.log "Run client route: #{route}"
-        @navigate route, trigger: true
+        @navigate route, trigger: true###
       
       # display map first
       @navigate 'home', trigger: true

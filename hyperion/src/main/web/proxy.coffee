@@ -35,7 +35,6 @@ app = express.createServer()
 # @param rootFolder [String] path to the local folder that contains the RIA files.
 # @param statics [Array<String>] Array of path relative to `rootFolder` that will be statically served
 # @param compiledPath [String] A path under which js files will be the compilation result of coffee files
-#
 configureRIA = (base, rootFolder, statics) ->
   # serve static files
   app.use "#{base}/#{stat}", express.static path.join rootFolder, stat for stat in statics

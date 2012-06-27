@@ -83,12 +83,10 @@ PlayerSchema.pre 'init', (next, player) ->
     next()
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
-#
 PlayerSchema.post 'save', () ->
   modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Player', this, modifiedPaths[@_id]
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
-#
 PlayerSchema.post 'remove', () ->
   modelWatcher.change 'deletion', 'Player', this
 

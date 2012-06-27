@@ -23,7 +23,6 @@
 # which is invoked to select a set of Element on which the rule will apply on.
 #     execute(target, callback)
 # which is invoked when the rule must be effectivly applied.
-#
 class TurnRule
 
   # All objects created by the rule must be added to this array to be saved in database

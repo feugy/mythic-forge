@@ -63,7 +63,6 @@ class _RuleService
   # @param callback [Function] callback executed when rules where exported. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] exported rules, in text, indexed by rule ids.
-  #
   export: (callback) =>
     # read all existing executables. @todo: use cached rules.
     Executable.find (err, executables) =>
@@ -269,7 +268,6 @@ class _RuleService
   # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
   # @option callback err [String] an error string. Null if no error occured.
   # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
-  # 
   triggerTurn: (callback, _auto = false) =>
     logger.debug 'triggers turn rules...'
     

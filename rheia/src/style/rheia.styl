@@ -6,19 +6,80 @@ fontColor = #333
 fontSize = 14px
 fontFamily = Verdana, sans-serif
 
+radius = 4px
+borderColor = #ccc
+shadowColor = #ccc
+bgColor = #fff
+hoverColor= darken(#fff, 8%)
+
+// Transition mixin
 transition(args...)
   -moz-transition args
   -wekbit-transition args
   -ms-transition args
   transition args
 
-// Hover behaviour
+// Hover behaviour mixin
 hoverable()
   cursor pointer
   transition all 250ms
 
   &:hover
-    background-color darken(#fff, 10%)
+    background-color hoverColor
+
+// Type icons mixin
+typeIcons(selector, size, margin = 0) 
+  // type icons 
+  {selector}
+    display: inline-block
+    background-image url(s('images/icons-%s.png', size))
+    background-repeat no-repeat
+    height (size)px
+    width (size)px
+    vertical-align -0.5em
+    margin margin
+
+  // type icons
+  for icon, i in map eventType itemType fieldType _ _ rule turnRule
+    {selector}.{icon}
+    {selector}.{icon}s 
+      background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
+
+// Mixin to take all available space
+takeSpace(paddingTop = 0, paddingRight = 0, paddingBottom = 0, paddingLeft = 0)
+  position absolute
+  top paddingTop
+  right paddingRight is defined ? paddingRight : paddingTop
+  bottom paddingBottom is defined ? paddingBottom : paddingTop
+  left paddingLeft is defined ? paddingLeft : paddingRight is defined ? paddingRight : paddingTop
+
+// Bix-sizing mixin
+box-sizing()
+  -webkit-box-sizing arguments
+  -moz-box-sizing arguments
+  box-sizing arguments
+
+// Menus
+.menu
+  position absolute
+  background-color bgColor
+  border 1px solid borderColor
+  box-shadow 0 3px 5px shadowColor
+  margin-top: 2px
+  border-radius radius
+  padding 0.2em
+  opacity 0
+  transition opacity 200ms
+  z-index -1
+
+  > * 
+    hoverable()
+    padding 0.5em 1em
+    font-size 0.9em
+
+.menu.open
+  z-index 10
+  opacity 1
 
 // CSS Reset 
 

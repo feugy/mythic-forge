@@ -22,7 +22,6 @@ logger = require('../logger').getLogger 'service'
 
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
-#
 class _AdminService
 
   # The list method retrieve all instances of a given model
@@ -32,7 +31,6 @@ class _AdminService
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the listed model class name
   # @option callback models [Array] list (may be empty) of retrieved models
-  #
   list: (modelName, callback) =>
     return callback "The #{modelName} model can't be listed", modelName unless modelName in ['ItemType']
     switch modelName
@@ -46,7 +44,6 @@ class _AdminService
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
-  #
   save: (modelName, values, callback) =>
     return callback "The #{modelName} model can't be saved", modelName unless modelName in ['ItemType']
     modelClass = null
@@ -79,7 +76,6 @@ class _AdminService
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
-  #
   remove: (modelName, values, callback) =>
     return callback "The #{modelName} model can't be removed", modelName unless modelName in ['ItemType']
     return callback "Cannot remove #{modelName} because no '_id' specified", modelName unless '_id' of values

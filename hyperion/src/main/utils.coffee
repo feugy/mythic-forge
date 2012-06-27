@@ -28,6 +28,7 @@ for name in "Boolean Number String Function Array Date RegExp Undefined Null".sp
 conf = null
 
 module.exports =
+  
   # This method is intended to replace the broken typeof() Javascript operator.
   #
   # @param obj [Object] any check object

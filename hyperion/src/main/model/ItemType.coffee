@@ -120,7 +120,6 @@ ItemTypeSchema.statics.findCached = (id, callback) ->
 
 
 # pre-save middleware: update itemType instances' properties if needed.
-#
 ItemTypeSchema.pre 'save', (next) ->
   # stores the isNew status and modified paths.
   wasNew[@_id] = @isNew
@@ -159,14 +158,12 @@ ItemTypeSchema.pre 'save', (next) ->
     async.forEach saved, ((item, done) -> item.save done), next
       
 # post-save middleware: now that the instance was properly saved, update the cache.
-#
 ItemTypeSchema.post 'save', ->
   # updates the cache
   cache[@_id] = this
   modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'ItemType', this, modifiedPaths[@_id]
   
 # post-remove middleware: now that the instace was properly removed, update the cache.
-#
 ItemTypeSchema.post 'remove', ->
   # updates the cache
   delete cache[@_id]
@@ -174,7 +171,6 @@ ItemTypeSchema.post 'remove', ->
   modelWatcher.change 'deletion', 'ItemType', this
 
 # post-init middleware: populate the cache
-#
 ItemTypeSchema.post 'init', ->
   # Store in cache
   cache[@._id] = this

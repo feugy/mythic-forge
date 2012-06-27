@@ -37,36 +37,6 @@ define [
     # @param router [Events] a backbone event object on which events will be published.
     constructor: (@router) ->
       @router.on 'loadImage', @load
-
-    # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
-    #
-    # @param event [Event] image loading success event
-    _onImageLoaded: (event) =>
-      console.debug "Image #{event.target.src} loaded"
-      src = event.target.src.replace /\?\d*$/, ''
-      # Remove event from pending array
-      delete @_pendingImages[src]
-      # Gets the image data with a canvas temporary element
-      canvas = $("<canvas></canvas>")[0];
-      canvas.width = event.target.width;
-      canvas.height = event.target.height;
-      # Copy the image contents to the canvas
-      ctx = canvas.getContext '2d'
-      ctx.drawImage event.target, 0, 0;
-      data = canvas.toDataURL 'image/png';
-      # Store result and emit on the event bus
-      @_cache[src] = data;
-      @router.trigger 'imageLoaded', true, src, data
-  
-    # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
-    # @param event [Event] image loading fail event
-    _onImageFailed: (event) =>
-        console.debug "Image #{event.target.src} failed"
-        src = event.target.src.replace /\?\d*$/, ''
-        # Remove event from pending array
-        delete @_pendingImages[src]
-        # Emit an error on the event bus
-        @router.trigger 'imageLoaded', false, src
     
     # Load an image. Once it's available, `imageLoaded` event will be emitted on the bus.
     # If this image has already been loaded (url used as key), the event is imediately emitted.
@@ -93,5 +63,37 @@ define [
         imgData.src = "#{image}?#{new Date().getTime()}"
         isLoading = true
       return isLoading
+
+    # **private**
+    # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
+    #
+    # @param event [Event] image loading success event
+    _onImageLoaded: (event) =>
+      console.debug "Image #{event.target.src} loaded"
+      src = event.target.src.replace /\?\d*$/, ''
+      # Remove event from pending array
+      delete @_pendingImages[src]
+      # Gets the image data with a canvas temporary element
+      canvas = $("<canvas></canvas>")[0];
+      canvas.width = event.target.width;
+      canvas.height = event.target.height;
+      # Copy the image contents to the canvas
+      ctx = canvas.getContext '2d'
+      ctx.drawImage event.target, 0, 0;
+      data = canvas.toDataURL 'image/png';
+      # Store result and emit on the event bus
+      @_cache[src] = data;
+      @router.trigger 'imageLoaded', true, src, data
+  
+    # **private**
+    # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
+    # @param event [Event] image loading fail event
+    _onImageFailed: (event) =>
+        console.debug "Image #{event.target.src} failed"
+        src = event.target.src.replace /\?\d*$/, ''
+        # Remove event from pending array
+        delete @_pendingImages[src]
+        # Emit an error on the event bus
+        @router.trigger 'imageLoaded', false, src
 
   return ImagesLoader

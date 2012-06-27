@@ -69,12 +69,10 @@ FieldSchema.pre 'save', (next) ->
   @_doc.map = save
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
-#
 FieldSchema.post 'save', () ->
   modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Field', this, modifiedPaths[@_id]
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
-#
 FieldSchema.post 'remove', () ->
   modelWatcher.change 'deletion', 'Field', this
 

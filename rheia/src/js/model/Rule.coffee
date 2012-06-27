@@ -21,7 +21,6 @@ define [
 ], () ->
 
   # Game rules on client side only contains the `canExecute()` part:
-  #
   class Rule
 
     # Construct a rule, with a friendly name.

@@ -70,7 +70,6 @@ MapSchema.pre 'save', (next) ->
   next()
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
-#
 MapSchema.post 'save', ->
   # updates the cache
   cache[@_id] = this
@@ -78,7 +77,6 @@ MapSchema.post 'save', ->
   modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Map', this, modifiedPaths[@_id]
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
-#
 MapSchema.post 'remove', ->
   # updates the cache
   delete cache[@_id]
@@ -86,7 +84,6 @@ MapSchema.post 'remove', ->
   modelWatcher.change 'deletion', 'Map', this
 
 # pre-init middleware: populate the cache
-#
 MapSchema.post 'init', ->
   # Store in cache
   cache[@_id] = this

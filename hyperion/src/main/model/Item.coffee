@@ -254,13 +254,11 @@ ItemSchema.pre 'save', (next) ->
   @_doc.map = saveMap
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
-#
 ItemSchema.post 'save', () ->
   modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Item', this, modifiedPaths[@_id]
   
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
-#
 ItemSchema.post 'remove', () ->
   modelWatcher.change 'deletion', 'Item', this
 
