@@ -257,6 +257,7 @@ ItemSchema.pre 'save', (next) ->
 #
 ItemSchema.post 'save', () ->
   modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Item', this, modifiedPaths[@_id]
+  
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
 #

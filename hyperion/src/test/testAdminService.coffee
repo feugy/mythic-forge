@@ -18,13 +18,15 @@
 
 ItemType = require '../main/model/ItemType'
 service = require('../main/service/AdminService').get()
+watcher = require('../main/model/ModelWatcher').get()
 assert = require('chai').assert
      
 itemTypes = []
 
 describe 'AdminService tests', -> 
 
-  before (done) ->
+  beforeEach (done) ->
+    itemTypes = []
     ItemType.collection.drop -> 
       # creates fixtures
       created = [
@@ -41,11 +43,12 @@ describe 'AdminService tests', ->
       create created.pop()
 
   it 'should list fails on unallowed model', (done) ->
+    unknownModelName = 'toto'
     # when listing unallowed model
-    service.list 'toto', (err, modelName, list) ->
+    service.list unknownModelName, (err, modelName, list) ->
       # then an error occured
-      assert.equal err, 'The toto model can\'t be listed'
-      assert.equal modelName, 'toto'
+      assert.equal err, "The #{unknownModelName} model can't be listed"
+      assert.equal modelName, unknownModelName
       done()
 
   it 'should list returns item types', (done) ->
@@ -55,6 +58,118 @@ describe 'AdminService tests', ->
       # then the two created types are retrieved
       assert.equal 2, list.length
       assert.equal modelName, 'ItemType'
-      assert.ok itemTypes[0].equals list[0]
-      assert.ok itemTypes[1].equals list[1]
+      assert.ok itemTypes[0].equals(list[0])
+      assert.ok itemTypes[1].equals(list[1])
       done()
+
+  it 'should save fails on unallowed model', (done) ->
+    unknownModelName = 'toto'
+    # when saving unallowed model
+    service.save unknownModelName, {name:'type 3'}, (err, modelName, model) ->
+      # then an error occured
+      assert.equal err, "The #{unknownModelName} model can't be saved"
+      assert.equal modelName, unknownModelName
+      done()
+
+  it 'should save create new item type', (done) ->
+    # given new values
+    values = {name: 'type 3', properties:{health:{def:0, type:'integer'}}}
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal 'ItemType', className
+      assert.equal 'creation', operation
+      assert.equal 'type 3', instance.name
+      awaited = true
+
+    # when saving new item types
+    service.save 'ItemType', values, (err, modelName, model) ->
+      throw new Error "Can't save itemType: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok model._id?
+      assert.equal values.name, model.get 'name'
+      assert.equal values.properties, model.get 'properties'
+
+      # then the model exists in DB
+      ItemType.findById model._id, (err, obj) ->
+        throw new Error "Can't find itemType in db #{err}" if err?
+        assert.ok obj.equals model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should save update existing item type', (done) ->
+    # given existing values
+    values = itemTypes[1]
+    values.setProperty 'desc', 'string', 'to be defined'
+
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal 'ItemType', className
+      assert.equal 'update', operation
+      assert.ok itemTypes[1].equals instance
+      awaited = true
+
+    # when saving existing item types
+    service.save 'ItemType', values, (err, modelName, model) ->
+      throw new Error "Can't save itemType: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok itemTypes[1]._id.equals model._id
+      assert.equal values.get('name'), model.get 'name'
+      assert.ok 'desc' of model.get 'properties'
+      assert.equal 'string', model.get( 'properties').desc.type
+      assert.equal 'to be defined', model.get( 'properties').desc.def
+
+      # then the model exists in DB
+      ItemType.findById model._id, (err, obj) ->
+        throw new Error "Can't find itemType in db #{err}" if err?
+        assert.ok obj.equals model
+
+        # then the model was updated, not created in DB
+        ItemType.find {}, (err, list) ->
+          throw new Error "Can't find itemTypes in db #{err}" if err?
+          assert.equal 2, list.length
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
+
+  it 'should remove fails on unallowed model', (done) ->
+    unknownModelName = 'toto'
+    # when removing unallowed model
+    service.remove unknownModelName, {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+      # then an error occured
+      assert.equal err, "The #{unknownModelName} model can't be removed"
+      assert.equal modelName, unknownModelName
+      done()
+
+  it 'should remove fails on unknown item type', (done) ->
+    # when removing unknown item type
+    service.remove 'ItemType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+      # then an error occured
+      assert.ok err?
+      assert.ok 0 is err.indexOf "Unexisting ItemType"
+      done()
+
+  it 'should remove delete existing item type', (done) ->
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal 'ItemType', className
+      assert.equal 'deletion', operation
+      assert.ok itemTypes[1].equals instance
+      awaited = true
+
+    # when removing existing item types
+    service.remove 'ItemType', itemTypes[1], (err, modelName, model) ->
+      throw new Error "Can't remove itemType: #{err}" if err?
+      # then the removed values are returned
+      assert.ok model?
+      assert.ok itemTypes[1]._id.equals model._id
+
+      # then the model do not exists anymore in DB
+      ItemType.findById model._id, (err, obj) ->
+        assert.ok obj is null
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
