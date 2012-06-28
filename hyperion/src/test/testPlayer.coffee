@@ -52,8 +52,8 @@ describe 'Player tests', ->
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal 'Player', className
-      assert.equal 'creation', operation
+      assert.equal className, 'Player'
+      assert.equal operation, 'creation'
       assert.ok player.equals instance
       awaited = true
 
@@ -68,7 +68,7 @@ describe 'Player tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal 'Joe', docs[0].get 'login'
+        assert.equal docs[0].get('login'), 'Joe'
         assert.ok item.equals docs[0].get('character')
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -82,8 +82,8 @@ describe 'Player tests', ->
     it 'should player be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Player', className
-        assert.equal 'deletion', operation
+        assert.equal className, 'Player'
+        assert.equal operation,'deletion'
         assert.ok player.equals instance
         awaited = true
 
@@ -101,8 +101,8 @@ describe 'Player tests', ->
     it 'should player be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Player', className
-        assert.equal 'update', operation
+        assert.equal className, 'Player'
+        assert.equal operation, 'update'
         assert.ok player.equals instance
         assert.ok null is instance.character
         awaited = true
@@ -117,7 +117,7 @@ describe 'Player tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal 'Jack', docs[0].get 'login'
+          assert.equal docs[0].get('login'), 'Jack'
           assert.ok null is docs[0].get 'character'
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()

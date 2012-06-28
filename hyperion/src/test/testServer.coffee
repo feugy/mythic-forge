@@ -54,8 +54,8 @@ describe 'server tests', ->
     it 'should the server be responding', (done) ->
       request "#{rootUrl}/konami", (err, res, body) ->
         throw new Error err if err?
-        assert.equal 200, res.statusCode
-        assert.equal '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>', body
+        assert.equal res.statusCode, 200
+        assert.equal body, '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
         done()
 
     describe 'given a map, a type and two characters', ->
@@ -85,11 +85,11 @@ describe 'server tests', ->
         # then john and jack are returned
         socket.once 'consultMap-resp', (err, items, fields) ->
           throw new Error err if err?
-          assert.equal 2, items.length
+          assert.equal items.length, 2
           assert.ok jack.equals items[0]
-          assert.equal 'Jack', items[0].name
+          assert.equal items[0].name, 'Jack'
           assert.ok john.equals items[1]
-          assert.equal 'John', items[1].name
+          assert.equal items[1].name, 'John'
           done()
 
         # when consulting the map
@@ -102,11 +102,11 @@ describe 'server tests', ->
         # then the character type is retrieved
         socket.once 'getTypes-resp', (err, types) ->
           throw new Error err if err?
-          assert.equal 1, types.length
+          assert.equal types.length, 1
           assert.ok character.get('_id').equals types[0]._id
-          assert.equal character.get('name'), types[0].name
+          assert.equal types[0]._name.default, character.get('name')
           assert.ok 'name' of types[0].properties
-          assert.equal character.get('properties').name.type, types[0].properties.name.type
+          assert.equal types[0].properties.name.type, character.get('properties').name.type
           done()
 
         # when retrieving types by ids
@@ -119,17 +119,17 @@ describe 'server tests', ->
         # then the items are retrieved with their types
         socket.once 'getItems-resp', (err, items) ->
           throw new Error err if err?
-          assert.equal 2, items.length
+          assert.equal items.length, 2
           assert.ok jack.equals items[0]
-          assert.equal 'Jack', items[0].name
+          assert.equal items[0].name, 'Jack'
           assert.ok john.equals items[1]
-          assert.equal 'John', items[1].name
+          assert.equal items[1].name, 'John'
           assert.ok character._id.equals items[0].type._id
           assert.ok 'name' of items[0].type.properties
-          assert.equal character.get('properties').name.type, items[0].type.properties.name.type
+          assert.equal items[0].type.properties.name.type, character.get('properties').name.type
           assert.ok character._id.equals items[1].type._id
           assert.ok 'name' of items[1].type.properties
-          assert.equal character.get('properties').name.type, items[1].type.properties.name.type
+          assert.equal items[1].type.properties.name.type, character.get('properties').name.type
           done()
           # TODO tests link resolution
 
@@ -168,9 +168,9 @@ describe 'server tests', ->
           # then the items are retrieved with their types
           socket.once 'getExecutables-resp', (err, executables) ->
             throw new Error err if err?
-            assert.equal 1, executables.length
-            assert.equal script._id, executables[0]._id
-            assert.equal script.content, executables[0].content
+            assert.equal executables.length, 1
+            assert.equal executables[0]._id, script._id
+            assert.equal executables[0].content, script.content
             done()
 
           # when retrieving executables
@@ -185,7 +185,7 @@ describe 'server tests', ->
           socket.once 'resolveRules-resp', (err, results) ->
             throw new Error err if err?
             assert.ok jack._id of results
-            assert.equal 'rename', results[jack._id][0].name
+            assert.equal results[jack._id][0].name, 'rename'
 
             deleted = false
             created = false
@@ -193,7 +193,7 @@ describe 'server tests', ->
             # then john is renamed in joe
             socket.once 'executeRule-resp', (err, result) ->
               throw new Error err if err?
-              assert.equal 'target renamed', result
+              assert.equal result, 'target renamed'
               setTimeout ->
                 assert.ok deleted, 'watcher wasn\'t invoked for deletion'
                 assert.ok created, 'watcher wasn\'t invoked for creation'
@@ -203,21 +203,21 @@ describe 'server tests', ->
 
             # then an deletion is received for jack
             socket2.once 'deletion', (className, item) ->
-              assert.equal 'Item', className
+              assert.equal className, 'Item'
               assert.ok john.equals item
               deleted = true
 
             # then an creation is received for peter
             socket2.once 'creation', (className, item) ->
-              assert.equal 'Item', className
-              assert.equal 'Peter', item.name
+              assert.equal className, 'Item'
+              assert.equal item.name, 'Peter'
               created = true
 
             # then an update is received on john's name
             socket2.once 'update', (className, item) ->
               assert.ok jack._id.equals item._id
-              assert.equal 'Item', className
-              assert.equal 'Joe', item.name
+              assert.equal className, 'Item'
+              assert.equal item.name, 'Joe'
               updated = true
 
             # when executing the rename rule for john on jack
@@ -255,7 +255,7 @@ describe 'server tests', ->
         # then the player is created
         socket.once 'register-resp', (err, account) ->
           throw new Error err if err?
-          assert.equal 'Loïc', account.login
+          assert.equal account.login, 'Loïc'
           assert.ok null is account.character
           done()
 
@@ -278,7 +278,7 @@ describe 'server tests', ->
         # then john and jack are returned
         socket.once 'list-resp', (err, modelName, list) ->
           throw new Error err if err?
-          assert.equal 1, list.length
+          assert.equal list.length, 1
           assert.equal modelName, 'ItemType'
           assert.ok character.equals list[0]
           done()

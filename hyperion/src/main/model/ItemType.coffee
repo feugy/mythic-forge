@@ -20,6 +20,7 @@
 mongoose = require 'mongoose'
 conn = require './connection'
 async = require 'async'
+modelUtils = require '../utils/model'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
   
@@ -35,10 +36,10 @@ modifiedPaths = {}
 
 # Define the schema for map item types
 ItemTypeSchema = new mongoose.Schema
-  # item name
-  name: 
+
+  # descriptive image for this type.
+  descImage:
     type: String
-    required: true
 
   # definition of item images, stored in an array
   # @example each images is a set of sprites
@@ -73,6 +74,14 @@ ItemTypeSchema = new mongoose.Schema
   properties: 
     type: {}
     default: -> {} # use a function to force instance variable
+
+modelUtils.enhanceI18n ItemTypeSchema
+
+# Adds an i18n `name` field which is required
+modelUtils.addI18n ItemTypeSchema, 'name', {required: true}
+
+# Adds an i18n `desc` field
+modelUtils.addI18n ItemTypeSchema, 'desc'
 
 # Override the equals() method defined in Document, to check correctly the equality between _ids, 
 # with their `equals()` method and not with the strict equality operator.

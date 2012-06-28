@@ -44,8 +44,8 @@ describe 'Item tests', ->
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal 'Item', className
-      assert.equal 'creation', operation
+      assert.equal className, 'Item'
+      assert.equal operation, 'creation'
       assert.ok item.equals instance
       awaited = true
 
@@ -60,8 +60,8 @@ describe 'Item tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal 10, docs[0].get 'x'
-        assert.equal -3, docs[0].get 'y'
+        assert.equal docs[0].get('x'), 10
+        assert.equal docs[0].get('y'), -3
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -71,7 +71,7 @@ describe 'Item tests', ->
     item.save (err)->
       throw new Error "Can't save item: #{err}" if err?
       # then the default value was set
-      assert.equal 100, item.get 'rocks'
+      assert.equal item.get('rocks'), 100
       done()
 
   describe 'given an Item', ->
@@ -83,8 +83,8 @@ describe 'Item tests', ->
     it 'should item be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Item', className
-        assert.equal 'deletion', operation
+        assert.equal className, 'Item'
+        assert.equal operation, 'deletion'
         assert.ok item.equals instance
         awaited = true
 
@@ -102,10 +102,10 @@ describe 'Item tests', ->
     it 'should item be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Item', className
-        assert.equal 'update', operation
+        assert.equal className, 'Item'
+        assert.equal operation, 'update'
         assert.ok item.equals instance
-        assert.equal -100, instance.x
+        assert.equal instance.x, -100
         awaited = true
 
       # when modifying and saving an item
@@ -118,18 +118,18 @@ describe 'Item tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal -100, docs[0].get 'x'
-          assert.equal 300, docs[0].get 'y'
+          assert.equal docs[0].get('x'), -100
+          assert.equal docs[0].get('y'), 300
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
     it 'should dynamic property be modified', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Item', className
-        assert.equal 'update', operation
+        assert.equal className, 'Item'
+        assert.equal operation, 'update'
         assert.ok item.equals instance
-        assert.equal 200, instance.rocks
+        assert.equal instance.rocks, 200
         awaited = true
 
       # when modifying a dynamic property
@@ -140,9 +140,9 @@ describe 'Item tests', ->
         Item.findOne {_id: item._id}, (err, doc) ->
           throw new Error "Can't find item: #{err}" if err?
           # then only the relevant values were modified
-          assert.equal 150, doc.get 'x'
-          assert.equal 300, doc.get 'y'
-          assert.equal 200, doc.get 'rocks'
+          assert.equal doc.get('x'), 150
+          assert.equal doc.get('y'), 300
+          assert.equal doc.get('rocks'), 200
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -190,7 +190,7 @@ describe 'Item tests', ->
       Item.findOne {name: item.get 'name'}, (err, doc) ->
         throw new Error "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
-        assert.equal 1, doc.get('affluents').length
+        assert.equal doc.get('affluents').length, 1
         assert.ok item2._id.equals doc.get('affluents')[0]
         done()
 
@@ -203,9 +203,9 @@ describe 'Item tests', ->
           throw new Error "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.ok item._id.equals doc.get('end')._id
-          assert.equal item.get('name'), doc.get('end').get('name')
-          assert.equal item.get('end'), doc.get('end').get('end')
-          assert.equal item.get('affluents')[0], doc.get('end').get('affluents')[0]
+          assert.equal doc.get('end').get('name'), item.get('name')
+          assert.equal doc.get('end').get('end'), item.get('end')
+          assert.equal doc.get('end').get('affluents')[0], item.get('affluents')[0]
           done()
 
     it 'should resolve retrieves linked arrays', (done) ->
@@ -216,12 +216,12 @@ describe 'Item tests', ->
         doc.resolve (err, doc) ->
           throw new Error "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          assert.equal 1, doc.get('affluents').length
+          assert.equal doc.get('affluents').length, 1
           linked = doc.get('affluents')[0]
           assert.ok item2._id.equals linked._id
-          assert.equal item2.get('name'), linked.get('name')
-          assert.equal item2.get('end'), linked.get('end')
-          assert.equal 0, linked.get('affluents').length
+          assert.equal linked.get('name'), item2.get('name')
+          assert.equal linked.get('end'), item2.get('end')
+          assert.equal linked.get('affluents').length, 0
           done()
 
     it 'should multi-resolve retrieves all properties of all objects', (done) ->
@@ -233,14 +233,14 @@ describe 'Item tests', ->
           throw new Error "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
           assert.ok item._id.equals docs[0].get('end')._id
-          assert.equal item.get('name'), docs[0].get('end').get('name')
-          assert.equal item.get('end'), docs[0].get('end').get('end')
-          assert.equal item.get('affluents')[0], docs[0].get('end').get('affluents')[0]
+          assert.equal docs[0].get('end').get('name'), item.get('name')
+          assert.equal docs[0].get('end').get('end'), item.get('end')
+          assert.equal docs[0].get('end').get('affluents')[0], item.get('affluents')[0]
           # then the second item has resolved links
-          assert.equal 1, docs[1].get('affluents').length
+          assert.equal docs[1].get('affluents').length, 1
           linked = docs[1].get('affluents')[0]
           assert.ok item2._id.equals linked._id
-          assert.equal item2.get('name'), linked.get('name')
-          assert.equal item2.get('end'), linked.get('end')
-          assert.equal 0, linked.get('affluents').length
+          assert.equal linked.get('name'), item2.get('name')
+          assert.equal linked.get('end'), item2.get('end')
+          assert.equal linked.get('affluents').length, 0
           done()

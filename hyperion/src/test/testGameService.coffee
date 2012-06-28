@@ -76,10 +76,10 @@ describe 'GameService tests', ->
     service.consultMap map._id, -5, -5, 5, 5, (err, items, fields) ->
       throw new Error "Can't consultMap: #{err}" if err?
       # then only item1 is returned
-      assert.equal 1, items.length
+      assert.equal items.length, 1
       assert.ok item1.equals items[0]
       # then only field1 returned
-      assert.equal 1, fields.length
+      assert.equal fields.length, 1
       assert.ok field1.equals fields[0]
       done()
         
@@ -88,9 +88,9 @@ describe 'GameService tests', ->
     service.consultMap map._id, -1, -1, -5, -5, (err, items, fields) ->
       throw new Error "Can't consultMap: #{err}" if err?
       # then no items returned
-      assert.equal 0, items.length
+      assert.equal items.length, 0
       # then no fields returned
-      assert.equal 0, fields.length
+      assert.equal fields.length, 0
       done()
         
   it 'should importRules returned nothing', (done) ->

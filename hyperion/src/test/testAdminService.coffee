@@ -56,7 +56,7 @@ describe 'AdminService tests', ->
     service.list 'ItemType', (err, modelName, list) ->
       throw new Error "Can't list itemTypes: #{err}" if err?
       # then the two created types are retrieved
-      assert.equal 2, list.length
+      assert.equal list.length, 2
       assert.equal modelName, 'ItemType'
       assert.ok itemTypes[0].equals(list[0])
       assert.ok itemTypes[1].equals(list[1])
@@ -78,9 +78,9 @@ describe 'AdminService tests', ->
     awaited = false
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal 'ItemType', className
-      assert.equal 'creation', operation
-      assert.equal 'type 3', instance.name
+      assert.equal className, 'ItemType'
+      assert.equal operation, 'creation'
+      assert.equal instance._name.default, 'type 3'
       awaited = true
 
     # when saving new item types
@@ -89,8 +89,8 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
-      assert.equal values.name, model.get 'name'
-      assert.equal values.properties, model.get 'properties'
+      assert.equal model.get('name'), values.name
+      assert.equal model.get('properties'), values.properties
 
       # then the model exists in DB
       ItemType.findById model._id, (err, obj) ->
@@ -107,8 +107,8 @@ describe 'AdminService tests', ->
     awaited = false
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal 'ItemType', className
-      assert.equal 'update', operation
+      assert.equal className, 'ItemType'
+      assert.equal operation, 'update'
       assert.ok itemTypes[1].equals instance
       awaited = true
 
@@ -118,10 +118,10 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok itemTypes[1]._id.equals model._id
-      assert.equal values.get('name'), model.get 'name'
+      assert.equal model.get('name'), values.get('name')
       assert.ok 'desc' of model.get 'properties'
-      assert.equal 'string', model.get( 'properties').desc.type
-      assert.equal 'to be defined', model.get( 'properties').desc.def
+      assert.equal model.get( 'properties').desc.type, 'string'
+      assert.equal model.get( 'properties').desc.def, 'to be defined'
 
       # then the model exists in DB
       ItemType.findById model._id, (err, obj) ->
@@ -131,7 +131,7 @@ describe 'AdminService tests', ->
         # then the model was updated, not created in DB
         ItemType.find {}, (err, list) ->
           throw new Error "Can't find itemTypes in db #{err}" if err?
-          assert.equal 2, list.length
+          assert.equal list.length, 2
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -156,8 +156,8 @@ describe 'AdminService tests', ->
     awaited = false
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal 'ItemType', className
-      assert.equal 'deletion', operation
+      assert.equal className, 'ItemType'
+      assert.equal operation, 'deletion'
       assert.ok itemTypes[1].equals instance
       awaited = true
 

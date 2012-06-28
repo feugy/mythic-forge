@@ -51,7 +51,7 @@ describe 'Map and Field tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal 'map1', docs[0].get 'name'
+        assert.equal docs[0].get('name'),  'map1'
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -64,8 +64,8 @@ describe 'Map and Field tests', ->
     it 'should map be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Map', className
-        assert.equal 'deletion', operation
+        assert.equal className, 'Map'
+        assert.equal operation, 'deletion'
         assert.ok map.equals instance
         awaited = true
 
@@ -82,10 +82,10 @@ describe 'Map and Field tests', ->
     it 'should map be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal 'Map', className
-        assert.equal 'update', operation
+        assert.equal className, 'Map'
+        assert.equal operation, 'update'
         assert.ok map.equals instance
-        assert.equal 'map3', instance.name
+        assert.equal instance._name.default, 'map3'
         awaited = true
 
       # when modifying and saving an item
@@ -97,7 +97,7 @@ describe 'Map and Field tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal 'map3', docs[0].get 'name'
+          assert.equal docs[0].get('name'), 'map3'
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -109,11 +109,11 @@ describe 'Map and Field tests', ->
         # then its retrievable by map
         Field.find {map: map._id}, (err, fields) ->
           throw new Error "Can't find field by map: #{err}" if err?
-          assert.equal 1, fields.length
+          assert.equal fields.length, 1
           assert.ok field.equals fields[0]
           assert.ok map.equals fields[0].get 'map'
-          assert.equal 0, fields[0].get 'x'
-          assert.equal 0, fields[0].get 'y'
+          assert.equal fields[0].get('x'), 0
+          assert.equal fields[0].get('y'), 0
           done()
 
     it 'should field be removed', (done) ->
@@ -143,7 +143,7 @@ describe 'Map and Field tests', ->
           Field.findOne {_id: field._id}, (err, result) ->
             throw new Error "Can't find field by id: #{err}" if err?
             assert.ok field?
-            assert.equal 20, result.get('x')
-            assert.equal 10, result.get('y')
+            assert.equal result.get('x'), 20
+            assert.equal result.get('y'), 10
             assert.ok map.equals result.get 'map'
             done()
