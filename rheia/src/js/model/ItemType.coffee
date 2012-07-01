@@ -18,9 +18,8 @@
 'use strict'
 
 define [
-  'backbone',
   'model/sockets'
-], (Backbone, sockets) ->
+], (sockets) ->
 
   # Client cache of item types.
   class ItemTypes extends Backbone.Collection
@@ -36,6 +35,7 @@ define [
       # bind updates
       sockets.updates.on 'creation', @_onAdd
       sockets.updates.on 'update', @_onUpdate
+      sockets.updates.on 'deletion', @_onRemove
 
     # Provide a custom sync method to wire Types to the server.
     # Only read operation is supported.
@@ -61,6 +61,7 @@ define [
 
     # **private**
     # Callback invoked when a database creation is received.
+    # Adds the model to the current collection if needed, and fire event 'add'.
     #
     # @param className [String] the modified object className
     # @param item [Object] created item.
@@ -71,6 +72,7 @@ define [
 
     # **private**
     # Callback invoked when a database update is received.
+    # Update the model from the current collection if needed, and fire event 'update'.
     #
     # @param className [String] the modified object className
     # @param changes [Object] new changes for a given item.
@@ -86,6 +88,17 @@ define [
       # emit a change.
       @trigger 'update', itemType
 
+    # **private**
+    # Callback invoked when a database deletion is received.
+    # Removes the model from the current collection if needed, and fire event 'remove'.
+    #
+    # @param className [String] the deleted object className
+    # @param item [Object] deleted item.
+    _onRemove: (className, item) =>
+      return unless className is 'ItemType'
+      # removes the deleted raw item. An event will be triggered
+      @remove item
+
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections Items instead
   #
@@ -98,11 +111,36 @@ define [
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
 
+    # the locale used for i18n fields
+    locale: 'default'
+
     # ItemType constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes
+
+    # Overrides inherited getter to handle i18n fields.
+    #
+    # @param attr [String] the retrieved attribute
+    # @return the corresponding attribute value
+    get: (attr) =>
+      return super(attr) unless attr in ['name', 'desc']
+      value = super("_#{attr}")
+      if value? then value[@locale] else undefined
+
+    # Overrides inherited setter to handle i18n fields.
+    #
+    # @param attr [String] the modified attribute
+    # @param value [Object] the new attribute value
+    set: (attr, value) =>
+      if attr in ['name', 'desc']
+        attr = "_#{attr}"
+        val = @attributes[attr]
+        val ||= {}
+        val[@locale] = value
+        value = val
+      super(attr, value)
 
     # Provide a custom sync method to wire Types to the server.
     # Only create and delete operations are supported.
@@ -112,8 +150,8 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       switch method 
-        when 'create' then sockets.admin.emit 'save', 'ItemType', @toJSON()
-        when 'create' then sockets.admin.emit 'remove', 'ItemType', @toJSON()
+        when 'create', 'update' then sockets.admin.emit 'save', 'ItemType', @toJSON()
+        when 'delete' then sockets.admin.emit 'remove', 'ItemType', @toJSON()
         else throw new Error "Unsupported #{method} operation on Item Types"
 
     # An equality method that tests ids.

@@ -18,27 +18,25 @@
 'use strict'
 
 define [
-  'underscore'
-  'backbone'
-  'jquery'
   'i18n!nls/edition'
   'model/ItemType'
-], (_, Backbone, $, editionLabels, ItemType) ->
+], (i18n, ItemType) ->
 
-  editionLabels = _.extend {}, editionLabels
+  i18n = _.extend {}, i18n
 
   # Create explorer rendering for a given model, relative ot its class
   #
   # @param model [Object] the rendered model
-  # @param className [String] css classes added to the rendering.
+  # @param category [Object] the category descriptor for this model
   # @param imagesLoader [ImagesLoader] the image loader utility
-  render = (model, className, imagesLoader) ->
+  render = (model, category, imagesLoader) ->
     # load descriptive image.
     img = model.get 'descImage'
     if img?
       img = "#{conf.baseUrl}/images/#{img}"
       imagesLoader.load img
-    "<div data-id=\"#{model.id}\" class=\"#{className}\"><img data-src=\"#{img}\"/>#{model.get 'name'}</div>"
+    """<div data-id="#{model.id}" data-class="#{category.id}" class="#{category.className}">
+          <img data-src="#{img}"/>#{model.get 'name'}</div>"""
 
   # Displays the explorer on edition perspective
   class Explorer extends Backbone.View
@@ -53,25 +51,31 @@ define [
 
     # list of displayed categories
     _categories: [{
-      name: editionLabels.titles.categories.maps
-      id: 'maps'
+      name: i18n.titles.categories.maps
+      className: 'maps'
+      id: 'Map'
     },{
-      name: editionLabels.titles.categories.fields
-      id: 'fieldTypes'
+      name: i18n.titles.categories.fields
+      className: 'field-types'
+      id: 'FieldType'
     },{
-      name: editionLabels.titles.categories.items
-      id: 'itemTypes'
+      name: i18n.titles.categories.items
+      className: 'item-types'
+      id: 'ItemType'
       load: => 
         ItemType.collection.fetch()
     },{
-      name: editionLabels.titles.categories.events
-      id: 'eventTypes'
+      name: i18n.titles.categories.events
+      className: 'event-types'
+      id: 'EventType'
     },{
-      name: editionLabels.titles.categories.rules
-      id: 'rules'
+      name: i18n.titles.categories.rules
+      className: 'rules'
+      id: 'Rule'
     },{
-      name: editionLabels.titles.categories.turnRules
-      id: 'turnRules'
+      name: i18n.titles.categories.turnRules
+      className: 'turn-rules'
+      id: 'TurnRule'
     }]
 
     # The view constructor.
@@ -79,7 +83,16 @@ define [
     # @param router [Router] the event bus
     constructor: (@router) ->
       super {tagName: 'div', className:'explorer'}
+
+      # Item types
       ItemType.collection.on 'reset', @_onResetCategory
+      ItemType.collection.on 'add', (element, collection, options) =>
+        options.operation = 'add'
+        @_onUpdateCategory element, collection, options
+      ItemType.collection.on 'remove', (element, collection, options) =>
+        options.operation = 'remove'
+        @_onUpdateCategory element, collection, options
+
       @router.on 'imageLoaded', @_onImageLoaded
 
     # The `render()` method is invoked by backbone to display view content at screen.
@@ -87,10 +100,10 @@ define [
       markup = ''      
       # creates categories
       for category, i in @_categories
-        markup += """<dt data-idx="#{i}" class="#{category.id}">
-            <i class="#{category.id}"></i>#{category.name}
+        markup += """<dt data-idx="#{i}">
+            <i class="#{category.className}"></i>#{category.name}
           </dt>
-          <dd></dd>"""
+          <dd data-id=#{category.id}></dd>"""
 
       @$el.append markup
       @$el.find('dd').hide()
@@ -114,11 +127,11 @@ define [
         if !title.hasClass 'loaded'
           title.addClass 'loaded'
           category = @_categories[title.data 'idx']
-          console.log "loading category #{category.id}"
+          console.log "loading category #{category.name}"
           if 'load' of category
             category.load()
           else 
-            console.error "#{category.id} loading not implemented yet"
+            console.error "#{category.name} loading not implemented yet"
 
     # **private**
     # Open the element clicked by issu ing an event on the bus.
@@ -126,8 +139,9 @@ define [
     # @param evt [Event] the click event
     _onOpenElement: (evt) =>
       element = $(evt.target).closest('div')
-      category = _.capitalize element.attr('class').trim()
       id = element.data 'id'
+      category = element.data 'class'
+      
       console.log "open element #{id} of category #{category}"
       @router.trigger 'open', category, id
 
@@ -147,13 +161,42 @@ define [
     #
     # @param collection [Collection] the refreshed collection.
     _onResetCategory: (collection) =>
-      className = null
+      idx = null
       switch collection
-        when ItemType.collection then className = 'itemType'
-      return unless className?
+        when ItemType.collection then idx = 2
+      return unless idx?
 
-      container = @$el.find("dt.#{className}s + dd").empty()
+      container = @$el.find("dt[data-idx=#{idx}] + dd").empty()
       for element in collection.models
-        container.append render element, className, @router.imagesLoader
+        container.append render element, @_categories[idx], @router.imagesLoader
+
+    # **private**
+    # Handler invoked when a category item have been added or removed
+    # Refresh the corresponding display
+    #
+    # @param element [Object] the category item added or removed
+    # @param collection [Collection] the refreshed collection
+    # @param options [Object] details on the operation
+    # @option options index [Number] index in the collection where the item is added or removed
+    # @option options operation [String] 'add', 'remove' or 'update' operation
+    _onUpdateCategory: (element, collection, options) =>
+      idx = null
+      switch collection
+        when ItemType.collection then idx = 2
+      return unless idx?
+
+      container = @$el.find("dt[data-idx=#{idx}] + dd")
+      markup = $(render(element, @_categories[idx], @router.imagesLoader))
+      duration = 200
+      shift = -250
+      switch options.operation
+        when 'add' 
+          markup.css {x: shift}, duration
+          if options.index = 0
+            container.prepend markup
+          else 
+            container.children().eq(options.index-1).after markup
+          markup.transition {x:0}
+        when 'remove' then container.children().eq(options.index).transition {x:shift}, duration, -> $(this).remove()
 
   return Explorer

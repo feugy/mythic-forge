@@ -3,14 +3,15 @@
 
 // Font variables
 fontColor = #333
-fontSize = 14px
+fontSize = 12px
 fontFamily = Verdana, sans-serif
 
 radius = 4px
 borderColor = #ccc
 shadowColor = #ccc
 bgColor = #fff
-hoverColor= darken(#fff, 8%)
+hoverColor = darken(#fff, 8%)
+focusColor = #75B9F0
 
 // Transition mixin
 transition(args...)
@@ -27,23 +28,44 @@ hoverable()
   &:hover
     background-color hoverColor
 
+// Mixin for icons
+icon(size, margin = 0)
+  display inline-block
+  background-image url(s('images/icons-%s.png', size))
+  background-repeat no-repeat
+  height (size)px
+  width (size)px
+  left 3px
+  top 3px
+  vertical-align -0.5em
+  margin margin
+
 // Type icons mixin
 typeIcons(selector, size, margin = 0) 
   // type icons 
   {selector}
-    display: inline-block
-    background-image url(s('images/icons-%s.png', size))
-    background-repeat no-repeat
-    height (size)px
-    width (size)px
-    vertical-align -0.5em
-    margin margin
+    icon(size, margin)
 
   // type icons
-  for icon, i in map eventType itemType fieldType _ _ rule turnRule
+  for icon, i in map event-type _ field-type item-type player rule turn-rule
     {selector}.{icon}
     {selector}.{icon}s 
       background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
+
+// Mixin that creates directive for 3 size of icons
+multiIcon(names, row = 0)
+  for name, i in names
+    .ui-icon.{name}.small
+      icon 25
+      background-position unit(-25*i, 'px') unit(-25*row, 'px')
+
+    .ui-icon.{name}
+      icon 50
+      background-position unit(-50*i, 'px') unit(-50*row, 'px')
+
+    .ui-icon.{name}.big
+      icon 75
+      background-position unit(-75*i, 'px') unit(-75*row, 'px')
 
 // Mixin to take all available space
 takeSpace(paddingTop = 0, paddingRight = 0, paddingBottom = 0, paddingLeft = 0)
@@ -75,11 +97,47 @@ box-sizing()
   > * 
     hoverable()
     padding 0.5em 1em
-    font-size 0.9em
 
 .menu.open
   z-index 10
   opacity 1
+
+// Button icons
+
+.action-bars .ui-button 
+  display: inline-block;
+  margin-right 10px
+  min-height 30px
+  min-width 30px
+  vertical-align bottom
+
+multiIcon(valid invalid cancel warning question)
+multiIcon(login logout save remove, 1)
+
+// Special icons that may be inside text
+for name in question warning
+  .ui-dialog .ui-icon.{name}
+    float left
+    margin 0 1em 1em 0
+
+.ui-button-text-icon-primary .ui-button-text
+  padding-left 2.3em
+
+// JQuery ui dialogs
+
+.ui-dialog 
+  min-height 175px
+  min-width 480px
+
+  *
+    font-size 14px
+
+  .ui-dialog-content 
+    min-height 150px
+    min-width 450px
+
+    p
+      margin-bottom 1em
 
 // CSS Reset 
 
@@ -136,5 +194,18 @@ q
 
 // Global styles
 
+input
+textarea
+select
+  border 1px solid borderColor
+  border-radius radius
+  padding 0.2em
+  transition all 200ms
+
+  &:focus
+    border-color focusColor
+    box-shadow 0 0 5px rgba(focusColor, 0.6)
+
 // Overridable imports
 @import 'edition-perspective'
+@import 'widget'

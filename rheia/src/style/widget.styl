@@ -1,0 +1,92 @@
+// Common variable
+imageDim = 75px
+
+// LoadableImage
+.loadable
+  width imageDim
+  height imageDim
+  display block
+  position relative 
+
+  img 
+    width 100%
+    height 100%
+
+  p 
+    position absolute
+    display block
+    background-color black
+    text-align center
+    vertical-align middle
+    color white
+    top 0
+    padding-top padding = 23px
+    height imageDim - padding
+    width imageDim
+    margin 0px
+
+  .ui-icon 
+    background-color white
+    position absolute
+    cursor pointer  
+    z-index 2
+    top 1px
+
+  .ui-icon-trash 
+    right 1px
+
+  .ui-icon-folder-open 
+    right 17px
+    text-indent 0px 
+  
+    input[type=file] 
+      opacity 0
+      margin 0
+      cursor pointer
+      position absolute
+      right 0 
+
+// Carousel
+.carousel 
+  navDim = 16px
+
+  .mask 
+    overflow hidden
+    display inline-block
+    position relative 
+    height imageDim
+    width imageDim
+  
+  .container 
+    position absolute
+
+  .thumbnail 
+    height imageDim
+    width imageDim
+
+  .previous
+  .next 
+    cursor pointer
+    display inline-block
+    text-indent -99999px
+    overflow hidden
+    width navDim
+    height navDim
+    border none
+    vertical-align (imageDim/3)px
+    background-color transparent
+    background-image url('images/carousel.png') 
+
+  .next 
+    background-position 0 0
+
+  .next.ui-button-disabled 
+    cursor auto
+    background-position (-2*navDim)px 0
+
+  .previous 
+    background-position (-1*navDim)px 0
+
+  .previous.ui-button-disabled 
+    cursor auto
+    background-position (-3*navDim)px 0

@@ -6,10 +6,10 @@
     Myth is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser Public License as published by
     the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+     at your option any later version.
 
     Myth is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    but WITHOUT ANY WARRANTY without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Lesser Public License for more details.
 
@@ -17,13 +17,14 @@
 ###
 'use strict'
 
-define [], () ->
+define [],  () ->
 
-  return {
+  # This classes defines common methods to widgets.
+  $.widget "rheia.baseWidget", 
 
-    # Generates a pseudo random id.
+    # Allows to set a widget option.
     #
-    # @return a string id. 
-    generateId: ->
-      return "#{parseInt Math.random()*1000000000}"  
-  }
+    # @param key [String] the set option's key
+    # @param value [Object] new value for this option
+    setOption: (key, value) ->
+      @_setOption key, value

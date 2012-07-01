@@ -18,14 +18,12 @@
 'use strict'
 
 define [
-  'backbone'
-  'jquery'
   'i18n!nls/edition'
   'view/edition/Explorer'
   'view/edition/ItemType'
-], (Backbone, $, editionLabels, Explorer, ItemTypeView) ->
+], (i18n, Explorer, ItemTypeView) ->
 
-  editionLabels = _.extend {}, editionLabels
+  i18n = _.extend {}, i18n
 
   # The edition perspective manages types, rules and maps
   class EditionPerspective extends Backbone.View
@@ -45,6 +43,10 @@ define [
     _tabs: null
 
     # **private**
+    # special tab widget containing actions bars.
+    _actionBars: null
+
+    # **private**
     # bypass the close confirmation when closing a view. Used when object was removed.
     _forceClose: false
    
@@ -56,30 +58,43 @@ define [
 
       # construct explorer
       @explorer = new Explorer @router
-      @router.on 'open', @_onOpenElement
+      @bindTo @router, 'open', @_onOpenElement
+      # bind shortcuts
+      $(document).bind("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
+        .bind("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
+        .bind("keydown.#{@cid}", {keys:'ctrl+q', includeInputs:true}, @_onCloseHotKey)
 
+    # The view destroyer: unbinds shortcuts
+    destroy: =>
+      # removes shortcuts
+      $(document).unbind ".#{@cid}"
+
+      super()
     # The `render()` method is invoked by backbone to display view content at screen.
     # Draws the login form.
     render: =>
       # creates the two columns
-      @$el.append """<div class="row">
+      @$el.empty().append """<div class="row">
           <div class="left cell"></div>
           <div class="right cell">
             <div>
-              <a href="#" data-menu="new-button-menu" class="new-button">#{editionLabels.buttons.new}</a>
+              <a href="#" data-menu="new-button-menu" class="new-button">#{i18n.buttons.new}</a>
               <ul class="menu new-button-menu">
-                <li><i class="new itemType"></i>#{editionLabels.buttons.newItemType}</li>
+                <li data-class="ItemType"><i class="new item-type"></i>#{i18n.buttons.newItemType}</li>
               </ul>
+              <div class="ui-tabs action-bars">
+                <ul></ul>
+              </div>
             </div>
-            <div class=\"ui-tabs\">
+            <div class="ui-tabs views">
               <ul></ul>
             </div>
           </div>
         </div>"""
       # render the explorer on the left
       @$el.find('.cell.left').append @explorer.render().$el
-      # instanciates a tab widget
-      @_tabs = @$el.find('.cell.right .ui-tabs').tabs({
+      # instanciates a tab widget for views
+      @_tabs = @$el.find('.cell.right .ui-tabs.views').tabs({
           # template with close button
           tabTemplate: """ <li>
               <a href="\#{href}">
@@ -91,7 +106,10 @@ define [
         })
         # handlers
         .bind('tabsadd', @_onTabAdded)
-        .data 'tabs'
+        .bind('tabsselect', (event, ui) => @_actionBars?.select ui.index)
+        .data('tabs')
+      # instanciates a tab widget for action bars
+      @_actionBars = @$el.find('.cell.right .ui-tabs.action-bars').tabs().data('tabs')
 
       # new button and its dropdown menu
       @$el.find('.right .new-button').button({icons: {secondary: 'ui-icon-triangle-1-s'}})
@@ -115,16 +133,25 @@ define [
         console.log "view #{view.getTitle()} closure"
         @_views.splice idx, 1
         @_tabs?.remove idx
+        @_actionBars?.remove idx 
       else
         console.log "view #{view.getTitle()} cancels its closure"
+
+    # **private**
+    # Finds the position of a view inside the `_views` array, with its id.
+    #
+    # @param id [String] the searched view's id.
+    # @return index of the corresponding view, of -1
+    _indexOfView: (id) =>
+      idx = (i for view, i in @_views when view.getId() is id)
+      if idx.length is 1 then idx[0] else -1
 
     # **private**
     # Ask to creates a new element when a new button menu item was clicked.
     #  
     # @param event [Event] new button menu item click event.
     _onNewElement: (event) =>
-      category = _.capitalize $(event.target).closest('li').find('i').attr('class').replace('new', '').trim()
-      @_onOpenElement category, null
+      @_onOpenElement $(event.target).closest('li').data('class'), null
 
     # **private**
     # This method is invoked when an element must be shwoned in a tab.
@@ -155,10 +182,28 @@ define [
       # gets the added view from the internal array
       id = $(ui.tab).attr('href').replace '#tabs-', ''
       view = _.find @_views, (view) -> view.getId() is id
+      
+      # bind changes to update tab
+      view.on 'change', =>
+        tab = @_tabs.element.find("a[href=#tabs-#{view.getId()}] .content")
+        # toggle Css class modified wether we can save the view
+        tab.toggleClass 'modified', view.canSave()
+        # updates title
+        tab.html view.getTitle()
+      # bind close we view ask for it
+      view.on 'close', => @tryCloseTab view
+      # bind Id affectation, to update tabs' ids when the model is created
+      view.on 'affectId', (tempId, newId) =>
+        @_tabs.element.find("a[href=#tabs-#{tempId}]").attr 'href', "#tabs-#{newId}"
+        @_actionBars.element.find("a[href=#actionBar-#{tempId}]").attr 'href', "#actionBar-#{newId}"
 
-      # add the class name to the icon
+      # adds the action bar to the other ones
+      @_actionBars.add "#actionBar-#{view.getId()}", view.getId(), ui.index
+      $(@_actionBars.panels[ui.index]).append view.getActionBar() 
+
+      # adds the class name to the icon
       $(ui.tab).find('.icon').addClass view.className
-      # render the corresponding view inside the tab and display it
+      # renders the corresponding view inside the tab and displays it
       $(ui.panel).append view.render().$el
       @_tabs.select @_indexOfView id
 
@@ -175,12 +220,39 @@ define [
       @tryCloseTab @_views[idx]
 
     # **private**
-    # Finds the position of a view inside the `_views` array, with its id.
+    # Save hotkey handler. Try to save current tab.
     #
-    # @param id [String] the searched view's id.
-    # @return index of the corresponding view, of -1
-    _indexOfView: (id) =>
-      idx = (i for view, i in @_views when view.getId() is id)
-      if idx.length is 1 then idx[0] else -1
+    # @param event [Event] keyboard event
+    _onSaveHotKey: (event) =>
+      event?.preventDefault()
+      # tries to save current
+      return false unless @_tabs?.options.selected isnt -1
+      console.log "save current tab ##{@_tabs.options.selected} by hotkey"
+      @_views[@_tabs.options.selected].saveModel()
+      false
+
+    # **private**
+    # Remove hotkey handler. Try to save current tab.
+    #
+    # @param event [Event] keyboard event
+    _onRemoveHotKey: (event) =>
+      event?.preventDefault()
+      # tries to save current
+      return false unless @_tabs?.options.selected isnt -1
+      console.log "remove current tab ##{@_tabs.options.selected} by hotkey"
+      @_views[@_tabs.options.selected].removeModel()
+      false
+
+    # **private**
+    # Close hotkey handler. Try to save current tab.
+    #
+    # @param event [Event] keyboard event
+    _onCloseHotKey: (event) =>
+      event?.preventDefault()
+      # tries to save current
+      return false unless @_tabs?.options.selected isnt -1
+      console.log "close current tab ##{@_tabs.options.selected} by hotkey"
+      @tryCloseTab @_views[@_tabs.options.selected]
+      false
 
   return EditionPerspective

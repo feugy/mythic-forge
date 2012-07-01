@@ -64,5 +64,5 @@ class Rule
   #   @param result [Object] an arbitrary result of this rule.
   execute: (actor, target, callback) =>
     throw "#{module.filename}.execute() is not implemented yet !"
-
+        
 module.exports = Rule

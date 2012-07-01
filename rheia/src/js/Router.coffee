@@ -23,10 +23,14 @@ requirejs.config
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
-    'jquery-ui': 'lib/jquery-ui-1.8.21.min'
+    'jquery-ui': 'lib/jquery-ui-1.8.21-min'
+    'transit': 'lib/jquery-transit-0.1.3-min'
+    'hotkeys': 'lib/jquery-hotkeys-min'
+    'numeric': 'lib/jquery-ui-numeric-1.2-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
     'i18n': 'lib/i18n'
+    'text': 'lib/text'
     
   shim:
     'backbone': 
@@ -34,25 +38,74 @@ requirejs.config
       exports: 'Backbone'
     'underscore': 
       exports: '_'
+    'numeric':
+      deps: ['jquery-ui']
+    'jquery-ui':
+      deps: ['jquery']
+    'transit':
+      deps: ['jquery']
+    'hotkeys':
+      deps: ['jquery']
     'jquery': 
       exports: '$'
     'socket.io': 
       exports: 'io'
     'async': 
       exports: 'async'
+    'utils/Milk': 
+      exports: 'Milk'
 
 define [
   'underscore'
   'underscore.string'
   'jquery' 
-  'jquery-ui' 
   'backbone'
   'service/ImagesLoader'
   'view/edition/Perspective'
-  ], (_, _string, $, $ui, Backbone, ImagesLoader, EditionPerspectiveView) ->
+  # unwired dependencies
+  'jquery-ui' 
+  'numeric' 
+  'transit'
+  'hotkeys'
+  ], (_, _string, $, Backbone, ImagesLoader, EditionPerspectiveView) ->
 
-  # Mix in non-conflict functions to Underscore namespace if you want
+  # mix in non-conflict functions to Underscore namespace if you want
   _.mixin _string.exports()
+
+  # enhance Backbone views with close() mechanism
+  _.extend Backbone.View.prototype, 
+
+    # **private**
+    # Array of bounds between targets and the view, that are unbound by `destroy`
+    _bounds: []
+
+    # overload the initialize method to bind `destroy()`
+    initialize: ->
+      # initialize to avoid static behaviour
+      @_bounds = []
+      # bind to remove element to call the close method.
+      @$el.bind 'remove', => @destroy()
+
+    # Allows to bound a callback of this view to the specified emitter
+    # bounds are keept and automatically unbound by the `destroy` method.
+    #
+    # @param emitter [Backbone.Event] the emitter on which callback is bound
+    # @param events [String] events on which the callback is bound
+    # @parma callback [Function] the bound callback
+    bindTo: (emitter, events, callback) ->
+      emitter.on events, callback
+      @_bounds.push [emitter, events, callback]
+
+    # The destroy method correctly free DOM  and event handlers
+    # It must be overloaded by subclasses to unsubsribe events.
+    destroy: ->
+      # automatically remove bound callback
+      spec[0].off spec[1], spec[2] for spec in @_bounds
+      # unbind DOM callback
+      @$el.unbind()
+      # remove rendering
+      @remove()
+      @trigger 'close', @
 
   class Router extends Backbone.Router
 

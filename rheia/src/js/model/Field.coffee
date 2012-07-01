@@ -18,9 +18,8 @@
 'use strict'
 
 define [
-  'backbone',
   'model/sockets'
-], (Backbone, sockets) ->
+], (sockets) ->
 
   # Client cache of fields.
   # Wired to the server through socket.io

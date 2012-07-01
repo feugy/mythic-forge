@@ -17,9 +17,7 @@
 ###
 'use strict'
 
-define [
-  'jquery'
-], ($) ->
+define [], () ->
 
   class ImagesLoader
         

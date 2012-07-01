@@ -18,10 +18,9 @@
 'use strict'
 
 define [
-  'backbone'
   'model/sockets'
   'model/ItemType'
-], (Backbone, sockets, ItemType) ->
+], (sockets, ItemType) ->
 
   # Client cache of items.
   # Wired to the server through socket.io
