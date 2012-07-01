@@ -80,13 +80,13 @@ define [
       return unless className is 'ItemType'
       # first, get the cached item type and quit if not found
       itemType = @get changes._id
-      return unless item?
+      return unless itemType?
       # then, update the local cache.
       for key, value of changes
         itemType.set key, value if key isnt '_id'
 
       # emit a change.
-      @trigger 'update', itemType
+      @trigger 'update', itemType, @, {index:@indexOf itemType}
 
     # **private**
     # Callback invoked when a database deletion is received.

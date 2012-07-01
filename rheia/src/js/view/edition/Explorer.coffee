@@ -84,16 +84,19 @@ define [
     constructor: (@router) ->
       super {tagName: 'div', className:'explorer'}
 
-      # Item types
-      ItemType.collection.on 'reset', @_onResetCategory
-      ItemType.collection.on 'add', (element, collection, options) =>
+      # bind changes to Item types collection
+      @bindTo ItemType.collection, 'reset', @_onResetCategory
+      @bindTo ItemType.collection, 'add', (element, collection, options) =>
         options.operation = 'add'
         @_onUpdateCategory element, collection, options
-      ItemType.collection.on 'remove', (element, collection, options) =>
+      @bindTo ItemType.collection, 'remove', (element, collection, options) =>
         options.operation = 'remove'
         @_onUpdateCategory element, collection, options
+      @bindTo ItemType.collection, 'update', (element, collection, options) =>
+        options.operation = 'update'
+        @_onUpdateCategory element, collection, options
 
-      @router.on 'imageLoaded', @_onImageLoaded
+      @bindTo @router, 'imageLoaded', @_onImageLoaded
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
@@ -189,14 +192,19 @@ define [
       markup = $(render(element, @_categories[idx], @router.imagesLoader))
       duration = 200
       shift = -250
-      switch options.operation
-        when 'add' 
-          markup.css {x: shift}, duration
-          if options.index = 0
-            container.prepend markup
-          else 
-            container.children().eq(options.index-1).after markup
-          markup.transition {x:0}
-        when 'remove' then container.children().eq(options.index).transition {x:shift}, duration, -> $(this).remove()
+      add = =>
+        markup.css {x: shift}, duration
+        if options.index is 0
+          container.prepend markup
+        else 
+          container.children().eq(options.index-1).after markup
+        markup.transition {x:0}
 
+      switch options.operation
+        when 'remove' then container.children().eq(options.index).transition {x:shift}, duration, -> $(this).remove()
+        when 'add' then add()
+        when 'update' 
+          container.children().eq(options.index).remove()
+          add()
+          
   return Explorer

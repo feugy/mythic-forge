@@ -194,8 +194,18 @@ define [
       view.on 'close', => @tryCloseTab view
       # bind Id affectation, to update tabs' ids when the model is created
       view.on 'affectId', (tempId, newId) =>
-        @_tabs.element.find("a[href=#tabs-#{tempId}]").attr 'href', "#tabs-#{newId}"
-        @_actionBars.element.find("a[href=#actionBar-#{tempId}]").attr 'href', "#actionBar-#{newId}"
+        # updates view tab
+        link = @_tabs.element.find("a[href=#tabs-#{tempId}]")
+        link.attr 'href', "#tabs-#{newId}"
+        link.closest('li').attr 'aria-controls', "tabs-#{newId}"
+        # updates view panel
+        @_tabs.element.find("#tabs-#{tempId}").attr 'id', "tabs-#{newId}"
+        # updates action bar tab
+        link = @_actionBars.element.find("a[href=#actionBar-#{tempId}]")
+        link.attr 'href', "#actionBar-#{newId}"
+        link.closest('li').attr 'aria-controls', "actionBar-#{newId}"
+        # updates action bar panel
+        @_actionBars.element.find("#actionBar-#{tempId}").attr 'id', "actionBar-#{newId}"
 
       # adds the action bar to the other ones
       @_actionBars.add "#actionBar-#{view.getId()}", view.getId(), ui.index
