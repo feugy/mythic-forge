@@ -23,30 +23,13 @@ async = require 'async'
 coffee = require 'coffee-script'
 logger = require('../logger').getLogger 'model'
 utils = require '../utils'
-rimraf = require 'rimraf'
 
 root = utils.confKey 'executable.source'
 compiledRoot = utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
 ext = utils.confKey 'executable.extension','.coffee'
 
-# Enforce the folder existence.
-# This function IS intended to be synchonous, because the folder needs to exists before exporting the class.
-#
-# @param folderPath [String] path to the checked folder
-# @param forceRemove [boolean] if specifed and true, first erase the folder.
-createPath = (folderPath, forceRemove) ->
-  # force Removal if specified
-  rimraf.sync folderPath if forceRemove and path.existsSync folderPath
-    
-  if not path.existsSync folderPath
-    try 
-      fs.mkdirSync folderPath
-      logger.info "Executable folder '#{folderPath}' successfully created"
-    catch err
-      throw "Unable to create the Executable folder '#{folderPath}': #{err}"
-
-createPath root
+utils.enforceFolderSync root
 
 # Do a single compilation of a source file.
 #
@@ -80,7 +63,7 @@ class Executable
   @resetAll: (callback) ->
     # clean local files, and compiled scripts
     executables = {}
-    createPath compiledRoot, true
+    utils.enforceFolderSync compiledRoot, true
 
     fs.readdir root, (err, files) ->
       return callback "Error while listing executables: #{err}" if err?
@@ -154,7 +137,7 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the saved item
   remove: (callback) =>
-    path.exists @path, (exists) =>
+    fs.exists @path, (exists) =>
       return callback "Error while removing executable #{@_id}: this executable does not exists" if not exists
       fs.unlink @path, (err) =>
         return callback "Error while removing executable #{@_id}: #{err}" if err?

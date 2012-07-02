@@ -17,7 +17,9 @@
 ###
 'use strict'
 
+_ = require 'underscore'
 yaml = require 'js-yaml'
+rimraf = require 'rimraf'
 fs = require 'fs'
 pathUtil = require 'path'
 
@@ -87,3 +89,56 @@ module.exports =
       else 
         # last step: returns value
         return obj[step]
+
+  # Enforce the folder existence.
+  # This function IS intended to be synchonous, to enforce folder existence before executing code.
+  # Allows to remove existing folder if necessary.
+  #
+  # @param folderPath [String] path to the checked folder
+  # @param forceRemove [boolean] if specifed and true, first erase the folder.
+  enforceFolderSync: (folderPath, forceRemove) ->
+    # force Removal if specified
+    rimraf.sync folderPath if forceRemove and fs.existsSync folderPath
+      
+    if not fs.existsSync folderPath
+      try 
+        fs.mkdirSync folderPath
+        console.info "Executable folder '#{folderPath}' successfully created"
+      catch err
+        throw "Unable to create the Executable folder '#{folderPath}': #{err}"
+
+  # Allows to add i18n fields on a Mongoose schema.
+  # adds a transient attribute `locale` that allows to manage model locale.
+  #
+  # @param schema [Schema] the concerned Mongoose schema
+  enhanceI18n: (schema) ->
+    schema.virtual('locale')
+      .get () ->
+        if @_locale? then @_locale else 'default'
+      .set (value) ->
+        @_locale = value
+
+  # Creates an internatializable field inside a Mongoose Schema.
+  # A "private" field prefixed with `_` holds all translation.
+  # A virtual field with getter and setter allow to access translations.
+  # To change the translation of a field, change the `locale` attribute of the model.
+  #
+  # You must first use `enhanceI18n()` on the schema.
+  #
+  # @param schema [Schema] the concerned Mongoose schema
+  # @param field [String] name of the i18n field.
+  # @param options [Object] optionnal options used to create the real field. Allow to specify validation of required status.
+  addI18n: (schema, field, options = {}) ->
+    throw new Error 'please call enhanceI18n on schema before adding it i18n fields' if 'locale' of schema
+    spec = {}
+    spec["_#{field}"] = _.extend options, {type: {}, default: -> {}}
+    schema.add spec
+    schema.virtual(field)
+      .get () ->
+        # check the local existence.
+        locale = @get 'locale'
+        throw new Error "unknown locale #{locale} for field #{field} of model #{@_id}" unless locale of @get("_#{field}")
+        @get("_#{field}")[locale]
+      .set (value) ->
+        @get("_#{field}")[@get 'locale'] = value
+        @markModified "_#{field}"

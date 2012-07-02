@@ -17,25 +17,13 @@
 ###
 'use strict'
 
-mongoose = require 'mongoose'
+typeFactory = require './typeFactory'
 conn = require './connection'
 async = require 'async'
-modelUtils = require '../utils/model'
-modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
-  
-# local cache.
-cache = {}
-
-# We use the post-save middleware to propagate creation and saves.
-# But within this function, all instances have lost their "isNew" status
-# thus we store that status from the pre-save middleware, to use it in the post-save
-# middleware 
-wasNew = {}
-modifiedPaths = {}
 
 # Define the schema for map item types
-ItemTypeSchema = new mongoose.Schema
+ItemType = typeFactory 'ItemType',
 
   # descriptive image for this type.
   descImage:
@@ -75,65 +63,31 @@ ItemTypeSchema = new mongoose.Schema
     type: {}
     default: -> {} # use a function to force instance variable
 
-modelUtils.enhanceI18n ItemTypeSchema
-
-# Adds an i18n `name` field which is required
-modelUtils.addI18n ItemTypeSchema, 'name', {required: true}
-
-# Adds an i18n `desc` field
-modelUtils.addI18n ItemTypeSchema, 'desc'
-
-# Override the equals() method defined in Document, to check correctly the equality between _ids, 
-# with their `equals()` method and not with the strict equality operator.
-#
-# @param other [Object] other object against which the current object is compared
-# @return true if both objects have the same _id, false otherwise
-ItemTypeSchema.methods.equals = (object) ->
-  @_id.equals object?._id
-
 # setProperty() adds or updates a property.
 #
 # @param name [String] the unic name of the property.
 # @param type [String] primitive type of the property's values. Could be: string, text, boolean, integer, float, date, array or object
 # @param def [Object] default value affected to the type instances.
-ItemTypeSchema.methods.setProperty = (name, type, def) ->
+ItemType.methods.setProperty = (name, type, def) ->
   @get('properties')[name] = {type: type, def: def}
   @markModified 'properties'
   @_updatedProps = [] unless @_updatedProps?
   @_updatedProps.push name
 
-
 # unsetProperty() removes a property. All existing instances loose their own property value.
 # Will throw an error if the property does not exists.
 #
 # @param name [String] the unic name of the property.
-ItemTypeSchema.methods.unsetProperty = (name) ->
+ItemType.methods.unsetProperty = (name) ->
   throw new Error "Unknown property #{name} for item type #{@name}" unless @get('properties')[name]?
   delete @get('properties')[name]
   @markModified 'properties'
   @_deletedProps = [] unless @_deletedProps?
   @_deletedProps.push name
 
-# This special finder maintains an in-memory cache of types, to faster type retrieval by ids.
-# If the id isn't found in cache, search in database.
-#
-# @param id [String] the type id.
-# @param callback [Function] the callback function, that takes two parameters
-# @option callback err [String] an error string, or null if no error occured
-# @option callback type [ItemType] the found type, or null if no type found for the id
-ItemTypeSchema.statics.findCached = (id, callback) ->
-  # first look in the cache
-  return callback null, cache[id] if id of cache
-  # nothing in the cache: search in database
-  @findOne {_id: id}, callback
-
 
 # pre-save middleware: update itemType instances' properties if needed.
-ItemTypeSchema.pre 'save', (next) ->
-  # stores the isNew status and modified paths.
-  wasNew[@_id] = @isNew
-  modifiedPaths[@_id] = @modifiedPaths.concat()
-
+ItemType.pre 'save', (next) ->
   return next() unless @_updatedProps? or @_deletedProps?
   
   # get type instances
@@ -165,24 +119,6 @@ ItemTypeSchema.pre 'save', (next) ->
     delete @_updatedProps
     # save all the modified instances
     async.forEach saved, ((item, done) -> item.save done), next
-      
-# post-save middleware: now that the instance was properly saved, update the cache.
-ItemTypeSchema.post 'save', ->
-  # updates the cache
-  cache[@_id] = this
-  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'ItemType', this, modifiedPaths[@_id]
-  
-# post-remove middleware: now that the instace was properly removed, update the cache.
-ItemTypeSchema.post 'remove', ->
-  # updates the cache
-  delete cache[@_id]
-  # broadcast deletion
-  modelWatcher.change 'deletion', 'ItemType', this
-
-# post-init middleware: populate the cache
-ItemTypeSchema.post 'init', ->
-  # Store in cache
-  cache[@._id] = this
 
 # Export the Class.
-module.exports = conn.model 'itemType', ItemTypeSchema
+module.exports = conn.model 'itemType', ItemType
