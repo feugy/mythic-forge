@@ -59,7 +59,7 @@ class _AdminService
 
     # get existing values
     if '_id' of values
-      modelClass.findById values._id, (err, model) ->
+      modelClass.findCached values._id, (err, model) ->
         return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err?
         for key, value of values
           model.set key, value unless key is '_id'
@@ -84,7 +84,7 @@ class _AdminService
       when 'ItemType' then modelClass = ItemType
 
     # get existing values
-    modelClass.findById values._id, (err, model) ->
+    modelClass.findCached values._id, (err, model) ->
       return callback "Unexisting #{modelName} with id #{values._id}", modelName if err? or !(model?)
       # and removes them
       model.remove (err) -> callback err, modelName, model

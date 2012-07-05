@@ -30,3 +30,7 @@ executable:
 # Turns execution settings. Frequency in seconds
 turn:
   frequency: 60
+
+# Images file storage
+images:
+  store: /home/damien/workspace/mythic-forge/game/images

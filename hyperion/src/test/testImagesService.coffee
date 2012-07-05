@@ -45,7 +45,7 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.save type, {ext:'png', width:50, height:50}, data, (err, saved) ->
+        service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
@@ -62,7 +62,7 @@ describe 'ImagesService tests', ->
         throw new Error err if err?
         idx = 2
         # when saving the instance image 2
-        service.save type, {ext:'png', width:50, height:75}, data, idx, (err, saved) ->
+        service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:75}, data.toString('base64'), idx, (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
@@ -88,11 +88,11 @@ describe 'ImagesService tests', ->
           # saves a type image for it
           fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
             throw new Error err if err?
-            service.save type, {ext:'png', width:50, height:50}, data, (err, saved) ->
+            service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), (err, saved) ->
               throw new Error err if err?
               type = saved
               # saves a instance image for it
-              service.save type, {ext:'png', width:50, height:50}, data, 2, (err, saved) ->
+              service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), 2, (err, saved) ->
                 throw new Error err if err?
                 type = saved
                 done()
@@ -102,7 +102,7 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.save type, {ext:'png', width:50, height:50}, data, (err, saved) ->
+        service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
@@ -115,8 +115,8 @@ describe 'ImagesService tests', ->
 
     it 'should existing type image be removed', (done) ->
       file = path.join imagesPath, type.get 'descImage'
-      # when removing the tyê image
-      service.remove type, (err, saved) ->
+      # when removing the type image
+      service.removeImage 'ItemType', type._id, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
         # then the type image is updated in model
@@ -131,7 +131,7 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.save type, {ext:'png', width:100, height:150}, data, idx, (err, saved) ->
+        service.uploadImage 'ItemType', type._id, {ext:'png', width:100, height:150}, data.toString('base64'), idx, (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
@@ -148,8 +148,8 @@ describe 'ImagesService tests', ->
     it 'should existing instance image be removed', (done) ->
       idx = 2
       file = path.join imagesPath, type.get('images')[idx].file
-      # when removing the tyê image
-      service.remove type, idx, (err, saved) ->
+      # when removing the type image
+      service.removeImage 'ItemType', type._id, idx, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
         # then the instance image is updated in model

@@ -51,14 +51,12 @@ define [
     _forceClose: false
    
     # The view constructor.
-    #
-    # @param router [Router] the event bus
-    constructor: (@router) ->
+    constructor: ->
       super {tagName: 'div', className:'edition perspective'}
 
       # construct explorer
-      @explorer = new Explorer @router
-      @bindTo @router, 'open', @_onOpenElement
+      @explorer = new Explorer
+      @bindTo rheia.router, 'open', @_onOpenElement
       # bind shortcuts
       $(document).bind("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
         .bind("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
@@ -167,7 +165,7 @@ define [
       # creates the relevant view
       view = null
       switch type
-        when 'ItemType' then view = new ItemTypeView @router, id
+        when 'ItemType' then view = new ItemTypeView id
         else return
 
       @_views.push view

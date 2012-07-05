@@ -29,7 +29,7 @@ compiledRoot = utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
 ext = utils.confKey 'executable.extension','.coffee'
 
-utils.enforceFolderSync root
+utils.enforceFolderSync root, false, logger
 
 # Do a single compilation of a source file.
 #
@@ -63,7 +63,7 @@ class Executable
   @resetAll: (callback) ->
     # clean local files, and compiled scripts
     executables = {}
-    utils.enforceFolderSync compiledRoot, true
+    utils.enforceFolderSync compiledRoot, true, logger
 
     fs.readdir root, (err, files) ->
       return callback "Error while listing executables: #{err}" if err?

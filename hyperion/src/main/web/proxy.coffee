@@ -99,6 +99,9 @@ configureRIA = (base, rootFolder, statics) ->
     fs.createReadStream(path.join(rootFolder, 'index.html')).pipe res
 
 
+# serve commun static assets
+app.use "/images", express.static utils.confKey 'images.store'
+
 # configure a game RIA and the administration RIA 
 configureRIA '/game', utils.confKey('server.gameFolder'), ['js', 'assets', 'style']
 configureRIA '/rheia', './rheia/src', ['js', 'style']

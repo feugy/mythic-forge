@@ -28,13 +28,12 @@ define [
   #
   # @param model [Object] the rendered model
   # @param category [Object] the category descriptor for this model
-  # @param imagesLoader [ImagesLoader] the image loader utility
-  render = (model, category, imagesLoader) ->
+  render = (model, category) ->
     # load descriptive image.
     img = model.get 'descImage'
     if img?
-      img = "#{conf.baseUrl}/images/#{img}"
-      imagesLoader.load img
+      img = "/images/#{img}"
+      rheia.imagesService.load img
     """<div data-id="#{model.id}" data-class="#{category.id}" class="#{category.className}">
           <img data-src="#{img}"/>#{model.get 'name'}</div>"""
 
@@ -79,9 +78,7 @@ define [
     }]
 
     # The view constructor.
-    #
-    # @param router [Router] the event bus
-    constructor: (@router) ->
+    constructor: ->
       super {tagName: 'div', className:'explorer'}
 
       # bind changes to Item types collection
@@ -96,7 +93,7 @@ define [
         options.operation = 'update'
         @_onUpdateCategory element, collection, options
 
-      @bindTo @router, 'imageLoaded', @_onImageLoaded
+      @bindTo rheia.router, 'imageLoaded', @_onImageLoaded
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
@@ -146,7 +143,7 @@ define [
       category = element.data 'class'
       
       console.log "open element #{id} of category #{category}"
-      @router.trigger 'open', category, id
+      rheia.router.trigger 'open', category, id
 
     # **private**
     # Image loading handler. Displays image.
@@ -156,7 +153,7 @@ define [
     # @param data [Object] if success, the image data
     _onImageLoaded: (success, src, data) =>
       return unless success
-      @$el.find("img[data-src=#{src}").attr 'src', data
+      @$el.find("img[data-src='#{src}']").attr 'src', data
 
     # **private**
     # Handler invoked when a category have been retrieved
@@ -171,7 +168,7 @@ define [
 
       container = @$el.find("dt[data-idx=#{idx}] + dd").empty()
       for element in collection.models
-        container.append render element, @_categories[idx], @router.imagesLoader
+        container.append render element, @_categories[idx]
 
     # **private**
     # Handler invoked when a category item have been added or removed
@@ -189,7 +186,7 @@ define [
       return unless idx?
 
       container = @$el.find("dt[data-idx=#{idx}] + dd")
-      markup = $(render(element, @_categories[idx], @router.imagesLoader))
+      markup = $(render(element, @_categories[idx]))
       duration = 200
       shift = -250
       add = =>

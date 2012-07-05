@@ -71,6 +71,9 @@ define [
     # while the edited object is still not saved on server, we need an id.
     _tempId: null
 
+    # **private**
+    # array of files that needs to be uploaded
+    _pendingUploads: []
 
     # ** private**
     # the action bar with save, remove and addProperty buttons
@@ -96,15 +99,11 @@ define [
     # description image widget
     _descImageWidget: null
 
-    # **private**
-    # array of instance image widgets
-    _imageWidgets: []
-
     # The view constructor.
     #
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
-    constructor: (@router, id) ->
+    constructor: (id) ->
       super {tagName: 'div', className:'item-type view'}
       # creation of a new item type if necessary
       if id?
@@ -116,12 +115,13 @@ define [
         @_tempId = utilities.generateId()
 
       @_canSave = false
+      @_pendingUploads = []
       @_canRemove = @_tempId is null
       # bind change event to the update of action button bar
       @on 'change', =>
         return unless @_actionBar?
-        if @_canSave then @_saveButton.enable() else @_saveButton.disable()
-        if @_canRemove then @_removeButton.enable() else @_removeButton.disable()
+        if @canSave() then @_saveButton.enable() else @_saveButton.disable()
+        if @canRemove() then @_removeButton.enable() else @_removeButton.disable()
 
       # bind to server events
       @bindTo ItemType.collection, 'add', @_onCreated
@@ -154,7 +154,7 @@ define [
     #
     # @return the savable status of this object
     canSave: =>
-      @_canSave
+      @_canSave and @_pendingUploads.length is 0
 
     # Returns the view's action bar, and creates it if needed.
     #
@@ -190,7 +190,7 @@ define [
     # @return true if the view can be closed, false to cancel closure
     canClose: =>
       # allow if we are closing, or if no change found
-      return true if @_isClosing or !@_canSave
+      return true if @_isClosing or !@canSave()
       $("""<div id="confirmClose-#{@getId()}" title="#{i18n.titles.closeConfirm}">
               <span class="ui-icon question"></span>#{_.sprintf(@_confirmCloseMessage, @model.get 'name')}
             </div>""").dialog(
@@ -263,20 +263,27 @@ define [
     #
     # @param event [event] optionnal click event on the save button
     saveModel: (event = null) =>
-      return unless @_canSave
+      return unless @canSave()
       console.debug "save asked for #{@getId()}"
       event?.preventDefault()
       # fill the model and save it
       @_saveInProgress = true
       @_fillModel()
-      @model.save()
+      if @model.get('descImage') isnt @_descImageWidget.options.source
+        spec = {file: @_descImageWidget.options.source}
+        if @_descImageWidget.options.source is null
+          spec.oldName = @model.get('descImage')  
+        @_pendingUploads.push spec
+
+      # first, save model
+      @model.save() 
  
     # Removes the view, after displaying a confirmation dialog. (the `remove` methods already exists)
     #
     # @param event [event] optional click event on the remove button
     removeModel: (event = null) =>
       event?.preventDefault()
-      return unless @_canRemove
+      return unless @canRemove()
       $("""<div id="confirmRemove-#{@getId()}" title="#{i18n.titles.removeConfirm}">
           <span class="ui-icon question"></span>#{_.sprintf @_confirmRemoveMessage, @model.get 'name'}</div>""").dialog
         modal: true,
@@ -310,10 +317,6 @@ define [
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
       @model.set 'descImage', null if @_descImageWidget.options.source is null
       
-      # todo removes empty images only, because image uploads are managed by `_onSave`
-      ###@model.set 'images', []
-      @model.get('images').push widget.options.source for widget in @_imageWidgets when widget.options.source instanceof String###
-    
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
@@ -346,10 +349,6 @@ define [
         name: 'descImage'
         original: @model.get 'descImage'
         current: @_descImageWidget.options.source
-      ### todo comparable.push
-        name: 'images'
-        original: @model.get 'images'
-        current: @_imageWidgets.map (widget) => widget.options.source###
       return comparable;
     
     # **private**
@@ -364,82 +363,22 @@ define [
     # **private**
     # Creates LoadableImage for each images of the edited object
     _createImages: =>
-      # removes previous ones
-      descImage = @$el.find('.desc.image')
-      descImage.empty()
-      imagesContainer = @$el.find('.images')
-      imagesContainer.empty()
-      
       # the description image
-      @_descImageWidget = descImage.loadableImage(
-        source: @model.get 'descImage'
-        change: @_onChange
-      ).data 'loadableImage'
-      
-      @_images = []
-      # avoid 'hole' inside the images array.
-      @_fillImagesHole()
-      # and create as many loadableImages as needed
-      images = @model.get 'images'
-      if images?
-        for image in images
-          @_imageWidgets.push($('<div><div/>').loadableImage(
-            source: image?.file
-            change: @_onChange
-          ).appendTo(imagesContainer).data('loadableImage'))
-
-      # fake widget to add new image
-      @_addNewImage()
-
-    # **private**
-    # Appends to the instance image container a "fake" LoadableImage to upload a new instance image. 
-    _addNewImage: =>
-      $("<div class=\"#{addImageClass}\"></div>").loadableImage(
-        change: @_onNewImage
-      ).appendTo @$el.find '.images'
-      
-    # **private**
-    # Checks that edited object images does not contains any hole, and add missing indices
-    _fillImagesHole: =>
-      # do not process non-array images
-      images = @model.get 'images'
-      return unless Array.isArray(images) and !(null in images) 
-      tmp = []
-      nextNum = 1
-      
-      for image in images
-        src = image.file
-        # evaluates the images number
-        num = parseInt src.substring src.lastIndexOf('-')+1, src.lastIndexOf('.')
-        # adds missing indieces
-        while nextNum < num
-          tmp.push null
-          nextNum++
-        
-        tmp.push(image);
-        nextNum = num+1
-
-      @model.set 'images', tmp
+      unless @_descImageWidget?
+        @_descImageWidget = @$el.find('.desc.image').loadableImage(
+          source: @model.get 'descImage'
+          change: @_onChange
+        ).data 'loadableImage'
+      else 
+        @_descImageWidget.setOption 'source', @model.get 'descImage'
 
     _notifyExternalRemove: =>
+      console.trace()
       #todo
 
-    _notifyExternalRemove: =>
+    _notifyExternalChange: =>
+      console.trace()
       #todo
-
-    # **private**
-    # Adds a "fake" LoadableImage widget that allow to upload a new instance image.
-    _onNewImage: (event) =>
-      # checks that an image have been uploaded
-      widget = @$el.find(".#{addImageClass}").data('loadableImage')
-      return unless widget.options.source?
-      # keep the widget as a regular instance image.
-      widget.element.removeClass addImageClass
-      # widget.change = @_onChange
-      @_imageWidgets.push widget
-      # and creates a new fake image.
-      @_addNewImage()
-      @_onChange()
 
     # **private**
     # Change handler, wired to any changes from the rendering.
@@ -498,7 +437,20 @@ define [
 
       # updates edited object
       @model = saved
-      @_fillRendering()
+
+      # rfresh rendering and exiti, or proceed with changes
+      return @_fillRendering() unless @_pendingUploads.length > 0
+
+      spec = @_pendingUploads.splice(0, 1)[0]
+      @_saveInProgress = true
+      
+      if 'oldName' of spec.file
+        # removes existing data
+        rheia.imagesService.remove 'ItemType', @model.id, spec.oldName, if spec.idx then spec.idx
+      else
+        # upload new file data
+        rheia.imagesService.upload 'ItemType', @model.id, spec, if spec.idx then spec.idx
+      
         
     # **private**
     # Invoked when a ItemType is removed from the server.

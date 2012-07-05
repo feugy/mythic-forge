@@ -96,14 +96,15 @@ module.exports =
   #
   # @param folderPath [String] path to the checked folder
   # @param forceRemove [boolean] if specifed and true, first erase the folder.
-  enforceFolderSync: (folderPath, forceRemove) ->
+  # @param logger [Object] optional logger
+  enforceFolderSync: (folderPath, forceRemove = false, logger = null) ->
     # force Removal if specified
     rimraf.sync folderPath if forceRemove and fs.existsSync folderPath
       
     if not fs.existsSync folderPath
       try 
         fs.mkdirSync folderPath
-        console.info "Executable folder '#{folderPath}' successfully created"
+        logger?.info "Folder '#{folderPath}' successfully created"
       catch err
         throw "Unable to create the Executable folder '#{folderPath}': #{err}"
 

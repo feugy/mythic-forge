@@ -24,6 +24,7 @@ fs = require 'fs'
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
 adminService = require('../service/AdminService').get()
+imagesService = require('../service/ImagesService').get()
 watcher = require('../model/ModelWatcher').get()
 
 # If an ssl certificate is found, use it.
@@ -99,6 +100,7 @@ io.of('/player').on 'connection', (socket) ->
 # @see {AdminService}
 io.of('/admin').on 'connection', (socket) ->
   exposeMethods adminService, socket
+  exposeMethods imagesService, socket
 
 # socket.io `updates` namespace 
 #

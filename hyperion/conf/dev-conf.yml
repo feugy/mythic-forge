@@ -29,3 +29,7 @@ executable:
 # Turns execution settings. Frequency in seconds
 turn:
   frequency: 60
+
+# Images file storage
+images:
+  store: ../proto-game/images

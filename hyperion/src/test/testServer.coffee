@@ -16,6 +16,8 @@
     You should have received a copy of the GNU Lesser Public License
 ###
 
+fs = require 'fs'
+path = require 'path'
 server = require '../main/web/server'
 socketClient = require 'socket.io-client'
 Item = require '../main/model/Item'
@@ -265,7 +267,7 @@ describe 'server tests', ->
     describe 'given a type', ->
 
       before (done) ->
-        ItemType.collection.drop ->
+        ItemType.collection.drop -> testUtils.cleanFolder utils.confKey('images.store'), ->
           new ItemType({name: 'character'}).save (err, saved) ->
             throw new Error err if err?
             character = saved
@@ -285,3 +287,35 @@ describe 'server tests', ->
 
         # when consulting the map
         socket.emit 'list', 'ItemType'
+
+      it 'should type image be uploaded and removed', (done) ->
+        # given several connected socket.io clients
+        socket = socketClient.connect "#{rootUrl}/admin"
+
+        # given an image
+        fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+          throw new Error err if err?
+
+          # then the character type was updated
+          socket.once 'uploadImage-resp', (err, saved) ->
+            throw new Error err if err?
+            # then the description image is updated in model
+            assert.equal saved.descImage, "#{character._id}-type.png"
+            # then the file exists and is equal to the original file
+            file = path.join utils.confKey('images.store'), saved.descImage
+            assert.ok fs.existsSync file
+            assert.equal fs.readFileSync(file).toString(), data.toString()
+
+            # then the character type was updated
+            socket.once 'removeImage-resp', (err, saved) ->
+              throw new Error err if err?
+              # then the type image is updated in model
+              assert.equal saved.descImage, null
+              # then the file do not exists anymore
+              assert.ok !(fs.existsSync(file))
+              done()
+
+            socket.emit 'removeImage', 'ItemType', character._id
+
+          # when saving the type image
+          socket.emit 'uploadImage', 'ItemType', character._id, {ext:'png', width:50, height:50}, data.toString('base64')

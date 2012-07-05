@@ -17,6 +17,7 @@
 ###
 'use strict'
 
+# configure require js
 requirejs.config 
   paths:
     'backbone': 'lib/backbone-0.9.2-min'
@@ -55,19 +56,22 @@ requirejs.config
     'utils/Milk': 
       exports: 'Milk'
 
+# initialize rheia global namespace
+window.rheia = {}
+
 define [
   'underscore'
   'underscore.string'
   'jquery' 
   'backbone'
-  'service/ImagesLoader'
   'view/edition/Perspective'
+  'service/ImagesService'
   # unwired dependencies
   'jquery-ui' 
   'numeric' 
   'transit'
   'hotkeys'
-  ], (_, _string, $, Backbone, ImagesLoader, EditionPerspectiveView) ->
+  ], (_, _string, $, Backbone, EditionPerspectiveView, ImagesService) ->
 
   # mix in non-conflict functions to Underscore namespace if you want
   _.mixin _string.exports()
@@ -113,9 +117,6 @@ define [
       # Define some URL routes
       'home': 'home'
 
-    # The images loader singleton
-    imagesLoader: null
-
     # Object constructor.
     #
     # For links that have a route specified (attribute data-route), prevent link default action and
@@ -124,10 +125,12 @@ define [
     # Starts history tracking in pushState mode
     constructor: ->
       super()
+      # global router instance
+      rheia.router = @
+
       # instanciates singletons.
-      @imagesLoader = new ImagesLoader this
-      
-      @editionPerspective = new EditionPerspectiveView this
+      rheia.imagesService = new ImagesService()
+      rheia.editionPerspective = new EditionPerspectiveView()
 
       Backbone.history.start {pushState: true, root: conf.basePath}
 
@@ -143,7 +146,7 @@ define [
 
     # Displays home view
     home: =>
-      $('body').empty().append @editionPerspective.render().$el
+      $('body').empty().append rheia.editionPerspective.render().$el
 
   app = new Router()
   return app
