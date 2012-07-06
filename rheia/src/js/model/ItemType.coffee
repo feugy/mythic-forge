@@ -29,13 +29,13 @@ define [
     # @param model [Object] the managed model
     # @param options [Object] unused
     constructor: (@model, @options) ->
-      super model, options
+      super(model, options)
       # bind getTypes response
-      sockets.admin.on 'list-resp', @_onGetTypes
+      sockets.admin.on('list-resp', @_onGetTypes)
       # bind updates
-      sockets.updates.on 'creation', @_onAdd
-      sockets.updates.on 'update', @_onUpdate
-      sockets.updates.on 'deletion', @_onRemove
+      sockets.updates.on('creation', @_onAdd)
+      sockets.updates.on('update', @_onUpdate)
+      sockets.updates.on('deletion', @_onRemove)
 
     # Provide a custom sync method to wire Types to the server.
     # Only read operation is supported.
@@ -44,8 +44,8 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, collection, args) =>
-      throw new Error "Unsupported #{method} operation on Item Types" unless method is 'read'
-      sockets.admin.emit 'list', 'ItemType'
+      throw new Error("Unsupported #{method} operation on Item Types") unless method is 'read'
+      sockets.admin.emit('list', 'ItemType')
 
     # **private**
     # Return handler of `list` server method.
@@ -55,9 +55,9 @@ define [
     # @param types [Array<Object>] raw types.
     _onGetTypes: (err, modelName, types) =>
       return unless modelName is 'ItemType'
-      return console.error "Failed to fetch types: #{err}" if err?
+      return console.error("Failed to fetch types: #{err}") if err?
       # add returned types in current collection
-      @reset types
+      @reset(types)
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -68,7 +68,7 @@ define [
     _onAdd: (className, item) =>
       return unless className is 'ItemType'
       # add the created raw item. An event will be triggered
-      @add item
+      @add(item)
 
     # **private**
     # Callback invoked when a database update is received.
@@ -79,14 +79,14 @@ define [
     _onUpdate: (className, changes) =>
       return unless className is 'ItemType'
       # first, get the cached item type and quit if not found
-      itemType = @get changes._id
+      itemType = @get(changes._id)
       return unless itemType?
       # then, update the local cache.
       for key, value of changes
-        itemType.set key, value if key isnt '_id'
+        itemType.set(key, value) if key isnt '_id'
 
       # emit a change.
-      @trigger 'update', itemType, @, {index:@indexOf itemType}
+      @trigger('update', itemType, @, {index:@indexOf itemType})
 
     # **private**
     # Callback invoked when a database deletion is received.
@@ -97,7 +97,7 @@ define [
     _onRemove: (className, item) =>
       return unless className is 'ItemType'
       # removes the deleted raw item. An event will be triggered
-      @remove item
+      @remove(item)
 
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections Items instead
@@ -106,7 +106,7 @@ define [
 
     # type local cache.
     # A Backbone.Collection subclass that handle types retrieval with `fetch()`
-    @collection = new ItemTypes @
+    @collection = new ItemTypes(@)
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
@@ -118,7 +118,7 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
-      super attributes
+      super(attributes)
 
     # Overrides inherited getter to handle i18n fields.
     #
@@ -150,9 +150,9 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       switch method 
-        when 'create', 'update' then sockets.admin.emit 'save', 'ItemType', @toJSON()
-        when 'delete' then sockets.admin.emit 'remove', 'ItemType', @toJSON()
-        else throw new Error "Unsupported #{method} operation on Item Types"
+        when 'create', 'update' then sockets.admin.emit('save', 'ItemType', @toJSON())
+        when 'delete' then sockets.admin.emit('remove', 'ItemType', @toJSON())
+        else throw new Error("Unsupported #{method} operation on Item Types")
 
     # An equality method that tests ids.
     #

@@ -1,5 +1,7 @@
 /* Imports */
 @import 'jquery-ui.css'
+@import 'jquery-ui-numeric.css'
+@import 'jquery-timepicker-addon.css'
 
 // Font variables
 fontColor = #333
@@ -55,6 +57,10 @@ typeIcons(selector, size, margin = 0)
 // Mixin that creates directive for 3 size of icons
 multiIcon(names, row = 0)
   for name, i in names
+    .ui-icon.{name}.x-small
+      icon 16
+      background-position unit(-16*i, 'px') unit(-16*row, 'px')
+
     .ui-icon.{name}.small
       icon 25
       background-position unit(-25*i, 'px') unit(-25*row, 'px')
@@ -80,64 +86,6 @@ box-sizing()
   -webkit-box-sizing arguments
   -moz-box-sizing arguments
   box-sizing arguments
-
-// Menus
-.menu
-  position absolute
-  background-color bgColor
-  border 1px solid borderColor
-  box-shadow 0 3px 5px shadowColor
-  margin-top: 2px
-  border-radius radius
-  padding 0.2em
-  opacity 0
-  transition opacity 200ms
-  z-index -1
-
-  > * 
-    hoverable()
-    padding 0.5em 1em
-
-.menu.open
-  z-index 10
-  opacity 1
-
-// Button icons
-
-.action-bars .ui-button 
-  display: inline-block;
-  margin-right 10px
-  min-height 30px
-  min-width 30px
-  vertical-align bottom
-
-multiIcon(valid invalid cancel warning question)
-multiIcon(login logout save remove, 1)
-
-// Special icons that may be inside text
-for name in question warning
-  .ui-dialog .ui-icon.{name}
-    float left
-    margin 0 1em 1em 0
-
-.ui-button-text-icon-primary .ui-button-text
-  padding-left 2.3em
-
-// JQuery ui dialogs
-
-.ui-dialog 
-  min-height 175px
-  min-width 480px
-
-  *
-    font-size 14px
-
-  .ui-dialog-content 
-    min-height 150px
-    min-width 450px
-
-    p
-      margin-bottom 1em
 
 // CSS Reset 
 
@@ -194,17 +142,81 @@ q
 
 // Global styles
 
-input
+:not(.ui-numeric) > input
 textarea
 select
+.ui-numeric
   border 1px solid borderColor
   border-radius radius
   padding 0.2em
   transition all 200ms
 
   &:focus
+  &.focus
     border-color focusColor
     box-shadow 0 0 5px rgba(focusColor, 0.6)
+
+// Menus
+.menu
+  position absolute
+  background-color bgColor
+  border 1px solid borderColor
+  box-shadow 0 3px 5px shadowColor
+  margin-top: 2px
+  border-radius radius
+  padding 0.2em
+  opacity 0
+  transition opacity 200ms
+  z-index -1
+
+  > * 
+    hoverable()
+    padding 0.5em 1em
+
+.menu.open
+  z-index 10
+  opacity 1
+
+// Button
+
+.action-bars .ui-button 
+  display: inline-block;
+  margin-right 10px
+  min-height 30px
+  min-width 30px
+  vertical-align bottom
+
+// Icons
+multiIcon(valid invalid cancel warning question)
+
+multiIcon(login logout save remove, 1)
+
+multiIcon(addFoler addFile addParam addProperty, 2)
+
+// Special icons that may be inside text
+for name in question warning
+  .ui-dialog .ui-icon.{name}
+    float left
+    margin 0 1em 1em 0
+
+.ui-button-text-icon-primary .ui-button-text
+  padding-left 2.3em
+
+// JQuery ui dialogs
+
+.ui-dialog 
+  min-height 175px
+  min-width 480px
+
+  *
+    font-size 14px
+
+  .ui-dialog-content 
+    min-height 150px
+    min-width 450px
+
+    p
+      margin-bottom 1em
 
 // Overridable imports
 @import 'edition-perspective'

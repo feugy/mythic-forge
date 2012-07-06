@@ -55,44 +55,51 @@ define [
       tooltipFct: null
 
     # destructor: free DOM nodes and handles
-    destroy: ->
+    destroy: () ->
       @element.find('*').unbind 
-      $.Widget.prototype.destroy.apply @, arguments
+      $.Widget.prototype.destroy.apply(@, arguments)
 
     # build rendering
-    _create: ->
-      @element.addClass 'property-widget'
+    _create: () ->
+      @element.addClass('property-widget')
       # first cast
       @_castValue()
       rendering = null
-      isNull = ! @options.value?
+      isNull = @options.value is null or @options.valus is undefined
       # depends on the type
       switch @options.type
         when 'string'
           # simple text input
-          rendering = $("""<input type="text" value="#{@options.value}"/>""").appendTo @element
-          rendering.keyup (event) => @_onChange event
+          rendering = $("""<input type="text" value="#{@options.value}"/>""").appendTo(@element)
+          rendering.keyup((event) => @_onChange(event))
           unless isNull
             @options.value = rendering.val()
-          else 
-            rendering.attr 'disabled', 'disabled'
+          else if @options.allowNull
+            rendering.attr('disabled', 'disabled')
 
         when 'text'
           # textarea
-          rendering = $("""<textarea>#{@options.value or ''}</textarea>""").appendTo @element
-          rendering.keyup (event) => @_onChange event
+          rendering = $("""<textarea>#{@options.value or ''}</textarea>""").appendTo(@element)
+          rendering.keyup((event) => @_onChange(event))
           unless isNull 
             @options.value = rendering.val()
           else if @options.allowNull
-            rendering.attr 'disabled', 'disabled'
+            rendering.attr('disabled', 'disabled')
         
         when 'boolean'
           # checkbox 
+          group = parseInt(Math.random()*1000000000)
           rendering = $("""
-            <input class="boolean-value" type="checkbox" 
-              #{if @optionvalue then 'checked="checked"'}/>
-            """).appendTo @element 
-          rendering.change (event) => @_onChange event
+            <span class="boolean-value">
+              <input name="#{group}" value="true" type="radio" #{if @options.value is true then 'checked="checked"'}/>
+              #{i18n.property.isTrue}
+              <input name="#{group}" value="false" type="radio" #{if @options.value is false then 'checked="checked"'}/>
+              #{i18n.property.isFalse}
+            </span>
+            """).appendTo(@element)
+          rendering.find('input').change((event) => @_onChange(event))
+          if isNull
+            rendering.find('input').attr('disabled', 'disabled')
 
         when 'integer', 'float'
           # stepper
@@ -100,25 +107,27 @@ define [
           rendering = $("""
             <input type="number" min="#{@options.min}" 
                    max="#{@options.max}" step="#{step}" 
-                   value="#{@options.value}"/>""").appendTo @element
-          rendering.bind 'change keyup', (event) => @_onChange event
+                   value="#{@options.value}"/>""").appendTo(@element)
+          rendering.bind('change keyup', (event) => @_onChange(event))
           if $.browser.mozilla 
-            rendering.attr 'name', parseInt Math.random *1000000000
             # we must use a widget on firefox       
-            rendering.numeric 
-              buttons: true
-              minValue: @options.min
-              maxValue: @options.max
-              increment: step
-              smallIncrement: step
-              largeIncrement: step
-              emptyValue: false
-              format: 
-                format: if step is 0.01 then '0.##' else '0'
-                decimalChar: '.'
-              title: ''
-            
-            rendering.numeric 'option', 'disabled', isNull
+            rendering.attr('name', parseInt(Math.random()*1000000000))
+              .focus(() ->  $(this).parent().addClass('focus'))
+              .blur(() -> $(this).parent().removeClass('focus'))
+              .numeric(
+                buttons: true
+                minValue: @options.min
+                maxValue: @options.max
+                increment: step
+                smallIncrement: step
+                largeIncrement: step
+                emptyValue: false
+                format: 
+                  format: if step is 0.01 then '0.##' else '0'
+                  decimalChar: '.'
+                title: ''
+              )
+            rendering.numeric('option', 'disabled', isNull)
             # weirdly, the value is initialized to 0
             if isNull
               @options.value = null  
@@ -131,7 +140,7 @@ define [
               @options.value = rendering.val()
               @_castValue()
             else 
-              rendering.attr 'disabled', 'disabled'
+              rendering.attr('disabled', 'disabled')
         
         when 'object', 'array'  
           if @options.isInstance 
@@ -144,37 +153,56 @@ define [
               tooltipFct: @options.tooltipFct,
               accepted: @options.accepted
               objectEdited: (event, details) =>
-                @_trigger 'objectEdited', event, details
+                @_trigger('objectEdited', event, details)
               objectRemoved: (event, details) =>
-                @_trigger 'objectRemoved', event, details
-            ).appendTo @element      
+                @_trigger('objectRemoved', event, details)
+            ).appendTo(@element)
 
-            @options.value = rendering.instanceList 'option', 'value'
-            rendering.setOption 'change', (event) => @_onChange event
+            @options.value = rendering.instanceList('option', 'value')
+            rendering.setOption('change', (event) => @_onChange(event))
 
           else 
             # for type, use a select.
             markup += """<option value="#{spec.val}" 
                 #{if @options.value is spec.val then 'selected="selected"'}>spec.name
               </option>""" for spec in i18n.property.objectTypes
-            rendering = $("<select>#{markup}</select>").appendTo(@element).change (event) => @_onChange event
+            rendering = $("<select>#{markup}</select>").appendTo(@element).change((event) => @_onChange(event))
             @options.value = rendering.val() 
         
+        when 'date'
+          rendering = $("""<input type="date" #{if isNull then 'disabled="disabled"'}/>""").datetimepicker(
+            showSecond: true
+            dateFormat: 'yy/mm/dd'
+            timeFormat: 'hh:mm:ss'
+          ).appendTo(@element)
+          .change((event) => @_onChange(event))
+          rendering.datetimepicker('setDate', new Date(@options.value)) unless isNull
+
+          @options.value = rendering.val() 
+          @_castValue()
+
         else throw new Error "unsupported property type #{@options.type}"
        
       # adds the null value checkbox if needed
       return if !@options.allowNull or @options.type is 'object' or @options.type is 'array'
       @element.append("""<input class="isNull" type="checkbox" #{if isNull then 'checked="checked"'} 
-        /><span>#{i18n.property.isNull}</span>""").change (event) => @_onChange event
+        /><span>#{i18n.property.isNull}</span>""").change((event) => @_onChange(event))
 
     # **private**
     # Enforce for integer, float and boolean value that the value is well casted/
-    _castValue: ->
+    _castValue: () ->
       return unless @options.value?
       switch @options.type
-        when 'integer' then @options.value = parseInt @options.value
-        when 'float' then @options.value = parseFloat @options.value
-        when 'boolean' then @options.value = @options.value is true
+        when 'integer' then @options.value = parseInt(@options.value)
+        when 'float' then @options.value = parseFloat(@options.value)
+        when 'boolean' then @options.value = @options.value is true or @options.value is 'true'
+        when 'date' 
+          # null and timestamp values are not modified.
+          if @options.value isnt null and isNaN(@options.value)
+            # date and string values will be converted to timestamp
+            @options.value = Date.parse(@options.value) 
+            # or take the current date if something goes wrong.
+            @options.value = new Date().getTime() if isNaN(@options.value)
 
     # **private**
     # Content change handler. Update the current value and trigger event `change`
@@ -186,40 +214,44 @@ define [
       
       # special case when we set to null.
       if target.hasClass 'isNull'
-        newValue = if @element.find('.isNull:checked').length is 1 then null else newValue
-        if $.browser.mozilla and @options.type is 'float' or @options.type is 'integer' 
-          input = @element.find '*:nth-child 1'
-          # Cas particulier des champs numérique sous Firefox.
-          input.numeric 'option', 'disabled', newValue is null
-          unless newValue?
-            input.val ''
-          else 
-            input.val '0'
-            newValue = 0
-          
-        else 
-          unless newValue?
-            input.attr 'disabled', 'disabled'.val ''
-          else 
-            input.removeAttr 'disabled'
-            # Pour les numérique, positionne immédiatement à 0.
-            if @options.type is 'float' or @options.type is 'integer'
-              input.val 0
-              newValue = 0 
+        isNull =  @element.find('.isNull:checked').length is 1
+        input = @element.find('*:nth-child(1)')
         
-      else if target.hasClass 'booleanValue'
-        # checbox
-        newValue = @element.find('.booleanValue:checked').length is 1
-      else if target.hasClass 'instance' 
+        switch @options.type
+          when 'float', 'integer'
+            newValue = if isNull then null else 0
+            if $.browser.mozilla
+              # in mozilla we're using a widget
+              input.numeric('option', 'disabled', isNull)
+              input.val('0') unless isNull
+            else 
+              input.val(if isNull then '' else 0)
+          
+          when 'boolean'
+            if isNull
+              target.prev('.boolean-value').find('input').attr('disabled', 'disabled')
+              newValue = null
+            else 
+              target.prev('.boolean-value').find('input').removeAttr('disabled')
+              newValue = target.prev('.boolean-value').find('input:checked').val()
+
+          else # date, string, text
+            if isNull
+              input.attr('disabled', 'disabled').val('')
+              newValue = null
+            else 
+              input.removeAttr('disabled')
+              newValue = input.val()
+        
+      else if target.hasClass('instance')
         # special case of arrays and objects of instances
-        newValue = target.instanceList 'option', 'value'
+        newValue = target.instanceList('option', 'value')
        
-      
       # cast value
       @options.value = newValue
       @_castValue()
-      @_trigger 'change', event
-      event.stopPropagation 
+      @_trigger('change', event)
+      event.stopPropagation()
     
     # **private**
     # Method invoked when the widget options are set. Update rendering if value change.
@@ -227,16 +259,16 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['type', 'value']
+      return $.Widget.prototype._setOption.apply(@, arguments) unless key in ['type', 'value']
       # updates inner option
       @options[key] = value
       return if @_inhibit
       # refresh rendering.
-      @element.find('*').unbind().remove 
-      @element.html ''
+      @element.find('*').unbind().remove()
+      @element.html('')
       # inhibition flag: for firefox and numeric types. the `numeric` widget trigger setOption twice
       @_inhibit = true
       @_create()
       @_inhibit = false
 
-  $.widget "rheia.property", $.rheia.baseWidget, Property
+  $.widget("rheia.property", $.rheia.baseWidget, Property)

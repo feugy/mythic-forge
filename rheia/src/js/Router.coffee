@@ -28,6 +28,7 @@ requirejs.config
     'transit': 'lib/jquery-transit-0.1.3-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
+    'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
     'i18n': 'lib/i18n'
@@ -40,6 +41,8 @@ requirejs.config
     'underscore': 
       exports: '_'
     'numeric':
+      deps: ['jquery-ui']
+    'timepicker':
       deps: ['jquery-ui']
     'jquery-ui':
       deps: ['jquery']
@@ -70,11 +73,12 @@ define [
   'jquery-ui' 
   'numeric' 
   'transit'
+  'timepicker'
   'hotkeys'
   ], (_, _string, $, Backbone, EditionPerspectiveView, ImagesService) ->
 
   # mix in non-conflict functions to Underscore namespace if you want
-  _.mixin _string.exports()
+  _.mixin(_string.exports())
 
   # enhance Backbone views with close() mechanism
   _.extend Backbone.View.prototype, 
@@ -84,11 +88,11 @@ define [
     _bounds: []
 
     # overload the initialize method to bind `destroy()`
-    initialize: ->
+    initialize: () ->
       # initialize to avoid static behaviour
       @_bounds = []
       # bind to remove element to call the close method.
-      @$el.bind 'remove', => @destroy()
+      @$el.bind('remove', ()=> @dispose())
 
     # Allows to bound a callback of this view to the specified emitter
     # bounds are keept and automatically unbound by the `destroy` method.
@@ -97,19 +101,19 @@ define [
     # @param events [String] events on which the callback is bound
     # @parma callback [Function] the bound callback
     bindTo: (emitter, events, callback) ->
-      emitter.on events, callback
-      @_bounds.push [emitter, events, callback]
+      emitter.on(events, callback)
+      @_bounds.push([emitter, events, callback])
 
     # The destroy method correctly free DOM  and event handlers
     # It must be overloaded by subclasses to unsubsribe events.
-    destroy: ->
+    dispose: () ->
       # automatically remove bound callback
-      spec[0].off spec[1], spec[2] for spec in @_bounds
+      spec[0].off(spec[1], spec[2]) for spec in @_bounds
       # unbind DOM callback
       @$el.unbind()
       # remove rendering
       @remove()
-      @trigger 'close', @
+      @trigger('dispose', @)
 
   class Router extends Backbone.Router
 
@@ -123,7 +127,7 @@ define [
     # and trigger route navigation.
     #
     # Starts history tracking in pushState mode
-    constructor: ->
+    constructor: () ->
       super()
       # global router instance
       rheia.router = @
@@ -132,7 +136,7 @@ define [
       rheia.imagesService = new ImagesService()
       rheia.editionPerspective = new EditionPerspectiveView()
 
-      Backbone.history.start {pushState: true, root: conf.basePath}
+      Backbone.history.start({pushState: true, root: conf.basePath})
 
       # route link special behaviour
       ###$('a[data-route]').on 'click', (e) =>
@@ -142,11 +146,11 @@ define [
         @navigate route, trigger: true###
       
       # display map first
-      @navigate 'home', trigger: true
+      @navigate('home', trigger: true)
 
     # Displays home view
     home: =>
-      $('body').empty().append rheia.editionPerspective.render().$el
+      $('body').empty().append(rheia.editionPerspective.render().$el)
 
   app = new Router()
   return app

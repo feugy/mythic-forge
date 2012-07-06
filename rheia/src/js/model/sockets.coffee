@@ -23,15 +23,15 @@ define [
 
   return {
     # multiplexed socket for game methods RPC
-    game: io.connect "#{conf.apiBaseUrl}/game", {secure: true}
+    game: io.connect("#{conf.apiBaseUrl}/game", {secure: true})
 
     # multiplexed socket for registration methods RPC
-    player: io.connect "#{conf.apiBaseUrl}/player", {secure: true}
+    player: io.connect("#{conf.apiBaseUrl}/player", {secure: true})
 
     # multiplexed socket for admin methods RPC
-    admin: io.connect "#{conf.apiBaseUrl}/admin", {secure: true}
+    admin: io.connect("#{conf.apiBaseUrl}/admin", {secure: true})
 
     # broadcast socket for database updates
-    updates: io.connect "#{conf.apiBaseUrl}/updates", {secure: true}
+    updates: io.connect("#{conf.apiBaseUrl}/updates", {secure: true})
   }
   

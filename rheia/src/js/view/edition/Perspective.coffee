@@ -25,6 +25,7 @@ define [
 
   i18n = _.extend {}, i18n
 
+  # todo parenthesis
   # The edition perspective manages types, rules and maps
   class EditionPerspective extends Backbone.View
     

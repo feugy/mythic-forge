@@ -22,7 +22,7 @@ define [
   'widget/BaseWidget'
 ],  (i18n) ->
 
-
+  # todo parenthesis
   # Displays and navigate along several images, with two nav buttons.
   # One image displayed at a time.
   Carousel =

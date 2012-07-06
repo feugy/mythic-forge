@@ -318,4 +318,4 @@ describe 'server tests', ->
             socket.emit 'removeImage', 'ItemType', character._id
 
           # when saving the type image
-          socket.emit 'uploadImage', 'ItemType', character._id, {ext:'png', width:50, height:50}, data.toString('base64')
+          socket.emit 'uploadImage', 'ItemType', character._id, 'png', data.toString('base64')

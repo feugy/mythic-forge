@@ -29,8 +29,23 @@ define
     name: 'Nom :'
     desc: 'Description :'
     newName: 'A remplir'
+    properties: 'Propriétés :'
+    propertyUid: 'Uid (unique)'
+    propertyType: 'Type'
+    propertyValue: 'Valeur par défaut'
+    propertyDefaultName: 'todo'
+    propertyTypes:
+      string: 'chaîne de caractères'
+      text: 'texte'
+      boolean: 'booléen'
+      float: 'réel'
+      integer: 'entier'
+      date: 'date'
+      object: 'objet'
+      array: "tableau d'objets"
 
   tips:
     save: "Enregistrer l'onglet en cours d'édition"
     remove: "Supprimer l'onglet en cours d'édition"
+    addProperty: 'Ajoute une nouvelle propriété'
     description: 'TODO description'

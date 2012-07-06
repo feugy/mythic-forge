@@ -25,5 +25,5 @@ define [], () ->
     #
     # @return a string id. 
     generateId: ->
-      return "#{parseInt Math.random()*1000000000}"  
+      return "#{parseInt(Math.random()*1000000000)}"  
   }

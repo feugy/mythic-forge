@@ -26,9 +26,9 @@ define [
   class Fields extends Backbone.Collection
 
     constructor: (@model, @options) ->
-      super model, options
+      super(model, options)
       # connect server response callbacks
-      sockets.updates.on 'update', @_onUpdate
+      sockets.updates.on('update', @_onUpdate)
 
     # Provide a custom sync method to wire Maps to the server.
     # Not implemented
@@ -37,7 +37,7 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, instance, args) => 
-      throw new Error "Unsupported #{method} operation on Fields"
+      throw new Error("Unsupported #{method} operation on Fields")
 
     # **private**
     # Callback invoked when a database update is received.
@@ -47,18 +47,18 @@ define [
     _onUpdate: (className, changes) =>
       return unless className is 'Field'
       # first, get the cached field and quit if not found
-      field = @get changes._id
+      field = @get(changes._id)
       return unless field?
       # then, update the local cache.
       for key, value of changes
-        field.set key, value if key isnt '_id'
+        field.set(key, value) if key isnt '_id'
       # emit a change.
-      @trigger 'update', field
+      @trigger('update', field)
 
 
     # Override of the inherited method to disabled default behaviour.
     # DO NOT reset anything on fetch.
-    reset: =>
+    reset: () =>
 
 
   # Modelisation of a single Field.
@@ -67,7 +67,7 @@ define [
 
     # field local cache.
     # A Backbone.Collection subclass that handle Fields retrieval with `fetch()`
-    @collection = new Fields @
+    @collection = new Fields(@)
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
@@ -76,7 +76,7 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
-      super attributes 
+      super(attributes) 
 
     # An equality method that tests ids.
     #

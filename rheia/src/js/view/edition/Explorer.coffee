@@ -24,6 +24,7 @@ define [
 
   i18n = _.extend {}, i18n
 
+  # todo parenthesis
   # Create explorer rendering for a given model, relative ot its class
   #
   # @param model [Object] the rendered model

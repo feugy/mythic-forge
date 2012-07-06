@@ -40,20 +40,19 @@ class _ImagesService
   #
   # @param modelName [String] class name of the saved model
   # @param id [String] the concerned model's id
-  # @param meta [Object] the image metadata:
-  # @option meta ext [String] the image extension, mandatory for all images
+  # @param ext [String] the image extension, mandatory for all images
   # @param imageData [String] image base-64 string data
   # @param callback [Function] end callback. Walled with two parameters
   # @option callback err [String] error message. Null if no error occured
   # @option callback model [Object] the saved model
   #
-  # @overload uploadImage(modelName, id, meta, imageData, callback)
+  # @overload uploadImage(modelName, id, ext, imageData, callback)
   #   Saves the type image of the given model
   #
-  # @overload uploadImage(modelName, id, meta, imageData, idx, callback)
+  # @overload uploadImage(modelName, id, ext, imageData, idx, callback)
   #   Saves an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
-  uploadImage: (modelName, id, meta, imageData, args...) =>
+  uploadImage: (modelName, id, ext, imageData, args...) =>
     return callback "No image can be uploaded for #{modelName}" unless modelName in ['ItemType']
     modelClass = null
     switch modelName
@@ -74,13 +73,13 @@ class _ImagesService
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.get('images')[suffix]?.file
-        else throw new Error "save must be called with arguments (modelName, id, meta, imageData, [idx], callback)"
+        else throw new Error "save must be called with arguments (modelName, id, ext, imageData, [idx], callback)"
 
       imagesPath = utils.confKey 'images.store'
 
       proceed = (err) =>
         return callback "Failed to save image #{suffix} on model #{model._id}: #{err}" if err? and err.code isnt 'ENOENT'
-        fileName = "#{model._id}-#{suffix}.#{meta.ext}"
+        fileName = "#{model._id}-#{suffix}.#{ext}"
         fs.writeFile path.join(imagesPath, fileName), new Buffer(imageData, 'base64'), (err) =>
           return callback "Failed to save image #{suffix} on model #{model._id}: #{err}" if err?
           # updates correct attribute
@@ -88,8 +87,10 @@ class _ImagesService
             model.set 'descImage', fileName
           else 
             images = model.get 'images'
-            # save meta data at correct index
-            images[suffix] = _.extend {file:fileName}, meta
+            # save meta data at correct index, keeping existing informations
+            previous = images[suffix] || {width:0, height:0}
+            previous.file = fileName
+            images[suffix] = previous
             delete images[suffix].ext
             model.set 'images', images
           # saves model

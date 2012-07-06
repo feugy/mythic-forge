@@ -45,7 +45,7 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), (err, saved) ->
+        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
@@ -62,14 +62,14 @@ describe 'ImagesService tests', ->
         throw new Error err if err?
         idx = 2
         # when saving the instance image 2
-        service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:75}, data.toString('base64'), idx, (err, saved) ->
+        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), idx, (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
           images = saved.get('images')[idx]
           assert.equal images?.file, "#{type._id}-#{idx}.png"
-          assert.equal images?.width, 50
-          assert.equal images?.height, 75
+          assert.equal images?.width, 0
+          assert.equal images?.height, 0
           # then the file exists and is equal to the original file
           file = path.join imagesPath, images?.file
           assert.ok fs.existsSync file
@@ -88,11 +88,11 @@ describe 'ImagesService tests', ->
           # saves a type image for it
           fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
             throw new Error err if err?
-            service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), (err, saved) ->
+            service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
               throw new Error err if err?
               type = saved
               # saves a instance image for it
-              service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), 2, (err, saved) ->
+              service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 2, (err, saved) ->
                 throw new Error err if err?
                 type = saved
                 done()
@@ -102,7 +102,7 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.uploadImage 'ItemType', type._id, {ext:'png', width:50, height:50}, data.toString('base64'), (err, saved) ->
+        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
@@ -131,14 +131,14 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.uploadImage 'ItemType', type._id, {ext:'png', width:100, height:150}, data.toString('base64'), idx, (err, saved) ->
+        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), idx, (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
           images = saved.get('images')[idx]
           assert.equal images?.file, "#{type._id}-#{idx}.png"
-          assert.equal images?.width, 100
-          assert.equal images?.height, 150
+          assert.equal images?.width, 0
+          assert.equal images?.height, 0
           # then the file exists and is equal to the original file
           file = path.join imagesPath, images?.file
           assert.ok fs.existsSync file

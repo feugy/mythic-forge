@@ -27,4 +27,4 @@ define [],  () ->
     # @param key [String] the set option's key
     # @param value [Object] new value for this option
     setOption: (key, value) ->
-      @_setOption key, value
+      @_setOption(key, value)

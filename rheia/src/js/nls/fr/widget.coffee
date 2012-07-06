@@ -3,6 +3,8 @@ define
     noImage: 'Aucune image'
   property:
     isNull: 'nul'
+    isTrue: 'vrai'
+    isFalse: 'faux'
     objectTypes: [{
       val:'field'
       name:'terrains'
