@@ -6,15 +6,15 @@ define
     isTrue: 'vrai'
     isFalse: 'faux'
     objectTypes: [{
-      val:'field'
-      name:'terrains'
+      val:'Any'
+      name:"n'importe quoi"
     },{
-      val:'event'
-      name:'évènements'
-    },{
-      val:'item'
+      val:'Item'
       name:'objets'
     },{
-      val:'any'
-      name:"n'importe quoi"
+      val:'Event'
+      name:'évènements'
+    },{
+      val:'Field'
+      name:'terrains'
     }]

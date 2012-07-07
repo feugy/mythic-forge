@@ -24,18 +24,17 @@ define [
 
   i18n = _.extend {}, i18n
 
-  # todo parenthesis
   # Create explorer rendering for a given model, relative ot its class
   #
   # @param model [Object] the rendered model
   # @param category [Object] the category descriptor for this model
   render = (model, category) ->
     # load descriptive image.
-    img = model.get 'descImage'
+    img = model.get('descImage')
     if img?
       img = "/images/#{img}"
-      rheia.imagesService.load img
-    """<div data-id="#{model.id}" data-class="#{category.id}" class="#{category.className}">
+      rheia.imagesService.load(img)
+    return """<div data-id="#{model.id}" data-class="#{category.id}" class="#{category.className}">
           <img data-src="#{img}"/>#{model.get 'name'}</div>"""
 
   # Displays the explorer on edition perspective
@@ -79,25 +78,25 @@ define [
     }]
 
     # The view constructor.
-    constructor: ->
-      super {tagName: 'div', className:'explorer'}
+    constructor: () ->
+      super({tagName: 'div', className:'explorer'})
 
       # bind changes to Item types collection
-      @bindTo ItemType.collection, 'reset', @_onResetCategory
-      @bindTo ItemType.collection, 'add', (element, collection, options) =>
+      @bindTo(ItemType.collection, 'reset', @_onResetCategory)
+      @bindTo(ItemType.collection, 'add', (element, collection, options) =>
         options.operation = 'add'
-        @_onUpdateCategory element, collection, options
-      @bindTo ItemType.collection, 'remove', (element, collection, options) =>
+        @_onUpdateCategory(element, collection, options))
+      @bindTo(ItemType.collection, 'remove', (element, collection, options) =>
         options.operation = 'remove'
-        @_onUpdateCategory element, collection, options
-      @bindTo ItemType.collection, 'update', (element, collection, options) =>
+        @_onUpdateCategory(element, collection, options))
+      @bindTo(ItemType.collection, 'update', (element, collection, options) =>
         options.operation = 'update'
-        @_onUpdateCategory element, collection, options
+        @_onUpdateCategory(element, collection, options))
 
-      @bindTo rheia.router, 'imageLoaded', @_onImageLoaded
+      @bindTo(rheia.router, 'imageLoaded', @_onImageLoaded)
 
     # The `render()` method is invoked by backbone to display view content at screen.
-    render: =>
+    render: () =>
       markup = ''      
       # creates categories
       for category, i in @_categories
@@ -106,7 +105,7 @@ define [
           </dt>
           <dd data-id=#{category.id}></dd>"""
 
-      @$el.append markup
+      @$el.append(markup)
       @$el.find('dd').hide()
 
       # for chaining purposes
@@ -121,18 +120,18 @@ define [
       title = $(evt.target).closest('dt')
       # gets the corresponding 
       if title.hasClass 'open'
-        title.next('dd').hide @_openDuration, -> title.removeClass 'open'   
+        title.next('dd').hide(@_openDuration, () -> title.removeClass('open'))   
       else 
-        title.next('dd').show @_openDuration, -> title.addClass 'open'  
+        title.next('dd').show(@_openDuration, () -> title.addClass('open') ) 
         # loads content
-        if !title.hasClass 'loaded'
-          title.addClass 'loaded'
+        if !title.hasClass('loaded')
+          title.addClass('loaded')
           category = @_categories[title.data 'idx']
-          console.log "loading category #{category.name}"
+          console.log("loading category #{category.name}")
           if 'load' of category
             category.load()
           else 
-            console.error "#{category.name} loading not implemented yet"
+            console.error("#{category.name} loading not implemented yet")
 
     # **private**
     # Open the element clicked by issu ing an event on the bus.
@@ -140,11 +139,11 @@ define [
     # @param evt [Event] the click event
     _onOpenElement: (evt) =>
       element = $(evt.target).closest('div')
-      id = element.data 'id'
-      category = element.data 'class'
+      id = element.data('id')
+      category = element.data('class')
       
-      console.log "open element #{id} of category #{category}"
-      rheia.router.trigger 'open', category, id
+      console.log("open element #{id} of category #{category}")
+      rheia.router.trigger('open', category, id)
 
     # **private**
     # Image loading handler. Displays image.
@@ -154,7 +153,7 @@ define [
     # @param data [Object] if success, the image data
     _onImageLoaded: (success, src, data) =>
       return unless success
-      @$el.find("img[data-src='#{src}']").attr 'src', data
+      @$el.find("img[data-src='#{src}']").attr('src', data)
 
     # **private**
     # Handler invoked when a category have been retrieved
@@ -169,7 +168,7 @@ define [
 
       container = @$el.find("dt[data-idx=#{idx}] + dd").empty()
       for element in collection.models
-        container.append render element, @_categories[idx]
+        container.append(render(element, @_categories[idx]))
 
     # **private**
     # Handler invoked when a category item have been added or removed
@@ -190,16 +189,16 @@ define [
       markup = $(render(element, @_categories[idx]))
       duration = 200
       shift = -250
-      add = =>
-        markup.css {x: shift}, duration
+      add = () =>
+        markup.css({x: shift}, duration)
         if options.index is 0
           container.prepend markup
         else 
-          container.children().eq(options.index-1).after markup
-        markup.transition {x:0}
+          container.children().eq(options.index-1).after(markup)
+        markup.transition({x:0})
 
       switch options.operation
-        when 'remove' then container.children().eq(options.index).transition {x:shift}, duration, -> $(this).remove()
+        when 'remove' then container.children().eq(options.index).transition({x:shift}, duration, () -> $(this).remove())
         when 'add' then add()
         when 'update' 
           container.children().eq(options.index).remove()

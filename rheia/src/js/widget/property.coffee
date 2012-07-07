@@ -65,7 +65,7 @@ define [
       # first cast
       @_castValue()
       rendering = null
-      isNull = @options.value is null or @options.valus is undefined
+      isNull = @options.value is null or @options.value is undefined
       # depends on the type
       switch @options.type
         when 'string'
@@ -143,34 +143,35 @@ define [
               rendering.attr('disabled', 'disabled')
         
         when 'object', 'array'  
-          if @options.isInstance 
-            # for instances, use a list widget
-            rendering = $('<ul class="instance"></ul>').instanceList(
+          if @options.isInstance
+            # uses instalceList widget if we're displaying an instance property
+            throw new Error('not implemented yet')
+            ### todo rendering = $('<ul class="instance"></ul>').instanceList(
               value: @options.value
               onlyOne: type is 'object'
-              dndType: 'todo'
-              change: @_onChanged
-              tooltipFct: @options.tooltipFct,
+              dndType: Constants.INSTANCE_AFFECTATION_DND
+              change: (event) => @_onChange(event)
+              tooltipFct: @options.tooltipFct
               accepted: @options.accepted
               objectEdited: (event, details) =>
                 @_trigger('objectEdited', event, details)
-              objectRemoved: (event, details) =>
+              objectRemoved: (event, details)
                 @_trigger('objectRemoved', event, details)
-            ).appendTo(@element)
+            ).change((event) => @_onChange(event)).appendTo(@element)
 
-            @options.value = rendering.instanceList('option', 'value')
-            rendering.setOption('change', (event) => @_onChange(event))
+            @options.value = rendering.instanceList('option', 'value')###
 
           else 
             # for type, use a select.
+            markup = ""
             markup += """<option value="#{spec.val}" 
-                #{if @options.value is spec.val then 'selected="selected"'}>spec.name
+                #{if @options.value is spec.val then 'selected="selected"'}>#{spec.name}
               </option>""" for spec in i18n.property.objectTypes
             rendering = $("<select>#{markup}</select>").appendTo(@element).change((event) => @_onChange(event))
             @options.value = rendering.val() 
         
         when 'date'
-          rendering = $("""<input type="date" #{if isNull then 'disabled="disabled"'}/>""").datetimepicker(
+          rendering = $("""<input type="text" #{if isNull then 'disabled="disabled"'}/>""").datetimepicker(
             showSecond: true
             dateFormat: 'yy/mm/dd'
             timeFormat: 'hh:mm:ss'
@@ -225,7 +226,13 @@ define [
               input.numeric('option', 'disabled', isNull)
               input.val('0') unless isNull
             else 
-              input.val(if isNull then '' else 0)
+              if isNull
+                input.val('');
+                input.attr('disabled', 'disabled')
+              else 
+                input.val(0)
+                input.removeAttr('disabled')
+
           
           when 'boolean'
             if isNull

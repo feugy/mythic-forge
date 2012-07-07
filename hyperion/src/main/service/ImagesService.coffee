@@ -91,7 +91,6 @@ class _ImagesService
             previous = images[suffix] || {width:0, height:0}
             previous.file = fileName
             images[suffix] = previous
-            delete images[suffix].ext
             model.set 'images', images
           # saves model
           model.save (err, saved) =>

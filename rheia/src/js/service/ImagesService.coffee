@@ -67,20 +67,19 @@ define [
     #  
     # @param modelName [String] class name of the saved model
     # @param id [String] the concerned model's id
-    # @param meta [Object] image and sprite descriptor
-    # @option meta file [File] file object containing datas
+    # @param file [File] file object containing datas
     # @param idx [Number] for instance images, specify the image rank. null for type images
-    upload: (modelName, id, meta, idx = null) =>
+    upload: (modelName, id, file, idx = null) =>
       reader = new FileReader()
 
       # when image data was read
       reader.onload = (event) =>
         # computes image type, and remove the type prefix
-        meta.ext = meta.file.type.replace('image/', '')
-        data = event.target.result.replace("data:#{meta.file.type};base64,", '')
+        ext = file.type.replace('image/', '')
+        data = event.target.result.replace("data:#{file.type};base64,", '')
 
         # file's name for cache
-        src = "/images/#{id}-#{if idx? then idx else 'type'}.#{meta.ext}"
+        src = "/images/#{id}-#{if idx? then idx else 'type'}.#{ext}"
         
         # update cache content
         delete(@_cache[src])
@@ -98,12 +97,12 @@ define [
         console.log("upload new image #{src}...")
         # upload data to server
         if idx?
-          sockets.admin.emit('uploadImage', modelName, id, meta, data, idx)
+          sockets.admin.emit('uploadImage', modelName, id, ext, data, idx)
         else 
-          sockets.admin.emit('uploadImage', modelName, id, meta, data)
+          sockets.admin.emit('uploadImage', modelName, id, ext, data)
 
       # read data from file
-      reader.readAsDataURL(meta.file)
+      reader.readAsDataURL(file)
 
     # Removes a type or instance image for a given model.
     # Triggers the `imageRemoved` event at the end, with the image name and model id in parameter.

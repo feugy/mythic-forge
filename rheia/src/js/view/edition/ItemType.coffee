@@ -389,6 +389,7 @@ define [
         line.append(select.parent())
 
         # at last, property widget for default value
+        console.dir prop
         defaultValue = $('<div class="defaultValue"></div>').property(
           type: prop.type, 
           value: prop.def,
@@ -530,7 +531,7 @@ define [
         rheia.imagesService.remove('ItemType', @model.id, spec.oldName, if spec.idx then spec.idx)
       else
         # upload new file data
-        rheia.imagesService.upload('ItemType', @model.id, spec, if spec.idx then spec.idx)
+        rheia.imagesService.upload('ItemType', @model.id, spec.file, if spec.idx then spec.idx)
       
         
     # **private**
