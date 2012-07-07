@@ -60,7 +60,7 @@ describe 'ImagesService tests', ->
       # given an image
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
-        idx = 2
+        idx = 0
         # when saving the instance image 2
         service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), idx, (err, saved) ->
           # then no error found
@@ -92,7 +92,7 @@ describe 'ImagesService tests', ->
               throw new Error err if err?
               type = saved
               # saves a instance image for it
-              service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 2, (err, saved) ->
+              service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 0, (err, saved) ->
                 throw new Error err if err?
                 type = saved
                 done()
@@ -126,7 +126,7 @@ describe 'ImagesService tests', ->
         done()
 
     it 'should existing instance image be changed', (done) ->
-      idx = 2
+      idx = 0
       # given a new image
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
@@ -146,9 +146,9 @@ describe 'ImagesService tests', ->
           done()
 
     it 'should existing instance image be removed', (done) ->
-      idx = 2
+      idx = 0
       file = path.join imagesPath, type.get('images')[idx].file
-      # when removing the type image
+      # when removing the first instance image
       service.removeImage 'ItemType', type._id, idx, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
@@ -157,3 +157,21 @@ describe 'ImagesService tests', ->
         # then the file do not exists anymore
         assert.ok !(fs.existsSync(file))
         done()
+
+    it 'should existing instance image be set to null', (done) ->
+      # given another image
+      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        throw new Error err if err?
+        # given it saved as second instance image
+        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 1, (err, saved) ->
+          file = path.join imagesPath, type.get('images')[0].file
+          # when removing the first instance image
+          service.removeImage 'ItemType', type._id, 0, (err, saved) ->
+            # then no error found
+            assert.ok err is null, "unexpected error '#{err}'"
+            # then the instance image is updated in model
+            assert.equal saved.get('images').length, 2
+            assert.equal saved.get('images')[0]?.file, null
+            # then the file do not exists anymore
+            assert.ok !(fs.existsSync(file))
+            done()

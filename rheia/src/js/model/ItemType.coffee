@@ -81,6 +81,7 @@ define [
       # first, get the cached item type and quit if not found
       itemType = @get(changes._id)
       return unless itemType?
+      console.dir arguments
       # then, update the local cache.
       for key, value of changes
         itemType.set(key, value) if key isnt '_id'

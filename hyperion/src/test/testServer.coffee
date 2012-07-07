@@ -319,3 +319,39 @@ describe 'server tests', ->
 
           # when saving the type image
           socket.emit 'uploadImage', 'ItemType', character._id, 'png', data.toString('base64')
+
+
+      it 'should instance image be uploaded and removed', (done) ->
+        # given several connected socket.io clients
+        socket = socketClient.connect "#{rootUrl}/admin"
+
+        # given an image
+        fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+          throw new Error err if err?
+
+          # then the character type was updated
+          socket.once 'uploadImage-resp', (err, saved) ->
+            throw new Error err if err?
+            # then the instance image is updated in model for rank 0
+            assert.equal saved.images.length, 1
+            assert.equal saved.images[0].file, "#{character._id}-0.png"
+            assert.equal saved.images[0].width, 0
+            assert.equal saved.images[0].height, 0
+            # then the file exists and is equal to the original file
+            file = path.join utils.confKey('images.store'), saved.images[0].file
+            assert.ok fs.existsSync file
+            assert.equal fs.readFileSync(file).toString(), data.toString()
+
+            # then the character type was updated
+            socket.once 'removeImage-resp', (err, saved) ->
+              throw new Error err if err?
+              # then the instance image is updated in model for rank 0
+              assert.equal saved.images.length, 0
+              # then the file do not exists anymore
+              assert.ok !(fs.existsSync(file))
+              done()
+
+            socket.emit 'removeImage', 'ItemType', character._id, 0
+
+          # when saving the instance image #0
+          socket.emit 'uploadImage', 'ItemType', character._id, 'png', data.toString('base64'), 0

@@ -107,12 +107,16 @@ define [
     # description image widget
     _descImageWidget: null
 
+    # **private**
+    # instance images widget
+    _imageWidgets: []
+
     # The view constructor.
     #
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
-      super {tagName: 'div', className:'item-type view'}
+      super({tagName: 'div', className:'item-type view'})
       # creation of a new item type if necessary
       if id?
         @model = ItemType.collection.get(id)
@@ -137,33 +141,33 @@ define [
       @bindTo(ItemType.collection, 'update', @_onSaved)
       @bindTo(ItemType.collection, 'remove', @_onRemoved)
 
-      console.log "creates item type edition view for #{if id? then @model.id else 'a new object'}"
+      console.log("creates item type edition view for #{if id? then @model.id else 'a new object'}")
 
     # Returns a unique id. 
     #
     # @return If the edited object is persisted on server, return its id. Otherwise, a temporary unic id.
     getId: () =>
-      (if @_tempId isnt null then @_tempId else @model.id)
+      return if @_tempId isnt null then @_tempId else @model.id
 
     # Returns the view's title
     #
     # @return the edited object name.
     getTitle: () =>
-      if @_nameWidget? then @_nameWidget.options.value else @model.get 'name'
+      return if @_nameWidget? then @_nameWidget.options.value else @model.get('name')
 
     # Indicates wether or not this object can be removed.
     # When status changed, a `change` event is triggered on the view.
     #
     # @return the removable status of this object
     canRemove: () =>
-      @_canRemove
+      return @_canRemove
 
     # Indicates wether or not this object can be saved.
     # When status changed, a `change` event is triggered on the view.
     #
     # @return the savable status of this object
     canSave: () =>
-      @_canSave and @_pendingUploads.length is 0
+      return @_canSave and @_pendingUploads.length is 0
 
     # Returns the view's action bar, and creates it if needed.
     #
@@ -292,6 +296,14 @@ define [
           spec.oldName = @model.get('descImage')  
         @_pendingUploads.push(spec)
 
+      currents = @_computeImageSpecs()
+      originals = @model.get('images')
+      for current, i in currents
+        # something changed !
+        if originals[i]?.file isnt current.file
+          current.idx = i
+          @_pendingUploads.push(current)
+
       # first, save model
       @model.save() 
  
@@ -338,8 +350,6 @@ define [
       properties = {}
       $.extend(true, properties, @_editedProperties)
       @model.set('properties', properties)
-      console.log('>>>>>>>> after save')
-      console.dir(@_editedProperties)
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -425,6 +435,10 @@ define [
         name: 'descImage'
         original: @model.get('descImage')
         current: @_descImageWidget.options.source)
+      comparable.push(
+        name: 'images'
+        original: @model.get('images')
+        current: @_computeImageSpecs())
       # adds properties
       comparable.push(
         name: 'properties'
@@ -439,7 +453,23 @@ define [
     _validate: () =>
       isValid = true;
       # todo (isValid = false; break) for validator in @_validators when validator.validate().length isnt 0
-      isValid
+      return isValid
+
+    # **private**
+    # Extract image specifications from the widgets
+    # @return an array containing image specifications
+    _computeImageSpecs: () =>
+      images = []
+      for widget,i in @_imageWidgets
+        spec = 
+          file:widget.options.source
+          width:50
+          height:50
+          sprites:{}
+        if widget.options.source is null
+          spec.oldName = @model.get('images')[i].file
+        images.push(spec)
+      return images
 
     # **private**
     # Creates LoadableImage for each images of the edited object
@@ -447,11 +477,40 @@ define [
       # the description image
       unless @_descImageWidget?
         @_descImageWidget = @$el.find('.desc.image').loadableImage(
-          source: @model.get 'descImage'
+          source: @model.get('descImage')
           change: @_onChange
         ).data('loadableImage')
       else 
         @_descImageWidget.setOption('source', @model.get('descImage'))
+
+      # instances images
+      @_imageWidgets = []
+      originals = @model.get('images')
+      container = @$el.find('.images-container').empty()
+      if originals?
+        # creates images widgets
+        for original in originals
+          @_imageWidgets.push($('<img/>').loadableImage(
+            source: original.file,
+            change: @_onChange
+          ).appendTo(container).data('loadableImage'))
+      # a special image to add new images  
+      @_addNewImage() 
+
+    # **private**
+    # Adds a special loadableImage widget to upload a new image
+    _addNewImage: () =>
+      addImage = $('<img class="add-image"/>').loadableImage(
+        change: (event) =>
+          # is it an upload ?
+          if addImage.options.source isnt null
+            # transforms it into a regular image widget
+            addImage.element.removeClass('add-image')
+            addImage.offchange
+            @_imageWidgets.push(addImage)
+            @_addNewImage()
+          @_onChange()
+      ).appendTo(@$el.find('.images-container')).data('loadableImage')
 
     _notifyExternalRemove: () =>
       console.trace()
@@ -480,7 +539,7 @@ define [
             console.log "field #{field.name} modified"
             break;
 
-      console.log "is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_tempId?}"
+      console.log("is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_tempId?}")
       @_canSave = isValid and hasChanged
       @_canRemove = @_tempId is null
       # trigger change
@@ -525,13 +584,12 @@ define [
 
       spec = @_pendingUploads.splice(0, 1)[0]
       @_saveInProgress = true
-      
-      if 'oldName' of spec.file
+      if 'oldName' of spec
         # removes existing data
-        rheia.imagesService.remove('ItemType', @model.id, spec.oldName, if spec.idx then spec.idx)
+        rheia.imagesService.remove('ItemType', @model.id, spec.oldName, if spec.idx? then spec.idx)
       else
         # upload new file data
-        rheia.imagesService.upload('ItemType', @model.id, spec.file, if spec.idx then spec.idx)
+        rheia.imagesService.upload('ItemType', @model.id, spec.file, if spec.idx? then spec.idx)
       
         
     # **private**

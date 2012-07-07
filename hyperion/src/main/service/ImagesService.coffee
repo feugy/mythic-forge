@@ -92,6 +92,7 @@ class _ImagesService
             previous.file = fileName
             images[suffix] = previous
             model.set 'images', images
+            model.markModified 'images'
           # saves model
           model.save (err, saved) =>
             if err?
@@ -108,7 +109,9 @@ class _ImagesService
         proceed()
 
   # Removes an existing image of this type.
-  # Can remove the type image or an instance image
+  # Can remove the type image or an instance image. 
+  # For instance images, the file attribute inside the image array is set to null, unless the last images is removed. 
+  # In this case, the image array is shortened.
   # The model is updated in database.
   #
   # @param modelName [String] class name of the saved model
@@ -157,8 +160,12 @@ class _ImagesService
         else 
           images = model.get 'images'
           # removes correct index
-          images.splice suffix, 1
+          if suffix is images.length-1
+            images.splice suffix, 1
+          else 
+            images[suffix].file = null
           model.set 'images', images
+          model.markModified 'images'
         # save model
         model.save (err, saved) =>
           return callback "Failed to remove image #{suffix} on model #{model._id}: #{err}" if err?

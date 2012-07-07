@@ -87,7 +87,7 @@ define [
         # wait for server response
         sockets.admin.once('uploadImage-resp', (err, saved) =>
           throw new Error("Failed to upload image for model #{modelName} #{id}: #{err}") if err?
-          @_cache[src] = data;
+          @_cache[src] = "data:image/#{ext};base64,#{data}";
 
           console.log("image #{src} uploaded")
           # trigger end of upload

@@ -232,7 +232,6 @@ define [
               else 
                 input.val(0)
                 input.removeAttr('disabled')
-
           
           when 'boolean'
             if isNull
