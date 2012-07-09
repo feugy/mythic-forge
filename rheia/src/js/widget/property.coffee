@@ -256,7 +256,7 @@ define [
       # cast value
       @options.value = newValue
       @_castValue()
-      @_trigger('change', event)
+      @_trigger('change', event, @options.value)
       event.stopPropagation()
     
     # **private**

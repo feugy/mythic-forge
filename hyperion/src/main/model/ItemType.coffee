@@ -46,8 +46,8 @@ ItemType = typeFactory 'ItemType',
   #     number: {type: Number, required: true}
   #     # duration in milliseconds. Null for infinite sprite.
   #     duration: {type:Number, default: null}
-  #     # The vertical offset of the sprite row in the sprite sheet.
-  #     vOffset: {type:Number, default: 0}
+  #     # The sprite row in the sprite sheet.
+  #     rank: {type:Number, default: 0}
   images: 
     type: []
     default: -> []

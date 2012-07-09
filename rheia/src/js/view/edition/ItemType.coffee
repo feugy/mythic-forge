@@ -23,7 +23,7 @@ define [
   'utils/utilities'
   'utils/Milk'
   'model/ItemType'
-  'widget/loadableImage'
+  'widget/spriteImage'
   'widget/property'
 ], (i18n, template, utilities, Milk, ItemType) ->
 
@@ -346,6 +346,9 @@ define [
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
       @model.set('descImage', null) if @_descImageWidget.options.source is null
       
+      # udate images specifications
+      @model.set('images', @_computeImageSpecs())
+
       # totally replace model's property with the view ones
       properties = {}
       $.extend(true, properties, @_editedProperties)
@@ -462,10 +465,10 @@ define [
       images = []
       for widget,i in @_imageWidgets
         spec = 
-          file:widget.options.source
-          width:50
-          height:50
-          sprites:{}
+          file: widget.options.source
+          width: widget.options.spriteW
+          height: widget.options.spriteH
+          sprites: widget.options.sprites
         if widget.options.source is null
           spec.oldName = @model.get('images')[i].file
         images.push(spec)
@@ -483,24 +486,27 @@ define [
       else 
         @_descImageWidget.setOption('source', @model.get('descImage'))
 
-      # instances images
+      # instances images: use sprite widget instead of loadable images
       @_imageWidgets = []
       originals = @model.get('images')
       container = @$el.find('.images-container').empty()
       if originals?
         # creates images widgets
         for original in originals
-          @_imageWidgets.push($('<img/>').loadableImage(
-            source: original.file,
+          @_imageWidgets.push($('<div></div>').spriteImage(
+            source: original.file
+            spriteW: original.width
+            spriteH: original.height
+            sprites: original.sprites
             change: @_onChange
-          ).appendTo(container).data('loadableImage'))
+          ).appendTo(container).data('spriteImage'))
       # a special image to add new images  
       @_addNewImage() 
 
     # **private**
-    # Adds a special loadableImage widget to upload a new image
+    # Adds a special spriteImage widget to upload a new image
     _addNewImage: () =>
-      addImage = $('<img class="add-image"/>').loadableImage(
+      addImage = $('<div class="add-image"></div>').spriteImage(
         change: (event) =>
           # is it an upload ?
           if addImage.options.source isnt null
@@ -510,7 +516,7 @@ define [
             @_imageWidgets.push(addImage)
             @_addNewImage()
           @_onChange()
-      ).appendTo(@$el.find('.images-container')).data('loadableImage')
+      ).appendTo(@$el.find('.images-container')).data('spriteImage')
 
     _notifyExternalRemove: () =>
       console.trace()

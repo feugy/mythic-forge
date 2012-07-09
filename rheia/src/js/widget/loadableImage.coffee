@@ -30,11 +30,17 @@ define [
     options:    
 
       # image source: a string url
+      # read-only: use `setOption('source')` to modify
       source: null
       
       # **private**
       # the image DOM element
       _image: null
+
+    # Frees DOM listeners
+    destroy: () ->
+      @element.find('.ui-icon').unbind()
+      $.Widget.prototype.destroy.apply(@, arguments)
 
     # **private**
     # Builds rendering
@@ -81,7 +87,7 @@ define [
     _createAlt: ->
       return if @element.find('.alt').length isnt 0
       # do not use regular HTML alt attribute because Chrome doesn't handle it correctly: position cannot be set
-      @element.append("<p class=\"alt\">#{i18n.loadableImage.noImage}</p>")
+      @element.prepend("<p class=\"alt\">#{i18n.loadableImage.noImage}</p>")
       
     # **private**
     # Invoked when a file have been choosen.

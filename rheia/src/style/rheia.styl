@@ -37,8 +37,6 @@ icon(size, margin = 0)
   background-repeat no-repeat
   height (size)px
   width (size)px
-  left 3px
-  top 3px
   vertical-align -0.5em
   margin margin
 
@@ -47,6 +45,8 @@ typeIcons(selector, size, margin = 0)
   // type icons 
   {selector}
     icon(size, margin)
+    left 3px
+    top 3px
 
   // type icons
   for icon, i in map event-type _ field-type item-type player rule turn-rule
@@ -57,6 +57,15 @@ typeIcons(selector, size, margin = 0)
 // Mixin that creates directive for 3 size of icons
 multiIcon(names, row = 0)
   for name, i in names
+
+    a > .ui-icon.{name} 
+      top 1px
+      left 1px
+
+    button > .ui-icon.{name} 
+      top 3px
+      left 3px
+
     .ui-icon.{name}.x-small
       icon 16
       background-position unit(-16*i, 'px') unit(-16*row, 'px')
@@ -86,6 +95,13 @@ box-sizing()
   -webkit-box-sizing arguments
   -moz-box-sizing arguments
   box-sizing arguments
+
+// Mixin for table headers
+table-header()
+  background-image url(images/ui-bg_highlight-soft_75_cccccc_1x100.png)
+  background-repeat repeat-x 
+  background-position 50% 50%
+  background-color #CCCCCC
 
 // CSS Reset 
 
@@ -187,11 +203,11 @@ select
   vertical-align bottom
 
 // Icons
-multiIcon(valid invalid cancel warning question)
+multiIcon(valid invalid cancel warning question help success failure login logout)
 
-multiIcon(login logout save remove, 1)
+multiIcon(save remove open removeSelected upload unlink rename add, 1)
 
-multiIcon(addFoler addFile addParam addProperty, 2)
+multiIcon(addFoler addFile addParam addProperty newActor newItem newEvent newPlayer field script, 2)
 
 // Special icons that may be inside text
 for name in question warning
