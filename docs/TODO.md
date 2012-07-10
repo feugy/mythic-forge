@@ -41,4 +41,14 @@
 # Final TODOs
 
 - Hyperion
-    - ImageService to upload and associate images to types
+    - **[done]** ImageService to upload and associate images to types
+    - remove all images when removing a type
+- Rheia
+    - edition perspective
+        - ItemType
+            - **[done]** static fields and description image
+            - **[done]** properties
+            - **[done]** instance images
+            - **[done]** sprites
+            - validation
+        - Rule

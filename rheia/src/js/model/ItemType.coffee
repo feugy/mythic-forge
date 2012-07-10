@@ -64,11 +64,11 @@ define [
     # Adds the model to the current collection if needed, and fire event 'add'.
     #
     # @param className [String] the modified object className
-    # @param item [Object] created item.
-    _onAdd: (className, item) =>
+    # @param itemType [Object] created item type.
+    _onAdd: (className, itemType) =>
       return unless className is 'ItemType'
       # add the created raw item. An event will be triggered
-      @add(item)
+      @add(itemType)
 
     # **private**
     # Callback invoked when a database update is received.
@@ -93,11 +93,11 @@ define [
     # Removes the model from the current collection if needed, and fire event 'remove'.
     #
     # @param className [String] the deleted object className
-    # @param item [Object] deleted item.
-    _onRemove: (className, item) =>
+    # @param itemType [Object] deleted item type.
+    _onRemove: (className, itemType) =>
       return unless className is 'ItemType'
-      # removes the deleted raw item. An event will be triggered
-      @remove(item)
+      # removes the deleted item after enrich it to allow recognition. An event will be triggered
+      @remove(new ItemType(itemType)) 
 
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections Items instead

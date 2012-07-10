@@ -3,6 +3,7 @@ define
     itemType: "Type d'objets %s"
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
+    external: 'Modification externe'
     categories:
       items: 'Objets'
       maps: 'Cartes'
@@ -14,6 +15,8 @@ define
   msgs:
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
+    externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
+    externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet va être fermé.</p>"
 
   buttons:
     'new': 'Nouveau...'
@@ -22,6 +25,7 @@ define
   labels:
     yes: 'Oui'
     no: 'Non'
+    ok: 'Ok'
     cancel: 'Annuler'
     newType: '(nouveau)'
     descImage: 'Type'

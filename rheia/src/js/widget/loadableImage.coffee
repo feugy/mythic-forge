@@ -123,14 +123,13 @@ define [
     # 
     # @param event [Event]loading failure event or click event.
     _onDelete: (event) ->
-      # do not trigger if aleternate is already there
-      return unless @element.find('.alt').length is 0
-      @options.source = null
       console.log('change image: none')
-      @_trigger('change', event)
       # now, displays the alternative text
       @options._image.removeAttr('src')
       @_createAlt()
+      @options.source = null
+      @_trigger('change', event)
+      
 
     # **private**
     # Image loading handler: hides the alternative text if success, or displays it if error.

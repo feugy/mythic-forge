@@ -240,7 +240,7 @@ define [
             @_isClosing = true
             @trigger 'close'
         },{
-          text: i18n.labels.cancel
+          label: i18n.labels.cancel
           icons:
             primary: 'cancel small'
           click: =>
@@ -346,8 +346,10 @@ define [
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
       @model.set('descImage', null) if @_descImageWidget.options.source is null
       
-      # udate images specifications
-      @model.set('images', @_computeImageSpecs())
+      # update images specifications. File upload will be handled separately
+      newImages = @_computeImageSpecs()
+      image.file = '' for image in newImages when image.file isnt null and typeof image.file isnt 'string'
+      @model.set('images', newImages)
 
       # totally replace model's property with the view ones
       properties = {}
@@ -402,7 +404,6 @@ define [
         line.append(select.parent())
 
         # at last, property widget for default value
-        console.dir prop
         defaultValue = $('<div class="defaultValue"></div>').property(
           type: prop.type, 
           value: prop.def,
@@ -463,14 +464,19 @@ define [
     # @return an array containing image specifications
     _computeImageSpecs: () =>
       images = []
-      for widget,i in @_imageWidgets
+      length = @model.get('images')?.length
+      for widget,i in @_imageWidgets 
         spec = 
           file: widget.options.source
           width: widget.options.spriteW
           height: widget.options.spriteH
           sprites: widget.options.sprites
         if widget.options.source is null
-          spec.oldName = @model.get('images')[i].file
+          if i < length
+            spec.oldName = @model.get('images')[i].file
+          else 
+            # do not save an empty spec that is beyond existing length
+            continue
         images.push(spec)
       return images
 
@@ -498,7 +504,13 @@ define [
             spriteW: original.width
             spriteH: original.height
             sprites: original.sprites
-            change: @_onChange
+            change: (event) => 
+              # remove from images widget if it's the last widget
+              widget = $(event.target).closest('.loadable').data('spriteImage')
+              if widget.options.source is null and @_imageWidgets.indexOf(widget) is @_imageWidgets.length-1
+                @_imageWidgets.splice(@_imageWidgets.length-1, 1)
+                widget.element.remove()
+              @_onChange(event)
           ).appendTo(container).data('spriteImage'))
       # a special image to add new images  
       @_addNewImage() 
@@ -518,13 +530,41 @@ define [
           @_onChange()
       ).appendTo(@$el.find('.images-container')).data('spriteImage')
 
+    # **private**
+    # Displays warning dialog when edited object have been removed externally.
     _notifyExternalRemove: () =>
-      console.trace()
-      #todo
+      return if $("#externalRemove-#{@getId()}").length > 0
+      $("""<div id="externalRemove-#{@getId()}" title="#{i18n.titles.external}">
+              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalRemove, @model.get 'name')}
+            </div>""").dialog(
+        modal: true
+        close: ->
+          $(this).remove()
+        buttons: [{
+          text: i18n.labels.ok,
+          click: =>
+            # just close dialog
+            $("#externalRemove-#{@getId()}").dialog('close')
+        }]
+      )
 
+    # **private**
+    # Displays warning dialog when edited object have been modified externally.
     _notifyExternalChange: () =>
-      console.trace()
-      #todo
+      return if $("#externalChange-#{@getId()}").length > 0
+      $("""<div id="externalChange-#{@getId()}" title="#{i18n.titles.external}">
+              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalChange, @model.get 'name')}
+            </div>""").dialog(
+        modal: true
+        close: ->
+          $(this).remove()
+        buttons: [{
+          text: i18n.labels.ok,
+          click: =>
+            # just close dialog
+            $("#externalChange-#{@getId()}").dialog('close')
+        }]
+      )
 
     # **private**
     # Change handler, wired to any changes from the rendering.
@@ -537,8 +577,6 @@ define [
       if isValid
         # compares rendering and model values
         comparableFields = @_getComparableFields()
-        #todo
-        console.dir comparableFields
         for field in comparableFields
           hasChanged = !(_.isEqual(field.original, field.current))
           if hasChanged
@@ -605,6 +643,7 @@ define [
     # @param removed [Object] the removed model
     _onRemoved: (removed) =>
       # takes in account if we removed the edited objet,
+      console.log(">>> removed #{removed.id} (current #{@model.id})")
       return unless removed.id is @model.id
       @_notifyExternalRemove() unless @_removeInProgress
       @_removeInProgress = false;
