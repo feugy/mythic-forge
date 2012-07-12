@@ -42,7 +42,7 @@
 
 - Hyperion
     - **[done]** ImageService to upload and associate images to types
-    - remove all images when removing a type
+    - **[done]** remove all images when removing a type
 - Rheia
     - edition perspective
         - **[done]** ItemType

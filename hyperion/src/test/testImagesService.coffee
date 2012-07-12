@@ -76,6 +76,29 @@ describe 'ImagesService tests', ->
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
 
+    it 'should all images deleted when removing type', (done) ->
+      # given an instance image
+      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        throw new Error err if err?
+        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
+          throw new Error err if err?
+          # given an instance image
+          service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 0, (err, saved) ->
+            throw new Error err if err?
+            assert.equal saved.get('descImage'), "#{type._id}-type.png"
+            images = saved.get('images')[0]
+            assert.equal images?.file, "#{type._id}-0.png"
+            # when removing the type
+            type.remove (err) ->
+              # wait a while for files to be deleted
+              setTimeout ->
+                fs.readdir imagesPath, (err, content) ->
+                  throw err if err?
+                  # then no images are left into the folder
+                  assert.equal content.length, 0
+                  done()
+              , 50
+
   describe 'given a type and its type image', ->
 
     beforeEach (done) ->

@@ -26,6 +26,9 @@ define [
 
 
   # A special loadableImage that allows to input sprite informations.
+  # A special data flag is added to the `change` event to differentiate changes from sprite specification
+  # from thoses from image upload/removal.
+  # When the flag is true, then the changes is not about image source.
   SpriteImage = 
 
     options:
@@ -107,7 +110,7 @@ define [
           number: 0
           rank: @element.find('.details tbody tr').length
         @_refreshSprites()
-        @_trigger('change', event)
+        @_trigger('change', event, true)
       )
 
       @_refreshSprites()
@@ -143,7 +146,8 @@ define [
             @options.sprites[value] = @options.sprites[name]
             delete @options.sprites[name]
             $(event.target).closest('tr').data('name', value)
-          @_trigger('change', event) unless @options._silent
+          # the last parameters allow to split changes from the image from those from sprite definition
+          @_trigger('change', event, true) unless @options._silent
 
       for name, spec of @options.sprites
         line = $("""<tr data-name="#{name}">
@@ -182,7 +186,7 @@ define [
           delete @options.sprites[$(event.target).closest('tr').data('name')]
           @_refreshSprites()
           @_validates()
-          @_trigger('change', event)
+          @_trigger('change', event, true)
         )
         # creates a validator for name.
         @options._validators.push(new validators.String({required: true},
@@ -227,7 +231,7 @@ define [
         @element.find(".#{key}").val(value)
         @options[key] = value
 
-      @_trigger('change', event) unless @options._silent
+      @_trigger('change', event, true) unless @options._silent
 
 
   $.widget("rheia.spriteImage", $.rheia.loadableImage, SpriteImage)

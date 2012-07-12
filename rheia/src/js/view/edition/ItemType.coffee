@@ -20,13 +20,12 @@
 define [
   'i18n!nls/edition'
   'text!view/edition/template/ItemType.html'
-  'utils/utilities'
-  'utils/Milk'
+  'view/edition/BaseEditionView'
   'utils/validators'
   'model/ItemType'
   'widget/spriteImage'
   'widget/property'
-], (i18n, template, utilities, Milk, validators, ItemType) ->
+], (i18n, template, BaseEditionView, validators, ItemType) ->
 
   i18n = $.extend(true, {}, i18n)
 
@@ -35,18 +34,15 @@ define [
   # Displays and edit an ItemType on edition perspective
   # Triggers the following events:
   # - change: when the model save and remove status changed
-  class ItemTypeView extends Backbone.View
-
-    # the edited object
-    model: null
+  class ItemTypeView extends BaseEditionView
 
     # **private**
-    # flag that indicates the savable state of the model
-    _canSave: false
+    # mustache template rendered
+    _template: template
 
     # **private**
-    # flag that indicates the removable state of the model
-    _canRemove: false
+    # models collection on which the view is bound
+    _collection: ItemType.collection
 
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
@@ -57,64 +53,16 @@ define [
     _confirmCloseMessage: i18n.msgs.closeConfirm
 
     # **private**
-    # flag that allow to differentiate external and triggered saves
-    _saveInProgress: false
-
-    # **private**
-    # flag that indicates that a closure is in progress, and that disable validations
-    _isClosing: false
-
-    # **private**
-    # flag that allow to differentiate external and triggered removal
-    _removeInProgress: false
-
-    # **private**
     # array of edited properties values, to distinct edited values from model values
     _editedProperties: {}
-
-    # **private**
-    # while the edited object is still not saved on server, we need an id.
-    _tempId: null
-
-    # **private**
-    # array of files that needs to be uploaded
-    _pendingUploads: []
 
     # **private**
     # avoid to trigger property change handler while rendering, because it empties `_editedProperties`
     _inhibitPropertyChange: false
 
     # **private**
-    # arrays of validators.
-    _validators: []
-
-    # ** private**
-    # the action bar with save, remove and addProperty buttons
-    _actionBar: null
-
-    # **private**
-    # save button widget
-    _saveButton: null
-
-    # **private**
-    # remove button widget
-    _removeButton: null
-
-    # **private**
-    # widget that displays the model's name
-    _nameWidget: null
-
-    # **private**
     # checkbox that displays the model's quantifiable property
     _quantifiable: null
-
-    # **private**
-    # widget that displays the model's description
-    _descWidget: null
-
-    # **private**
-    # description image widget
-    _descImageWidget: null
 
     # **private**
     # instance images widget
@@ -125,244 +73,40 @@ define [
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
-      super({tagName: 'div', className:'item-type view'})
-      # creation of a new item type if necessary
-      if id?
-        @model = ItemType.collection.get(id)
-      else 
-        @model = new ItemType()
-        @model.set('name', i18n.labels.newName)
-        @model.set('descImage', null)
-        @_tempId = utilities.generateId()
-
-      @_canSave = false
-      @_pendingUploads = []
-      @_canRemove = @_tempId is null
-      # bind change event to the update of action button bar
-      @on('change', () =>
-        return unless @_actionBar?
-        if @canSave() then @_saveButton.enable() else @_saveButton.disable()
-        if @canRemove() then @_removeButton.enable() else @_removeButton.disable()
-      )
-
-      # bind to server events
-      @bindTo(ItemType.collection, 'add', @_onCreated)
-      @bindTo(ItemType.collection, 'update', @_onSaved)
-      @bindTo(ItemType.collection, 'remove', @_onRemoved)
-
+      super(id, 'item-type')
       console.log("creates item type edition view for #{if id? then @model.id else 'a new object'}")
-
-    # Returns a unique id. 
-    #
-    # @return If the edited object is persisted on server, return its id. Otherwise, a temporary unic id.
-    getId: () =>
-      return if @_tempId isnt null then @_tempId else @model.id
-
-    # Returns the view's title
-    #
-    # @return the edited object name.
-    getTitle: () =>
-      return if @_nameWidget? then @_nameWidget.options.value else @model.get('name')
-
-    # Indicates wether or not this object can be removed.
-    # When status changed, a `change` event is triggered on the view.
-    #
-    # @return the removable status of this object
-    canRemove: () =>
-      return @_canRemove
-
-    # Indicates wether or not this object can be saved.
-    # When status changed, a `change` event is triggered on the view.
-    #
-    # @return the savable status of this object
-    canSave: () =>
-      return @_canSave and @_pendingUploads.length is 0
 
     # Returns the view's action bar, and creates it if needed.
     #
     # @return the action bar rendering.
     getActionBar: () =>
-      return @_actionBar if @_actionBar?
-      # creates the rendering
-      @_actionBar = $('<div><a class="save"></a><a class="remove"></a><a class="addProperty"></a></div>')
-      # wire the save button
-      @_saveButton = @_actionBar.find('.save')
-        .attr('title', i18n.tips.save)
-        .button(
-          icons: 
-            primary: 'save small'
-          text: false
-        )
-        .click(@saveModel)
-        .data('button')
-      # wire the remove button
-      @_removeButton = @_actionBar.find('.remove')
-        .attr('title', i18n.tips.remove)
-        .button(
-          icons:
-            primary: 'remove small'
-          text: false
-          disabled: true
-        )
-        .click(@removeModel)
-        .data('button')
-      @_actionBar.find('.addProperty')
-        .attr('title', i18n.tips.addProperty)
-        .button(
-          icons: 
-            primary: 'addProperty small'
-          text: false
-        )
-        .click(@_onNewProperty) 
-      return @_actionBar
+      bar = super()
+      # adds specific buttons
+      if bar.find('.add-property').length is 0
+        $('<a class="add-property"></a>')
+          .attr('title', i18n.tips.addProperty)
+          .button(
+            icons: 
+              primary: 'add-property small'
+            text: false
+          ).appendTo(bar).click(@_onNewProperty) 
+      return bar
 
-    # Method invoked when the view must be closed.
-    # @return true if the view can be closed, false to cancel closure
-    canClose: () =>
-      # allow if we are closing, or if no change found
-      return true if @_isClosing or !@canSave()
-      $("""<div id="confirmClose-#{@getId()}" title="#{i18n.titles.closeConfirm}">
-              <span class="ui-icon question"></span>#{_.sprintf(@_confirmCloseMessage, @model.get 'name')}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.yes,
-          icons:
-            primary: 'valid small'
-          click: () =>
-            # close dialog
-            $("#confirmClose-#{@getId()}").dialog('close')
-            # and save
-            @_isClosing = true
-            @saveModel()
-        },{
-          text: i18n.labels.no,
-          icons: {
-            primary: 'invalid small'
-          }
-          click: =>
-            # close dialog
-            $("#confirmClose-#{@getId()}").dialog('close')
-            # and close
-            @_isClosing = true
-            @trigger 'close'
-        },{
-          text: i18n.labels.cancel
-          icons:
-            primary: 'cancel small'
-          click: =>
-            # just close dialog
-            $("#confirmClose-#{@getId()}").dialog('close')
-        }]
-      )
-      # stop closure
-      return false
-
-    # The `render()` method is invoked by backbone to display view content at screen.
-    render: () =>
-      # data needed by the template
-      data = 
-        title: _.sprintf(i18n.titles.itemType, if @_tempId? then i18n.labels.newType else @model.id)
-        i18n: i18n
-      # template rendering
-      @$el.empty().append(Milk.render(template, data))
-
-      # creates property for name and description
-      @_nameWidget = @$el.find('.name.field').property(
-        type: 'string'
-        allowNull: false
-        change: @_onChange
-      ).data('property')
-
-      @_descWidget = @$el.find('.desc.field').property(
-        type: 'text'
-        allowNull: false
-        tooltipFct: i18n.tips.desc
-        change: @_onChange
-      ).data('property')
-
-      @_quantifiable = @$el.find('.quantifiable.field').change(@_onChange)
-
-      # first rendering filling
-      @_fillRendering()
-
-      # for chaining purposes
-      return @
-
-    # Saves the view, by filling edited object with rendering values and asking the server.
-    #
-    # @param event [event] optionnal click event on the save button
-    saveModel: (event = null) =>
-      return unless @canSave()
-      console.debug "save asked for #{@getId()}"
-      event?.preventDefault()
-      # fill the model and save it
-      @_saveInProgress = true
-      @_fillModel()
-      if @model.get('descImage') isnt @_descImageWidget.options.source
-        spec = {file: @_descImageWidget.options.source}
-        if @_descImageWidget.options.source is null
-          spec.oldName = @model.get('descImage')  
-        @_pendingUploads.push(spec)
-
-      currents = @_computeImageSpecs()
-      originals = @model.get('images')
-      for current, i in currents
-        # something changed !
-        if originals[i]?.file isnt current.file
-          current.idx = i
-          @_pendingUploads.push(current)
-
-      # first, save model
-      @model.save() 
- 
-    # Removes the view, after displaying a confirmation dialog. (the `remove` methods already exists)
-    #
-    # @param event [event] optional click event on the remove button
-    removeModel: (event = null) =>
-      event?.preventDefault()
-      return unless @canRemove()
-      $("""<div id="confirmRemove-#{@getId()}" title="#{i18n.titles.removeConfirm}">
-          <span class="ui-icon question"></span>#{_.sprintf @_confirmRemoveMessage, @model.get 'name'}</div>""").dialog
-        modal: true,
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.no
-          showText:false
-          icons:
-            primary: 'invalid small'
-          click: ->
-            # simply close the dialog
-            $(this).dialog('close')
-        },{
-          text: i18n.labels.yes 
-          icons:
-            primary: 'valid small'
-          click: =>
-            # close the dialog and remove the model
-            $("\#confirmRemove-#{@getId()}").dialog('close')
-            @_removeInProgress = true
-            @model.destroy()
-        }]
-
-    # Enrich the inherited dispose method to free validators.
-    dispose: () =>
-      validator.dispose() for validator in @_validators
-      super()
+    # **private**
+    # Effectively creates a new model.
+    _createNewModel: () =>
+        @model = new ItemType()
+        @model.set('name', i18n.labels.newName)
+        @model.set('descImage', null)
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: () =>
-      @model.set('name', @_nameWidget.options.value)
-      @model.set('desc', @_descWidget.options.value)
+      # superclass handles description image, name and description
+      super()
+
       @model.set('quantifiable', @_quantifiable.attr('checked') isnt undefined)
 
-      # we only are concerned by setting to null, because image upload is managed by `_onSave`
-      @model.set('descImage', null) if @_descImageWidget.options.source is null
-      
       # update images specifications. File upload will be handled separately
       newImages = @_computeImageSpecs()
       image.file = '' for image in newImages when image.file isnt null and typeof image.file isnt 'string'
@@ -376,18 +120,47 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: () =>
-      @_nameWidget.setOption('value', @model.get('name'))
-      @_descWidget.setOption('value', @model.get('desc'))
+      # superclass handles description image, name and description
+      super()
+
       if @model.get('quantifiable')
         @_quantifiable.attr('checked', 'checked') 
       else 
         @_quantifiable.removeAttr('checked')
-      @_createImages()
-
       # keep a copy of edited properties in the view
       @_editedProperties = {}
       $.extend(true, @_editedProperties, @model.get('properties'))
       @_updateProperties()
+
+    # **private**
+    # Performs view specific save operations, right before saving the model.
+    # Adds instance images to pending uploads.
+    _specificSave: () =>
+      # keeps instance images uploads       
+      currents = @_computeImageSpecs()
+      originals = @model.get('images')
+      for current, i in currents
+        # something changed !
+        if !(original?) or originals[i]?.file isnt current.file
+          current.idx = i
+          @_pendingUploads.push(current)
+
+    # **private**
+    # Prepare data to be rendered into the template
+    #
+    # @return data filled into the template
+    _getRenderData: () =>
+      # data needed by the template
+      return {
+        title: _.sprintf(i18n.titles.itemType, if @_tempId? then i18n.labels.newType else @model.id)
+        i18n: i18n
+      }
+
+    # **private**
+    # Performs view specific rendering operations.
+    # Bind quantifiable rendering to change event.
+    _specificRender: () =>
+      @_quantifiable = @$el.find('.quantifiable.field').change(@_onChange)
 
     # **private**
     # Removes existing properties widget, and creates new ones from _editedProperties
@@ -448,25 +221,14 @@ define [
     #
     # @return the comparable fields array
     _getComparableFields: () =>
-      comparable = []
+      # superclass handles description image, name and description 
+      comparable = super()
       # adds name and description
-      comparable.push( 
-        name: 'name'
-        original: @model.get('name')
-        current: @_nameWidget.options.value)
-      comparable.push(
-        name: 'description'
-        original: @model.get('desc')
-        current: @_descWidget.options.value)
       comparable.push(
         name: 'quantifiable'
         original: @model.get('quantifiable')
         current: @_quantifiable.attr('checked') isnt undefined)
       # adds images
-      comparable.push(
-        name: 'descImage'
-        original: @model.get('descImage')
-        current: @_descImageWidget.options.source)
       comparable.push(
         name: 'images'
         original: @model.get('images')
@@ -476,7 +238,7 @@ define [
         name: 'properties'
         original: @model.get('properties')
         current: @_editedProperties)
-      return comparable;
+      return comparable
     
     # **private**
     # Re-creates validators, when refreshing the properties.
@@ -485,13 +247,8 @@ define [
     # - properties' uidName
     # - sprite names
     _createValidators: () =>
-      validator.dispose() for validator in @_validators
-      @_validators = []
-
-      # adds a validator for name
-      @_validators.push(new validators.String({required: true}, i18n.labels.name, 
-        @_nameWidget.element, null, (node) -> node.find('input').val()))
-
+      # superclass disposes validators, and creates name validator
+      super()
       # adds a validator per properties
       for uidName in @$el.find('.properties input.uidName')
 
@@ -503,23 +260,17 @@ define [
         }, i18n.labels.propertyUidField, $(uidName), null))
 
     # **private**
-    # Allows to compute the rendering's validity.
-    # 
-    # @return true if all rendering's fields are valid
-    _validate: () =>
-      isValid = true;
+    # Allows subclass to add specific errors to be displayed when validating.
+    # Validates sprite definitions.
+    #
+    # @return errors of sprite widgets
+    _specificValidate: () =>
       errors = []
-      # view own validators
-      for validator in @_validators 
-        errors = errors.concat(validator.validate())
-      # spriteImage widget validators
+      # we need to performs spriteImage widget validation
       for sprite in @_imageWidgets
         errors = errors.concat(sprite.options.errors)
       errors = errors.concat(@$el.find('.add-image.sprite').data('spriteImage').options.errors)
-
-      container = @$el.find('.errors').empty()
-      container.append("<p>#{error.msg}</p>") for error in errors
-      return errors.length is 0
+      return errors
 
     # **private**
     # Extract image specifications from the widgets
@@ -545,15 +296,8 @@ define [
     # **private**
     # Creates LoadableImage for each images of the edited object
     _createImages: () =>
-      # the description image
-      unless @_descImageWidget?
-        @_descImageWidget = @$el.find('.desc.image').loadableImage(
-          source: @model.get('descImage')
-          change: @_onChange
-        ).data('loadableImage')
-      else 
-        @_descImageWidget.setOption('source', @model.get('descImage'))
-
+      # superclass handles the description image
+      super()
       # instances images: use sprite widget instead of loadable images
       @_imageWidgets = []
       originals = @model.get('images')
@@ -581,9 +325,9 @@ define [
     # Adds a special spriteImage widget to upload a new image
     _addNewImage: () =>
       addImage = $('<div class="add-image"></div>').spriteImage(
-        change: (event) =>
+        change: (event, isSpriteDef) =>
           # is it an upload ?
-          if addImage.options.source isnt null
+          if isSpriteDef isnt true and addImage.options.source isnt null
             # transforms it into a regular image widget
             addImage.element.removeClass('add-image')
             addImage.offchange
@@ -591,128 +335,6 @@ define [
             @_addNewImage()
           @_onChange()
       ).appendTo(@$el.find('.images-container')).data('spriteImage')
-
-    # **private**
-    # Displays warning dialog when edited object have been removed externally.
-    _notifyExternalRemove: () =>
-      return if $("#externalRemove-#{@getId()}").length > 0
-      $("""<div id="externalRemove-#{@getId()}" title="#{i18n.titles.external}">
-              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalRemove, @model.get 'name')}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.ok,
-          click: =>
-            # just close dialog
-            $("#externalRemove-#{@getId()}").dialog('close')
-        }]
-      )
-
-    # **private**
-    # Displays warning dialog when edited object have been modified externally.
-    _notifyExternalChange: () =>
-      return if $("#externalChange-#{@getId()}").length > 0
-      $("""<div id="externalChange-#{@getId()}" title="#{i18n.titles.external}">
-              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalChange, @model.get 'name')}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.ok,
-          click: =>
-            # just close dialog
-            $("#externalChange-#{@getId()}").dialog('close')
-        }]
-      )
-
-    # **private**
-    # Change handler, wired to any changes from the rendering.
-    # Checks if the edited object effectively changed, and update if necessary the action bar state.
-    _onChange: () =>
-      # first, rendering validity
-      isValid = @_validate()
-      hasChanged = false
-
-      if isValid
-        # compares rendering and model values
-        comparableFields = @_getComparableFields()
-        for field in comparableFields
-          hasChanged = !(_.isEqual(field.original, field.current))
-          if hasChanged
-            console.log "field #{field.name} modified"
-            break;
-
-      console.log("is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_tempId?}")
-      @_canSave = isValid and hasChanged
-      @_canRemove = @_tempId is null
-      # trigger change
-      @trigger('change', @)
-
-    # **private**
-    # Invoked when a ItemType is created on the server.
-    # Triggers the `affectId` event and then call `_onSaved`
-    #
-    # @param created [Object] the created model
-    _onCreated: (created) =>
-      return unless @_saveInProgress
-      # update the id to allow _onSaved to perform
-      @model.id = created.id
-      # indicates to perspective that we affected the id.
-      @trigger('affectId', @_tempId, @model.id)
-      @_tempId = null
-      @_onSaved(created)
-
-    # **private**
-    # Invoked when a ItemType is saved from the server.
-    # Refresh internal and rendering if the saved object corresponds to the edited one.
-    #
-    # @param saved [Object] the saved model
-    _onSaved: (saved) =>
-      # takes in account if we updated the edited objet
-      return unless saved.id is @model.id
-      # if it was a close save, trigger close once again
-      if @_isClosing
-        console.log "go on with closing #{@getId()}"
-        return @trigger('close')
-
-      console.log "object #{@getId()} saved !"
-      @_notifyExternalChange() unless @_saveInProgress
-      @_saveInProgress = false;
-
-      # updates edited object
-      @model = saved
-
-      # rfresh rendering and exiti, or proceed with changes
-      return @_fillRendering() unless @_pendingUploads.length > 0
-
-      spec = @_pendingUploads.splice(0, 1)[0]
-      @_saveInProgress = true
-      if 'oldName' of spec
-        # removes existing data
-        rheia.imagesService.remove('ItemType', @model.id, spec.oldName, if spec.idx? then spec.idx)
-      else
-        # upload new file data
-        rheia.imagesService.upload('ItemType', @model.id, spec.file, if spec.idx? then spec.idx)
-      
-        
-    # **private**
-    # Invoked when a ItemType is removed from the server.
-    # Close the view if the removed object corresponds to the edited one.
-    #
-    # @param removed [Object] the removed model
-    _onRemoved: (removed) =>
-      # takes in account if we removed the edited objet,
-      console.log(">>> removed #{removed.id} (current #{@model.id})")
-      return unless removed.id is @model.id
-      @_notifyExternalRemove() unless @_removeInProgress
-      @_removeInProgress = false;
-
-      @_isClosing = true
-      console.log "close the view of #{@getId()} because removal received"
-      @trigger('close')
 
     # **private**
     # Some properties changed, either its name, type or its default value.

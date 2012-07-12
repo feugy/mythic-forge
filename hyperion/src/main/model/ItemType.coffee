@@ -21,6 +21,9 @@ typeFactory = require './typeFactory'
 conn = require './connection'
 async = require 'async'
 logger = require('../logger').getLogger 'model'
+fs = require 'fs'
+path = require 'path'
+imageStore = require('../utils').confKey('images.store')
 
 # Define the schema for map item types
 ItemType = typeFactory 'ItemType',
@@ -124,6 +127,14 @@ ItemType.pre 'save', (next) ->
     delete @_updatedProps
     # save all the modified instances
     async.forEach saved, ((item, done) -> item.save done), next
+
+# post-remove middleware: removes images, without using the ImageService
+ItemType.post 'remove', ->
+  # removes all images that starts with the id from the image store.
+  id = @_id
+  fs.readdir imageStore, (err, files) ->
+    for file in files when file.indexOf "#{id}-" is 0
+      fs.unlink path.join imageStore, file 
 
 # Export the Class.
 module.exports = conn.model 'itemType', ItemType

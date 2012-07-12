@@ -21,7 +21,8 @@ define [
   'i18n!nls/edition'
   'view/edition/Explorer'
   'view/edition/ItemType'
-], (i18n, Explorer, ItemTypeView) ->
+  'view/edition/Rule'
+], (i18n, Explorer, ItemTypeView, RuleView) ->
 
   i18n = _.extend {}, i18n
 
@@ -79,6 +80,7 @@ define [
               <a href="#" data-menu="new-button-menu" class="new-button">#{i18n.buttons.new}</a>
               <ul class="menu new-button-menu">
                 <li data-class="ItemType"><i class="new item-type"></i>#{i18n.buttons.newItemType}</li>
+                <li data-class="Rule"><i class="new rule"></i>#{i18n.buttons.newRule}</li>
               </ul>
               <div class="ui-tabs action-bars">
                 <ul></ul>
@@ -164,6 +166,7 @@ define [
       view = null
       switch type
         when 'ItemType' then view = new ItemTypeView(id)
+        when 'Rule' then view = new RuleView(id)
         else return
 
       @_views.push(view)

@@ -22,6 +22,7 @@ define
   buttons:
     'new': 'Nouveau...'
     newItemType: "Type d'objets"
+    newRule: 'Règle'
 
   labels:
     yes: 'Oui'
