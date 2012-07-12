@@ -45,10 +45,14 @@
     - remove all images when removing a type
 - Rheia
     - edition perspective
-        - ItemType
+        - **[done]** ItemType
             - **[done]** static fields and description image
             - **[done]** properties
             - **[done]** instance images
             - **[done]** sprites
-            - validation
+            - **[done]** validation
         - Rule
+            - categories in explorer
+            - static fields (name, category) with validation
+            - rule body
+            - parameters

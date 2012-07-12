@@ -17,6 +17,7 @@ define
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
     externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
     externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet va être fermé.</p>"
+    invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
 
   buttons:
     'new': 'Nouveau...'
@@ -30,10 +31,13 @@ define
     newType: '(nouveau)'
     descImage: 'Type'
     images: 'Instances'
-    name: 'Nom :'
-    desc: 'Description :'
+    fieldSeparator: ' : '
+    name: 'Nom'
+    desc: 'Description'
     newName: 'A remplir'
-    properties: 'Propriétés :'
+    quantifiable: 'Quantifiable'
+    propertyUidField: 'Uid'
+    properties: 'Propriétés'
     propertyUid: 'Uid (unique)'
     propertyType: 'Type'
     propertyValue: 'Valeur par défaut'

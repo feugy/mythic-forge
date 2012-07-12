@@ -29,6 +29,11 @@ ItemType = typeFactory 'ItemType',
   descImage:
     type: String
 
+  # items can have a quantity attribute or not.
+  quantifiable:
+    type: Boolean
+    default: false
+
   # definition of item images, stored in an array
   # @example each images is a set of sprites
   #   image: {

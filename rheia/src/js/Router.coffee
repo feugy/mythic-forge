@@ -79,6 +79,10 @@ define [
 
   # mix in non-conflict functions to Underscore namespace if you want
   _.mixin(_string.exports())
+  _.mixin(
+    includeStr: _string.include
+    reverseStr: _string.reverse
+  )
 
   # enhance Backbone views with close() mechanism
   _.extend Backbone.View.prototype, 

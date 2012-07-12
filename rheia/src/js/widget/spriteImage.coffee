@@ -19,9 +19,10 @@
 
 define [
   'i18n!nls/widget'
+  'utils/validators'
   'widget/loadableImage'
   'widget/property'
-],  (i18n) ->
+],  (i18n, validators) ->
 
 
   # A special loadableImage that allows to input sprite informations.
@@ -43,15 +44,24 @@ define [
 
       # show/hide duration in milliseconds
       duration: 250
+
+      # list of validation errors, when the rendering changes.
+      # an empty list means no error.
+      errors:[]
       
       # **private**
       # inhibit the change event if necessary.
       _silent: false
 
+      # **private**
+      # validators for names
+      _validators: []
+
     # Frees DOM listeners
     destroy: () ->
       @element.find('input').unbind()
       @element.unbind()
+      validator.dispose() for validator in @options._validators
       $.rheia.loadableImage.prototype.destroy.apply(@, arguments)
 
     # **private**
@@ -110,11 +120,18 @@ define [
     # **private**
     # Empties and rebuilds sprite specifications rendering.
     _refreshSprites: () ->
+      # disposes validators
+      validator.dispose() for validator in @options._validators
+      @options._validators = []
+
+      # clear existing sprites
       table = @element.find('.details table tbody').empty()
 
       # property widget change handler: set property in options, and trigger change event
       onChangeFactory = (key = null) =>
         return (event, value) => 
+          # validates values
+          @_validates()
           name = $(event.target).closest('tr').data('name')
           prev = if key? then @options.sprites[name][key] else name 
           return unless value isnt prev
@@ -141,26 +158,22 @@ define [
           type: 'integer'
           value: spec.rank
           allowNull: false
-          change: onChangeFactory('rank')
-        )
+          change: onChangeFactory('rank'))
         line.find('.name').property(
           type: 'string'
           value: name
           allowNull: false
-          change: onChangeFactory()
-        )
+          change: onChangeFactory())
         line.find('.number').property(
           type: 'integer'
           value: spec.number
           allowNull: false
-          change: onChangeFactory('number')
-        )
+          change: onChangeFactory('number'))
         line.find('.duration').property(
           type: 'integer'
           value: spec.duration
           allowNull: false
-          change: onChangeFactory('duration')
-        )
+          change: onChangeFactory('duration'))
         line.find('td > a').button(
           icons:
             primary: 'remove x-small'
@@ -168,8 +181,23 @@ define [
           event.preventDefault()
           delete @options.sprites[$(event.target).closest('tr').data('name')]
           @_refreshSprites()
+          @_validates()
           @_trigger('change', event)
         )
+        # creates a validator for name.
+        @options._validators.push(new validators.String({required: true},
+          i18n.spriteImage.name, line.find('.name input'), null))
+
+    # **private**
+    # Validates each created validators, and fills the `errors` attribute. 
+    # Toggles the error class on the widget's root.
+    _validates: () ->
+      @options.errors = []
+
+      for validator in @options._validators
+        @options.errors = @options.errors.concat(validator.validate()) 
+
+      @element.toggleClass('validation-error', @options.errors.length isnt 0)
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `spriteH` or `spriteW` changed.

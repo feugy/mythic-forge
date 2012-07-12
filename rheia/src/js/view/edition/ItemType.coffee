@@ -22,10 +22,11 @@ define [
   'text!view/edition/template/ItemType.html'
   'utils/utilities'
   'utils/Milk'
+  'utils/validators'
   'model/ItemType'
   'widget/spriteImage'
   'widget/property'
-], (i18n, template, utilities, Milk, ItemType) ->
+], (i18n, template, utilities, Milk, validators, ItemType) ->
 
   i18n = $.extend(true, {}, i18n)
 
@@ -83,6 +84,10 @@ define [
     # avoid to trigger property change handler while rendering, because it empties `_editedProperties`
     _inhibitPropertyChange: false
 
+    # **private**
+    # arrays of validators.
+    _validators: []
+
     # ** private**
     # the action bar with save, remove and addProperty buttons
     _actionBar: null
@@ -98,6 +103,10 @@ define [
     # **private**
     # widget that displays the model's name
     _nameWidget: null
+
+    # **private**
+    # checkbox that displays the model's quantifiable property
+    _quantifiable: null
 
     # **private**
     # widget that displays the model's description
@@ -240,7 +249,7 @@ define [
             @_isClosing = true
             @trigger 'close'
         },{
-          label: i18n.labels.cancel
+          text: i18n.labels.cancel
           icons:
             primary: 'cancel small'
           click: =>
@@ -273,6 +282,8 @@ define [
         tooltipFct: i18n.tips.desc
         change: @_onChange
       ).data('property')
+
+      @_quantifiable = @$el.find('.quantifiable.field').change(@_onChange)
 
       # first rendering filling
       @_fillRendering()
@@ -337,11 +348,17 @@ define [
             @model.destroy()
         }]
 
+    # Enrich the inherited dispose method to free validators.
+    dispose: () =>
+      validator.dispose() for validator in @_validators
+      super()
+
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: () =>
       @model.set('name', @_nameWidget.options.value)
       @model.set('desc', @_descWidget.options.value)
+      @model.set('quantifiable', @_quantifiable.attr('checked') isnt undefined)
 
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
       @model.set('descImage', null) if @_descImageWidget.options.source is null
@@ -361,6 +378,10 @@ define [
     _fillRendering: () =>
       @_nameWidget.setOption('value', @model.get('name'))
       @_descWidget.setOption('value', @model.get('desc'))
+      if @model.get('quantifiable')
+        @_quantifiable.attr('checked', 'checked') 
+      else 
+        @_quantifiable.removeAttr('checked')
       @_createImages()
 
       # keep a copy of edited properties in the view
@@ -376,7 +397,7 @@ define [
       
       # remove existing lines
       @$el.find('.properties > tbody > tr').remove()
-      
+
       # and recreates lines
       @_inhibitPropertyChange = true
       for uidName, prop of @_editedProperties
@@ -411,6 +432,9 @@ define [
         ).wrap('<td></td>')
 
         line.append(defaultValue.parent())
+      
+      # re-creates all validators.
+      @_createValidators()
 
       # trigger comparison
       @_inhibitPropertyChange = false
@@ -434,6 +458,10 @@ define [
         name: 'description'
         original: @model.get('desc')
         current: @_descWidget.options.value)
+      comparable.push(
+        name: 'quantifiable'
+        original: @model.get('quantifiable')
+        current: @_quantifiable.attr('checked') isnt undefined)
       # adds images
       comparable.push(
         name: 'descImage'
@@ -451,13 +479,47 @@ define [
       return comparable;
     
     # **private**
+    # Re-creates validators, when refreshing the properties.
+    # Existing validators are trashed, and validators created for:
+    # - name
+    # - properties' uidName
+    # - sprite names
+    _createValidators: () =>
+      validator.dispose() for validator in @_validators
+      @_validators = []
+
+      # adds a validator for name
+      @_validators.push(new validators.String({required: true}, i18n.labels.name, 
+        @_nameWidget.element, null, (node) -> node.find('input').val()))
+
+      # adds a validator per properties
+      for uidName in @$el.find('.properties input.uidName')
+
+        @_validators.push(new validators.Regexp({
+          invalidError: i18n.msgs.invalidUidError
+          regexp: /^[$_\u0041-\uff70].*$/i
+          required: true
+          spacesAllowed: false
+        }, i18n.labels.propertyUidField, $(uidName), null))
+
+    # **private**
     # Allows to compute the rendering's validity.
     # 
     # @return true if all rendering's fields are valid
     _validate: () =>
       isValid = true;
-      # todo (isValid = false; break) for validator in @_validators when validator.validate().length isnt 0
-      return isValid
+      errors = []
+      # view own validators
+      for validator in @_validators 
+        errors = errors.concat(validator.validate())
+      # spriteImage widget validators
+      for sprite in @_imageWidgets
+        errors = errors.concat(sprite.options.errors)
+      errors = errors.concat(@$el.find('.add-image.sprite').data('spriteImage').options.errors)
+
+      container = @$el.find('.errors').empty()
+      container.append("<p>#{error.msg}</p>") for error in errors
+      return errors.length is 0
 
     # **private**
     # Extract image specifications from the widgets
@@ -696,7 +758,7 @@ define [
     #
     # @param event [Event] click event on a remove button
     _onRemoveProperty: (event) =>
-      name = $(event.target).parents('tr.property').fine('.uidName').val()
+      name = $(event.target).parents('tr.property').find('.uidName').val()
       delete @_editedProperties[name]
       # and re-creates property rendering
       @_updateProperties()

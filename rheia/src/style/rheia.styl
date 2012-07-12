@@ -14,6 +14,7 @@ shadowColor = #ccc
 bgColor = #fff
 hoverColor = darken(#fff, 8%)
 focusColor = #75B9F0
+errorColor = lighten(orange, 20%)
 
 // Transition mixin
 transition(args...)
@@ -217,6 +218,13 @@ for name in question warning
 
 .ui-button-text-icon-primary .ui-button-text
   padding-left 2.3em
+
+// Validators
+
+:not(.ui-numeric) > input.validation-error
+textarea.validation-error
+.validation-error
+  border-color errorColor
 
 // JQuery ui dialogs
 
