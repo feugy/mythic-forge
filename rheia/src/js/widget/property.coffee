@@ -18,10 +18,11 @@
 'use strict'
 
 define [
+  'jquery'
   'i18n!nls/widget'
   'widget/baseWidget'
    # @todo 'widget/instanceList'
-],  (i18n) ->
+],  ($, i18n) ->
 
   # The property widget allows to display and edit a type's property. 
   # It adapts to the property's own type.

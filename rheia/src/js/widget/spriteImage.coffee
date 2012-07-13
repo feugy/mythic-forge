@@ -18,11 +18,12 @@
 'use strict'
 
 define [
+  'jquery'
   'i18n!nls/widget'
   'utils/validators'
   'widget/loadableImage'
   'widget/property'
-],  (i18n, validators) ->
+],  ($, i18n, validators) ->
 
 
   # A special loadableImage that allows to input sprite informations.

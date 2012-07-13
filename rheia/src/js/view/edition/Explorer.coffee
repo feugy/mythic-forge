@@ -18,11 +18,13 @@
 'use strict'
 
 define [
+  'jquery'
+  'backbone'
   'i18n!nls/edition'
   'model/ItemType'
-], (i18n, ItemType) ->
+], ($, Backbone, i18n, ItemType) ->
 
-  i18n = _.extend {}, i18n
+  i18n = $.extend {}, i18n
 
   # Create explorer rendering for a given model, relative ot its class
   #

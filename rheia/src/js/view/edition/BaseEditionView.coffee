@@ -18,11 +18,14 @@
 'use strict'
 
 define [
+  'jquery'
+  'underscore'
+  'backbone'
   'i18n!nls/edition'
   'utils/utilities'
   'utils/Milk'
   'utils/validators'
-], (i18n, utilities, Milk, validators) ->
+], ($, _, Backbone, i18n, utilities, Milk, validators) ->
 
   i18n = $.extend(true, {}, i18n)
 

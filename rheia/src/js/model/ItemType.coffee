@@ -18,8 +18,9 @@
 'use strict'
 
 define [
+  'backbone'
   'model/sockets'
-], (sockets) ->
+], (Backbone, sockets) ->
 
   # Client cache of item types.
   class ItemTypes extends Backbone.Collection

@@ -18,10 +18,12 @@
 'use strict'
 
 define [
+  'jquery'
+  'backbone'
   'i18n!nls/edition'
   'view/edition/BaseEditionView'
   'model/Rule'
-], (i18n, BaseEditionView, Rule) ->
+], ($, Backbone, i18n, BaseEditionView, Rule) ->
 
   i18n = $.extend(true, {}, i18n)
 

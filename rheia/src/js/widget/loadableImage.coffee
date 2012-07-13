@@ -18,9 +18,10 @@
 'use strict'
 
 define [
+  'jquery'
   'i18n!nls/widget'
   'widget/baseWidget'
-],  (i18n) ->
+],  ($, i18n) ->
 
 
   # Widget that displays an image and two action buttons to upload a new version or delete the existing one.

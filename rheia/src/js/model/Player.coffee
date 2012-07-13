@@ -18,8 +18,9 @@
 'use strict'
 
 define [
+  'backbone'
   'model/Item'
-], (Item) ->
+], (Backbone, Item) ->
 
   # Client cache of players.
   # Wired to the server through socket.io

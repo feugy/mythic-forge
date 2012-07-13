@@ -18,9 +18,10 @@
 'use strict'
 
 define [
+  'jquery'
   'i18n!nls/widget'
   'widget/BaseWidget'
-],  (i18n) ->
+],  ($, i18n) ->
 
   # todo parenthesis
   # Displays and navigate along several images, with two nav buttons.

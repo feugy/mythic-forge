@@ -18,13 +18,16 @@
 'use strict'
 
 define [
+  'jquery'
+  'underscore'
+  'backbone'
   'i18n!nls/edition'
   'view/edition/Explorer'
   'view/edition/ItemType'
   'view/edition/Rule'
-], (i18n, Explorer, ItemTypeView, RuleView) ->
+], ($, _, Backbone, i18n, Explorer, ItemTypeView, RuleView) ->
 
-  i18n = _.extend {}, i18n
+  i18n = $.extend {}, i18n
 
   # The edition perspective manages types, rules and maps
   class EditionPerspective extends Backbone.View

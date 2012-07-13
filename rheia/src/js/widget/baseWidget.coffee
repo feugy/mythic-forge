@@ -17,7 +17,10 @@
 ###
 'use strict'
 
-define [],  () ->
+define [
+  'jquery'
+  'jquery-ui'
+],  ($) ->
 
   # This classes defines common methods to widgets.
   $.widget "rheia.baseWidget", 

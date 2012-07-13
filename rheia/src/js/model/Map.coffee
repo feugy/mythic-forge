@@ -18,10 +18,11 @@
 'use strict'
 
 define [
+  'backbone'
   'model/sockets'
   './Field'
   './Item'
-], (sockets, Field, Item) ->
+], (Backbone, sockets, Field, Item) ->
 
   # Client cache of maps.
   class Maps extends Backbone.Collection
