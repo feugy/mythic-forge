@@ -19,7 +19,7 @@
 
 mongoose = require 'mongoose'
 conn = require './connection'
-modelUtils = require '../utils/model'
+utils = require '../utils'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 
@@ -36,10 +36,10 @@ cache = {}
 # Define the schema for maps.
 MapSchema = new mongoose.Schema {}, {strict:true}
 
-modelUtils.enhanceI18n MapSchema
+utils.enhanceI18n MapSchema
 
 # map name, required, i18n
-modelUtils.addI18n MapSchema, 'name', {required: true}
+utils.addI18n MapSchema, 'name', {required: true}
 
 # This special finder maintains an in-memory cache of maps, to faster map retrieval by ids.
 # If the id isn't found in cache, search in database.
