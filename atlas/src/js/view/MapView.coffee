@@ -224,7 +224,7 @@ define [
 
         # creates an image 
         image = element.get('type').get('images')[element.get('imageNum')]
-        src = "#{conf.baseUrl}/assets/#{image.file}"
+        src = "#{conf.imagesUrl}#{image.file}"
         img = $ "<img data-src=\"#{src}\" data-id=\"#{element.id}\"/>"
         @imagesLoader.load src
         @_itemsLayer.append img

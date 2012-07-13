@@ -252,11 +252,11 @@ define [
       else if target.hasClass('instance')
         # special case of arrays and objects of instances
         newValue = target.instanceList('option', 'value')
-       
+      
       # cast value
       @options.value = newValue
       @_castValue()
-      @_trigger('change', event, @options.value)
+      @_trigger('change', event, {value:@options.value})
       event.stopPropagation()
     
     # **private**

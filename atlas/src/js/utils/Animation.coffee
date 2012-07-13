@@ -94,7 +94,7 @@ define [
       @_step= 0
       # set the sprite row
       @item.shiftLeft = 0
-      @item.shiftTop = -@_sprite.vOffset          
+      @item.shiftTop = -@_sprite.rank * imageDef.height         
 
     # Starts effectively the animation, and trigger the 'start' event.
     # 

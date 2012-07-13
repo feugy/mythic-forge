@@ -141,7 +141,7 @@ define [
       originals = @model.get('images')
       for current, i in currents
         # something changed !
-        if !(original?) or originals[i]?.file isnt current.file
+        if !originals or originals[i]?.file isnt current.file
           current.idx = i
           @_pendingUploads.push(current)
 
@@ -325,9 +325,9 @@ define [
     # Adds a special spriteImage widget to upload a new image
     _addNewImage: () =>
       addImage = $('<div class="add-image"></div>').spriteImage(
-        change: (event, isSpriteDef) =>
+        change: (event, arg) =>
           # is it an upload ?
-          if isSpriteDef isnt true and addImage.options.source isnt null
+          if arg? and !arg.isSprite and addImage.options.source isnt null
             # transforms it into a regular image widget
             addImage.element.removeClass('add-image')
             addImage.offchange

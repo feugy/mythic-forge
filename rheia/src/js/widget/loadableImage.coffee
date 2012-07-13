@@ -80,7 +80,10 @@ define [
           # display alternative text
           @_createAlt()
           # load image from images service
-          rheia.router.trigger('loadImage', "/images/#{@options.source}")
+          if @options.source is null 
+            setTimeout ( => @_onLoaded false), 0
+          else 
+            rheia.router.trigger('loadImage', "/images/#{@options.source}")
 
     # **private**
     # Creates an alternative text if necessary

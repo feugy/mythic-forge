@@ -10,6 +10,7 @@ define
     duration: 'Durée'
     add: 'Nouveau'
     newName: 'sprite'
+    unsavedSprite: 'Le nom du sprite "%s" est déjà utilisé, merci d\'en choisir un autre'
   property:
     isNull: 'nul'
     isTrue: 'vrai'

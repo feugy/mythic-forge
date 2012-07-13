@@ -52,6 +52,7 @@ configureRIA = (base, rootFolder, statics) ->
       basePath: "#{base}/"
       baseUrl: "#{baseUrl}#{base}"
       apiBaseUrl: "https://#{host}:#{utils.confKey 'server.apiPort'}"
+      imagesUrl: "#{baseUrl}/images/"
 
     res.header 'Content-Type', 'application/javascript; charset=UTF-8'
     res.send "window.conf = #{JSON.stringify conf}"

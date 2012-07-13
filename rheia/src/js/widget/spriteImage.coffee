@@ -110,7 +110,7 @@ define [
           number: 0
           rank: @element.find('.details tbody tr').length
         @_refreshSprites()
-        @_trigger('change', event, true)
+        @_trigger('change', event, {isSprite: true})
       )
 
       @_refreshSprites()
@@ -132,22 +132,30 @@ define [
 
       # property widget change handler: set property in options, and trigger change event
       onChangeFactory = (key = null) =>
-        return (event, value) => 
+        return (event, arg) => 
           # validates values
           @_validates()
+          value = arg.value
+
           name = $(event.target).closest('tr').data('name')
           prev = if key? then @options.sprites[name][key] else name 
           return unless value isnt prev
           if key?
             # change a single value 
             @options.sprites[name][key] = value
-          else 
-            # change name, keeping other values
+          else if !(value of @options.sprites)
+            # change name, keeping other values, without erasing existing name
             @options.sprites[value] = @options.sprites[name]
             delete @options.sprites[name]
             $(event.target).closest('tr').data('name', value)
+          else 
+            # add special error to indicate unsave
+            @options.errors.push({err: 'unsaved', msg: _.sprintf(i18n.spriteImage.unsavedSprite, value)})
+            @element.addClass('validation-error')
+
+          console.dir @options.sprites
           # the last parameters allow to split changes from the image from those from sprite definition
-          @_trigger('change', event, true) unless @options._silent
+          @_trigger('change', event, {isSprite: true}) unless @options._silent
 
       for name, spec of @options.sprites
         line = $("""<tr data-name="#{name}">
@@ -186,7 +194,7 @@ define [
           delete @options.sprites[$(event.target).closest('tr').data('name')]
           @_refreshSprites()
           @_validates()
-          @_trigger('change', event, true)
+          @_trigger('change', event, {isSprite: true})
         )
         # creates a validator for name.
         @options._validators.push(new validators.String({required: true},
@@ -231,7 +239,7 @@ define [
         @element.find(".#{key}").val(value)
         @options[key] = value
 
-      @_trigger('change', event, true) unless @options._silent
+      @_trigger('change', event, {isSprite: true}) unless @options._silent
 
 
   $.widget("rheia.spriteImage", $.rheia.loadableImage, SpriteImage)
