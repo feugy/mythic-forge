@@ -18,6 +18,7 @@
 'use strict'
 
 ItemType = require '../model/ItemType'
+Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
 
 # The AdminService export administration features.
@@ -32,9 +33,10 @@ class _AdminService
   # @option callback modelName [String] reminds the listed model class name
   # @option callback models [Array] list (may be empty) of retrieved models
   list: (modelName, callback) =>
-    return callback "The #{modelName} model can't be listed", modelName unless modelName in ['ItemType']
+    return callback "The #{modelName} model can't be listed", modelName unless modelName in ['ItemType', 'Executable']
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
+      when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
 
   # Saves an instance of any model.
   #
@@ -45,11 +47,8 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   save: (modelName, values, callback) =>
-    return callback "The #{modelName} model can't be saved", modelName unless modelName in ['ItemType']
-    modelClass = null
-    switch modelName
-      when 'ItemType' then modelClass = ItemType
-
+    return callback "The #{modelName} model can't be saved", modelName unless modelName in ['ItemType', 'Executable']
+    
     # do not directly save Mongoose models
     if 'toObject' of values and values.toObject instanceof Function
       values = values.toObject()
@@ -57,16 +56,32 @@ class _AdminService
     _save = (model) ->
       model.save (err, saved) -> callback err, modelName, saved
 
+    modelClass = null
+    switch modelName
+      when 'ItemType' then modelClass = ItemType
+      when 'Executable' 
+        # special behaviour for Executables that always have an _id
+        return Executable.findCached values._id, (err, model) ->
+          return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err?
+          # create new if not found
+          if model is null
+            model = new Executable values 
+          else 
+            # or update existing one
+            for key, value of values
+              model[key] = value unless key is '_id'
+          _save model
+
     # get existing values
     if '_id' of values
       modelClass.findCached values._id, (err, model) ->
-        return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err?
+        return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err? or model is null
         for key, value of values
           model.set key, value unless key is '_id'
         _save model
     else 
       # or save new one
-      _save new ItemType values
+      _save new modelClass values
 
   # Deletes an instance of any model.
   #
@@ -77,11 +92,12 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   remove: (modelName, values, callback) =>
-    return callback "The #{modelName} model can't be removed", modelName unless modelName in ['ItemType']
+    return callback "The #{modelName} model can't be removed", modelName unless modelName in ['ItemType', 'Executable']
     return callback "Cannot remove #{modelName} because no '_id' specified", modelName unless '_id' of values
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
+      when 'Executable' then modelClass = Executable
 
     # get existing values
     modelClass.findCached values._id, (err, model) ->

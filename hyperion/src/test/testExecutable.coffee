@@ -41,7 +41,7 @@ describe 'Executable tests', ->
     # given a new executable
     content = 'console.log "hello world"'
     name = 'test1'
-    executable = new Executable name, content
+    executable = new Executable {_id: name, content: content}
     
     # when saving it
     executable.save (err) ->
@@ -61,7 +61,7 @@ describe 'Executable tests', ->
   describe 'given an executable', -> 
 
     beforeEach (done) ->
-      executable = new Executable 'test2', 'console.log("hello world 2");'
+      executable = new Executable {_id:'test2', content:'console.log("hello world 2");'}
       executable.save (err) ->
         done()
 

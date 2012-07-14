@@ -51,15 +51,17 @@ describe 'RuleService tests', ->
 
     beforeEach (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 'rule0', """Rule = require '../main/model/Rule'
-      class MyRule extends Rule
-        constructor: ->
-          @name= 'rule 0'
-        canExecute: (actor, target, callback) =>
-          callback null, true;
-        execute: (actor, target, callback) =>
-          callback null, 'hello !'
-      module.exports = new MyRule()"""
+      script = new Executable 
+        _id:'rule0'
+        content:"""Rule = require '../main/model/Rule'
+          class MyRule extends Rule
+            constructor: ->
+              @name= 'rule 0'
+            canExecute: (actor, target, callback) =>
+              callback null, true;
+            execute: (actor, target, callback) =>
+              callback null, 'hello !'
+          module.exports = new MyRule()"""
       script.save (err) ->
         # Creates a type
         throw new Error err if err?
@@ -121,15 +123,17 @@ describe 'RuleService tests', ->
 
     beforeEach (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 'rule1', """Rule = require '../main/model/Rule'
-      class MyRule extends Rule
-        constructor: ->
-          @name= 'rule 1'
-        canExecute: (actor, target, callback) =>
-          callback null, true;
-        execute: (actor, target, callback) =>
-          callback null, 'hello !'
-      module.exports = new MyRule()"""
+      script = new Executable 
+        _id:'rule1', 
+        content: """Rule = require '../main/model/Rule'
+          class MyRule extends Rule
+            constructor: ->
+              @name= 'rule 1'
+            canExecute: (actor, target, callback) =>
+              callback null, true;
+            execute: (actor, target, callback) =>
+              callback null, 'hello !'
+          module.exports = new MyRule()"""
       script.save (err) ->
         # Creates a type
         throw new Error err if err?
@@ -216,16 +220,18 @@ describe 'RuleService tests', ->
 
     it 'should rule execution modifies item in database', (done) ->
       # given a rule that modified coordinates
-      script = new Executable 'rule2', """Rule = require '../main/model/Rule'
-      class MoveRule extends Rule
-        constructor: ->
-          @name= 'rule 2'
-        canExecute: (actor, target, callback) =>
-          callback null, target.get('x').valueOf() is 1
-        execute: (actor, target, callback) =>
-          target.x++
-          callback null, 'target moved'
-      module.exports = new MoveRule()"""
+      script = new Executable
+        _id:'rule2', 
+        content: """Rule = require '../main/model/Rule'
+          class MoveRule extends Rule
+            constructor: ->
+              @name= 'rule 2'
+            canExecute: (actor, target, callback) =>
+              callback null, target.get('x').valueOf() is 1
+            execute: (actor, target, callback) =>
+              target.x++
+              callback null, 'target moved'
+          module.exports = new MoveRule()"""
 
       script.save (err) ->
         throw new Error err if err?
@@ -255,19 +261,21 @@ describe 'RuleService tests', ->
 
   it 'should linked object be modified and saved by a rule', (done) ->
     # given a rule that need links resolution
-    script = new Executable 'rule3', """Rule = require '../main/model/Rule'
-    class DriveLeft extends Rule
-      constructor: ->
-        @name= 'rule 3'
-      canExecute: (actor, target, callback) =>
-        target.resolve ->
-          callback null, target.get('pilot').equals actor
-      execute: (actor, target, callback) =>
-        target.resolve ->
-          target.x++
-          target.get('pilot').x++
-          callback null, 'driven left'
-    module.exports = new DriveLeft()"""
+    script = new Executable 
+      _id:'rule3', 
+      content: """Rule = require '../main/model/Rule'
+        class DriveLeft extends Rule
+          constructor: ->
+            @name= 'rule 3'
+          canExecute: (actor, target, callback) =>
+            target.resolve ->
+              callback null, target.get('pilot').equals actor
+          execute: (actor, target, callback) =>
+            target.resolve ->
+              target.x++
+              target.get('pilot').x++
+              callback null, 'driven left'
+        module.exports = new DriveLeft()"""
     script.save (err) ->
       # given a character type and a car type
       throw new Error err if err?
@@ -310,19 +318,21 @@ describe 'RuleService tests', ->
 
   it 'should rule create new objects', (done) ->
     # given a rule that creates an object
-    script = new Executable 'rule4', """Rule = require '../main/model/Rule'
-    Item = require '../main/model/Item'
-    module.exports = new (class AddPart extends Rule
-      constructor: ->
-        @name= 'rule 4'
-      canExecute: (actor, target, callback) =>
-        callback null, actor.get('stock').length is 0
-      execute: (actor, target, callback) =>
-        part = new Item {type:actor.type, name: 'part'}
-        @created.push part
-        actor.set 'stock', [part]
-        callback null, 'part added'
-    )()"""
+    script = new Executable
+      _id:'rule4', 
+      content: """Rule = require '../main/model/Rule'
+        Item = require '../main/model/Item'
+        module.exports = new (class AddPart extends Rule
+          constructor: ->
+            @name= 'rule 4'
+          canExecute: (actor, target, callback) =>
+            callback null, actor.get('stock').length is 0
+          execute: (actor, target, callback) =>
+            part = new Item {type:actor.type, name: 'part'}
+            @created.push part
+            actor.set 'stock', [part]
+            callback null, 'part added'
+        )()"""
     script.save (err) ->
       # given a type
       throw new Error err if err?
@@ -358,16 +368,18 @@ describe 'RuleService tests', ->
 
   it 'should rule delete existing objects', (done) ->
     # given a rule that creates an object
-    script = new Executable 'rule5', """Rule = require '../main/model/Rule'
-    module.exports = new (class RemovePart extends Rule
-      constructor: ->
-        @name= 'rule 5'
-      canExecute: (actor, target, callback) =>
-        callback null, (part for part in actor.get('stock') when target.equals(part))?
-      execute: (actor, target, callback) =>
-        @removed.push target
-        callback null, 'part removed'
-    )()"""
+    script = new Executable
+      _id:'rule5', 
+      content: """Rule = require '../main/model/Rule'
+        module.exports = new (class RemovePart extends Rule
+          constructor: ->
+            @name= 'rule 5'
+          canExecute: (actor, target, callback) =>
+            callback null, (part for part in actor.get('stock') when target.equals(part))?
+          execute: (actor, target, callback) =>
+            @removed.push target
+            callback null, 'part removed'
+        )()"""
     script.save (err) ->
       # given a type
       throw new Error err if err?
@@ -431,19 +443,21 @@ describe 'RuleService tests', ->
 
     it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
-      script = new Executable 'rule6', """TurnRule = require '../main/model/TurnRule'
-      Item = require '../main/model/Item'
-      ObjectId = require('mongodb').BSONPure.ObjectID
+      script = new Executable
+        _id:'rule6', 
+        content: """TurnRule = require '../main/model/TurnRule'
+          Item = require '../main/model/Item'
+          ObjectId = require('mongodb').BSONPure.ObjectID
 
-      module.exports = new (class Dumb extends TurnRule
-        constructor: ->
-          @name= 'rule 6'
-        select: (callback) =>
-          Item.find {type: new ObjectId "#{type1._id}"}, callback
-        execute: (target, callback) =>
-          target.set 'fed', target.get('fed')+1
-          callback null, "\#{target.get 'name'} was fed"
-      )()"""
+          module.exports = new (class Dumb extends TurnRule
+            constructor: ->
+              @name= 'rule 6'
+            select: (callback) =>
+              Item.find {type: new ObjectId "#{type1._id}"}, callback
+            execute: (target, callback) =>
+              target.set 'fed', target.get('fed')+1
+              callback null, "\#{target.get 'name'} was fed"
+          )()"""
       script.save (err) ->
         throw new Error err if err?
         Item.count {type: type1._id}, (err, count) =>

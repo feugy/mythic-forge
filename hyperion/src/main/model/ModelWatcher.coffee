@@ -40,17 +40,21 @@ class _ModelWatcher extends EventEmitter
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, className, instance, modified) =>
     parameter = {}
-    parameter[key] = value for own key,value of instance._doc
+    if '_doc' of instance
+      parameter[key] = value for own key,value of instance._doc
+    else 
+      parameter = instance
     # do not embed the linked map and type for items and fields
     parameter.type = parameter.type?._id if className is 'Item'
     unless modified and 'map' in modified
       # but send the map if it changed
       parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
     if operation is 'update'
-      # for update, only emit modified datas
-      parameter = 
-        _id: instance._id
-      parameter[path] = instance.get path for path in modified
+      if className isnt 'Executable'
+        # for update, only emit modified datas
+        parameter = 
+          _id: instance._id
+        parameter[path] = instance.get path for path in modified
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
 

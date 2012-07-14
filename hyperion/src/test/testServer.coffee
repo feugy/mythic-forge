@@ -144,20 +144,22 @@ describe 'server tests', ->
           # Empties the compilation and source folders content
           testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
             Executable.resetAll -> 
-              script = new Executable 'rename', """Rule = require '../main/model/Rule'
-                Item = require '../main/model/Item'
+              script = new Executable 
+                _id:'rename', 
+                content: """Rule = require '../main/model/Rule'
+                  Item = require '../main/model/Item'
 
-                module.exports = new (class RenameRule extends Rule
-                  constructor: ->
-                    @name= 'rename'
-                  canExecute: (actor, target, callback) =>
-                    callback null, target.get('name') is 'Jack'
-                  execute: (actor, target, callback) =>
-                    @created.push new Item({type: target.type, name:'Peter'})
-                    @removed.push actor
-                    target.set('name', 'Joe')
-                    callback null, 'target renamed'
-                )()"""
+                  module.exports = new (class RenameRule extends Rule
+                    constructor: ->
+                      @name= 'rename'
+                    canExecute: (actor, target, callback) =>
+                      callback null, target.get('name') is 'Jack'
+                    execute: (actor, target, callback) =>
+                      @created.push new Item({type: target.type, name:'Peter'})
+                      @removed.push actor
+                      target.set('name', 'Joe')
+                      callback null, 'target renamed'
+                  )()"""
 
               script.save (err) ->
                 throw new Error err if err?

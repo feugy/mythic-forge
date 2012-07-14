@@ -21,6 +21,7 @@ fs = require 'fs'
 path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
+modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 utils = require '../utils'
 
@@ -31,13 +32,18 @@ ext = utils.confKey 'executable.extension','.coffee'
 
 utils.enforceFolderSync root, false, logger
 
+
+# hashmap to differentiate creations from updates
+wasNew= {}
+
 # Do a single compilation of a source file.
 #
 # @param executable [Executable] the executable to compile
+# @param silent [Boolean] disable change propagation if true
 # @param callback [Function] end callback, invoked when the compilation is done with the following parameters
 # @option callback err [String] an error message. Null if no error occured
 # @option callback executable [Executable] the compiled executable
-compileFile = (executable, callback) ->
+compileFile = (executable, silent, callback) ->
   try 
     js = coffee.compile executable.content, {bare: true}
   catch exc
@@ -48,6 +54,11 @@ compileFile = (executable, callback) ->
     logger.debug "executable #{executable._id} successfully compiled"
     # store it in local cache.
     executables[executable._id] = executable
+    # propagate change
+    unless silent
+      modelWatcher.change (if wasNew[executable._id] then 'creation' else 'update'), "Executable", executable, ['content']
+      delete wasNew[executable._id]
+    # and invoke final callback
     callback null, executable
 
 # local cache of executables
@@ -79,7 +90,7 @@ class Executable
           return callback "Error while reading executable '#{executable._id}': #{err}" if err?
           # complete the executable content, and add it to the array.
           executable.content = content
-          compileFile executable, (err, executable) ->
+          compileFile executable, true, (err, executable) ->
             return callback "Compilation failed: #{err}" if err?
             end()
 
@@ -99,6 +110,15 @@ class Executable
     array.push executable for _id, executable of executables
     callback null, array
 
+  # Find existing executable by id, from the cache.
+  #
+  # @param id [String] the executable id
+  # @param callback [Function] invoked when all executables were retrieved
+  # @option callback err [String] an error message if an error occured. null otherwise
+  # @option callback executable [Executable] the corresponding executable, of null if id doesn't match any executable
+  @findCached: (id, callback) ->
+    callback null, if id of executables then executables[id] else null
+
   # The unic file name of the executable, which is also its id.
   _id: null
 
@@ -113,9 +133,12 @@ class Executable
 
   # Create a new executable, with its file name.
   # 
-  # @param _id [String] its file name (without it's path).
-  # @param content [String] the file content. Empty by default.
-  constructor: (@_id, @content = '') ->
+  # @param attributes object raw attributes, containing: 
+  # @option attributes_id [String] its file name (without it's path).
+  # @option attributes content [String] the file content. Empty by default.
+  constructor: (attributes) ->
+    @_id = attributes._id
+    @content = attributes.content || ''
     @path = path.join root, @_id+ext
     @compiledPath = path.join compiledRoot, @_id+'.js'
 
@@ -125,11 +148,12 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the saved item
   save: (callback) =>
+    wasNew[@_id] = !(@_id of executables)
     fs.writeFile @path, @content, encoding, (err) =>
       return callback "Error while saving executable #{@_id}: #{err}" if err?
       logger.debug "executable #{@_id} successfully saved"
       # Trigger the compilation.
-      compileFile this, callback
+      compileFile @, false, callback
 
   # Remove an existing executable.
   # 
@@ -145,6 +169,8 @@ class Executable
           return callback "Error while removing compiled executable #{@_id}: #{err}" if err?
           logger.debug "executable #{@_id} successfully removed"
           delete executables[@_id]
+          # propagate change
+          modelWatcher.change 'deletion', "Executable", @
           callback null, this
 
 module.exports = Executable
