@@ -40,6 +40,10 @@ define [
   class ItemTypeView extends BaseEditionView
 
     # **private**
+    # name of the model class
+    _modelClassName: 'ItemType'
+
+    # **private**
     # mustache template rendered
     _template: template
 

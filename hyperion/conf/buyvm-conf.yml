@@ -9,11 +9,11 @@ server:
   host: www.mythic-forge.com
   staticPort: 80
   apiPort: 443  
-  gameFolder: /home/damien/workspace/mythic-forge/hyperion/atlas/src
+  gameFolder: /home/damien/workspace/mythic-forge/atlas/src
 
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
-  certificate: conf/ssl/www.mythic-forge.com.crt
+  certificate: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.crt
   key: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.key
   ca: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.ca
 

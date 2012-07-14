@@ -142,6 +142,13 @@ define [
 
       Backbone.history.start({pushState: true, root: conf.basePath})
 
+      # general error handler
+      @on('serverError', (err, details) ->
+        debugger
+        console.error("server error: #{if typeof err is 'object' then err.message else err}")
+        console.dir(details)
+      )
+
       # route link special behaviour
       ###$('a[data-route]').on 'click', (e) =>
         e.preventDefault()

@@ -21,19 +21,25 @@ define [
   'jquery'
   'underscore'
   'backbone'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'utils/utilities'
   'utils/Milk'
   'utils/validators'
-], ($, _, Backbone, i18n, utilities, Milk, validators) ->
+], ($, _, Backbone, i18n, i18nEdition, utilities, Milk, validators) ->
 
-  i18n = $.extend(true, {}, i18n)
+  i18n = $.extend(true, i18n, i18nEdition)
 
   # Base class for edition views
   class BaseEditionView extends Backbone.View
 
     # the edited object
     model: null    
+
+    # **private**
+    # name of the model class
+    # **Must be defined by subclasses**
+    _modelClassName: null
 
     # **private**
     # mustache template rendered
@@ -139,6 +145,7 @@ define [
       @bindTo(@_collection, 'add', @_onCreated)
       @bindTo(@_collection, 'update', @_onSaved)
       @bindTo(@_collection, 'remove', @_onRemoved)
+      @bindTo(rheia.router, 'serverError', @_onServerError)
 
     # Returns a unique id. 
     #
@@ -481,6 +488,28 @@ define [
       )
 
     # **private**
+    # Displays error dialog when current server operation failed on edited object.
+    #
+    # @param err [String] server error
+    _notifyServerError: (err) =>
+      return if $("#serverError-#{@getId()}").length > 0
+      msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
+      err = if typeof err is 'object' then err.message else err
+      $("""<div id="serverError-#{@getId()}" title="#{i18n.titles.serverError}">
+              <span class="ui-icon cancel"></span>#{_.sprintf(msgKey, @model.get('name'), err)}
+            </div>""").dialog(
+        modal: true
+        close: ->
+          $(this).remove()
+        buttons: [{
+          text: i18n.labels.ok,
+          click: =>
+            # just close dialog
+            $("#serverError-#{@getId()}").dialog('close')
+        }]
+      )
+
+    # **private**
     # Change handler, wired to any changes from the rendering.
     # Checks if the edited object effectively changed, and update if necessary the action bar state.
     _onChange: () =>
@@ -504,7 +533,7 @@ define [
       @trigger('change', @)
 
     # **private**
-    # Invoked when a ItemType is created on the server.
+    # Invoked when a model is created on the server.
     # Triggers the `affectId` event and then call `_onSaved`
     #
     # @param created [Object] the created model
@@ -518,7 +547,7 @@ define [
       @_onSaved(created)
 
     # **private**
-    # Invoked when a ItemType is saved from the server.
+    # Invoked when a model is saved from the server.
     # Refresh internal and rendering if the saved object corresponds to the edited one.
     #
     # @param saved [Object] the saved model
@@ -544,14 +573,14 @@ define [
       @_saveInProgress = true
       if 'oldName' of spec
         # removes existing data
-        rheia.imagesService.remove('ItemType', @model.id, spec.oldName, if spec.idx? then spec.idx)
+        rheia.imagesService.remove(@_modelClassName, @model.id, spec.oldName, if spec.idx? then spec.idx)
       else
         # upload new file data
-        rheia.imagesService.upload('ItemType', @model.id, spec.file, if spec.idx? then spec.idx)
+        rheia.imagesService.upload(@_modelClassName, @model.id, spec.file, if spec.idx? then spec.idx)
       
         
     # **private**
-    # Invoked when a ItemType is removed from the server.
+    # Invoked when a model is removed from the server.
     # Close the view if the removed object corresponds to the edited one.
     #
     # @param removed [Object] the removed model
@@ -565,5 +594,19 @@ define [
       @_isClosing = true
       console.log "close the view of #{@getId()} because removal received"
       @trigger('close')
+
+    # **private**
+    # Invoked when a server operation failed.
+    # Displays a warning popup if the error concerns the current model.
+    #
+    # @param removed [Object] the removed model
+    _onServerError: (err, details) =>
+      return unless _(details.method).startsWith "#{@_modelClassName}.sync"
+      # the current operation failed
+      if (details.id is @getId() or @_tempId?) and (@_saveInProgress or _removeInProgress)
+        # displays error.
+        @_notifyServerError(err)
+        @_saveInProgress = false
+        @_removeInProgress = false
 
   return BaseEditionView

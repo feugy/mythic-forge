@@ -33,6 +33,7 @@ define [
       super(model, options)
       # bind getTypes response
       sockets.admin.on('list-resp', @_onGetTypes)
+
       # bind updates
       sockets.updates.on('creation', @_onAdd)
       sockets.updates.on('update', @_onUpdate)
@@ -56,7 +57,7 @@ define [
     # @param types [Array<Object>] raw types.
     _onGetTypes: (err, modelName, types) =>
       return unless modelName is 'ItemType'
-      return console.error("Failed to fetch types: #{err}") if err?
+      return rheia.router.trigger('serverError', err, {method:'ItemType.collection.sync', details:'read'}) if err?
       # add returned types in current collection
       @reset(types)
 
@@ -151,8 +152,16 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       switch method 
-        when 'create', 'update' then sockets.admin.emit('save', 'ItemType', @toJSON())
-        when 'delete' then sockets.admin.emit('remove', 'ItemType', @toJSON())
+        when 'create', 'update' 
+          sockets.admin.once('save-resp', (err) =>
+            rheia.router.trigger('serverError', err, {method:'ItemType.sync', details:method, id:@id}) if err?
+          )
+          sockets.admin.emit('save', 'ItemType', @toJSON())
+        when 'delete' 
+          sockets.admin.once('save-resp', (err) =>
+            rheia.router.trigger('serverError', err, {method:'ItemType.sync', details:method, id:@id}) if err?
+          )
+          sockets.admin.emit('remove', 'ItemType', @toJSON())
         else throw new Error("Unsupported #{method} operation on Item Types")
 
     # An equality method that tests ids.

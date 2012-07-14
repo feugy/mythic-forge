@@ -19,6 +19,7 @@
 
 mongoose = require 'mongoose'
 utils = require '../utils'
+logger = require('../logger').getLogger 'model'
 
 host = utils.confKey 'mongo.host', 'localhost'
 port = utils.confKey 'mongo.port', 27017
@@ -26,4 +27,7 @@ db = utils.confKey 'mongo.db'
 
 # Connect to the 'mythic-forge' database. Will be created if necessary.
 # The connection is exported.
-module.exports = mongoose.createConnection "mongodb://#{host}:#{port}/#{db}"
+url = "mongodb://#{host}:#{port}/#{db}"
+module.exports = mongoose.createConnection url, (err) ->
+  throw new Error "Unable to connect to MongoDB: #{err}" if err?
+  logger.info "Connection established with MongoDB on database #{db}"
