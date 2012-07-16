@@ -133,8 +133,7 @@ ItemType.post 'remove', ->
   # removes all images that starts with the id from the image store.
   id = @_id
   fs.readdir imageStore, (err, files) ->
-    for file in files when file.indexOf "#{id}-" is 0
-      fs.unlink path.join imageStore, file 
-
+    for file in files when file.indexOf("#{id}-") is 0
+      fs.unlink path.join imageStore, file
 # Export the Class.
 module.exports = conn.model 'itemType', ItemType

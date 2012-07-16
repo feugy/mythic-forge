@@ -95,7 +95,7 @@ class _AdminService
       _save = (executable) ->
         executable.save (err, saved) -> callback err, previousId, saved
 
-      if newId?
+      if newId
         # check that newId is free
         Executable.findCached newId, (err, existing) ->
           return callback "Id #{newId} already used" unless existing is null
