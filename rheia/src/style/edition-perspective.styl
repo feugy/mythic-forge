@@ -137,13 +137,14 @@ body
         color white
 
     > table
+    > div
       margin-top 10px
       width 100%
 
       td 
         vertical-align top
 
-      td.left
+      .left
         width 120px
 
         label
@@ -159,7 +160,7 @@ body
           .loadable
             margin 0 auto 1em auto
 
-      td.right
+      .right
         padding-left 2em
         
         > *
@@ -209,3 +210,17 @@ body
 
       input[type=text]
         min-width 50%
+
+  // rule views
+  .view.rule:not(.icon)
+    takeSpace(1em, 1.4em, 1em, 1.4em)
+
+    > .content-container
+      takeSpace(65px)
+      margin 0
+
+      textarea
+        resize none
+        width 100%
+        height 100%
+        box-sizing border-box

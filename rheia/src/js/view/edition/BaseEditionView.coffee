@@ -62,6 +62,11 @@ define [
     _confirmCloseMessage: null
 
     # **private**
+    # name of the model attribute that holds name.
+    # **May be defined by subclasses**
+    _nameAttribute: 'name'
+
+    # **private**
     # flag that indicates the savable state of the model
     _canSave: false
 
@@ -84,6 +89,10 @@ define [
     # **private**
     # while the edited object is still not saved on server, we need an id.
     _tempId: null
+
+    # **private**
+    # store further id value when changing the edited object id.
+    _newId: null
 
     # **private**
     # arrays of validators.
@@ -157,7 +166,7 @@ define [
     #
     # @return the edited object name.
     getTitle: () =>
-      return if @_nameWidget? then @_nameWidget.options.value else @model.get('name')
+      return if @_nameWidget? then @_nameWidget.options.value else @model.get(@_nameAttribute)
 
     # Indicates wether or not this object can be removed.
     # When status changed, a `change` event is triggered on the view.
@@ -210,7 +219,7 @@ define [
       # allow if we are closing, or if no change found
       return true if @_isClosing or !@canSave()
       $("""<div id="confirmClose-#{@getId()}" title="#{i18n.titles.closeConfirm}">
-              <span class="ui-icon question"></span>#{_.sprintf(@_confirmCloseMessage, @model.get 'name')}
+              <span class="ui-icon question"></span>#{_.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute))}
             </div>""").dialog(
         modal: true
         close: ->
@@ -258,16 +267,16 @@ define [
       # fill the model and save it
       @_saveInProgress = true
       @_fillModel()
-      if @model.get('descImage') isnt @_descImageWidget.options.source
+      if @_descImageWidget? and @model.get('descImage') isnt @_descImageWidget.options.source
         spec = {file: @_descImageWidget.options.source}
         if @_descImageWidget.options.source is null
           spec.oldName = @model.get('descImage')  
         @_pendingUploads.push(spec)
 
       # allows subclass to perform specific save operations
-      @_specificSave()
-      # at last, saves model
-      @model.save() 
+      args = @_specificSave()
+      # and at last, saves model
+      @model.save(null, args)
 
     # Removes the view, after displaying a confirmation dialog. (the `remove` methods already exists)
     #
@@ -276,7 +285,8 @@ define [
       event?.preventDefault()
       return unless @canRemove()
       $("""<div id="confirmRemove-#{@getId()}" title="#{i18n.titles.removeConfirm}">
-          <span class="ui-icon question"></span>#{_.sprintf @_confirmRemoveMessage, @model.get 'name'}</div>""").dialog
+          <span class="ui-icon question"></span>#{_.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute))}
+          </div>""").dialog
         modal: true,
         close: ->
           $(this).remove()
@@ -364,13 +374,15 @@ define [
     # **private**
     # Performs view specific save operations, right before saving the model.
     # **May be overriden by subclasses**
+    #
+    # @return optionnal arguments for the `save` Backbone method.
     _specificSave: () =>
       # does nothing  
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: () =>
-      @model.set('name', @_nameWidget.options.value)
+      @model.set(@_nameAttribute, @_nameWidget.options.value) unless @_nameAttribute is @model.idAttribute
       @model.set('desc', @_descWidget.options.value) if @_descWidget?
 
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
@@ -379,9 +391,10 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: () =>
-      @_nameWidget.setOption('value', @model.get('name'))
+      @_nameWidget.setOption('value', @model.get(@_nameAttribute))
       @_descWidget.setOption('value', @model.get('desc')) if @_descWidget?
       @_createImages()
+      @_onChange()
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -395,7 +408,7 @@ define [
       # adds name and description
       comparable.push( 
         name: 'name'
-        original: @model.get('name')
+        original: @model.get(@_nameAttribute)
         current: @_nameWidget.options.value)
       if @_descWidget?
         comparable.push(
@@ -456,7 +469,7 @@ define [
     _notifyExternalRemove: () =>
       return if $("#externalRemove-#{@getId()}").length > 0
       $("""<div id="externalRemove-#{@getId()}" title="#{i18n.titles.external}">
-              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalRemove, @model.get 'name')}
+              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute))}
             </div>""").dialog(
         modal: true
         close: ->
@@ -474,7 +487,7 @@ define [
     _notifyExternalChange: () =>
       return if $("#externalChange-#{@getId()}").length > 0
       $("""<div id="externalChange-#{@getId()}" title="#{i18n.titles.external}">
-              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalChange, @model.get 'name')}
+              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute))}
             </div>""").dialog(
         modal: true
         close: ->
@@ -496,7 +509,7 @@ define [
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
       $("""<div id="serverError-#{@getId()}" title="#{i18n.titles.serverError}">
-              <span class="ui-icon cancel"></span>#{_.sprintf(msgKey, @model.get('name'), err)}
+              <span class="ui-icon cancel"></span>#{_.sprintf(msgKey, @model.get(@_nameAttribute), err)}
             </div>""").dialog(
         modal: true
         close: ->
@@ -539,11 +552,22 @@ define [
     # @param created [Object] the created model
     _onCreated: (created) =>
       return unless @_saveInProgress
-      # update the id to allow _onSaved to perform
-      @model.id = created.id
-      # indicates to perspective that we affected the id.
-      @trigger('affectId', @_tempId, @model.id)
+      # for a creation
+      oldId = @_tempId
+      newId = created.id
       @_tempId = null
+
+      if @_newId?
+        # for a renaming
+        oldId = @model.id
+        newId = @_newId
+        @_newId = null
+
+      # indicates to perspective that we affected the id
+      @trigger('affectId', oldId, newId)
+      # just to allow `_onSaved` to perform
+      @model.id = created.id
+      # now refresh rendering
       @_onSaved(created)
 
     # **private**
@@ -585,9 +609,8 @@ define [
     #
     # @param removed [Object] the removed model
     _onRemoved: (removed) =>
-      # takes in account if we removed the edited objet,
-      console.log(">>> removed #{removed.id} (current #{@model.id})")
-      return unless removed.id is @model.id
+      # takes in account if we removed the edited objet, and if their isn't any id change
+      return unless removed.id is @model.id and @_newId is null
       @_notifyExternalRemove() unless @_removeInProgress
       @_removeInProgress = false;
 

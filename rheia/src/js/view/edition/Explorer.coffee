@@ -22,7 +22,8 @@ define [
   'backbone'
   'i18n!nls/edition'
   'model/ItemType'
-], ($, Backbone, i18n, ItemType) ->
+  'model/Executable'
+], ($, Backbone, i18n, ItemType, Executable) ->
 
   i18n = $.extend {}, i18n
 
@@ -36,8 +37,13 @@ define [
     if img?
       img = "/images/#{img}"
       rheia.imagesService.load(img)
+    name = null
+    switch category.id
+      when 'ItemType', 'FieldType', 'Map', 'EventType' then name = model.get('name')
+      when 'Rule', 'TurnRule' then name = model.id
+
     return """<div data-id="#{model.id}" data-class="#{category.id}" class="#{category.className}">
-          <img data-src="#{img}"/>#{model.get 'name'}</div>"""
+          <img data-src="#{img}"/>#{name}</div>"""
 
   # Displays the explorer on edition perspective
   class Explorer extends Backbone.View
@@ -73,6 +79,8 @@ define [
       name: i18n.titles.categories.rules
       className: 'rules'
       id: 'Rule'
+      load: => 
+        Executable.collection.fetch()
     },{
       name: i18n.titles.categories.turnRules
       className: 'turn-rules'
@@ -83,17 +91,18 @@ define [
     constructor: () ->
       super({tagName: 'div', className:'explorer'})
 
-      # bind changes to Item types collection
-      @bindTo(ItemType.collection, 'reset', @_onResetCategory)
-      @bindTo(ItemType.collection, 'add', (element, collection, options) =>
-        options.operation = 'add'
-        @_onUpdateCategory(element, collection, options))
-      @bindTo(ItemType.collection, 'remove', (element, collection, options) =>
-        options.operation = 'remove'
-        @_onUpdateCategory(element, collection, options))
-      @bindTo(ItemType.collection, 'update', (element, collection, options) =>
-        options.operation = 'update'
-        @_onUpdateCategory(element, collection, options))
+      # bind changes to collections
+      for model in [ItemType, Executable]
+        @bindTo(model.collection, 'reset', @_onResetCategory)
+        @bindTo(model.collection, 'add', (element, collection, options) =>
+          options.operation = 'add'
+          @_onUpdateCategory(element, collection, options))
+        @bindTo(model.collection, 'remove', (element, collection, options) =>
+          options.operation = 'remove'
+          @_onUpdateCategory(element, collection, options))
+        @bindTo(model.collection, 'update', (element, collection, options) =>
+          options.operation = 'update'
+          @_onUpdateCategory(element, collection, options))
 
       @bindTo(rheia.router, 'imageLoaded', @_onImageLoaded)
 
@@ -166,6 +175,7 @@ define [
       idx = null
       switch collection
         when ItemType.collection then idx = 2
+        when Executable.collection then idx = 4
       return unless idx?
 
       container = @$el.find("dt[data-idx=#{idx}] + dd").empty()
@@ -185,6 +195,7 @@ define [
       idx = null
       switch collection
         when ItemType.collection then idx = 2
+        when Executable.collection then idx = 4
       return unless idx?
 
       container = @$el.find("dt[data-idx=#{idx}] + dd")

@@ -141,7 +141,9 @@ define [
 
     # **private**
     # Performs view specific save operations, right before saving the model.
-    # Adds instance images to pending uploads.
+    # Adds instance images to pending uploads. 
+    #
+    # @return optionnal arguments for the `save` Backbone method.
     _specificSave: () =>
       # keeps instance images uploads       
       currents = @_computeImageSpecs()

@@ -102,7 +102,7 @@ class _AdminService
           # remove old value
           executable.remove (err) -> 
             # and save new one after changing the id
-            _save new Executable {_id: newId, content: executable.content}
+            _save new Executable {_id: newId, content: values.content}
 
       else 
         for key, value of values

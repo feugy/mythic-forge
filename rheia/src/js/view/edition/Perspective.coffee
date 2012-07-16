@@ -195,19 +195,7 @@ define [
       # bind close we view ask for it
       view.on('close', () => @tryCloseTab(view))
       # bind Id affectation, to update tabs' ids when the model is created
-      view.on('affectId', (tempId, newId) =>
-        # updates view tab
-        link = @_tabs.element.find("a[href=#tabs-#{tempId}]")
-        link.attr('href', "#tabs-#{newId}")
-        link.closest('li').attr('aria-controls', "tabs-#{newId}")
-        # updates view panel
-        @_tabs.element.find("#tabs-#{tempId}").attr('id', "tabs-#{newId}")
-        # updates action bar tab
-        link = @_actionBars.element.find("a[href=#actionBar-#{tempId}]")
-        link.attr('href', "#actionBar-#{newId}")
-        link.closest('li').attr('aria-controls', "actionBar-#{newId}")
-        # updates action bar panel
-        @_actionBars.element.find("#actionBar-#{tempId}").attr('id', "actionBar-#{newId}"))
+      view.on('affectId', @_onAffectViewId)
 
       # adds the action bar to the other ones
       @_actionBars.add("#actionBar-#{view.getId()}", view.getId(), ui.index)
@@ -266,5 +254,24 @@ define [
       console.log("close current tab ##{@_tabs.options.selected} by hotkey")
       @tryCloseTab(@_views[@_tabs.options.selected])
       return false
+
+    # **private**
+    # View id affectation handler. Rename html corresponding ids.
+    #
+    # @param oldId [String] id old value
+    # @param newId [String] id new value
+    _onAffectViewId: (oldId, newId) =>
+      # updates view tab
+      link = @_tabs.element.find("a[href=#tabs-#{oldId}]")
+      link.attr('href', "#tabs-#{newId}")
+      link.closest('li').attr('aria-controls', "tabs-#{newId}")
+      # updates view panel
+      @_tabs.element.find("#tabs-#{oldId}").attr('id', "tabs-#{newId}")
+      # updates action bar tab
+      link = @_actionBars.element.find("a[href=#actionBar-#{oldId}]")
+      link.attr('href', "#actionBar-#{newId}")
+      link.closest('li').attr('aria-controls', "actionBar-#{newId}")
+      # updates action bar panel
+      @_actionBars.element.find("#actionBar-#{oldId}").attr('id', "actionBar-#{newId}")
 
   return EditionPerspective
