@@ -32,7 +32,7 @@ describe 'AdminService tests', ->
   beforeEach (done) ->
     itemTypes = []
     executables = []
-    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> ItemType.collection.drop -> 
+    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> Executable.resetAll -> ItemType.collection.drop -> 
       # creates fixtures
       created = [
         {clazz: ItemType, args: {name: 'type 1'}, store: itemTypes},
@@ -180,38 +180,19 @@ describe 'AdminService tests', ->
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
-  it 'should save update existing executable', (done) ->
-    # given existing values
-    values = executables[1]
-    values.content = 'console.log("hello world 4");'
-
-    awaited = false
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Executable'
-      assert.equal operation, 'update'
-      assert.deepEqual executables[1], instance
-      awaited = true
-
-    # when saving existing item types
-    service.save 'Executable', values, (err, modelName, model) ->
-      throw new Error "Can't save executable: #{err}" if err?
-      # then the created values are returned
-      assert.ok model?
-      assert.equal executables[1]._id, model._id
-      assert.equal model.content, 'console.log("hello world 4");'
-
-      # then the model exists in DB
-      Executable.findCached model._id, (err, obj) ->
-        throw new Error "Can't find executable in db #{err}" if err?
-        assert.deepEqual obj, model
-        done()
+  it 'should save fails to update existing executable', (done) ->
+    # when saving existing executable
+    service.save 'Executable', executables[1], (err, modelName, model) ->
+      assert.ok err?
+      assert.equal err, "Id #{executables[1]._id} already used"
+      done()
 
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when removing unallowed model
     service.remove unknownModelName, {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
       # then an error occured
+      assert.ok err?
       assert.equal err, "The #{unknownModelName} model can't be removed"
       assert.equal modelName, unknownModelName
       done()
@@ -263,7 +244,7 @@ describe 'AdminService tests', ->
       assert.deepEqual executables[1], instance
       awaited = true
 
-    # when removing existing item types
+    # when removing existing executable
     service.remove 'Executable', executables[1], (err, modelName, model) ->
       throw new Error "Can't remove executable: #{err}" if err?
       # then the removed values are returned
@@ -275,3 +256,81 @@ describe 'AdminService tests', ->
         assert.ok obj is null
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
+
+  it 'should saveAndRename change executable id', (done) ->
+    deletionReceived = false
+    creationReceived = false
+
+    # then a deletion event was issued for old executable
+    watcher.on 'change', (operation, className, instance)->
+      return unless operation is 'deletion' and className is 'Executable'
+      assert.equal instance._id, executables[0]._id
+      deletionReceived = true
+
+    # then a creation event was issued for new executable
+    watcher.on 'change', (operation, className, instance)->
+      return unless operation is 'creation' and className is 'Executable'
+      assert.equal instance._id, newId
+      creationReceived = true
+
+    # when renaming existing rule with new name
+    newId = 'rule 4'
+    oldId = executables[0]._id
+    service.saveAndRename executables[0], newId, (err, oldId, model) ->
+      throw new Error "Can't save and rename executable: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.equal model._id, newId
+      assert.equal model.content, executables[0].content
+
+      # then the old model id do not exists in cache
+      Executable.findCached oldId, (err, obj) ->
+        throw new Error "Can't find executable #{err}" if err?
+        assert.equal obj, null
+        assert.ok deletionReceived, 'watcher wasn\'t invoked for deletion'
+        assert.ok creationReceived, 'watcher wasn\'t invoked for creation'
+        watcher.removeAllListeners 'change'
+        done()
+
+  it 'should saveAndRename update existing executable', (done) ->
+    # given existing values
+    values = executables[1]
+    values.content = 'console.log("hello world 4");'
+
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'Executable'
+      assert.equal operation, 'update'
+      assert.deepEqual executables[1], instance
+      awaited = true
+
+    # when saving existing item types
+    service.saveAndRename values, null, (err, oldId, model) ->
+      throw new Error "Can't save and rename executable: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.equal executables[1]._id, model._id
+      assert.equal model.content, 'console.log("hello world 4");'
+
+      # then the model exists in DB
+      Executable.findCached model._id, (err, obj) ->
+        throw new Error "Can't find executable in db #{err}" if err?
+        assert.deepEqual obj, model
+        done()
+
+  it 'should saveAndRename failed on unknown executable', (done) ->
+    # when saving unknown executable
+    service.saveAndRename new Executable({_id:'rule 4', content:''}), 'rule 5', (err, oldId, model) ->
+      # then an error was issued
+      assert.ok err?
+      assert.equal err, 'Unexisting Executable with id rule 4'
+      done()
+
+  it 'should saveAndRename failed on existing new name', (done) ->
+    # when saving executable with existing new if
+    service.saveAndRename executables[0], executables[1]._id, (err, oldId, model) ->
+      # then an error was issued
+      assert.ok err?
+      assert.equal err, "Id #{executables[1]._id} already used"
+      done()

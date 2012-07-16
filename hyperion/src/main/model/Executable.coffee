@@ -84,7 +84,7 @@ class Executable
         if ext isnt path.extname file
           return end()
         # creates an empty executable
-        executable = new Executable file.replace ext, ''
+        executable = new Executable {_id:file.replace ext, ''}
 
         fs.readFile executable.path, encoding, (err, content) ->
           return callback "Error while reading executable '#{executable._id}': #{err}" if err?
@@ -163,14 +163,13 @@ class Executable
   remove: (callback) =>
     fs.exists @path, (exists) =>
       return callback "Error while removing executable #{@_id}: this executable does not exists" if not exists
+      delete executables[@_id]
       fs.unlink @path, (err) =>
         return callback "Error while removing executable #{@_id}: #{err}" if err?
         fs.unlink @compiledPath, (err) =>
-          return callback "Error while removing compiled executable #{@_id}: #{err}" if err?
           logger.debug "executable #{@_id} successfully removed"
-          delete executables[@_id]
           # propagate change
           modelWatcher.change 'deletion', "Executable", @
-          callback null, this
+          callback null, @
 
 module.exports = Executable

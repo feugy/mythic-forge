@@ -60,16 +60,11 @@ class _AdminService
     switch modelName
       when 'ItemType' then modelClass = ItemType
       when 'Executable' 
-        # special behaviour for Executables that always have an _id
+        # special behaviour for Executables: save only works with new Executbales
         return Executable.findCached values._id, (err, model) ->
-          return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err?
+          return callback "Id #{values._id} already used", modelName unless model is null
           # create new if not found
-          if model is null
-            model = new Executable values 
-          else 
-            # or update existing one
-            for key, value of values
-              model[key] = value unless key is '_id'
+          model = new Executable values 
           _save model
 
     # get existing values
@@ -82,6 +77,37 @@ class _AdminService
     else 
       # or save new one
       _save new modelClass values
+
+  # Dedicated save method for Executables. Allow renaming while saving.
+  #
+  # @param values [Object] saved values, used as argument of the model constructor
+  # @param newId [String] executable new name, of null to disabled renaming.
+  # @param callback [Function] end callback, invoked with three arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback oldId [String] previous id, in case of renaming
+  # @option callback model [Object] saved executable
+  saveAndRename: (values, newId, callback) =>
+    # checks that executable exists
+    previousId = values._id
+    Executable.findCached previousId, (err, executable) ->
+      return callback "Unexisting Executable with id #{previousId}" if err? or !(executable?)
+
+      _save = (executable) ->
+        executable.save (err, saved) -> callback err, previousId, saved
+
+      if newId?
+        # check that newId is free
+        Executable.findCached newId, (err, existing) ->
+          return callback "Id #{newId} already used" unless existing is null
+          # remove old value
+          executable.remove (err) -> 
+            # and save new one after changing the id
+            _save new Executable {_id: newId, content: executable.content}
+
+      else 
+        for key, value of values
+          executable[key] = value unless key is '_id'
+        _save executable
 
   # Deletes an instance of any model.
   #

@@ -56,7 +56,6 @@ class _RuleService
     Executable.resetAll =>
       # Trigger first turn execution
       setTimeout @triggerTurn, nextTurn(), (->), true
-
         
   # Exports existing rules to clients: turn rules are ignored and execute() function is not exposed.
   #
