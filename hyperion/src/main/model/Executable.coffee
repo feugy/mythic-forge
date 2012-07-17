@@ -54,6 +54,9 @@ compileFile = (executable, silent, callback) ->
     logger.debug "executable #{executable._id} successfully compiled"
     # store it in local cache.
     executables[executable._id] = executable
+    # clean require cache.
+    requireId = path.normalize path.join process.cwd(), executable.compiledPath
+    delete require.cache[requireId]
     # propagate change
     unless silent
       modelWatcher.change (if wasNew[executable._id] then 'creation' else 'update'), "Executable", executable, ['content']

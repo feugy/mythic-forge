@@ -35,6 +35,7 @@ item1= null
 item2= null
 item3= null
 field1= null
+script= null
 
 describe 'RuleService tests', ->
 
@@ -62,9 +63,10 @@ describe 'RuleService tests', ->
             execute: (actor, target, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
-      script.save (err) ->
+      script.save (err, saved) ->
         # Creates a type
         throw new Error err if err?
+        script = saved
         Player.collection.drop ->
           new Player({login: 'Loïc'}).save (err, saved) ->
             throw new Error err if err?
@@ -103,7 +105,6 @@ describe 'RuleService tests', ->
 
         assert.ok 'rule0' of rules
         rule = rules.rule0
-        # console.log ">>>\n#{rule}\n"
 
         # then requires have been replaced by a single define
         assert.equal 0, rule.indexOf('define(\'rule0\', [\'model/Rule\'], function(Rule){\n'), 'no define() call'
@@ -118,6 +119,31 @@ describe 'RuleService tests', ->
         assert.equal -1, rule.indexOf('execute'), 'still execute() in rule' 
         assert.equal -1, rule.indexOf('hello !'), 'still execute() code in rule'
         done()
+
+    it 'should rule be updated and modifications applicable', (done) ->
+      # given a modification on rule content
+      script.content = """Rule = require '../main/model/Rule'
+        class MyRule extends Rule
+          constructor: ->
+            @name= 'rule 0'
+          canExecute: (actor, target, callback) =>
+            callback null, true;
+          execute: (actor, target, callback) =>
+            callback null, 'hello modified !'
+        module.exports = new MyRule()"""
+      script.save (err) ->
+        throw new Error err if err?
+        # given an applicable rule for a target 
+        service.resolve player._id, (err, results)->
+          throw new Error "Unable to resolve rules: #{err}" if err?
+
+          # when executing this rule on that target
+          service.execute results[player._id][0].name, player._id, (err, result)->
+            throw new Error "Unable to execute rules: #{err}" if err?
+
+            # then the modficiation was taken in account
+            assert.equal result, 'hello modified !'
+            done()
 
   describe 'given 3 items and a dumb rule', ->
 

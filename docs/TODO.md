@@ -55,4 +55,5 @@
             - categories in explorer
             - static fields (name, category) with validation
             - rule body
-            - parameters
+            - **[done]** rule CRUD
+            - **[done]** rule special behaviour when renaming
