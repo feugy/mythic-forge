@@ -36,6 +36,7 @@ define
     newType: '(nouveau)'
     descImage: 'Type'
     images: 'Instances'
+    category: 'Catégorie'
     fieldSeparator: ' : '
     name: 'Nom'
     desc: 'Description'

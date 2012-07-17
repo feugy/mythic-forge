@@ -17,8 +17,8 @@
 ###
 'use strict'
 
-# configure require js
-requirejs.config 
+# configure requireJs
+requirejs.config  
   paths:
     'backbone': 'lib/backbone-0.9.2'
     'underscore': 'lib/underscore-1.3.3-min'
@@ -31,6 +31,7 @@ requirejs.config
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
+    'ace': 'lib/ace'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
     

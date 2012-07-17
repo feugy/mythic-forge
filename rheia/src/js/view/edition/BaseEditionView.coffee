@@ -331,6 +331,9 @@ define [
       # allows subclass to add specific widgets.
       @_specificRender()
       
+      # creates all validators.
+      @_createValidators()
+
       # first rendering filling
       @_fillRendering()
 
@@ -441,7 +444,6 @@ define [
     _createValidators: () =>
       validator.dispose() for validator in @_validators
       @_validators = []
-
       # adds a validator for name
       @_validators.push(new validators.String({required: true}, i18n.labels.name, 
         @_nameWidget.element, null, (node) -> node.find('input').val()))
@@ -462,6 +464,7 @@ define [
 
       container = @$el.find('.errors').empty()
       container.append("<p>#{error.msg}</p>") for error in errors
+      @$el.toggleClass('error', errors.length isnt 0)
       return errors.length is 0
 
     # **private**

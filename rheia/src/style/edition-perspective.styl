@@ -204,7 +204,7 @@ body
         text-align right
         vertical-align top
 
-      textarea
+      :not(.adv-editor) textarea
         width 75%
         resize vertical
 
@@ -215,12 +215,18 @@ body
   .view.rule:not(.icon)
     takeSpace(1em, 1.4em, 1em, 1.4em)
 
-    > .content-container
+    > div input[type="text"]
+      min-width 25%
+      
+    > .content.ace_editor
       takeSpace(65px)
       margin 0
+      border 1px solid borderColor
 
-      textarea
-        resize none
-        width 100%
-        height 100%
-        box-sizing border-box
+      *
+        font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
+        font-size 12px
+        line-height 16px
+
+  .view.rule.error > .content.ace_editor
+    top 100px

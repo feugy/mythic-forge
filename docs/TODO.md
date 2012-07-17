@@ -53,7 +53,7 @@
             - **[done]** validation
         - Rule
             - categories in explorer
-            - static fields (name, category) with validation
-            - rule body
+            - **[done]** static fields (name, category) with validation
+            - **[done]** rule body
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming

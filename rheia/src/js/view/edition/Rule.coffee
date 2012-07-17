@@ -24,6 +24,7 @@ define [
   'text!view/edition/template/Rule.html'
   'view/edition/BaseEditionView'
   'model/Executable'
+  'widget/advEditor'
 ], ($, Backbone, i18n, template, BaseEditionView, Executable) ->
 
   i18n = $.extend(true, {}, i18n)
@@ -59,6 +60,10 @@ define [
     # widget that allows content edition
     _editorWidget: null
 
+    # **private**
+    # widget to edit category
+    _categoryWidget: null
+
     # The view constructor.
     #
     # @param router [Router] the event bus
@@ -77,14 +82,16 @@ define [
     _fillModel: () =>
       # superclass handles description image, name and description
       super()
-      @model.set('content', @_editorWidget.val().replace(/\u000A/g, '\r\n'))
+      @model.set('content', @_editorWidget.options.text)
+      @model.set('category', @_categoryWidget.options.text)
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: () =>
       # superclass handles description image, name and description
       super()
-      @_editorWidget.val(@model.get('content'))
+      @_editorWidget.setOption('text', @model.get('content'))
+      @_categoryWidget.setOption('text', @model.get('category'))
       @_onChange()
 
     # **private**
@@ -114,9 +121,18 @@ define [
 
     # **private**
     # Performs view specific rendering operations.
-    # Creates the editor widget.
+    # Creates the editor and category widgets.
     _specificRender: () =>
-      @_editorWidget = @$el.find('textarea').keyup(@_onChange)
+      @_editorWidget = @$el.find('.content').advEditor({
+        change: @_onChange
+        mode: 'coffee'
+      }).data('advEditor')
+
+      @_categoryWidget = @$el.find('.category.field').property(
+        type: 'string'
+        allowNull: false
+        change: @_onChange
+      ).data('property')
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -131,7 +147,12 @@ define [
       comparable.push(
         name: 'content'
         original: @model.get('content')
-        current: @_editorWidget.val().replace(/\u000A/g, '\r\n')
+        current: @_editorWidget.options.text
+      )
+      comparable.push(
+        name: 'category'
+        original: @model.get('category')
+        current: @_categoryWidget.options.value
       )
       return comparable
 

@@ -37,8 +37,8 @@ describe 'AdminService tests', ->
       created = [
         {clazz: ItemType, args: {name: 'type 1'}, store: itemTypes},
         {clazz: ItemType, args: {name: 'type 2'}, store: itemTypes},
-        {clazz: Executable, args: {_id: 'rule 1', content:'console.log("hello");'}, store: executables},
-        {clazz: Executable, args: {_id: 'rule 2', content:'console.log("world");'}, store: executables}
+        {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables},
+        {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
       ]
       create = (def) ->
         return done() unless def?
