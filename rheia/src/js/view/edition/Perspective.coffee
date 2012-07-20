@@ -129,7 +129,7 @@ define [
       # if closure is allowed, removes the tab
       if @_forceClose or view.canClose()
         @_forceClose = false
-        idx = @_indexOfView view.getId() 
+        idx = @_indexOfView(view.getId())
         return if idx is -1
         console.log("view #{view.getTitle()} closure")
         @_views.splice(idx, 1)
@@ -162,7 +162,7 @@ define [
     _onOpenElement: (type, id) =>
       # first check if the view is not already opened.
       if id?
-        idx = @_indexOfView id
+        idx = @_indexOfView(id)
         return @_tabs.select(idx) unless idx is -1
 
       # creates the relevant view
@@ -173,7 +173,7 @@ define [
         else return
 
       @_views.push(view)
-      @_tabs.add('#tabs-'+view.getId(), view.getTitle())
+      @_tabs.add('#tabs-'+md5(view.getId()), view.getTitle())
 
     # **private**
     # Handler invoked when a tab was added to the widget. Render the view inside the tab.
@@ -183,11 +183,11 @@ define [
     _onTabAdded: (event, ui) =>
       # gets the added view from the internal array
       id = $(ui.tab).attr('href').replace('#tabs-', '')
-      view = _.find(@_views, (view) -> view.getId() is id)
+      view = _.find(@_views, (view) -> md5(view.getId()) is id)
       
       # bind changes to update tab
       view.on('change', () =>
-        tab = @_tabs.element.find("a[href=#tabs-#{view.getId()}] .content")
+        tab = @_tabs.element.find("a[href=#tabs-#{md5(view.getId())}] .content")
         # toggle Css class modified wether we can save the view
         tab.toggleClass('modified', view.canSave())
         # updates title
@@ -198,14 +198,14 @@ define [
       view.on('affectId', @_onAffectViewId)
 
       # adds the action bar to the other ones
-      @_actionBars.add("#actionBar-#{view.getId()}", view.getId(), ui.index)
+      @_actionBars.add("#actionBar-#{md5(view.getId())}", view.getId(), ui.index)
       $(@_actionBars.panels[ui.index]).append(view.getActionBar())
 
       # adds the class name to the icon
       $(ui.tab).find('.icon').addClass(view.className)
       # renders the corresponding view inside the tab and displays it
       $(ui.panel).append(view.render().$el)
-      @_tabs.select(@_indexOfView id)
+      @_tabs.select(@_views.indexOf(view))
 
     # **private**
     # trigger the tab close procedure when clicking on the relevant icon.
@@ -214,10 +214,10 @@ define [
     _onCloseTab: (event) =>
       event.preventDefault()
       id = $(event.target).closest('a').attr('href').replace('#tabs-', '')
-      idx = @_indexOfView(id)
-      return unless idx isnt -1
-      console.log("try to close tab for view #{@_views[idx].getTitle()}")
-      @tryCloseTab(@_views[idx])
+      view = _.find(@_views, (view) -> md5(view.getId()) is id)
+      return unless view?
+      console.log("try to close tab for view #{view.getTitle()}")
+      @tryCloseTab(view)
 
     # **private**
     # Save hotkey handler. Try to save current tab.
@@ -262,6 +262,8 @@ define [
     # @param newId [String] id new value
     _onAffectViewId: (oldId, newId) =>
       # updates view tab
+      oldId = md5(oldId)
+      newId = md5(newId)
       link = @_tabs.element.find("a[href=#tabs-#{oldId}]")
       link.attr('href', "#tabs-#{newId}")
       link.closest('li').attr('aria-controls', "tabs-#{newId}")

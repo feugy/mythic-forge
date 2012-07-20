@@ -22,10 +22,11 @@ define [
   'backbone'
   'i18n!nls/edition'
   'text!view/edition/template/Rule.html'
+  'utils/validators'
   'view/edition/BaseEditionView'
   'model/Executable'
   'widget/advEditor'
-], ($, Backbone, i18n, template, BaseEditionView, Executable) ->
+], ($, Backbone, i18n, template, validators, BaseEditionView, Executable) ->
 
   i18n = $.extend(true, {}, i18n)
 
@@ -90,6 +91,17 @@ define [
       @_editorWidget.setOption('text', @model.get('content'))
       @_onCategoryChange()
       @_onChange()
+
+
+    # **private**
+    # Extends inherited method to add a regular expression for Executable names
+    _createValidators: () =>
+      # superclass disposes validators, and creates name validator
+      super()
+      @_validators.push(new validators.Regexp({
+        invalidError: i18n.msgs.invalidExecutableNameError
+        regexp: /^\w*$/i
+      }, i18n.labels.name, @_nameWidget.element, null, (node) -> node.find('input').val()))
 
     # **private**
     # Performs view specific save operations, right before saving the model.

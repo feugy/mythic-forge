@@ -20,6 +20,7 @@ define
     externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
     externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet va être fermé.</p>"
     invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
+    invalidExecutableNameError: "le nom d'un executable ne peut contenir que des caractères alphanumeriques"
     saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
     removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
 

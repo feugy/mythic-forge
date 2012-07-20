@@ -279,10 +279,10 @@ define [
         , 10)
         
       switch operation
-        when 'remove' then container.find("[data-id=#{element.id}]").transition({x:shift}, @_animDuration, () -> $(this).remove())
+        when 'remove' then container.find("[data-id=\"#{element.id}\"]").transition({x:shift}, @_animDuration, () -> $(this).remove())
         when 'add' then add()
         when 'update' 
-          container.find("[data-id=#{element.id}]").remove()
+          container.find("[data-id=\"#{element.id}\"]").remove()
           add()
          
     # **private**

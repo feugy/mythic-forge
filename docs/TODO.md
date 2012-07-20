@@ -45,7 +45,7 @@
     - **[done]** remove all images when removing a type
 - Rheia
     - bugs
-        - spaces inside tab names 
+        - **[done]** spaces inside tab names 
     - edition perspective
         - **[done]** ItemType
             - **[done]** static fields and description image
