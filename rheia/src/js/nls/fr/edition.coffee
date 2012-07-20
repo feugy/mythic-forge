@@ -42,6 +42,7 @@ define
     desc: 'Description'
     newName: 'A remplir'
     quantifiable: 'Quantifiable'
+    noRuleCategory: 'aucune'
     propertyUidField: 'Uid'
     properties: 'Propriétés'
     propertyUid: 'Uid (unique)'

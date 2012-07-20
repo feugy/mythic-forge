@@ -20,12 +20,15 @@
 define [
   'jquery'
   'backbone'
+  'utils/utilities'
   'i18n!nls/edition'
   'model/ItemType'
   'model/Executable'
-], ($, Backbone, i18n, ItemType, Executable) ->
+], ($, Backbone, utils, i18n, ItemType, Executable) ->
 
   i18n = $.extend {}, i18n
+
+  rootCategory = utils.generateId()
 
   # Create explorer rendering for a given model, relative ot its class
   #
@@ -42,8 +45,35 @@ define [
       when 'ItemType', 'FieldType', 'Map', 'EventType' then name = model.get('name')
       when 'Rule', 'TurnRule' then name = model.id
 
-    return """<div data-id="#{model.id}" data-class="#{category.id}" class="#{category.className}">
+    return """<div data-id="#{model.id}" data-category="#{category.id}" class="#{category.className}">
           <img data-src="#{img}"/>#{name}</div>"""
+
+  # Computes the sort order of a collection.
+  # For executable, group by categories.
+  #
+  # @param collection [Array] the sorted collection
+  # @return a sorted array of models, or an object containing categories and sorted executable inside them
+  sortCollection = (collection) ->
+    if collection is Executable.collection
+      # group by category
+      grouped = _(collection.models).groupBy((model) ->
+        return model.get('category') || rootCategory
+      )
+      # sort categories
+      grouped = utils.sortAttributes(grouped)
+      # sort inside categories
+      _(grouped).each((content, group) ->
+        grouped[group] = _(content).sortBy((model) -> model.id)
+      )
+      return grouped
+    else
+      return _.chain(collection.models).map((model) -> 
+        return {sort:model.get('name'), value:model}
+      ).sortBy((model) ->
+        return model.sort
+      ).pluck('value')
+      .value()
+
 
   # Displays the explorer on edition perspective
   class Explorer extends Backbone.View
@@ -53,8 +83,13 @@ define [
       'click dt': '_onToggleCategory'
       'click dd > div': '_onOpenElement'
 
+    # **private**
     # duration of categories animation, in millis
-    _openDuration: 250
+    _animDuration: 250
+
+    # **private**
+    # Timeout to avoid multiple refresh of excutable categories
+    _changeTimeout: null
 
     # list of displayed categories
     _categories: [{
@@ -94,17 +129,16 @@ define [
       # bind changes to collections
       for model in [ItemType, Executable]
         @bindTo(model.collection, 'reset', @_onResetCategory)
-        @bindTo(model.collection, 'add', (element, collection, options) =>
-          options.operation = 'add'
-          @_onUpdateCategory(element, collection, options))
-        @bindTo(model.collection, 'remove', (element, collection, options) =>
-          options.operation = 'remove'
-          @_onUpdateCategory(element, collection, options))
-        @bindTo(model.collection, 'update', (element, collection, options) =>
-          options.operation = 'update'
-          @_onUpdateCategory(element, collection, options))
+        @bindTo(model.collection, 'add', (element, collection) =>
+          @_onUpdateCategory(element, collection, null, 'add'))
+        @bindTo(model.collection, 'remove', (element, collection) =>
+          @_onUpdateCategory(element, collection, null, 'remove'))
+        @bindTo(model.collection, 'update', (element, collection, changes) =>
+          @_onUpdateCategory(element, collection, changes, 'update'))
 
       @bindTo(rheia.router, 'imageLoaded', @_onImageLoaded)
+      # special case of executable categories that refresh the all tree item
+      @bindTo(Executable.collection, 'change:category', @_onCategoryChange)
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: () =>
@@ -114,7 +148,7 @@ define [
         markup += """<dt data-idx="#{i}">
             <i class="#{category.className}"></i>#{category.name}
           </dt>
-          <dd data-id=#{category.id}></dd>"""
+          <dd data-category=#{category.id} class="#{category.className}"></dd>"""
 
       @$el.append(markup)
       @$el.find('dd').hide()
@@ -131,13 +165,14 @@ define [
       title = $(evt.target).closest('dt')
       # gets the corresponding 
       if title.hasClass 'open'
-        title.next('dd').hide(@_openDuration, () -> title.removeClass('open'))   
+        title.next('dd').hide(@_animDuration, () -> title.removeClass('open'))   
       else 
-        title.next('dd').show(@_openDuration, () -> title.addClass('open') ) 
+        title.next('dd').show(@_animDuration, () -> title.addClass('open') ) 
         # loads content
         if !title.hasClass('loaded')
           title.addClass('loaded')
-          category = @_categories[title.data 'idx']
+          category = @_categories[title.data('idx')]
+          return unless category?
           console.log("loading category #{category.name}")
           if 'load' of category
             category.load()
@@ -151,7 +186,7 @@ define [
     _onOpenElement: (evt) =>
       element = $(evt.target).closest('div')
       id = element.data('id')
-      category = element.data('class')
+      category = element.data('category')
       
       console.log("open element #{id} of category #{category}")
       rheia.router.trigger('open', category, id)
@@ -175,12 +210,33 @@ define [
       idx = null
       switch collection
         when ItemType.collection then idx = 2
-        when Executable.collection then idx = 4
+        when Executable.collection
+          container = @$el.find("dt[data-idx=4] + dd")
+          container.hide(@_animDuration, () =>
+            container.empty()
+            # executable specificity: organize in categories
+            grouped = sortCollection(Executable.collection)
+
+            # and then displays
+            for category, executables of grouped
+              # inside a subcontainer if not in root
+              unless category is rootCategory
+                container.append("<dt data-subcategory=\"#{category}\">#{category}</dt>")
+                catContainer = $('<dd></dd>').hide().appendTo(container) 
+              else 
+                catContainer = container
+              for executable in executables
+                catContainer.append(render(executable, @_categories[4]))
+
+            container.show(@_animDuration)
+          )
+
       return unless idx?
 
       container = @$el.find("dt[data-idx=#{idx}] + dd").empty()
-      for element in collection.models
-        container.append(render(element, @_categories[idx]))
+      models = sortCollection(collection)
+      for model in models
+        container.append(render(model, @_categories[idx]))
 
     # **private**
     # Handler invoked when a category item have been added or removed
@@ -188,33 +244,53 @@ define [
     #
     # @param element [Object] the category item added or removed
     # @param collection [Collection] the refreshed collection
-    # @param options [Object] details on the operation
-    # @option options index [Number] index in the collection where the item is added or removed
-    # @option options operation [String] 'add', 'remove' or 'update' operation
-    _onUpdateCategory: (element, collection, options) =>
+    # @param changes [Object] map of changed attributes
+    # @param operation [String] 'add', 'remove' or 'update' operation
+    _onUpdateCategory: (element, collection, changes, operation) =>
       idx = null
       switch collection
-        when ItemType.collection then idx = 2
-        when Executable.collection then idx = 4
+        when ItemType.collection 
+          if operation isnt 'update' or '_name' of changes or 'descImage' of changes then idx = 2
+        when Executable.collection 
+          if operation isnt 'update' or '_id' of changes then idx = 4
       return unless idx?
 
       container = @$el.find("dt[data-idx=#{idx}] + dd")
       markup = $(render(element, @_categories[idx]))
-      duration = 200
       shift = -250
       add = () =>
-        markup.css({x: shift}, duration)
-        if options.index is 0
-          container.prepend markup
-        else 
-          container.children().eq(options.index-1).after(markup)
-        markup.transition({x:0})
+        # compute the insertion index
+        models = sortCollection(collection)
+        if collection is Executable.collection
+          category = element.get('category') || rootCategory
+          container = @$el.find("dt[data-subcategory=#{element.get('category')}] + dd") unless category is rootCategory
+          idx = models[category].indexOf(element)
+        else
+          idx = models.indexOf(element)
 
-      switch options.operation
-        when 'remove' then container.children().eq(options.index).transition({x:shift}, duration, () -> $(this).remove())
+        markup.css({x: shift})
+        if idx <= 0
+          container.prepend(markup)
+        else
+          container.children().eq(idx-1).after(markup)
+        # use a small delay to avoid animation while inserting into the DOM
+        _.delay(() => 
+          markup.transition({x:0}, @_animDuration)
+        , 10)
+        
+      switch operation
+        when 'remove' then container.find("[data-id=#{element.id}]").transition({x:shift}, @_animDuration, () -> $(this).remove())
         when 'add' then add()
         when 'update' 
-          container.children().eq(options.index).remove()
+          container.find("[data-id=#{element.id}]").remove()
           add()
-          
+         
+    # **private**
+    # Refresh the executable content to displays sub-categories, with small delay to avoid too much refresh
+    _onCategoryChange: () =>  
+      clearTimeout(@_changeTimeout) if @_changeTimeout
+      @_changeTimeout = setTimeout(()=>
+        @_onResetCategory(Executable.collection)
+      , 50)
+
   return Explorer

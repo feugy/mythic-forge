@@ -44,6 +44,8 @@
     - **[done]** ImageService to upload and associate images to types
     - **[done]** remove all images when removing a type
 - Rheia
+    - bugs
+        - spaces inside tab names 
     - edition perspective
         - **[done]** ItemType
             - **[done]** static fields and description image
@@ -51,8 +53,8 @@
             - **[done]** instance images
             - **[done]** sprites
             - **[done]** validation
-        - Rule
-            - categories in explorer
+        - **[done]** Rule
+            - **[done]** categories in explorer
             - **[done]** static fields (name, category) with validation
             - **[done]** rule body
             - **[done]** rule CRUD

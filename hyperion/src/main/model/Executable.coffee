@@ -128,9 +128,6 @@ class Executable
   # The executable content (Utf-8 string encoded).
   content: ''
 
-  # Executable's category
-  category: ''
-
   # Absolute path to the executable source.
   path: ''
 
@@ -145,7 +142,6 @@ class Executable
   constructor: (attributes) ->
     @_id = attributes._id
     @content = attributes.content || ''
-    @category = attributes.category ||''
     @path = path.join root, @_id+ext
     @compiledPath = path.join compiledRoot, @_id+'.js'
 

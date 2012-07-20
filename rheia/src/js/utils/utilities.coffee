@@ -17,13 +17,25 @@
 ###
 'use strict'
 
-define [], () ->
+define [
+  'underscore'
+], (_) ->
 
   return {
 
     # Generates a pseudo random id.
     #
     # @return a string id. 
-    generateId: ->
+    generateId: () ->
       return "#{parseInt(Math.random()*1000000000)}"  
+
+    # Sort alphabetically sort attributes of an object.
+    #
+    # @param object [Object] object which attributes are sorted
+    # @return the main object with its attributes sorted.
+    sortAttributes: (object) ->
+      result= {}
+      names= _.keys(object).sort()
+      result[name] = object[name] for name in names
+      return result
   }

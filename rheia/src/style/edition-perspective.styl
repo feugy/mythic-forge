@@ -81,12 +81,12 @@ body
       height 18px 
       width 18px
       vertical-align middle
-      margin-right: -5px
+      margin-right -5px
 
     dt.open::before
       background-position -18px 0px
 
-    dd > *
+    dd > *:not(dd)
       hoverable()
       padding 0.5em 0 0.5em 1em
 
@@ -96,6 +96,17 @@ body
         vertical-align -1.2em
         margin-right 5px
         display inline-block
+
+    dd > dd
+      margin-left 1em
+
+    dd > dt::before
+      margin-right 0px
+
+    dd.rules img 
+      height 0
+      width 0.3em
+      vertical-align top
 
   .ui-tabs.views
     takeSpace 40px, 0, 0
@@ -200,7 +211,7 @@ body
         display inline-block
         width 130px
         margin-right 1em
-        padding-top 0.2em
+        padding-top 0.4em
         text-align right
         vertical-align top
 

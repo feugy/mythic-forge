@@ -97,7 +97,7 @@ define [
         model.set(key, value) if key isnt '_id'
 
       # emit a change.
-      @trigger('update', model, @, {index:@indexOf model})
+      @trigger('update', model, @, changes)
 
     # **private**
     # Callback invoked when a database deletion is received.

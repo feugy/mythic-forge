@@ -20,7 +20,67 @@
 define [
   'model/BaseModel'
   'model/sockets'
-], (Base, sockets) ->
+  'coffeescript'
+], (Base, sockets, coffee) ->
+
+  # Compiles and requires the executable content.
+  # First, NodeJS requires are transformed into their RequireJS equivalent,
+  # then the CoffeeScript code is compiled,
+  # and at last the code is executed and required.
+  #
+  # @param executable [Executable] the compiled executable
+  # @param callback [Function] invoked when the executable's content is available.
+  # @option callback err [String] error message, or null if no error occured
+  # @option callback exported [Object] the executable's content exported object.
+  # @param silent [Boolean] disable the error log when something goes wrong. true by default.
+  compile = (executable, callback, silent=true) ->
+    # first, uncache the previous executable content.
+    require.undef(executable.id)
+
+    try 
+      # then, modifies NodeJS's require into RequireJS dependencies
+      content = executable.get('content')
+
+      # Regular expression to extract dependencies from rules
+      depReg = /(\S*)\s*=\s*require[\(\s](\S*)\)?\s*\n/
+
+      # gets the required dependencies
+      deps = []
+      vars = []
+      while -1 isnt content.search(depReg)
+        # removes the require directive and extract relevant variable and path
+        content = content.replace(depReg, (str, variable, dep)->
+          deps.push(dep.replace(/^'\.\.\/main\//, "'"))
+          vars.push(variable)
+          return ''
+        )
+
+      # replace module.exports by return
+      content = content.replace('module.exports =', 'return')
+      # indent all lines
+      content = content.split('\n').join('\n  ')
+      
+      # adds the define part
+      content = "define '#{executable.id}', [#{deps.join ','}], (#{vars.join ','}) ->\n  #{content}"
+
+      # compiles and evaluates the resulting code
+      eval(coffee.compile(content))
+
+      requirejs.onError = (err) =>
+        console.error(err) unless silent
+        delete(requirejs.onError)
+        callback(err, null)
+
+      # require the exported content
+      require([executable.id], (exported) => 
+        callback(null, exported)
+      )
+
+    catch exc
+      unless silent
+        console.log(content)
+        console.error(exc) 
+      callback(exc, null)
 
   # Client cache of executables.
   class Executables extends Base.Collection
@@ -45,6 +105,14 @@ define [
     # List of model attributes that are localized.
     _i18nAttributes: []
 
+    # **private**
+    # the exported object present inside the executable's content.
+    _exported: null
+
+    # **private**
+    # the old value of exported category.
+    _oldCategory: null
+
     # Provide a custom sync method to wire Types to the server.
     # Customize the update behaviour to rename if necessary.
     #
@@ -60,5 +128,25 @@ define [
           )
           sockets.admin.emit('saveAndRename', @toJSON(), args.newId)
         else super(method, collection, args)
+
+    # Overload inherited setter to recompile when content changed.
+    set: (key, value, options) =>
+      # invoked superclass
+      super(key, value, options)
+
+      if key is 'content' or typeof key is 'object' and 'content' of key
+        # recompiles content and store exported
+        compile(@, (err, exported) => 
+          @_exported = exported
+          if @_exported?.category isnt @_oldCategory
+            @_oldCategory = @_exported?.category
+            @trigger('change:category', @)
+        )
+
+    # Overload inherited getter to add "virtual" attribute `category`
+    get: (key) =>
+      # invoked superclass
+      return super(key) unless key is 'category'
+      return @_exported?.category
 
   return Executable

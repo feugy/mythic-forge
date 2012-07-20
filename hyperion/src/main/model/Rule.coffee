@@ -28,14 +28,17 @@
 # `canExecute()` is intended to be invoked on server and client side, and must not modifiy anything.
 class Rule
 
+  # Rule's category
+  category: ''
+
   # All objects created by the rule must be added to this array to be saved in database
   created: []
 
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
 
-  # Construct a rule, with a friendly name.
-  constructor: (@name) ->
+  # Construct a rule, with a friendly name and a category.
+  constructor: (@name, @category = '') ->
     @removed= []
     @created= []
  

@@ -60,16 +60,14 @@ define [
     # widget that allows content edition
     _editorWidget: null
 
-    # **private**
-    # widget to edit category
-    _categoryWidget: null
-
     # The view constructor.
     #
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
       super(id, 'rule')
+      # on content changes, displays category.
+      @model.on('change:category', @_onCategoryChange)
       console.log("creates rule edition view for #{if id? then @model.id else 'a new rule'}")
 
     # **private**
@@ -83,7 +81,6 @@ define [
       # superclass handles description image, name and description
       super()
       @model.set('content', @_editorWidget.options.text)
-      @model.set('category', @_categoryWidget.options.text)
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -91,7 +88,7 @@ define [
       # superclass handles description image, name and description
       super()
       @_editorWidget.setOption('text', @model.get('content'))
-      @_categoryWidget.setOption('text', @model.get('category'))
+      @_onCategoryChange()
       @_onChange()
 
     # **private**
@@ -128,12 +125,6 @@ define [
         mode: 'coffee'
       }).data('advEditor')
 
-      @_categoryWidget = @$el.find('.category.field').property(
-        type: 'string'
-        allowNull: false
-        change: @_onChange
-      ).data('property')
-
     # **private**
     # Returns the list of check fields. This array must contains following structures:
     # - original: the model's original value
@@ -149,11 +140,12 @@ define [
         original: @model.get('content')
         current: @_editorWidget.options.text
       )
-      comparable.push(
-        name: 'category'
-        original: @model.get('category')
-        current: @_categoryWidget.options.value
-      )
       return comparable
+
+    # **private**
+    # Refresh category displayal when the model's content changed.
+    _onCategoryChange: () =>
+      category = @model.get('category')
+      @$el.find('.category').html(if category then category else i18n.labels.noRuleCategory)
 
   return RuleView
