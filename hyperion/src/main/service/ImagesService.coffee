@@ -22,11 +22,13 @@ fs = require 'fs'
 path= require 'path'
 utils = require '../utils'
 ItemType = require '../model/ItemType'
+FieldType = require '../model/FieldType'
 logger = require('../logger').getLogger 'service'
 
 # enforce folder existence
 utils.enforceFolderSync utils.confKey('images.store'), false, logger
 
+supported = ['ItemType', 'FieldType']
 
 # The ImagesService allow to save and remove images associated to a given model.
 # It saved all images in a folder, which path is read in configuration at key `images.store`.
@@ -53,10 +55,19 @@ class _ImagesService
   #   Saves an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
   uploadImage: (modelName, id, ext, imageData, args...) =>
-    return callback "No image can be uploaded for #{modelName}" unless modelName in ['ItemType']
+    switch args.length
+      when 1 
+        callback = args[0]
+        suffix = 'type'
+      when 2 
+        callback = args[1]
+        suffix = args[0]
+
+    return callback "No image can be uploaded for #{modelName}" unless modelName in supported
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
+      when 'FieldType' then modelClass = FieldType
 
     # gets the concerned model
     modelClass.findCached id, (err, model) ->
@@ -64,12 +75,8 @@ class _ImagesService
 
       switch args.length
         when 1 
-          callback = args[0]
-          suffix = 'type'
           existing = model.get 'descImage'
         when 2 
-          callback = args[1]
-          suffix = args[0]
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.get('images')[suffix]?.file
@@ -87,10 +94,15 @@ class _ImagesService
             model.set 'descImage', fileName
           else 
             images = model.get 'images'
-            # save meta data at correct index, keeping existing informations
-            previous = images[suffix] || {width:0, height:0}
-            previous.file = fileName
-            images[suffix] = previous
+            if modelName is 'ItemType'
+              # save meta data at correct index, keeping existing informations
+              previous = images[suffix] || {width:0, height:0}
+              previous.file = fileName
+              images[suffix] = previous
+            else 
+              # fot other, just keep the name
+              images[suffix] = fileName
+
             model.set 'images', images
             model.markModified 'images'
           # saves model
@@ -127,7 +139,15 @@ class _ImagesService
   #   Removes an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
   removeImage: (modelName, id, args...) =>
-    return callback "No image can be uploaded for #{modelName}" unless modelName in ['ItemType']
+    switch args.length
+      when 1 
+        callback = args[0]
+        suffix = 'type'
+      when 2 
+        callback = args[1]
+        suffix = args[0]
+
+    return callback "No image can be uploaded for #{modelName}" unless modelName in supported
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
@@ -138,12 +158,8 @@ class _ImagesService
 
       switch args.length
         when 1 
-          callback = args[0]
-          suffix = 'type'
           existing = model.get 'descImage'
         when 2 
-          callback = args[1]
-          suffix = args[0]
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.get('images')[suffix]?.file
@@ -163,7 +179,11 @@ class _ImagesService
           if suffix is images.length-1
             images.splice suffix, 1
           else 
-            images[suffix].file = null
+            if modelName is 'ItemType' 
+              images[suffix].file = null
+            else
+              images[suffix] = null
+              
           model.set 'images', images
           model.markModified 'images'
         # save model

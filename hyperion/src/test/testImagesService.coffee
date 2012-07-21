@@ -20,54 +20,76 @@
 fs = require 'fs'
 path = require 'path'
 ItemType = require '../main/model/ItemType'
+FieldType = require '../main/model/FieldType'
 assert = require('chai').assert
 service = require('../main/service/ImagesService').get()
 testUtils = require './utils/testUtils'
 
 imagesPath = require('../main/utils').confKey 'images.store'
 
-type = null
+iType = null
+fType = null
 
 describe 'ImagesService tests', -> 
 
-  describe 'given a type and no image store', ->
+  describe 'given a item type, a field type and no image store', ->
     beforeEach (done) ->
       # removes any types and clean image folder
-      ItemType.collection.drop -> testUtils.cleanFolder imagesPath, ->
-        # creates a type
+      ItemType.collection.drop -> FieldType.collection.drop -> testUtils.cleanFolder imagesPath, ->
+        # creates an item type
         new ItemType().save (err, saved) -> 
           throw new Error err if err?
-          type = saved
-          done()
+          iType = saved
+          # creates an field type
+          new FieldType().save (err, saved) -> 
+            throw new Error err if err?
+            fType = saved
+            done()
 
-    it 'should new type image be saved', (done) ->
+    it 'should new type image be saved for item type', (done) ->
       # given an image
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
+        service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          assert.equal saved.get('descImage'), "#{type._id}-type.png"
+          assert.equal saved.get('descImage'), "#{iType._id}-type.png"
           # then the file exists and is equal to the original file
           file = path.join imagesPath, saved.get('descImage')
           assert.ok fs.existsSync file
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
 
-    it 'should new instance image be saved', (done) ->
+    it 'should new type image be saved for field type', (done) ->
+      # given an image
+      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        throw new Error err if err?
+        # when saving the type image
+        service.uploadImage 'FieldType', fType._id, 'png', data.toString('base64'), (err, saved) ->
+          # then no error found
+          assert.ok err is null, "unexpected error '#{err}'"
+          # then the description image is updated in model
+          assert.equal saved.get('descImage'), "#{fType._id}-type.png"
+          # then the file exists and is equal to the original file
+          file = path.join imagesPath, saved.get('descImage')
+          assert.ok fs.existsSync file
+          assert.equal fs.readFileSync(file).toString(), data.toString()
+          done()
+
+    it 'should new instance image be saved for item type', (done) ->
       # given an image
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         idx = 0
         # when saving the instance image 2
-        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), idx, (err, saved) ->
+        service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), idx, (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
           images = saved.get('images')[idx]
-          assert.equal images?.file, "#{type._id}-#{idx}.png"
+          assert.equal images?.file, "#{iType._id}-#{idx}.png"
           assert.equal images?.width, 0
           assert.equal images?.height, 0
           # then the file exists and is equal to the original file
@@ -76,23 +98,66 @@ describe 'ImagesService tests', ->
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
 
-    it 'should all images deleted when removing type', (done) ->
+    it 'should new instance image be saved for field type', (done) ->
+      # given an image
+      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        throw new Error err if err?
+        idx = 0
+        # when saving the instance image 2
+        service.uploadImage 'FieldType', fType._id, 'png', data.toString('base64'), idx, (err, saved) ->
+          # then no error found
+          assert.ok err is null, "unexpected error '#{err}'"
+          # then the description image is updated in model
+          assert.equal saved.get('images')[idx], "#{fType._id}-#{idx}.png"
+          # then the file exists and is equal to the original file
+          file = path.join imagesPath, saved.get('images')[idx]
+          assert.ok fs.existsSync file
+          assert.equal fs.readFileSync(file).toString(), data.toString()
+          done()
+
+    it 'should all images deleted when removing item type', (done) ->
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # given an arbitraty image inside the folder
         fs.writeFile path.join(imagesPath, '123-0.png'), data, (err) ->
           throw new Error err if err?
           # given an instance image
-          service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
+          service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
             throw new Error err if err?
             # given an instance image
-            service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 0, (err, saved) ->
+            service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), 0, (err, saved) ->
               throw new Error err if err?
-              assert.equal saved.get('descImage'), "#{type._id}-type.png"
+              assert.equal saved.get('descImage'), "#{iType._id}-type.png"
               images = saved.get('images')[0]
-              assert.equal images?.file, "#{type._id}-0.png"
+              assert.equal images?.file, "#{iType._id}-0.png"
               # when removing the type
-              type.remove (err) ->
+              iType.remove (err) ->
+                # wait a while for files to be deleted
+                setTimeout ->
+                  fs.readdir imagesPath, (err, content) ->
+                    throw err if err?
+                    assert.equal content.length, 1
+                    # then only the arbitraty image is still in image path
+                    assert.equal content[0], '123-0.png'
+                    done()
+                , 50
+
+    it 'should all images deleted when removing field type', (done) ->
+      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        throw new Error err if err?
+        # given an arbitraty image inside the folder
+        fs.writeFile path.join(imagesPath, '123-0.png'), data, (err) ->
+          throw new Error err if err?
+          # given an instance image
+          service.uploadImage 'FieldType', fType._id, 'png', data.toString('base64'), (err, saved) ->
+            throw new Error err if err?
+            # given an instance image
+            service.uploadImage 'FieldType', fType._id, 'png', data.toString('base64'), 0, (err, saved) ->
+              throw new Error err if err?
+              assert.equal saved.get('descImage'), "#{fType._id}-type.png"
+              assert.equal saved.get('images')[0], "#{fType._id}-0.png"
+              # when removing the type
+              fType.remove (err) ->
                 # wait a while for files to be deleted
                 setTimeout ->
                   fs.readdir imagesPath, (err, content) ->
@@ -111,17 +176,17 @@ describe 'ImagesService tests', ->
         # creates a type
         new ItemType().save (err, saved) -> 
           throw new Error err if err?
-          type = saved
+          iType = saved
           # saves a type image for it
           fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
             throw new Error err if err?
-            service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
+            service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
               throw new Error err if err?
-              type = saved
+              iType = saved
               # saves a instance image for it
-              service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 0, (err, saved) ->
+              service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), 0, (err, saved) ->
                 throw new Error err if err?
-                type = saved
+                iType = saved
                 done()
 
     it 'should existing type image be changed', (done) ->
@@ -129,11 +194,11 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), (err, saved) ->
+        service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          assert.equal saved.get('descImage'), "#{type._id}-type.png"
+          assert.equal saved.get('descImage'), "#{iType._id}-type.png"
           # then the file exists and is equal to the original file
           file = path.join imagesPath, saved.get('descImage')
           assert.ok fs.existsSync file
@@ -141,9 +206,9 @@ describe 'ImagesService tests', ->
           done()
 
     it 'should existing type image be removed', (done) ->
-      file = path.join imagesPath, type.get 'descImage'
+      file = path.join imagesPath, iType.get 'descImage'
       # when removing the type image
-      service.removeImage 'ItemType', type._id, (err, saved) ->
+      service.removeImage 'ItemType', iType._id, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
         # then the type image is updated in model
@@ -158,12 +223,12 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
-        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), idx, (err, saved) ->
+        service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), idx, (err, saved) ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
           images = saved.get('images')[idx]
-          assert.equal images?.file, "#{type._id}-#{idx}.png"
+          assert.equal images?.file, "#{iType._id}-#{idx}.png"
           assert.equal images?.width, 0
           assert.equal images?.height, 0
           # then the file exists and is equal to the original file
@@ -174,9 +239,9 @@ describe 'ImagesService tests', ->
 
     it 'should existing instance image be removed', (done) ->
       idx = 0
-      file = path.join imagesPath, type.get('images')[idx].file
+      file = path.join imagesPath, iType.get('images')[idx].file
       # when removing the first instance image
-      service.removeImage 'ItemType', type._id, idx, (err, saved) ->
+      service.removeImage 'ItemType', iType._id, idx, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
         # then the instance image is updated in model
@@ -190,10 +255,10 @@ describe 'ImagesService tests', ->
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # given it saved as second instance image
-        service.uploadImage 'ItemType', type._id, 'png', data.toString('base64'), 1, (err, saved) ->
-          file = path.join imagesPath, type.get('images')[0].file
+        service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), 1, (err, saved) ->
+          file = path.join imagesPath, iType.get('images')[0].file
           # when removing the first instance image
-          service.removeImage 'ItemType', type._id, 0, (err, saved) ->
+          service.removeImage 'ItemType', iType._id, 0, (err, saved) ->
             # then no error found
             assert.ok err is null, "unexpected error '#{err}'"
             # then the instance image is updated in model
