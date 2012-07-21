@@ -339,7 +339,7 @@ define [
           if arg? and !arg.isSprite and addImage.options.source isnt null
             # transforms it into a regular image widget
             addImage.element.removeClass('add-image')
-            addImage.offchange
+            addImage.off change
             @_imageWidgets.push(addImage)
             @_addNewImage()
           @_onChange()

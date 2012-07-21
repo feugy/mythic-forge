@@ -24,8 +24,9 @@ define [
   'i18n!nls/edition'
   'view/edition/Explorer'
   'view/edition/ItemType'
+  'view/edition/FieldType'
   'view/edition/Rule'
-], ($, _, Backbone, i18n, Explorer, ItemTypeView, RuleView) ->
+], ($, _, Backbone, i18n, Explorer, ItemTypeView, FieldTypeView, RuleView) ->
 
   i18n = $.extend {}, i18n
 
@@ -84,6 +85,7 @@ define [
               <ul class="menu new-button-menu">
                 <li data-class="ItemType"><i class="new item-type"></i>#{i18n.buttons.newItemType}</li>
                 <li data-class="Rule"><i class="new rule"></i>#{i18n.buttons.newRule}</li>
+                <li data-class="FieldType"><i class="new field-type"></i>#{i18n.buttons.newFieldType}</li>
               </ul>
               <div class="ui-tabs action-bars">
                 <ul></ul>
@@ -168,6 +170,7 @@ define [
       # creates the relevant view
       view = null
       switch type
+        when 'FieldType' then view = new FieldTypeView(id)
         when 'ItemType' then view = new ItemTypeView(id)
         when 'Rule' then view = new RuleView(id)
         else return

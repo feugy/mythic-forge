@@ -597,6 +597,7 @@ define [
       return @_fillRendering() unless @_pendingUploads.length > 0
 
       spec = @_pendingUploads.splice(0, 1)[0]
+      console.log(">>>>>>>>>>>>>> received save, now upload #{spec}")
       @_saveInProgress = true
       if 'oldName' of spec
         # removes existing data

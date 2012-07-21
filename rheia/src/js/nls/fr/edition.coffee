@@ -1,6 +1,7 @@
 define
   titles:
     itemType: "Type d'objets %s"
+    fieldType: 'Type de terrains %s'
     rule: "Règle"
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
@@ -15,6 +16,7 @@ define
 
   msgs:
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
+    removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
     externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
@@ -27,6 +29,7 @@ define
   buttons:
     'new': 'Nouveau...'
     newItemType: "Type d'objets"
+    newFieldType: 'Type de terrains'
     newRule: 'Règle'
 
   labels:

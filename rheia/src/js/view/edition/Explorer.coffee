@@ -23,8 +23,9 @@ define [
   'utils/utilities'
   'i18n!nls/edition'
   'model/ItemType'
+  'model/FieldType'
   'model/Executable'
-], ($, Backbone, utils, i18n, ItemType, Executable) ->
+], ($, Backbone, utils, i18n, ItemType, FieldType, Executable) ->
 
   i18n = $.extend {}, i18n
 
@@ -100,6 +101,8 @@ define [
       name: i18n.titles.categories.fields
       className: 'field-types'
       id: 'FieldType'
+      load: => 
+        FieldType.collection.fetch()
     },{
       name: i18n.titles.categories.items
       className: 'item-types'
@@ -127,7 +130,7 @@ define [
       super({tagName: 'div', className:'explorer'})
 
       # bind changes to collections
-      for model in [ItemType, Executable]
+      for model in [ItemType, FieldType, Executable]
         @bindTo(model.collection, 'reset', @_onResetCategory)
         @bindTo(model.collection, 'add', (element, collection) =>
           @_onUpdateCategory(element, collection, null, 'add'))
@@ -209,6 +212,7 @@ define [
     _onResetCategory: (collection) =>
       idx = null
       switch collection
+        when FieldType.collection then idx = 1
         when ItemType.collection then idx = 2
         when Executable.collection
           container = @$el.find("dt[data-idx=4] + dd")
@@ -249,8 +253,9 @@ define [
     _onUpdateCategory: (element, collection, changes, operation) =>
       idx = null
       switch collection
-        when ItemType.collection 
-          if operation isnt 'update' or '_name' of changes or 'descImage' of changes then idx = 2
+        when FieldType.collection, ItemType.collection
+          if operation isnt 'update' or '_name' of changes or 'descImage' of changes 
+            idx = if collection is FieldType.collection then 1 else 2
         when Executable.collection 
           if operation isnt 'update' or '_id' of changes then idx = 4
       return unless idx?

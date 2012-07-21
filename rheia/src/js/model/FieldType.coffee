@@ -21,27 +21,27 @@ define [
   'model/BaseModel'
 ], (Base) ->
 
-  # Client cache of item types.
-  class ItemTypes extends Base.Collection
+  # Client cache of field types.
+  class FieldTypes extends Base.Collection
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
-    _className: 'ItemType'
+    _className: 'FieldType'
 
-  # Modelisation of a single Item Type.
-  # Not wired to the server : use collections ItemTypes instead
+  # Modelisation of a single Field Type.
+  # Not wired to the server : use collections FieldTypes instead
   #
-  class ItemType extends Base.Model
+  class FieldType extends Base.Model
 
     # Local cache for models.
-    @collection = new ItemTypes(@)
+    @collection = new FieldTypes(@)
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
-    _className: 'ItemType'
+    _className: 'FieldType'
 
     # **private**
     # List of model attributes that are localized.
     _i18nAttributes: ['name', 'desc']
 
-  return ItemType
+  return FieldType
