@@ -59,3 +59,7 @@
             - **[done]** rule body
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
+        - FieldType
+            - static fields and description image
+            - instance images
+            

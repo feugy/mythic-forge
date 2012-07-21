@@ -18,8 +18,11 @@
 'use strict'
 
 ItemType = require '../model/ItemType'
+FieldType = require '../model/FieldType'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
+
+supported = ['ItemType', 'Executable', 'FieldType']
 
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -33,9 +36,10 @@ class _AdminService
   # @option callback modelName [String] reminds the listed model class name
   # @option callback models [Array] list (may be empty) of retrieved models
   list: (modelName, callback) =>
-    return callback "The #{modelName} model can't be listed", modelName unless modelName in ['ItemType', 'Executable']
+    return callback "The #{modelName} model can't be listed", modelName unless modelName in supported
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
+      when 'FieldType' then FieldType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
 
   # Saves an instance of any model.
@@ -47,7 +51,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   save: (modelName, values, callback) =>
-    return callback "The #{modelName} model can't be saved", modelName unless modelName in ['ItemType', 'Executable']
+    return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
     
     # do not directly save Mongoose models
     if 'toObject' of values and values.toObject instanceof Function
@@ -59,6 +63,7 @@ class _AdminService
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
+      when 'FieldType' then modelClass = FieldType
       when 'Executable' 
         # special behaviour for Executables: save only works with new Executbales
         return Executable.findCached values._id, (err, model) ->
@@ -119,11 +124,12 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   remove: (modelName, values, callback) =>
-    return callback "The #{modelName} model can't be removed", modelName unless modelName in ['ItemType', 'Executable']
+    return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
     return callback "Cannot remove #{modelName} because no '_id' specified", modelName unless '_id' of values
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
+      when 'FieldType' then modelClass = FieldType
       when 'Executable' then modelClass = Executable
 
     # get existing values

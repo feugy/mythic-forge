@@ -19,7 +19,10 @@
 
 mongoose = require 'mongoose'
 utils = require '../utils'
+fs = require 'fs'
+path = require 'path'
 modelWatcher = require('./ModelWatcher').get()
+imageStore = require('../utils').confKey('images.store')
 
 # Factory that creates an abstract type.
 # Provides:
@@ -99,5 +102,13 @@ module.exports = (typeName, spec) ->
   AbstractType.post 'init', ->
     # store in cache
     cache[@_id] = @
+
+  # post-remove middleware: removes images, without using the ImageService
+  AbstractType.post 'remove', ->
+    # removes all images that starts with the id from the image store.
+    id = @_id
+    fs.readdir imageStore, (err, files) ->
+      for file in files when file.indexOf("#{id}-") is 0
+        fs.unlink path.join imageStore, file
 
   return AbstractType

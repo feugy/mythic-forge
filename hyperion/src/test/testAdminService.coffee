@@ -17,6 +17,7 @@
 ###
 
 ItemType = require '../main/model/ItemType'
+FieldType = require '../main/model/FieldType'
 Executable = require '../main/model/Executable'
 service = require('../main/service/AdminService').get()
 watcher = require('../main/model/ModelWatcher').get()
@@ -25,6 +26,7 @@ utils = require '../main/utils'
 assert = require('chai').assert
      
 itemTypes = []
+fieldTypes = []
 executables = []
 
 describe 'AdminService tests', -> 
@@ -32,22 +34,28 @@ describe 'AdminService tests', ->
   beforeEach (done) ->
     itemTypes = []
     executables = []
-    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> Executable.resetAll -> ItemType.collection.drop -> 
-      # creates fixtures
-      created = [
-        {clazz: ItemType, args: {name: 'type 1'}, store: itemTypes},
-        {clazz: ItemType, args: {name: 'type 2'}, store: itemTypes},
-        {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables},
-        {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
-      ]
-      create = (def) ->
-        return done() unless def?
-        new def.clazz(def.args).save (err, saved) ->
-          throw new Error err if err?
-          def.store.push saved
-          create created.pop()
+    fieldTypes = []
+    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+      Executable.resetAll -> 
+        ItemType.collection.drop -> 
+          FieldType.collection.drop ->
+            # creates fixtures
+            created = [
+              {clazz: ItemType, args: {name: 'type 1'}, store: itemTypes}
+              {clazz: ItemType, args: {name: 'type 2'}, store: itemTypes}
+              {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
+              {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
+              {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
+              {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
+            ]
+            create = (def) ->
+              return done() unless def?
+              new def.clazz(def.args).save (err, saved) ->
+                throw new Error err if err?
+                def.store.push saved
+                create created.pop()
 
-      create created.pop()
+            create created.pop()
 
   it 'should list fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -67,6 +75,17 @@ describe 'AdminService tests', ->
       assert.equal modelName, 'ItemType'
       assert.ok itemTypes[0].equals(list[0])
       assert.ok itemTypes[1].equals(list[1])
+      done()
+
+  it 'should list returns field types', (done) ->
+    # when listing all field types
+    service.list 'FieldType', (err, modelName, list) ->
+      throw new Error "Can't list fieldTypes: #{err}" if err?
+      # then the two created types are retrieved
+      assert.equal list.length, 2
+      assert.equal modelName, 'FieldType'
+      assert.ok fieldTypes[0].equals(list[0])
+      assert.ok fieldTypes[1].equals(list[1])
       done()
 
   it 'should list returns executables', (done) ->
@@ -91,14 +110,14 @@ describe 'AdminService tests', ->
 
   it 'should save create new item type', (done) ->
     # given new values
-    values = {name: 'type 3', properties:{health:{def:0, type:'integer'}}}
+    values = {name: 'itemtype 3', properties:{health:{def:0, type:'integer'}}}
    
     awaited = false
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'ItemType'
       assert.equal operation, 'creation'
-      assert.equal instance._name.default, 'type 3'
+      assert.equal instance._name.default, 'itemtype 3'
       awaited = true
 
     # when saving new item types
@@ -113,6 +132,33 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       ItemType.findById model._id, (err, obj) ->
         throw new Error "Can't find itemType in db #{err}" if err?
+        assert.ok obj.equals model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should save create new field type', (done) ->
+    # given new values
+    values = {name: 'fieldtype 3'}
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'FieldType'
+      assert.equal operation, 'creation'
+      assert.equal instance._name.default, 'fieldtype 3'
+      awaited = true
+
+    # when saving new field types
+    service.save 'FieldType', values, (err, modelName, model) ->
+      throw new Error "Can't save fieldType: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok model._id?
+      assert.equal model.get('name'), values.name
+
+      # then the model exists in DB
+      FieldType.findById model._id, (err, obj) ->
+        throw new Error "Can't find fieldType in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -180,6 +226,40 @@ describe 'AdminService tests', ->
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
+  it 'should save update existing field type', (done) ->
+    # given existing values
+    values = fieldTypes[1]
+    values.set 'desc', 'to be defined'
+
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'FieldType'
+      assert.equal operation, 'update'
+      assert.ok fieldTypes[1].equals instance
+      awaited = true
+
+    # when saving existing field types
+    service.save 'FieldType', values, (err, modelName, model) ->
+      throw new Error "Can't save fieldType: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok fieldTypes[1]._id.equals model._id
+      assert.equal model.get('name'), values.get('name')
+      assert.equal model.get('desc'), 'to be defined'
+
+      # then the model exists in DB
+      FieldType.findById model._id, (err, obj) ->
+        throw new Error "Can't find fieldType in db #{err}" if err?
+        assert.ok obj.equals model
+
+        # then the model was updated, not created in DB
+        FieldType.find {}, (err, list) ->
+          throw new Error "Can't find fieldTypes in db #{err}" if err?
+          assert.equal list.length, 2
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
+
   it 'should save fails to update existing executable', (done) ->
     # when saving existing executable
     service.save 'Executable', executables[1], (err, modelName, model) ->
@@ -205,6 +285,14 @@ describe 'AdminService tests', ->
       assert.ok 0 is err.indexOf "Unexisting ItemType"
       done()
 
+  it 'should remove fails on unknown field type', (done) ->
+    # when removing unknown field type
+    service.remove 'FieldType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+      # then an error occured
+      assert.ok err?
+      assert.ok 0 is err.indexOf "Unexisting FieldType"
+      done()
+
   it 'should remove fails on unknown executable', (done) ->
     # when removing unknown item type
     service.remove 'Executable', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
@@ -215,7 +303,7 @@ describe 'AdminService tests', ->
 
   it 'should remove delete existing item type', (done) ->
     awaited = false
-    # then a creation event was issued
+    # then a deletion event was issued
     watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'ItemType'
       assert.equal operation, 'deletion'
@@ -235,9 +323,31 @@ describe 'AdminService tests', ->
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
+  it 'should remove delete existing field type', (done) ->
+    awaited = false
+    # then a deletion event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'FieldType'
+      assert.equal operation, 'deletion'
+      assert.ok fieldTypes[1].equals instance
+      awaited = true
+
+    # when removing existing item types
+    service.remove 'FieldType', fieldTypes[1], (err, modelName, model) ->
+      throw new Error "Can't remove itemType: #{err}" if err?
+      # then the removed values are returned
+      assert.ok model?
+      assert.ok fieldTypes[1]._id.equals model._id
+
+      # then the model do not exists anymore in DB
+      FieldType.findById model._id, (err, obj) ->
+        assert.ok obj is null
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
   it 'should remove delete existing executable', (done) ->
     awaited = false
-    # then a creation event was issued
+    # then a deletion event was issued
     watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'Executable'
       assert.equal operation, 'deletion'
