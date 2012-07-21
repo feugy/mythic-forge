@@ -43,6 +43,8 @@
 - Hyperion
     - **[done]** ImageService to upload and associate images to types
     - **[done]** remove all images when removing a type
+    - **[done]** Field type CRUD
+    - Field storage in maps
 - Rheia
     - bugs
         - **[done]** spaces inside tab names 
@@ -60,6 +62,21 @@
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
         - FieldType
-            - static fields and description image
-            - instance images
+            - **[done]** static fields and description image
+            - **[done]** instance images
+            - image carousel in explorer
+        - Maps
+            - map name and validation
+            - map kind (square, diamond, hexa)
+            - map grid
+            - diamond map widget
+            - square map widget
+            - hexagonal map widget
+            - drag'n drop from explorer
+            - remove selection
+            - zoom in, zoom out
+            - selection with Ctrl
+            - selection with Shift
+            - multiple affectation
+
             
