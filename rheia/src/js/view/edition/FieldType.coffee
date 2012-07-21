@@ -85,7 +85,6 @@ define [
       # update images specifications. File upload will be handled separately
       newImages = @_computeImageSpecs()
       newImages[i] = '' for image, i in newImages when image isnt null and typeof image isnt 'string'
-      debugger
       @model.set('images', newImages)
       
     # **private**

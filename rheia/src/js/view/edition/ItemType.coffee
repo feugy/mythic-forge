@@ -319,13 +319,7 @@ define [
             spriteW: original.width
             spriteH: original.height
             sprites: original.sprites
-            change: (event) => 
-              # remove from images widget if it's the last widget
-              widget = $(event.target).closest('.loadable').data('spriteImage')
-              if widget.options.source is null and @_imageWidgets.indexOf(widget) is @_imageWidgets.length-1
-                @_imageWidgets.splice(@_imageWidgets.length-1, 1)
-                widget.element.remove()
-              @_onChange(event)
+            change: @_onImageChange
           ).appendTo(container).data('spriteImage'))
       # a special image to add new images  
       @_addNewImage() 
@@ -339,7 +333,7 @@ define [
           if arg? and !arg.isSprite and addImage.options.source isnt null
             # transforms it into a regular image widget
             addImage.element.removeClass('add-image')
-            addImage.off change
+            addImage.change = @_onImageChange
             @_imageWidgets.push(addImage)
             @_addNewImage()
           @_onChange()
@@ -394,5 +388,17 @@ define [
       # and re-creates property rendering
       @_updateProperties()
       event?.preventDefault()
+
+    # **private**
+    # Instance image change handler. Trigger the general _onChange handler after an optionnal widget removal.
+    #
+    # @param event [Event] image change event.
+    _onImageChange: (event) =>
+      # remove from images widget if it's the last widget
+      widget = $(event.target).closest('.loadable').data('spriteImage')
+      if widget.options.source is null and @_imageWidgets.indexOf(widget) is @_imageWidgets.length-1
+        @_imageWidgets.splice(@_imageWidgets.length-1, 1)
+        widget.element.remove()
+      @_onChange(event)
 
   return ItemTypeView
