@@ -44,7 +44,8 @@
     - **[done]** ImageService to upload and associate images to types
     - **[done]** remove all images when removing a type
     - **[done]** Field type CRUD
-    - Field storage in maps
+    - bugs
+        - **[done]** remove item type property does not update existing items
 - Rheia
     - bugs
         - **[done]** spaces inside tab names 
@@ -80,3 +81,13 @@
             - multiple affectation
 
             
+for (var i =0; i < 100; i++) {
+    var update = {};
+    update["fields."+i] = [];
+    db.maps.update({_id: ObjectId("500baa356001b3b30c75a364")}, {$set:update});
+    for (var j = 0; j < 100; j++) {
+        var field = {};
+        field["fields."+i+"."+j] = [i, j];
+        db.maps.update({_id: ObjectId("500baa356001b3b30c75a364")}, {$set:field});
+    }
+}

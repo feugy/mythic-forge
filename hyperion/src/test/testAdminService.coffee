@@ -17,6 +17,7 @@
 ###
 
 ItemType = require '../main/model/ItemType'
+Item = require '../main/model/Item'
 FieldType = require '../main/model/FieldType'
 Executable = require '../main/model/Executable'
 service = require('../main/service/AdminService').get()
@@ -37,12 +38,12 @@ describe 'AdminService tests', ->
     fieldTypes = []
     testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
       Executable.resetAll -> 
-        ItemType.collection.drop -> 
+        ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop ->
             # creates fixtures
             created = [
-              {clazz: ItemType, args: {name: 'type 1'}, store: itemTypes}
-              {clazz: ItemType, args: {name: 'type 2'}, store: itemTypes}
+              {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+              {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
               {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
               {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
               {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
@@ -192,39 +193,53 @@ describe 'AdminService tests', ->
 
   it 'should save update existing item type', (done) ->
     # given existing values
-    values = itemTypes[1]
-    values.setProperty 'desc', 'string', 'to be defined'
+    values = itemTypes[1].toObject()
 
-    awaited = false
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'ItemType'
-      assert.equal operation, 'update'
-      assert.ok itemTypes[1].equals instance
-      awaited = true
+    # given an item for this type
+    new Item({type: itemTypes[1]}).save (err, item) ->
+      throw new Error "Can't save item: #{err}" if err?
+      assert.equal item.get('strength'), 10
+        
+      # given a property raw change
+      values.properties.desc = {type:'string', def:'to be defined'}
+      delete values.properties.strength
 
-    # when saving existing item types
-    service.save 'ItemType', values, (err, modelName, model) ->
-      throw new Error "Can't save itemType: #{err}" if err?
-      # then the created values are returned
-      assert.ok model?
-      assert.ok itemTypes[1]._id.equals model._id
-      assert.equal model.get('name'), values.get('name')
-      assert.ok 'desc' of model.get 'properties'
-      assert.equal model.get( 'properties').desc.type, 'string'
-      assert.equal model.get( 'properties').desc.def, 'to be defined'
+      awaited = false
+      # then a creation event was issued
+      watcher.on 'change', (operation, className, instance) ->
+        return unless className is 'ItemType'
+        assert.equal operation, 'update'
+        assert.ok itemTypes[1].equals instance, 'In watcher, changed instance doesn`t mathc parameters'
+        awaited = true
 
-      # then the model exists in DB
-      ItemType.findById model._id, (err, obj) ->
-        throw new Error "Can't find itemType in db #{err}" if err?
-        assert.ok obj.equals model
+      # when saving existing item types
+      service.save 'ItemType', values, (err, modelName, model) ->
+        throw new Error "Can't save itemType: #{err}" if err?
+        # then the created values are returned
+        assert.ok itemTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
+        assert.equal model.get('name'), itemTypes[1].get('name')
+        assert.ok 'desc' of model.get('properties'), 'Desc not added in properties'
+        assert.equal model.get('properties').desc.type, 'string'
+        assert.equal model.get('properties').desc.def, 'to be defined'
 
-        # then the model was updated, not created in DB
-        ItemType.find {}, (err, list) ->
-          throw new Error "Can't find itemTypes in db #{err}" if err?
-          assert.equal list.length, 2
-          assert.ok awaited, 'watcher wasn\'t invoked'
-          done()
+        # then the model exists in DB
+        ItemType.findById model._id, (err, obj) ->
+          throw new Error "Can't find itemType in db #{err}" if err?
+          assert.ok obj.equals model, 'ItemType cannot be found in DB'
+
+          # then the model was updated, not created in DB
+          ItemType.find {}, (err, list) ->
+            throw new Error "Can't find itemTypes in db #{err}" if err?
+            assert.equal list.length, 2
+            assert.ok awaited, 'watcher wasn\'t invoked'
+
+            # then the instance has has only property property desc
+            Item.findById item._id, (err, item) ->
+              throw new Error "Can't get item from db #{err}" if err?
+              assert.equal 'to be defined', item.get('desc')
+              assert.ok item.get('strength') is undefined, 'Item still has strength property'
+              watcher.removeAllListeners 'change'
+              done()
 
   it 'should save update existing field type', (done) ->
     # given existing values

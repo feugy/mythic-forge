@@ -17,6 +17,7 @@
 ###
 'use strict'
 
+_ = require 'underscore'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 Executable = require '../model/Executable'
@@ -77,7 +78,25 @@ class _AdminService
       modelClass.findCached values._id, (err, model) ->
         return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err? or model is null
         for key, value of values
-          model.set key, value unless key is '_id'
+          model.set key, value unless key is '_id' or key is 'properties'
+          # manually set and unset properties
+          if key is 'properties'
+            # at the begining, all existing properties may be unset
+            unset = _(model.get('properties')).keys()
+            set = []
+            for name, prop of value
+              idx = unset.indexOf(name)
+              if -1 is idx
+                # new property !
+                set.push([name, prop.type, prop.def])
+              else
+                # property already exists: do not unset
+                unset.splice idx, 1
+            # at last, add new properties
+            model.setProperty.apply model, args for args in set
+            # and delete removed ones
+            model.unsetProperty name for name in unset
+
         _save model
     else 
       # or save new one
