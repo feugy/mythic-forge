@@ -89,13 +89,27 @@ body
     dd > *:not(dd)
       hoverable()
       padding 0.5em 0 0.5em 1em
+      imageDim = 40px
 
       img
-        width 40px
-        height 40px
+        width imageDim
+        height imageDim
+
+      .carousel
+      img
         vertical-align -1.2em
         margin-right 5px
         display inline-block
+
+      .carousel
+        .mask
+        .thumbnail
+          height imageDim
+          width imageDim
+
+        .previous
+        .next 
+          vertical-align (imageDim/3)px
 
     dd > dd
       margin-left 1em

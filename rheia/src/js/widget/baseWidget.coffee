@@ -23,11 +23,12 @@ define [
 ],  ($) ->
 
   # This classes defines common methods to widgets.
-  $.widget "rheia.baseWidget", 
-
+  $.widget("rheia.baseWidget", 
+  
     # Allows to set a widget option.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option
     setOption: (key, value) ->
       @_setOption(key, value)
+  )

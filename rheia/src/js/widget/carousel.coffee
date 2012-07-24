@@ -19,11 +19,11 @@
 
 define [
   'jquery'
+  'underscore'
   'i18n!nls/widget'
   'widget/BaseWidget'
-],  ($, i18n) ->
+],  ($, _, i18n) ->
 
-  # todo parenthesis
   # Displays and navigate along several images, with two nav buttons.
   # One image displayed at a time.
   Carousel =
@@ -45,12 +45,12 @@ define [
       imageClass: 'thumbnail'
 
     # build rendering
-    _create: ->
+    _create: () ->
       # creates a container for images, and two navigation buttons
-      @element.addClass('carousel').append """
+      @element.addClass('carousel').append("""
         <div class="previous"></div>
-        <div class="mask"><div class="container"></div>
-        <div class="next"></div>"""
+        <div class="mask"><div class="container"></div></div>
+        <div class="next"></div>""")
       # instanciates navigation buttons
 
       @element.find('.next').button(
@@ -58,18 +58,25 @@ define [
           disabled: true
         ).click (event) =>
           event.preventDefault()
-          @_setCurrent @options.current+1
-          false
+          @_setCurrent(@options.current+1)
+          return false
       @element.find('.previous').button(
           text: false
           disabled: true
         ).click (event) =>
           event.preventDefault()
-          @_setCurrent @options.current-1
-          false
-      
+          @_setCurrent(@options.current-1)
+          return false
+
+      # loading handler
+      rheia.router.on('imageLoaded', (success, src, data) => 
+        img = _(@options.images).find((img)->return _(src).endsWith(img))
+        return unless find?
+        @element.find("img[data-src='#{img}']").removeData('src').attr('src', data)
+      )
+
       # first displayal
-      @_displayImages @options.images
+      @_displayImages(@options.images)
 
     # **private**
     # Updates the current displayed image, with navigation animation.
@@ -83,25 +90,25 @@ define [
       return unless value >= 0 and value < @options.images.length
       
       # compute the image width for moves
-      imageWidth = @element.find('.imagesContainer img').outerWidth true
+      imageWidth = @element.find('.container img').outerWidth(true)
 
       # set the container total width, in case it hasn't enought space to display
-      @element.find('.imagesContainer').width imageWidth*@options.images.length
+      @element.find('.container').width(imageWidth*@options.images.length)
           
       # moves the image container
-      @element.find('.imagesContainer').stop().animate
-          left : -imageWidth * value
-        , @options.speed
+      @element.find('.container').stop().animate({
+          left: -imageWidth * value
+      }, @options.speed)
 
       # updates nav buttons.
-      @element.find('.previous').button 'option', 'disabled', value is 0
-      @element.find('.next').button 'option', 'disabled', value is @options.images.length-1
+      @element.find('.previous').button('option', 'disabled', value is 0)
+      @element.find('.next').button('option', 'disabled', value is @options.images.length-1)
       
       # if we modified the index
       if value isnt @options.current
         # updates it and triggers event
         @options.current = value
-        @_trigger 'change'
+        @_trigger('change')
       
     # **private**
     # Removes current images and displays the new image array.
@@ -110,18 +117,21 @@ define [
     # @param images [Array<String>] the new image array (contains url strings)
     _displayImages: (images) ->
       # removes previous images
-      @element.find('.imagesContainer td').remove()
+      @element.find('.container td').remove()
       @options.images = if Array.isArray(images) then images else []
 
       # displays new ones
-      container = @element.find('.imagesContainer')
-      container.append """<img class="#{@options.imageClass}" src="#{image}?#{new Date().getTime()}"/>""" for image in @options.images
+      container = @element.find('.container')
+      for image in @options.images
+        container.append("""<img class="#{@options.imageClass}" data-src="#{image}"/>""")
+        if image isnt null 
+          rheia.router.trigger('loadImage', "/images/#{image}") 
         
       # try to keep the current position
       if @options.current < images.length
-        @_setCurrent @options.current
+        @_setCurrent(@options.current)
       else
-        @_setCurrent 0
+        @_setCurrent(0)
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
@@ -131,8 +141,7 @@ define [
     _setOption: (key, value) ->
       return $.Widget.prototype._setOption.apply @, arguments unless key in ['current', 'images']
       switch key
-        when 'current' then @_setCurrent value
-        when 'images' then @_displayImages value
+        when 'current' then @_setCurrent(value)
+        when 'images' then @_displayImages(value)
 
-
-  $.widget "rheia.carousel", $.rheia.baseWidget, Carousel
+  $.widget("rheia.carousel", $.rheia.baseWidget, Carousel)

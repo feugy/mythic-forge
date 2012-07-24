@@ -159,6 +159,9 @@ loadablePadding = 2px
     height imageDim
     width imageDim
 
+  .thumbnail[data-src='null']
+    background-color black
+
   .previous
   .next 
     cursor pointer
@@ -177,11 +180,11 @@ loadablePadding = 2px
 
   .next.ui-button-disabled 
     cursor auto
-    background-position (-2*navDim)px 0
+    background-position -2*navDim 0
 
   .previous 
-    background-position (-1*navDim)px 0
+    background-position -1*navDim 0
 
   .previous.ui-button-disabled 
     cursor auto
-    background-position (-3*navDim)px 0
+    background-position -3*navDim 0

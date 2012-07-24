@@ -62,10 +62,10 @@
             - **[done]** rule body
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
-        - FieldType
+        - **[done]** FieldType
             - **[done]** static fields and description image
             - **[done]** instance images
-            - image carousel in explorer
+            - **[done]** image carousel in explorer
         - Maps
             - map name and validation
             - map kind (square, diamond, hexa)
@@ -79,15 +79,3 @@
             - selection with Ctrl
             - selection with Shift
             - multiple affectation
-
-            
-for (var i =0; i < 100; i++) {
-    var update = {};
-    update["fields."+i] = [];
-    db.maps.update({_id: ObjectId("500baa356001b3b30c75a364")}, {$set:update});
-    for (var j = 0; j < 100; j++) {
-        var field = {};
-        field["fields."+i+"."+j] = [i, j];
-        db.maps.update({_id: ObjectId("500baa356001b3b30c75a364")}, {$set:field});
-    }
-}

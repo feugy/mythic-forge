@@ -25,6 +25,7 @@ define [
   'model/ItemType'
   'model/FieldType'
   'model/Executable'
+  'widget/Carousel'
 ], ($, Backbone, utils, i18n, ItemType, FieldType, Executable) ->
 
   i18n = $.extend {}, i18n
@@ -36,18 +37,28 @@ define [
   # @param model [Object] the rendered model
   # @param category [Object] the category descriptor for this model
   render = (model, category) ->
+    name = null
+
     # load descriptive image.
     img = model.get('descImage')
-    if img?
+    if img? and category.id isnt 'FieldType'
       img = "/images/#{img}"
       rheia.imagesService.load(img)
-    name = null
+
     switch category.id
       when 'ItemType', 'FieldType', 'Map', 'EventType' then name = model.get('name')
       when 'Rule', 'TurnRule' then name = model.id
+    rendering = $("""<div data-id="#{model.id}" data-category="#{category.id}" class="#{category.className}">#{name}</div>""")
 
-    return """<div data-id="#{model.id}" data-category="#{category.id}" class="#{category.className}">
-          <img data-src="#{img}"/>#{name}</div>"""
+    # field types uses a carousel instead of an image
+    if category.id is 'FieldType'
+      $('<div></div>').carousel(
+        images: model.get('images')
+      ).prependTo(rendering)
+    else 
+      rendering.prepend("""<img data-src="#{img}"/>""")
+
+    return rendering
 
   # Computes the sort order of a collection.
   # For executable, group by categories.
@@ -253,15 +264,16 @@ define [
     _onUpdateCategory: (element, collection, changes, operation) =>
       idx = null
       switch collection
-        when FieldType.collection, ItemType.collection
-          if operation isnt 'update' or '_name' of changes or 'descImage' of changes 
-            idx = if collection is FieldType.collection then 1 else 2
+        when FieldType.collection
+          if operation isnt 'update' or '_name' of changes or 'images' of changes then idx = 1
+        when ItemType.collection
+          if operation isnt 'update' or '_name' of changes or 'descImage' of changes then idx = 2
         when Executable.collection 
           if operation isnt 'update' or '_id' of changes then idx = 4
       return unless idx?
 
       container = @$el.find("dt[data-idx=#{idx}] + dd")
-      markup = $(render(element, @_categories[idx]))
+      markup = render(element, @_categories[idx])
       shift = -250
       add = () =>
         # compute the insertion index
