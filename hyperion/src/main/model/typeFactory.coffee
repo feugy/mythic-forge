@@ -34,7 +34,9 @@ imageStore = require('../utils').confKey('images.store')
 #
 # @param typeName [String] name of the build type, used for changes propagations
 # @param attrs [Object] attributes of the created type.
-module.exports = (typeName, spec) ->
+# @param options [Object] Mongoose schema options, and factory custom options:
+# @option options noDesc [Boolean] wether this type has a description or not.
+module.exports = (typeName, spec, options = {}) ->
 
   # Local cache
   cache = {}
@@ -47,15 +49,16 @@ module.exports = (typeName, spec) ->
   modifiedPaths = {}
 
   # Abstract schema, that can contains i18n attributes
-  AbstractType = new mongoose.Schema spec
+  AbstractType = new mongoose.Schema spec, options
 
   utils.enhanceI18n AbstractType
 
   # Adds an i18n `name` field which is required
   utils.addI18n AbstractType, 'name', {required: true}
 
-  # Adds an i18n `desc` field
-  utils.addI18n AbstractType, 'desc'
+  unless options?.noDesc
+    # Adds an i18n `desc` field
+    utils.addI18n AbstractType, 'desc'
 
   # Override the equals() method defined in Document, to check correctly the equality between _ids, 
   # with their `equals()` method and not with the strict equality operator.

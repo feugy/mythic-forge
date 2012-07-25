@@ -23,25 +23,26 @@ modelWatcher = require('./ModelWatcher').get()
 Map = require './Map'
 logger = require('../logger').getLogger 'model'
 
-# We use the post-save middleware to propagate creation and saves.
-# But within this function, all instances have lost their "isNew" status
-# thus we store that status from the pre-save middleware, to use it in the post-save
-# middleware 
-wasNew = {}
-modifiedPaths = {}
-
-# Define the schema for maps.
+# Define the schema for fields.
 FieldSchema = new mongoose.Schema {
   # link to map
-  map: {type: {}, required: true}
+  mapId: 
+    type: String
+    required: true
+  # link to type
+  typeId: 
+    type: String
+    required: true
+  # image num
+  num: 
+    type: Number
+    default: 0
   # coordinates on the map
   x: 
     type:Number
-    required: true
     default: 0
   y: 
     type:Number
-    required: true
     default: 0
 }, {strict:true}
 
@@ -53,41 +54,22 @@ FieldSchema = new mongoose.Schema {
 FieldSchema.methods.equals = (object) ->
   @_id.equals object?._id
         
-# pre-save middleware: store new and modified paths
+# pre-save middleware: only allow save of new fields. Do not allow updates
 #
 # @param next [Function] function that must be called to proceed with other middleware.
 # Calling it with an argument indicates the the validation failed and cancel the item save.
 FieldSchema.pre 'save', (next) ->
-  # stores the isNew status.
-  wasNew[@_id] = @isNew
-  modifiedPaths[@_id] = @modifiedPaths.concat()
-  # replace map with its id, for storing in Mongo, without using setters.
-  save = @map
-  @_doc.map = save._id
+  # wuit with an error if the field isn't new
+  return next new Error 'only creations are allowed on fields' unless @isNew
   next()
-  # restore save to allow reference reuse.
-  @_doc.map = save
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
 FieldSchema.post 'save', () ->
-  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Field', this, modifiedPaths[@_id]
+  modelWatcher.change 'creation', 'Field', @
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
 FieldSchema.post 'remove', () ->
-  modelWatcher.change 'deletion', 'Field', this
-
-# pre-init middleware: retrieve the map corresponding to the stored id.
-#
-# @param field [Field] the initialized field.
-# @param next [Function] function that must be called to proceed with other middleware.
-FieldSchema.pre 'init', (next, field) ->
-  # loads the type
-  Map.findCached field.map, (err, map) ->
-    return next(new Error "Unable to init field #{field._id}. Error while resolving its type: #{err}") if err?
-    return next(new Error "Unable to init field #{field._id} because there is no map with id #{field.map}") unless map?    
-    # Do the replacement.
-    field.map = map
-    next();
+  modelWatcher.change 'deletion', 'Field', @
 
 # Export the Class.
 Field = conn.model 'field', FieldSchema

@@ -23,6 +23,7 @@ Map = require '../main/model/Map'
 Field = require '../main/model/Field'
 Player = require '../main/model/Player'
 ItemType = require '../main/model/ItemType'
+FieldType = require '../main/model/FieldType'
 service = require('../main/service/RuleService').get()
 utils = require '../main/utils'
 assert = require('chai').assert
@@ -166,23 +167,26 @@ describe 'RuleService tests', ->
         new ItemType({name: 'character'}).save (err, saved) ->
           throw new Error err if err?
           type1 = saved
-          # Drops existing items
-          Item.collection.drop ->
-            # Creates 3 items
-            new Item({map: map, x:0, y:0, type: type1}).save (err, saved) ->
-              throw new Error err if err?
-              item1 = saved
-              new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
+          new FieldType({name: 'plain'}).save (err, saved) ->
+            throw new Error err if err?
+            fieldType = saved
+            # Drops existing items
+            Item.collection.drop -> Field.collection.drop ->
+              # Creates 3 items
+              new Item({map: map, x:0, y:0, type: type1}).save (err, saved) ->
                 throw new Error err if err?
-                item2 = saved
+                item1 = saved
                 new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
                   throw new Error err if err?
-                  item3 = saved
-                  # Creates a field
-                  new Field({map: map, x:1, y:2}).save (err, saved) ->
+                  item2 = saved
+                  new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
                     throw new Error err if err?
-                    field1 = saved
-                    done()
+                    item3 = saved
+                    # Creates a field
+                    new Field({mapId: map._id, typeId: fieldType._id, x:1, y:2}).save (err, saved) ->
+                      throw new Error err if err?
+                      field1 = saved
+                      done()
 
     it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items

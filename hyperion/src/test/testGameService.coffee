@@ -20,6 +20,7 @@ Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
 Map = require '../main/model/Map'
 Field = require '../main/model/Field'
+FieldType = require '../main/model/FieldType'
 utils = require '../main/utils'
 testUtils = require './utils/testUtils'
 Executable = require '../main/model/Executable'
@@ -42,7 +43,7 @@ describe 'GameService tests', ->
       throw new Error err if err?
       Executable.resetAll (err) -> 
         throw new Error err if err?
-        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Field.collection.drop ->
+        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> Field.collection.drop ->
           # given a map
           new Map({name: 'test-game'}).save (err, saved) ->
             throw new Error err if err?
@@ -63,13 +64,17 @@ describe 'GameService tests', ->
                   new Item({map: map, type: type, name: 'Peter'}).save (err, saved) ->
                     throw new Error err if err?
                     item3 = saved
-                    new Field({map: map, x:5, y:3}).save (err, saved) ->
+                    # given a field type
+                    new FieldType({name: 'plain'}).save (err, saved) ->
                       throw new Error err if err?
-                      field1 = saved
-                      new Field({map: map, x:-2, y:-10}).save (err, saved) ->
+                      fieldType = saved
+                      new Field({mapId:map._id, typeId:fieldType._id, x:5, y:3}).save (err, saved) ->
                         throw new Error err if err?
-                        field2 = saved
-                        done()
+                        field1 = saved
+                        new Field({mapId:map._id, typeId:fieldType._id, x:-2, y:-10}).save (err, saved) ->
+                          throw new Error err if err?
+                          field2 = saved
+                          done()
 
   it 'should consultMap returned only relevant items', (done) ->
     # when retrieving items within coordinate -5:-5 and 5:5

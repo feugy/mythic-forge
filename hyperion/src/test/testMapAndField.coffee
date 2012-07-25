@@ -18,16 +18,23 @@
 
 Map = require '../main/model/Map'
 Field = require '../main/model/Field'
+FieldType = require '../main/model/FieldType'
 watcher = require('../main/model/ModelWatcher').get()
 assert = require('chai').assert
 
 awaited = false
 
+fieldType = null
 map = null
 
 describe 'Map and Field tests', -> 
+
   beforeEach (done) ->
-    Map.collection.drop -> Field.collection.drop -> done()
+    Map.collection.drop -> Field.collection.drop -> FieldType.collection.drop -> 
+      new FieldType({name: 'plain'}).save (err, saved) ->
+        throw new Error err if err?
+        fieldType = saved
+        done()
 
   it 'should map be created', (done) -> 
     # given a new map
@@ -103,22 +110,22 @@ describe 'Map and Field tests', ->
 
     it 'should field be created', (done) ->
       # when creating a field on the map
-      field = new Field {map:map, x:0, y:0}
+      field = new Field {mapId:map._id, typeId:fieldType._id, x:0, y:0}
       field.save (err)->
         throw new Error "Can't save field: #{err}" if err?
         # then its retrievable by map
-        Field.find {map: map._id}, (err, fields) ->
+        Field.find {mapId: map._id}, (err, fields) ->
           throw new Error "Can't find field by map: #{err}" if err?
           assert.equal fields.length, 1
           assert.ok field.equals fields[0]
-          assert.ok map.equals fields[0].get 'map'
+          assert.equal fields[0].get('mapId'), map._id
           assert.equal fields[0].get('x'), 0
           assert.equal fields[0].get('y'), 0
           done()
 
     it 'should field be removed', (done) ->
       # given an exiting a field on the map
-      field = new Field {map:map, x:10, y:10}
+      field = new Field {mapId:map._id, typeId:fieldType._id, x:10, y:10}
       field.save (err)->
         throw new Error "Can't save field: #{err}" if err?
         # when removing it
@@ -130,20 +137,14 @@ describe 'Map and Field tests', ->
             assert.ok field is null
             done()
 
-    it 'should field be updated', (done) ->
+    it 'should field cannot be updated', (done) ->
       # given an exiting a field on the map
-      field = new Field {map:map, x:10, y:10}
+      field = new Field {mapId:map._id, typeId:fieldType._id, x:10, y:10}
       field.save (err)->
         throw new Error "Can't save field: #{err}" if err?
         # when updating it
         field.set 'x', 20
         field.save (err) ->
-          throw new Error "Can't update field: #{err}" if err?
-          # then it's not in the map anymore
-          Field.findOne {_id: field._id}, (err, result) ->
-            throw new Error "Can't find field by id: #{err}" if err?
-            assert.ok field?
-            assert.equal result.get('x'), 20
-            assert.equal result.get('y'), 10
-            assert.ok map.equals result.get 'map'
-            done()
+          assert.ok err isnt null
+          assert.equal err.message, 'only creations are allowed on fields', "Unexpected error: #{err}"
+          done()

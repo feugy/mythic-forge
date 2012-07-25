@@ -44,6 +44,8 @@
     - **[done]** ImageService to upload and associate images to types
     - **[done]** remove all images when removing a type
     - **[done]** Field type CRUD
+    - **[done]** Map CRUD
+    - Field CRUD
     - bugs
         - **[done]** remove item type property does not update existing items
 - Rheia

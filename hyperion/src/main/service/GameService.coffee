@@ -77,7 +77,7 @@ class _GameService
       .run (err, items) ->
         return callback err, [], [] if err?
         # then gets the fields
-        Field.where('map', new ObjectId(''+mapId))
+        Field.where('mapId', new ObjectId(''+mapId))
           .where('x').gte(lowX)
           .where('x').lte(upX)
           .where('y').gte(lowY)

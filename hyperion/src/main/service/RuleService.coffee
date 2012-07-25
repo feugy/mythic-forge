@@ -164,7 +164,7 @@ class _RuleService
         return callback "No actor with id #{actorId}" unless actor?
         return callback "Cannot resolve rules for actor #{actorId} on map if it does not have a map !" unless actor.map?
         # Gets also field at the coordinate
-        Field.findOne {map: actor.map._id, x:x, y:y}, (err, field) =>
+        Field.findOne {mapId: actor.map._id, x:x, y:y}, (err, field) =>
           return callback "Cannot resolve rules. Failed to retrieve field at position x:#{x} y:#{y}: #{err}" if err?
           results.splice 0, 0, field if field?
           logger.debug "resolve rules for actor #{actorId} at x:#{x} y:#{y}"

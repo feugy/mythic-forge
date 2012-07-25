@@ -20,28 +20,37 @@
 _ = require 'underscore'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
+Map = require '../model/Map'
+Field = require '../model/Field'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
 
-supported = ['ItemType', 'Executable', 'FieldType']
+supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map']
+listSupported = supported[1..]
 
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 class _AdminService
 
-  # The list method retrieve all instances of a given model
+  # The list method retrieve all instances of a given model, in:
+  # Map, ItemType, Executable, FieldType. 
+  # Field and items must be retrieved with `GameService.consult()`.
   #
   # @param modelName [String] class name of the listed models
   # @param callback [Function] end callback, invoked with three arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the listed model class name
   # @option callback models [Array] list (may be empty) of retrieved models
+  #
   list: (modelName, callback) =>
-    return callback "The #{modelName} model can't be listed", modelName unless modelName in supported
+    return callback "The #{modelName} model can't be listed", modelName unless modelName in listSupported
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
       when 'FieldType' then FieldType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
+      when 'Map' then Map.find (err, result) -> callback err, modelName, result
+      when 'Field'
+        console.log 'To be implemented'
 
   # Saves an instance of any model.
   #
@@ -65,6 +74,7 @@ class _AdminService
     switch modelName
       when 'ItemType' then modelClass = ItemType
       when 'FieldType' then modelClass = FieldType
+      when 'Map' then modelClass = Map
       when 'Executable' 
         # special behaviour for Executables: save only works with new Executbales
         return Executable.findCached values._id, (err, model) ->
@@ -150,6 +160,7 @@ class _AdminService
       when 'ItemType' then modelClass = ItemType
       when 'FieldType' then modelClass = FieldType
       when 'Executable' then modelClass = Executable
+      when 'Map' then modelClass = Map
 
     # get existing values
     modelClass.findCached values._id, (err, model) ->

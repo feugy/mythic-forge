@@ -79,7 +79,7 @@ define [
     consult: (low, up) =>
       return if @_consultRunning
       @_consultRunning = true
-      console.log "Consult map #{@get 'name'} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
+      console.log "Consult map #{@id} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
       # emit the message on the socket.
       sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
 

@@ -20,6 +20,7 @@ ItemType = require '../main/model/ItemType'
 Item = require '../main/model/Item'
 FieldType = require '../main/model/FieldType'
 Executable = require '../main/model/Executable'
+Map = require '../main/model/Map'
 service = require('../main/service/AdminService').get()
 watcher = require('../main/model/ModelWatcher').get()
 testUtils = require './utils/testUtils'
@@ -29,6 +30,7 @@ assert = require('chai').assert
 itemTypes = []
 fieldTypes = []
 executables = []
+maps = []
 
 describe 'AdminService tests', -> 
 
@@ -36,27 +38,31 @@ describe 'AdminService tests', ->
     itemTypes = []
     executables = []
     fieldTypes = []
+    maps = []
     testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
       Executable.resetAll -> 
         ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop ->
-            # creates fixtures
-            created = [
-              {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-              {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-              {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
-              {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
-              {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
-              {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
-            ]
-            create = (def) ->
-              return done() unless def?
-              new def.clazz(def.args).save (err, saved) ->
-                throw new Error err if err?
-                def.store.push saved
-                create created.pop()
+            Map.collection.drop ->
+              # creates fixtures
+              created = [
+                {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
+                {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
+                {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
+                {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
+                {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
+                {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
+              ]
+              create = (def) ->
+                return done() unless def?
+                new def.clazz(def.args).save (err, saved) ->
+                  throw new Error err if err?
+                  def.store.push saved
+                  create created.pop()
 
-            create created.pop()
+              create created.pop()
 
   it 'should list fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -100,6 +106,17 @@ describe 'AdminService tests', ->
       assert.equal executables[1]._id, list[1]._id
       done()
 
+  it 'should list returns maps', (done) ->
+    # when listing all item types
+    service.list 'Map', (err, modelName, list) ->
+      throw new Error "Can't list maps: #{err}" if err?
+      # then the two created executables are retrieved
+      assert.equal list.length, 2
+      assert.equal modelName, 'Map'
+      assert.ok maps[0].equals(list[0])
+      assert.ok maps[1].equals(list[1])
+      done()
+
   it 'should save fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when saving unallowed model
@@ -121,7 +138,7 @@ describe 'AdminService tests', ->
       assert.equal instance._name.default, 'itemtype 3'
       awaited = true
 
-    # when saving new item types
+    # when saving new item type
     service.save 'ItemType', values, (err, modelName, model) ->
       throw new Error "Can't save itemType: #{err}" if err?
       # then the created values are returned
@@ -149,7 +166,7 @@ describe 'AdminService tests', ->
       assert.equal instance._name.default, 'fieldtype 3'
       awaited = true
 
-    # when saving new field types
+    # when saving new field type
     service.save 'FieldType', values, (err, modelName, model) ->
       throw new Error "Can't save fieldType: #{err}" if err?
       # then the created values are returned
@@ -176,7 +193,7 @@ describe 'AdminService tests', ->
       assert.equal instance._id, 'rule 3'
       awaited = true
 
-    # when saving new item types
+    # when saving new executable
     service.save 'Executable', values, (err, modelName, model) ->
       throw new Error "Can't save executable: #{err}" if err?
       # then the created values are returned
@@ -188,6 +205,35 @@ describe 'AdminService tests', ->
       Executable.findCached model._id, (err, obj) ->
         throw new Error "Can't find executable #{err}" if err?
         assert.deepEqual obj, model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should save create new map', (done) ->
+    # given new values
+    values = {name: 'map 3'}
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'Map'
+      assert.equal operation, 'creation'
+      assert.equal instance._name.default, 'map 3'
+      assert.equal instance.kind, 'hexagon'
+      awaited = true
+
+    # when saving new map
+    service.save 'Map', values, (err, modelName, model) ->
+      throw new Error "Can't save map: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok model._id?
+      assert.equal model.get('name'), values.name
+      assert.equal model.get('kind'), 'hexagon'
+
+      # then the model exists in DB
+      Map.findById model._id, (err, obj) ->
+        throw new Error "Can't find map in db #{err}" if err?
+        assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -212,7 +258,7 @@ describe 'AdminService tests', ->
         assert.ok itemTypes[1].equals instance, 'In watcher, changed instance doesn`t mathc parameters'
         awaited = true
 
-      # when saving existing item types
+      # when saving existing item type
       service.save 'ItemType', values, (err, modelName, model) ->
         throw new Error "Can't save itemType: #{err}" if err?
         # then the created values are returned
@@ -254,7 +300,7 @@ describe 'AdminService tests', ->
       assert.ok fieldTypes[1].equals instance
       awaited = true
 
-    # when saving existing field types
+    # when saving existing field type
     service.save 'FieldType', values, (err, modelName, model) ->
       throw new Error "Can't save fieldType: #{err}" if err?
       # then the created values are returned
@@ -281,6 +327,41 @@ describe 'AdminService tests', ->
       assert.ok err?
       assert.equal err, "Id #{executables[1]._id} already used"
       done()
+
+  it 'should save update existing map', (done) ->
+    # given existing values
+    values = maps[0]
+    values.set 'kind', 'square'
+
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'Map'
+      assert.equal operation, 'update'
+      assert.ok maps[0].equals instance
+      assert.equal instance.kind, 'square', 'modification not propagated'
+      awaited = true
+
+    # when saving existing map
+    service.save 'Map', values, (err, modelName, model) ->
+      throw new Error "Can't save map: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok maps[0]._id.equals model._id
+      assert.equal model.get('name'), values.get('name')
+      assert.equal model.get('kind'), 'square', 'returned value not updated'
+
+      # then the model exists in DB
+      Map.findById model._id, (err, obj) ->
+        throw new Error "Can't find map in db #{err}" if err?
+        assert.ok obj.equals model
+
+        # then the model was updated, not created in DB
+        Map.find {}, (err, list) ->
+          throw new Error "Can't find maps in db #{err}" if err?
+          assert.equal list.length, 2
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
 
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -325,7 +406,7 @@ describe 'AdminService tests', ->
       assert.ok itemTypes[1].equals instance
       awaited = true
 
-    # when removing existing item types
+    # when removing existing item type
     service.remove 'ItemType', itemTypes[1], (err, modelName, model) ->
       throw new Error "Can't remove itemType: #{err}" if err?
       # then the removed values are returned
@@ -347,9 +428,9 @@ describe 'AdminService tests', ->
       assert.ok fieldTypes[1].equals instance
       awaited = true
 
-    # when removing existing item types
+    # when removing existing field type
     service.remove 'FieldType', fieldTypes[1], (err, modelName, model) ->
-      throw new Error "Can't remove itemType: #{err}" if err?
+      throw new Error "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.ok fieldTypes[1]._id.equals model._id
@@ -378,6 +459,28 @@ describe 'AdminService tests', ->
 
       # then the model do not exists anymore in DB
       Executable.findCached model._id, (err, obj) ->
+        assert.ok obj is null
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should remove delete existing map', (done) ->
+    awaited = false
+    # then a deletion event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'Map'
+      assert.equal operation, 'deletion'
+      assert.ok maps[1].equals instance
+      awaited = true
+
+    # when removing existing map
+    service.remove 'Map', maps[1], (err, modelName, model) ->
+      throw new Error "Can't remove map: #{err}" if err?
+      # then the removed values are returned
+      assert.ok model?
+      assert.ok maps[1]._id.equals model._id
+
+      # then the model do not exists anymore in DB
+      Map.findById model._id, (err, obj) ->
         assert.ok obj is null
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
