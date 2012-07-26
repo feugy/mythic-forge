@@ -49,13 +49,12 @@ class _AdminService
       when 'FieldType' then FieldType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
       when 'Map' then Map.find (err, result) -> callback err, modelName, result
-      when 'Field'
-        console.log 'To be implemented'
 
   # Saves an instance of any model.
   #
   # @param modelName [String] class name of the saved model
-  # @param values [Object] saved values, used as argument of the model constructor
+  # @param values [Object] saved values, used as argument of the model constructor. Array of saved values
+  # for fields.
   # @param callback [Function] end callback, invoked with three arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the saved model class name
@@ -63,10 +62,6 @@ class _AdminService
   save: (modelName, values, callback) =>
     return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
     
-    # do not directly save Mongoose models
-    if 'toObject' of values and values.toObject instanceof Function
-      values = values.toObject()
-
     _save = (model) ->
       model.save (err, saved) -> callback err, modelName, saved
 
@@ -75,13 +70,35 @@ class _AdminService
       when 'ItemType' then modelClass = ItemType
       when 'FieldType' then modelClass = FieldType
       when 'Map' then modelClass = Map
+      when 'Field'
+        return callback 'Fields must be saved within an array', modelName unless Array.isArray values
+        savedFields = []
+
+        # unqueue last field inside the array
+        unqueue = (err, saved) ->
+          savedFields.push saved if saved?
+          # end of the array: return callback
+          return callback err, modelName, savedFields if values.length is 0
+          field = values.pop()
+          # do not save mongoose details.
+          if 'toObject' of field and field.toObject instanceof Function
+            field = field.toObject()
+          return callback 'Fields cannot be updated', modelName, savedFields if '_id' of field
+          new Field(field).save unqueue
+
+        return unqueue null, null
+
       when 'Executable' 
         # special behaviour for Executables: save only works with new Executbales
         return Executable.findCached values._id, (err, model) ->
           return callback "Id #{values._id} already used", modelName unless model is null
           # create new if not found
           model = new Executable values 
-          _save model
+          return _save model
+
+    # do not directly save Mongoose models
+    if 'toObject' of values and values.toObject instanceof Function
+      values = values.toObject()
 
     # get existing values
     if '_id' of values
@@ -147,20 +164,39 @@ class _AdminService
   # Deletes an instance of any model.
   #
   # @param modelName [String] class name of the saved model
-  # @param values [Object] saved values, used as argument of the model constructor
+  # @param values [Object] removed values, used as argument of the model constructor. Array of removed values
+  # for fields.
   # @param callback [Function] end callback, invoked with three arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   remove: (modelName, values, callback) =>
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
-    return callback "Cannot remove #{modelName} because no '_id' specified", modelName unless '_id' of values
+    unless 'Field' is modelName or '_id' of values
+      return callback "Cannot remove #{modelName} because no '_id' specified", modelName 
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
       when 'FieldType' then modelClass = FieldType
       when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
+      when 'Field'
+        return callback 'Fields must be removed within an array', modelName unless Array.isArray values
+        removedFields = []
+
+        # unqueue last field inside the array
+        unqueue = (err) ->
+          # end of the array: return callback
+          return callback err, modelName, removedFields if values.length is 0
+          field = values.pop()
+          # find field by id
+          Field.findById field._id, (err, model) ->
+            return callback "Unexisting field with id #{field._id}", modelName, removedFields if err? or !(model?)
+            removedFields.push model
+            # and remove it.
+            model.remove unqueue
+
+        return unqueue null
 
     # get existing values
     modelClass.findCached values._id, (err, model) ->

@@ -20,6 +20,7 @@ ItemType = require '../main/model/ItemType'
 Item = require '../main/model/Item'
 FieldType = require '../main/model/FieldType'
 Executable = require '../main/model/Executable'
+Field = require '../main/model/Field'
 Map = require '../main/model/Map'
 service = require('../main/service/AdminService').get()
 watcher = require('../main/model/ModelWatcher').get()
@@ -31,6 +32,7 @@ itemTypes = []
 fieldTypes = []
 executables = []
 maps = []
+fields = []
 
 describe 'AdminService tests', -> 
 
@@ -42,7 +44,7 @@ describe 'AdminService tests', ->
     testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
       Executable.resetAll -> 
         ItemType.collection.drop -> Item.collection.drop ->
-          FieldType.collection.drop ->
+          FieldType.collection.drop -> Field.collection.drop ->
             Map.collection.drop ->
               # creates fixtures
               created = [
@@ -363,6 +365,102 @@ describe 'AdminService tests', ->
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
+  it 'should save creates new fields', (done) ->
+    saved = []
+    # given two new fields
+    toBeSaved = [
+      {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}
+      {mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}
+    ]
+
+    # then a creation event was issued
+    watcher.on 'change', (operation, className, instance)->
+      assert.equal className, 'Field'
+      assert.equal operation, 'creation'
+      saved.push instance
+
+    # when saving two new fields
+    service.save 'Field', toBeSaved.concat(), (err, modelName, returned) ->
+      throw new Error "Can't save fields: #{err}" if err?
+      # then the created values are returned
+      assert.equal returned?.length, 2, 'unexpected returned fields'
+      assert.equal saved.length, 2, 'watcher was not as many times invoked as awaited'
+
+      # then the model exists in DB
+      Field.findById returned[0]._id, (err, obj) ->
+        throw new Error "Can't find field in db #{err}" if err?
+        assert.equal obj.get('mapId'), toBeSaved[1].mapId
+        assert.equal obj.get('typeId'), toBeSaved[1].typeId
+        assert.equal obj.get('x'), toBeSaved[1].x
+        assert.equal obj.get('y'), toBeSaved[1].y
+        assert.ok returned[0].equals obj
+        # then the model exists in DB
+        Field.findById returned[1]._id, (err, obj) ->
+          throw new Error "Can't find field in db #{err}" if err?
+          assert.equal obj.get('mapId'), toBeSaved[0].mapId
+          assert.equal obj.get('typeId'), toBeSaved[0].typeId
+          assert.equal obj.get('x'), toBeSaved[0].x
+          assert.equal obj.get('y'), toBeSaved[0].y
+          assert.ok returned[1].equals obj
+          watcher.removeAllListeners 'change'
+          done()
+
+  it 'should save fails on non fields array parameter', (done) ->
+    # when saving field without array
+    service.save 'Field', {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}, (err, modelName, returned) ->
+      # then nothing was saved
+      assert.isNotNull err
+      assert.equal 'Fields must be saved within an array', err
+      assert.equal modelName, 'Field'
+      assert.isUndefined returned
+      done()
+
+  it 'should save fails on existing fields', (done) ->
+    # given an existing field
+    new Field({mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}).save (err, field) ->
+      throw new Error "Can't save field: #{err}" if err?
+
+      # given another new field
+      saved = []
+      toBeSaved = [
+        field
+        {mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}
+      ]
+
+      # then a creation event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Field'
+        assert.equal operation, 'creation'
+        saved.push instance
+
+      # when saving two new fields
+      service.save 'Field', toBeSaved.concat(), (err, modelName, returned) ->
+        # then an error was returned
+        assert.equal 'Fields cannot be updated', err
+        # then the created values are returned
+        assert.equal returned?.length, 1, 'unexpected returned fields'
+        assert.equal saved.length, 1, 'watcher was not as many times invoked as awaited'
+
+        # then the model exists in DB
+        Field.findById returned[0]._id, (err, obj) ->
+          throw new Error "Can't find field in db #{err}" if err?
+          assert.equal obj.get('mapId'), toBeSaved[1].mapId
+          assert.equal obj.get('typeId'), toBeSaved[1].typeId
+          assert.equal obj.get('x'), toBeSaved[1].x
+          assert.equal obj.get('y'), toBeSaved[1].y
+          assert.ok returned[0].equals obj
+          watcher.removeAllListeners 'change'
+          done()
+
+  it 'should save do nothing on empty fields array', (done) ->
+    # when saving field with empty array
+    service.save 'Field', [], (err, modelName, returned) ->
+      # then nothing was saved
+      throw new Error "Unexpected error while saving fields: #{err}" if err?
+      assert.equal modelName, 'Field'
+      assert.equal returned.length, 0
+      done()
+
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when removing unallowed model
@@ -484,6 +582,94 @@ describe 'AdminService tests', ->
         assert.ok obj is null
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
+
+  it 'should remove removes existing fields', (done) ->
+    # given two existing field
+    new Field({mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}).save (err, field1) ->
+      throw new Error "Can't save field: #{err}" if err?
+      new Field({mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}).save (err, field2) ->
+        throw new Error "Can't save field: #{err}" if err?
+        removed = []
+
+        # then a deletion event was issued
+        watcher.on 'change', (operation, className, instance)->
+          assert.equal className, 'Field'
+          assert.equal operation, 'deletion'
+          removed.push instance
+
+        # when removing two existing fields
+        service.remove 'Field', [field1, field2], (err, modelName, returned) ->
+          throw new Error "Can't remove fields: #{err}" if err?
+          # then the created values are returned
+          assert.equal returned?.length, 2, 'unexpected returned fields'
+          assert.ok returned[0].equals field2
+          assert.ok returned[1].equals field1
+
+          # then the model does exist in DB anymore
+          Field.findById field1._id, (err, obj) ->
+            throw new Error "Can't find field in db #{err}" if err?
+            assert.isNull obj
+            Field.findById field2._id, (err, obj) ->
+              throw new Error "Can't find field in db #{err}" if err?
+              assert.isNull obj
+              # then the watcher was properly invoked
+              assert.equal removed.length, 2, 'watcher was not as many times invoked as awaited'
+              assert.ok returned[0].equals removed[0]
+              assert.ok returned[1].equals removed[1]
+              watcher.removeAllListeners 'change'
+              done()
+
+  it 'should remove fails on non array parameter', (done) ->
+    # when removing field without array
+    service.remove 'Field', {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}, (err, modelName, returned) ->
+      # then nothing was removed
+      assert.isNotNull err
+      assert.equal 'Fields must be removed within an array', err
+      assert.equal modelName, 'Field'
+      assert.isUndefined returned
+      done()
+
+  it 'should remove fails on unexisting fields', (done) ->
+    # given an existing field
+    new Field({mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}).save (err, field) ->
+      throw new Error "Can't save field: #{err}" if err?
+      
+      removed = []
+
+      # then a deletion event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Field'
+        assert.equal operation, 'deletion'
+        removed.push instance
+
+      # when removing an existing and a new fields
+      unexisting = {_id: fieldTypes[0]._id, mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}
+      service.remove 'Field', [unexisting, field], (err, modelName, returned) ->
+        # then an error occured
+        assert.isNotNull err
+        assert.equal "Unexisting field with id #{unexisting._id}", err
+        # then the created values are returned
+        assert.equal returned?.length, 1, 'unexpected returned fields'
+        assert.ok returned[0].equals field
+
+        # then the model does exist in DB anymore
+        Field.findById field._id, (err, obj) ->
+          throw new Error "Can't find field in db #{err}" if err?
+          assert.isNull obj
+          # then the watcher was properly invoked
+          assert.equal removed.length, 1, 'watcher was not as many times invoked as awaited'
+          assert.ok returned[0].equals removed[0]
+          watcher.removeAllListeners 'change'
+          done()
+
+  it 'should remove do nothing on empty array', (done) ->
+    # when removing field with empty array
+    service.remove 'Field', [], (err, modelName, returned) ->
+      # then nothing was saved
+      throw new Error "Unexpected error while saving fields: #{err}" if err?
+      assert.equal modelName, 'Field'
+      assert.equal returned.length, 0
+      done()
 
   it 'should saveAndRename change executable id', (done) ->
     deletionReceived = false

@@ -45,7 +45,7 @@
     - **[done]** remove all images when removing a type
     - **[done]** Field type CRUD
     - **[done]** Map CRUD
-    - Field CRUD
+    - **[done]** Field CRUD
     - bugs
         - **[done]** remove item type property does not update existing items
 - Rheia
