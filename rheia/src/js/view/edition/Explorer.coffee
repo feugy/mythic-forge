@@ -25,8 +25,9 @@ define [
   'model/ItemType'
   'model/FieldType'
   'model/Executable'
+  'model/Map'
   'widget/Carousel'
-], ($, Backbone, utils, i18n, ItemType, FieldType, Executable) ->
+], ($, Backbone, utils, i18n, ItemType, FieldType, Executable, Map) ->
 
   i18n = $.extend {}, i18n
 
@@ -108,6 +109,8 @@ define [
       name: i18n.titles.categories.maps
       className: 'maps'
       id: 'Map'
+      load: => 
+        Map.collection.fetch()
     },{
       name: i18n.titles.categories.fields
       className: 'field-types'
@@ -141,7 +144,7 @@ define [
       super({tagName: 'div', className:'explorer'})
 
       # bind changes to collections
-      for model in [ItemType, FieldType, Executable]
+      for model in [ItemType, FieldType, Executable, Map]
         @bindTo(model.collection, 'reset', @_onResetCategory)
         @bindTo(model.collection, 'add', (element, collection) =>
           @_onUpdateCategory(element, collection, null, 'add'))
@@ -223,6 +226,7 @@ define [
     _onResetCategory: (collection) =>
       idx = null
       switch collection
+        when Map.collection then idx = 0
         when FieldType.collection then idx = 1
         when ItemType.collection then idx = 2
         when Executable.collection
@@ -264,6 +268,8 @@ define [
     _onUpdateCategory: (element, collection, changes, operation) =>
       idx = null
       switch collection
+        when Map.collection 
+          if operation isnt 'update' or '_name' of changes then idx = 0
         when FieldType.collection
           if operation isnt 'update' or '_name' of changes or 'images' of changes then idx = 1
         when ItemType.collection

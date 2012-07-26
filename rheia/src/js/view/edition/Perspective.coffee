@@ -22,11 +22,14 @@ define [
   'underscore'
   'backbone'
   'i18n!nls/edition'
+  'text!view/edition/template/Perspective.html'
+  'utils/Milk'
   'view/edition/Explorer'
   'view/edition/ItemType'
   'view/edition/FieldType'
+  'view/edition/Map'
   'view/edition/Rule'
-], ($, _, Backbone, i18n, Explorer, ItemTypeView, FieldTypeView, RuleView) ->
+], ($, _, Backbone, i18n, template, Milk, Explorer, ItemTypeView, FieldTypeView, MapView, RuleView) ->
 
   i18n = $.extend {}, i18n
 
@@ -77,25 +80,7 @@ define [
     # Draws the login form.
     render: () =>
       # creates the two columns
-      @$el.empty().append("""<div class="row">
-          <div class="left cell"></div>
-          <div class="right cell">
-            <div>
-              <a href="#" data-menu="new-button-menu" class="new-button">#{i18n.buttons.new}</a>
-              <ul class="menu new-button-menu">
-                <li data-class="ItemType"><i class="new item-type"></i>#{i18n.buttons.newItemType}</li>
-                <li data-class="Rule"><i class="new rule"></i>#{i18n.buttons.newRule}</li>
-                <li data-class="FieldType"><i class="new field-type"></i>#{i18n.buttons.newFieldType}</li>
-              </ul>
-              <div class="ui-tabs action-bars">
-                <ul></ul>
-              </div>
-            </div>
-            <div class="ui-tabs views">
-              <ul></ul>
-            </div>
-          </div>
-        </div>""")
+      @$el.empty().append(Milk.render(template, {i18n:i18n}))
       # render the explorer on the left
       @$el.find('.cell.left').append(@explorer.render().$el)
       # instanciates a tab widget for views
@@ -173,6 +158,7 @@ define [
         when 'FieldType' then view = new FieldTypeView(id)
         when 'ItemType' then view = new ItemTypeView(id)
         when 'Rule' then view = new RuleView(id)
+        when 'Map' then view = new MapView(id)
         else return
 
       @_views.push(view)

@@ -18,38 +18,33 @@
 'use strict'
 
 define [
-  'backbone'
+  'model/BaseModel'
   'model/sockets'
   './Field'
   './Item'
-], (Backbone, sockets, Field, Item) ->
+], (Base, sockets, Field, Item) ->
 
   # Client cache of maps.
-  class Maps extends Backbone.Collection
+  class Maps extends Base.Collection
 
-    constructor: (@model, @options) ->
-      super(model, options)
-      
-    # Provide a custom sync method to wire Types to the server.
-    # Disabled
-    #
-    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
-    # @param collection [Items] the current collection
-    # @param args [Object] arguments
-    sync: (method, collection, args) =>
-      throw new Error("Unsupported #{method} operation on Maps")
-
-    # Override of the inherited method to disabled default behaviour.
-    # DO NOT reset anything on fetch.
-    reset: () =>
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'Map'
 
   # Modelisation of a single Map.
   # Not wired to the server : use collections Maps instead
-  class Map extends Backbone.Model
+  class Map extends Base.Model
 
-    # type local cache.
-    # A Backbone.Collection subclass that handle maps cache
+    # Local cache for models.
     @collection = new Maps(@)
+
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'Map'
+
+    # **private**
+    # List of model attributes that are localized.
+    _i18nAttributes: ['name']
 
     # **private**
     # flag to avoid multiple concurrent server call.
@@ -96,12 +91,5 @@ define [
         Item.collection.add(items)
         console.log("#{fields.length} map item(s) received on #{@get 'name'}")
         Field.collection.add(fields)
-
-    # An equality method that tests ids.
-    #
-    # @param other [Object] the object against which the current map is tested
-    # @return true if both object have the samge ids, and false otherwise.
-    equals: (other) =>
-      @.id is other?.id
 
   return Map

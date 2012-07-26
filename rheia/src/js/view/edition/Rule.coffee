@@ -19,14 +19,13 @@
 
 define [
   'jquery'
-  'backbone'
   'i18n!nls/edition'
   'text!view/edition/template/Rule.html'
   'utils/validators'
   'view/edition/BaseEditionView'
   'model/Executable'
   'widget/advEditor'
-], ($, Backbone, i18n, template, validators, BaseEditionView, Executable) ->
+], ($, i18n, template, validators, BaseEditionView, Executable) ->
 
   i18n = $.extend(true, {}, i18n)
 

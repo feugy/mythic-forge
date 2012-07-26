@@ -20,7 +20,6 @@
 define [
   'jquery'
   'underscore'
-  'backbone'
   'i18n!nls/edition'
   'text!view/edition/template/ItemType.html'
   'view/edition/BaseEditionView'
@@ -28,7 +27,7 @@ define [
   'model/ItemType'
   'widget/spriteImage'
   'widget/property'
-], ($, _, Backbone, i18n, template, BaseEditionView, validators, ItemType) ->
+], ($, _, i18n, template, BaseEditionView, validators, ItemType) ->
 
   i18n = $.extend(true, {}, i18n)
 

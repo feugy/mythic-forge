@@ -3,6 +3,7 @@ define
     itemType: "Type d'objets %s"
     fieldType: 'Type de terrains %s'
     rule: "Règle"
+    map: "Carte %s"
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
     external: 'Modification externe'
@@ -18,6 +19,7 @@ define
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
     removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
+    removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
     externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
     externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet va être fermé.</p>"
@@ -31,6 +33,7 @@ define
     newItemType: "Type d'objets"
     newFieldType: 'Type de terrains'
     newRule: 'Règle'
+    newMap: 'Carte'
 
   labels:
     yes: 'Oui'

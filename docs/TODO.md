@@ -69,7 +69,7 @@
             - **[done]** instance images
             - **[done]** image carousel in explorer
         - Maps
-            - map name and validation
+            - **[done]** map name and validation
             - map kind (square, diamond, hexa)
             - map grid
             - diamond map widget

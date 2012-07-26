@@ -20,13 +20,12 @@
 define [
   'jquery'
   'underscore'
-  'backbone'
   'i18n!nls/edition'
   'text!view/edition/template/FieldType.html'
   'view/edition/BaseEditionView'
   'model/FieldType'
   'widget/loadableImage'
-], ($, _, Backbone, i18n, template, BaseEditionView, FieldType) ->
+], ($, _, i18n, template, BaseEditionView, FieldType) ->
 
   i18n = $.extend(true, {}, i18n)
 
