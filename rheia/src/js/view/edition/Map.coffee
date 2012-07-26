@@ -51,6 +51,10 @@ define [
     # close popup confirmation text, that can take the edited object's name in parameter
     _confirmCloseMessage: i18n.msgs.closeConfirm
 
+    # **private**
+    # map kind rendering
+    _kindWidget: null
+
     # The view constructor.
     #
     # @param router [Router] the event bus
@@ -75,5 +79,49 @@ define [
         title: _.sprintf(i18n.titles.map, if @_tempId? then i18n.labels.newType else @model.id)
         i18n: i18n
       }
+
+    # **private**
+    # Allows subclass to add specific widgets right after the template was rendered and before first 
+    # call to `fillRendering`. 
+    _specificRender: () =>
+      @_kindWidget = @$el.find('select.field').change(@_onChange)
+
+    # **private**
+    # Gets values from rendering and saved them into the edited object.
+    _fillModel: () =>
+      # superclass handles description image, name and description
+      super()
+
+      # update map kind
+      @model.set('kind', @_kindWidget.find('option:selected').val())
+
+    # **private**
+    # Updates rendering with values from the edited object.
+    _fillRendering: () =>
+      # update kind rendering (before calling super)
+      @_kindWidget.find('option:selected').removeAttr('selected')
+      @_kindWidget.find("option[value='#{@model.get('kind')}']").attr('selected', 'selected')
+
+      # superclass handles description image, name and description, and trigger _onChange
+      super()
+
+    # **private**
+    # Returns the list of check fields. This array must contains following structures:
+    # - original: the model's original value
+    # - current: value form rendering
+    # - name: field name, for debug pourposes
+    #
+    # @return the comparable fields array
+    _getComparableFields: () =>
+      # superclass handles description image, name and description 
+      comparable = super()
+      # adds images
+      comparable.push(
+        name: 'kind'
+        original: @model.get('kind')
+        current: @_kindWidget.find('option:selected').val()
+      )
+      console.dir comparable
+      return comparable
 
   return MapView

@@ -136,6 +136,7 @@ define [
       # keep a copy of edited properties in the view
       @_editedProperties = {}
       $.extend(true, @_editedProperties, @model.get('properties'))
+      # will trigger _onChange
       @_updateProperties()
 
     # **private**

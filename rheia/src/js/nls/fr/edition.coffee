@@ -65,6 +65,12 @@ define
       date: 'date'
       object: 'objet'
       array: "tableau d'objets"
+    mapKind: 'type'
+    mapKinds: [
+      {name: '2D-iso hexagonale', value:'hexagon'}
+      {name: '2D-iso carrée', value:'diamond'}
+      {name: '2D carrée', value:'square'}
+    ]
 
   tips:
     save: "Enregistrer l'onglet en cours d'édition"

@@ -70,7 +70,7 @@
             - **[done]** image carousel in explorer
         - Maps
             - **[done]** map name and validation
-            - map kind (square, diamond, hexa)
+            - **[done]** map kind (square, diamond, hexa)
             - map grid
             - diamond map widget
             - square map widget

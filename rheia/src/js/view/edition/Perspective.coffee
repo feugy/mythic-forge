@@ -180,7 +180,8 @@ define [
         # toggle Css class modified wether we can save the view
         tab.toggleClass('modified', view.canSave())
         # updates title
-        tab.html(view.getTitle()))
+        tab.html(_.truncate(view.getTitle(), 15))
+      )
       # bind close we view ask for it
       view.on('close', () => @tryCloseTab(view))
       # bind Id affectation, to update tabs' ids when the model is created
