@@ -188,3 +188,32 @@ loadablePadding = 2px
   .previous.ui-button-disabled 
     cursor auto
     background-position -3*navDim 0
+
+.map-widget 
+  margin 10px
+  font-size 0
+  box-sizing border-box
+  overflow hidden
+  position relative
+
+  .colors-grid
+    color #888
+  .colors-selection
+    color #666
+  .colors-markers
+    color red
+  .colors-hover
+    color #ccc
+    
+  .perspective
+    perspective 600px
+    position absolute
+    display block
+  
+    > *
+      transform rotateX(4deg)
+      position absolute
+
+    .hover
+    .selection
+      opacity 0.5

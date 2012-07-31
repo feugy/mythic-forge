@@ -44,7 +44,12 @@ define [
       # Css class added to images.
       imageClass: 'thumbnail'
 
-    # build rendering
+    # destructor: free DOM nodes and handles
+    destroy: () ->
+      $.Widget.prototype.destroy.apply(@, arguments)
+
+    # **private**
+    # builds rendering
     _create: () ->
       # creates a container for images, and two navigation buttons
       @element.addClass('carousel').append("""

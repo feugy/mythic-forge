@@ -16,12 +16,26 @@ hoverColor = darken(#fff, 8%)
 focusColor = #75B9F0
 errorColor = lighten(orange, 20%)
 
-// Transition mixin
+// Mixins for cross-browser compatibility
 transition(args...)
-  -moz-transition args
   -wekbit-transition args
-  -ms-transition args
+  -moz-transition args
   transition args
+
+transform(args...)
+  -webkit-transform args
+  -moz-transform args
+  transform args
+
+perspective(args...)
+  -webkit-perspective args
+  -moz-perspective args
+  perspective args
+
+box-sizing(args...)
+  -webkit-box-sizing args
+  -moz-box-sizing args
+  box-sizing args
 
 // Hover behaviour mixin
 hoverable()

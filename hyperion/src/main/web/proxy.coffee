@@ -20,6 +20,7 @@
 logger = require('../logger').getLogger 'web'
 express = require 'express'
 path = require 'path'
+url = require 'url'
 fs = require 'fs'
 coffee = require 'coffee-script'
 utils = require '../utils'
@@ -94,10 +95,13 @@ configureRIA = (base, rootFolder, statics) ->
     for stat in statics
       if 0 is req.url.indexOf "#{base}/#{stat}"
         return next();
+    pathname = url.parse(req.url).pathname.slice base.length+1
     # necessary to allow resolution of relative path on client side. Urls must ends with /
-    return res.redirect "#{base}/" if req.url isnt "#{base}/" # or: if req.url is base
+    return res.redirect "#{base}/" if pathname.indexOf('.html') is -1 and pathname isnt ''
     res.header 'Content-Type', 'text/html; charset=UTF-8'
-    fs.createReadStream(path.join(rootFolder, 'index.html')).pipe res
+    fs.createReadStream(path.join(rootFolder, pathname || 'index.html')).on('error', () =>
+      res.send 404
+    ).pipe res
 
 
 # serve commun static assets

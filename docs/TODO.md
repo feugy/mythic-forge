@@ -71,13 +71,13 @@
         - Maps
             - **[done]** map name and validation
             - **[done]** map kind (square, diamond, hexa)
-            - map grid
-            - diamond map widget
-            - square map widget
-            - hexagonal map widget
+            - **[done]** hexagonal map widget
             - drag'n drop from explorer
             - remove selection
-            - zoom in, zoom out
-            - selection with Ctrl
-            - selection with Shift
+            - **[done]** display/hide grid
+            - **[done]** zoom in, zoom out
+            - **[done]** selection with Ctrl
+            - **[done]** selection with Shift
             - multiple affectation
+            - diamond map widget
+            - square map widget

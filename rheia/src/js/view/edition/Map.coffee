@@ -24,6 +24,7 @@ define [
   'text!view/edition/template/Map.html'
   'view/edition/BaseEditionView'
   'model/Map'
+  'widget/authoringMap'
 ], ($, _, i18n, template, BaseEditionView, Map) ->
 
   i18n = $.extend(true, {}, i18n)
@@ -55,6 +56,10 @@ define [
     # map kind rendering
     _kindWidget: null
 
+    # **private**
+    # map content widget
+    _mapWidget: null
+
     # The view constructor.
     #
     # @param router [Router] the event bus
@@ -85,6 +90,15 @@ define [
     # call to `fillRendering`. 
     _specificRender: () =>
       @_kindWidget = @$el.find('select.field').change(@_onChange)
+      @_mapWidget = @$el.find('.map').authoringMap(
+        kind: @model.get('kind')
+        tileDim: 75
+        verticalTileNum: 14
+        horizontalTileNum: 12
+        upperCoord: {x:0, y:0}
+        displayGrid: true
+        displayMarkers: true
+      ).data('authoringMap')
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -101,6 +115,7 @@ define [
       # update kind rendering (before calling super)
       @_kindWidget.find('option:selected').removeAttr('selected')
       @_kindWidget.find("option[value='#{@model.get('kind')}']").attr('selected', 'selected')
+      @_mapWidget.setOption('kind', @model.get('kind'))
 
       # superclass handles description image, name and description, and trigger _onChange
       super()

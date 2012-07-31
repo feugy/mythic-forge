@@ -29,6 +29,7 @@ requirejs.config
     'hotkeys': 'lib/jquery-hotkeys-min'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
+    'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.3.3-min'
@@ -47,6 +48,8 @@ requirejs.config
       deps: ['jquery-ui']
     'timepicker':
       deps: ['jquery-ui']
+    'mousewheel':
+      deps: ['jquery']
     'jquery-ui':
       deps: ['jquery']
     'transit':
@@ -78,6 +81,7 @@ define [
   'transit'
   'timepicker'
   'hotkeys'
+  'mousewheel'
   'md5'
   ], (_, _string, $, Backbone, EditionPerspectiveView, ImagesService) ->
 
