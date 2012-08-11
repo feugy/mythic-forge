@@ -14,6 +14,7 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
@@ -74,7 +75,7 @@ define [
           return false
 
       # loading handler
-      rheia.router.on('imageLoaded', (success, src, data) => 
+      rheia.router.on('imageLoaded', (success, src, image, data) => 
         img = _(@options.images).find((img)->return _(src).endsWith(img))
         return unless find?
         @element.find("img[data-src='#{img}']").removeData('src').attr('src', data)

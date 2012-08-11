@@ -14,6 +14,7 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
@@ -21,15 +22,16 @@ define [
   'jquery'
   'backbone'
   'utils/utilities'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'model/ItemType'
   'model/FieldType'
   'model/Executable'
   'model/Map'
   'widget/Carousel'
-], ($, Backbone, utils, i18n, ItemType, FieldType, Executable, Map) ->
+], ($, Backbone, utils, i18n, i18nEdition, ItemType, FieldType, Executable, Map) ->
 
-  i18n = $.extend {}, i18n
+  i18n = $.extend(i18n, i18nEdition)
 
   rootCategory = utils.generateId()
 
@@ -55,6 +57,20 @@ define [
     if category.id is 'FieldType'
       $('<div></div>').carousel(
         images: model.get('images')
+      ).draggable(
+        scope: i18n.constants.fieldAffectation,
+        appendTo: 'body',
+        cursorAt: {top:-5, left:-5},
+        helper: (event) ->
+          carousel = $(this)
+          # extract the current displayed image from the carousel
+          idx = carousel.data('carousel').options.current
+          dragged = carousel.find("img:nth-child(#{idx+1})").clone()
+          # add informations on the dragged field
+          dragged.data('idx', idx)
+          dragged.data('id', carousel.closest(".#{category.className}").data('id'))
+          dragged.addClass('dragged')
+          return dragged
       ).prependTo(rendering)
     else 
       rendering.prepend("""<img data-src="#{img}"/>""")
@@ -213,8 +229,9 @@ define [
     # 
     # @param success [Boolean] true if image loaded, false otherwise
     # @param src [String] original image source url
-    # @param data [Object] if success, the image data
-    _onImageLoaded: (success, src, data) =>
+    # @param img [Image] an Image object, null in case of failure
+    # @param data [String] the image base 64 encoded string, null in case of failure
+    _onImageLoaded: (success, src, img, data) =>
       return unless success
       @$el.find("img[data-src='#{src}']").attr('src', data)
 

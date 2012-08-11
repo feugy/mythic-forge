@@ -14,20 +14,23 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
 define [
   'jquery'
   'underscore'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!view/edition/template/Map.html'
   'view/edition/BaseEditionView'
   'model/Map'
+  'model/Field'
   'widget/authoringMap'
-], ($, _, i18n, template, BaseEditionView, Map) ->
+], ($, _, i18n, i18nEdition, template, BaseEditionView, Map, Field) ->
 
-  i18n = $.extend(true, {}, i18n)
+  i18n = $.extend(true, i18n, i18nEdition)
 
   # Displays and edit a map on edition perspective
   class MapView extends BaseEditionView
@@ -66,6 +69,19 @@ define [
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
       super(id, 'map')
+      # register on fields modification to update map displayal
+      @bindTo(Field.collection, 'add', (added) =>
+        return unless @_mapWidget? and added.get('mapId') is @model.id
+        added = [added] unless Array.isArray(added)
+        added[i] = obj.toJSON() for obj, i in added
+        @_mapWidget.addData(added)
+      )
+      @bindTo(Field.collection, 'remove', (removed) =>
+        return unless @_mapWidget? and removed.get('mapId') is @model.id
+        removed = [removed] unless Array.isArray(removed)
+        removed[i] = obj.toJSON() for obj, i in removed
+        @_mapWidget.removeData(removed)
+      )
       console.log("creates map edition view for #{if id? then @model.id else 'a new object'}")
 
     # **private**
@@ -91,13 +107,17 @@ define [
     _specificRender: () =>
       @_kindWidget = @$el.find('select.field').change(@_onChange)
       @_mapWidget = @$el.find('.map').authoringMap(
-        kind: @model.get('kind')
         tileDim: 75
         verticalTileNum: 14
         horizontalTileNum: 12
-        upperCoord: {x:0, y:0}
+        lowerCoord: {x:0, y:0}
         displayGrid: true
         displayMarkers: true
+        dndType: i18n.constants.fieldAffectation
+        coordChanged: () =>
+          # reloads map content
+          @model.consult(@_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord)
+        affect: @_onAffect
       ).data('authoringMap')
 
     # **private**
@@ -138,5 +158,29 @@ define [
       )
       console.dir comparable
       return comparable
+
+    # **private**
+    # Field affectation handler.
+    # Removes existing field, and then creates new field with relevant type and image instead
+    # @param event [Event] the drop event on map widget
+    # @param details [Object] drop details:
+    # @option details typeId [String] dragged field's type id
+    # @option details num [Number] image number of the dragged field
+    # @option details coord [Object] x and y coordinates of the drop tile
+    # @option details inSelection [Boolean] indicates wheter the drop tile is in a multiple selection
+    _onAffect: (event, details) =>
+      # removes current field
+      for field in @_mapWidget.options.data when field.x is details.coord.x and field.y is details.coord.y
+        # stored fields are just Json object, not Backbone.Model
+        new Field(field).destroy()
+
+      # and add new one instead
+      new Field(
+        mapId: @model.id
+        typeId: details.typeId
+        num: details.num
+        x: details.coord.x
+        y: details.coord.y
+      ).save()
 
   return MapView

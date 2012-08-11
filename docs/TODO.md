@@ -72,7 +72,7 @@
             - **[done]** map name and validation
             - **[done]** map kind (square, diamond, hexa)
             - **[done]** hexagonal map widget
-            - drag'n drop from explorer
+            - **[drag]** drag'n drop from explorer
             - remove selection
             - **[done]** display/hide grid
             - **[done]** zoom in, zoom out

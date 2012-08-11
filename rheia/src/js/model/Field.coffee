@@ -14,74 +14,136 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
 define [
+  'underscore'
   'backbone'
   'model/sockets'
-], (Backbone, sockets) ->
+], (_, Backbone, sockets) ->
 
-  # Client cache of fields.
-  # Wired to the server through socket.io
+  # Field collection to handle multiple operaions on fields.
+  # Do not provide any local cache, nor allows field retrival. Use `Map.consult()` method instead.
+  # Wired to server changes events.
   class Fields extends Backbone.Collection
 
+    # Collection constructor, that wired on events.
+    #
+    # @param model [Object] the managed model
+    # @param options [Object] unused
     constructor: (@model, @options) ->
-      super(model, options)
-      # connect server response callbacks
-      sockets.updates.on('update', @_onUpdate)
+      super(options)
+      # bind updates
+      sockets.updates.on('creation', @_onAdd)
+      sockets.updates.on('deletion', @_onRemove)
 
-    # Provide a custom sync method to wire Maps to the server.
-    # Not implemented
+    # Allow multiple saves on fields. Update is not permitted.
+    #
+    # @param fields [Array<Field>] saved fields
+    save: (fields) =>
+      sockets.admin.once('save-resp', (err) =>
+        rheia.router.trigger('serverError', err, {method:"Fields.save", arg:fields}) if err?
+      )
+      fields[i] = field.toJSON() for field, i in fields
+      sockets.admin.emit('save', 'Field', fields)
+
+    # Allow multiple removes on fields
+    #
+    # @param fields [Array<Field>] removed fields
+    destroy: (fields) =>
+      sockets.admin.once('remove-resp', (err) =>
+        rheia.router.trigger('serverError', err, {method:"Fields.remove", arg:fields}) if err?
+      )
+      fields[i] = field.toJSON() for field, i in fields
+      sockets.admin.emit('remove', 'Field', fields)
+
+    # Provide a custom sync method to wire model to the server.
+    # No operation supported.
     #
     # @param method [String] the CRUD method ("create", "read", "update", or "delete")
     # @param collection [Items] the current collection
     # @param args [Object] arguments
-    sync: (method, instance, args) => 
-      throw new Error("Unsupported #{method} operation on Fields")
+    sync: (method, collection, args) =>
+      throw new Error("Unsupported #{method} operation on #{@_className}")
+
+    # Extends the inherited method to unstore added models.
+    # Storing fields is a nonsense in Rheia because no browser action will occur on Fields.
+    # Unstoring them will save some memory for other usage
+    #
+    # @param models [Array|Object] added model, or added array of models
+    # @param options [Object] optional arguments, like silent
+    add: (models, options) =>
+      # calls the inherited method
+      super(models, options)
+      models = if _.isArray(models) then models.slice() else [models]
+      for model in models
+        @_removeReference(@_byId[model._id])
+      # deletes local caching
+      @models = []
+      @_byCid = {}
+      @_byId = {}
+      length = 0
+      return @
+
+
+    # Override the inherited method to trigger remove events.
+    #
+    # @param models [Array|Object] removed model, or removed array of models
+    # @param options [Object] optional arguments, like silent
+    remove: (models, options) =>
+      # manually trigger remove events
+      models = if _.isArray(models) then models.slice() else [models]
+      for model in models
+        @trigger('remove', @_prepareModel(model, options), @, options)
+
 
     # **private**
-    # Callback invoked when a database update is received.
+    # Callback invoked when a database creation is received.
+    # Fire event 'add'.
     #
     # @param className [String] the modified object className
-    # @param changes [Object] new changes for a given field.
-    _onUpdate: (className, changes) =>
+    # @param model [Object] created model.
+    _onAdd: (className, model) =>
       return unless className is 'Field'
-      # first, get the cached field and quit if not found
-      field = @get(changes._id)
-      return unless field?
-      # then, update the local cache.
-      for key, value of changes
-        field.set(key, value) if key isnt '_id'
-      # emit a change.
-      @trigger('update', field)
+      # only to trigger add event
+      @add(model)
 
+    # **private**
+    # Callback invoked when a database deletion is received.
+    # Fire event 'remove'.
+    #
+    # @param className [String] the deleted object className
+    # @param model [Object] deleted model.
+    _onRemove: (className, model) =>
+      # only to trigger add event
+      @remove(new @model(model)) 
 
-    # Override of the inherited method to disabled default behaviour.
-    # DO NOT reset anything on fetch.
-    reset: () =>
-
-
-  # Modelisation of a single Field.
-  # Not wired to the server : use collections Fields instead
+  # Field model class. Allow creation and removal. Update is not permitted.
   class Field extends Backbone.Model
 
-    # field local cache.
-    # A Backbone.Collection subclass that handle Fields retrieval with `fetch()`
+    # Local cache for models.
     @collection = new Fields(@)
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
 
-    # Field constructor.
+    # Provide a custom sync method to wire Types to the server.
+    # Only create and delete operations are supported.
     #
-    # @param attributes [Object] raw attributes of the created instance.
-    constructor: (attributes) ->
-      super(attributes) 
+    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
+    # @param collection [Items] the current collection
+    # @param args [Object] arguments
+    sync: (method, collection, args) =>
+      switch method 
+        when 'create' then Field.collection.save([@]) 
+        when 'delete' then Field.collection.destroy([@]) 
+        else throw new Error("Unsupported #{method} operation on #{@_className}")
 
     # An equality method that tests ids.
     #
-    # @param other [Object] the object against which the current field is tested
+    # @param other [Object] the object against which the current item is tested
     # @return true if both object have the samge ids, and false otherwise.
     equals: (other) =>
       @.id is other?.id

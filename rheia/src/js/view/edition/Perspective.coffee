@@ -14,6 +14,7 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
@@ -202,7 +203,7 @@ define [
     #
     # @param event [Event] click event on the close icon
     _onCloseTab: (event) =>
-      event.preventDefault()
+      event?.preventDefault()
       id = $(event.target).closest('a').attr('href').replace('#tabs-', '')
       view = _.find(@_views, (view) -> md5(view.getId()) is id)
       return unless view?

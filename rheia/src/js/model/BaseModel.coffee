@@ -14,6 +14,7 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
@@ -39,7 +40,7 @@ define [
     # @param model [Object] the managed model
     # @param options [Object] unused
     constructor: (@model, @options) ->
-      super(model, options)
+      super(options)
       # bind _onGetList response
       sockets.admin.on('list-resp', @_onGetList)
 

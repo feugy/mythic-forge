@@ -14,6 +14,7 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
@@ -22,6 +23,19 @@ define [
   'model/sockets'
 ], (_, sockets) ->
 
+  # Gets the base 64 image data from an image
+  #
+  # @param image [Image] concerned Image object
+  # @return the base 64 corresponding image data
+  getImageString = (image) ->
+    canvas = $("<canvas></canvas>")[0];
+    canvas.width = image.width;
+    canvas.height = image.height;
+    # Copy the image contents to the canvas
+    ctx = canvas.getContext('2d')
+    ctx.drawImage(image, 0, 0)
+    return canvas.toDataURL('image/png')
+
   class ImagesService
 
     # **private**        
@@ -29,7 +43,7 @@ define [
     _pendingImages: []
 
     # **private**
-    # Image local cache
+    # Image local cache, that store Image objects
     _cache: {}
     
     # Constructor. 
@@ -47,7 +61,7 @@ define [
       # Use cache if available, with a timeout to simulate asynchronous behaviour
       if image of @_cache
         setTimeout(() =>
-          rheia.router.trigger('imageLoaded', true, image, @_cache[image])
+          rheia.router.trigger('imageLoaded', true, image, @_cache[image], getImageString(@_cache[image]))
         , 0)
       else unless image in @_pendingImages
         console.log("load image #{image}...")
@@ -87,7 +101,8 @@ define [
         # wait for server response
         sockets.admin.once('uploadImage-resp', (err, saved) =>
           throw new Error("Failed to upload image for model #{modelName} #{id}: #{err}") if err?
-          @_cache[src] = "data:image/#{ext};base64,#{data}";
+          # populate cache
+          @load(src)
 
           console.log("image #{src} uploaded")
           # trigger end of upload
@@ -146,13 +161,9 @@ define [
       canvas = $("<canvas></canvas>")[0];
       canvas.width = event.target.width;
       canvas.height = event.target.height;
-      # Copy the image contents to the canvas
-      ctx = canvas.getContext('2d')
-      ctx.drawImage(event.target, 0, 0)
-      data = canvas.toDataURL('image/png')
-      # Store result and emit on the event bus
-      @_cache[src] = data
-      rheia.router.trigger('imageLoaded', true, src, data)
+      # Store Image object and emit on the event bus
+      @_cache[src] = event.target
+      rheia.router.trigger('imageLoaded', true, src, event.target, getImageString(event.target))
   
     # **private**
     # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.

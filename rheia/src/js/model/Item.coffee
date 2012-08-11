@@ -14,6 +14,7 @@
     GNU Lesser Public License for more details.
 
     You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 'use strict'
 
@@ -28,7 +29,7 @@ define [
   class Items extends Backbone.Collection
 
     constructor: (@model, @options) ->
-      super(model, options)
+      super(options)
       # connect server response callbacks
       sockets.updates.on('update', @_onUpdate)
       sockets.updates.on('creation', @_onAdd)
