@@ -27,8 +27,9 @@ define [
   'view/edition/BaseEditionView'
   'model/Map'
   'model/Field'
+  'model/FieldType'
   'widget/authoringMap'
-], ($, _, i18n, i18nEdition, template, BaseEditionView, Map, Field) ->
+], ($, _, i18n, i18nEdition, template, BaseEditionView, Map, Field, FieldType) ->
 
   i18n = $.extend(true, i18n, i18nEdition)
 
@@ -67,6 +68,10 @@ define [
     # action button for selection removal
     _removeSelectionButton: null
 
+    # **private**
+    # ordered array that stores field type image numbers during a multiple affectation
+    _selectedImages: []
+
     # The view constructor.
     #
     # @param router [Router] the event bus
@@ -87,6 +92,23 @@ define [
         @_mapWidget.removeData(removed)
       )
       console.log("creates map edition view for #{if id? then @model.id else 'a new object'}")
+
+    # Extends inherited method to add button for selection removal
+    #
+    # @return the action bar rendering.
+    getActionBar: () =>
+      bar = super()
+      # adds specific buttons
+      if bar.find('.remove-selection').length is 0
+        @_removeSelectionButton = $('<a class="remove-selection"></a>')
+          .attr('title', i18n.tips.removeSelection)
+          .button(
+            icons: 
+              primary: 'remove-selection small'
+            text: false
+            disabled: true
+          ).appendTo(bar).click(@_onRemoveSelection) 
+      return bar
 
     # **private**
     # Effectively creates a new model.
@@ -166,26 +188,36 @@ define [
       console.dir comparable
       return comparable
 
-    # Extends inherited method to add button for selection removal
+    # **private**
+    # Multiple field affectation in the current map selection
+    # Creates field instance, using selected field num
     #
-    # @return the action bar rendering.
-    getActionBar: () =>
-      bar = super()
-      # adds specific buttons
-      if bar.find('.remove-selection').length is 0
-        @_removeSelectionButton = $('<a class="remove-selection"></a>')
-          .attr('title', i18n.tips.removeSelection)
-          .button(
-            icons: 
-              primary: 'remove-selection small'
-            text: false
-            disabled: true
-          ).appendTo(bar).click(@_onRemoveSelection) 
-      return bar
+    # @param type [FieldType] the used field type
+    # @param random [Boolean] true to randomly affect image num
+    _multipleAffect: (type, random) =>
+      console.log("affect #{@_selectedImages.length} image(s) inside current selection in #{if random then 'random' else 'regular'} mode")
+      return unless @_selectedImages.length isnt 0
+      # first, remove existing fields
+      @_onRemoveSelection()
+      created = []
+      # then creates new fields
+      for coord, i in @_mapWidget.options.selection
+        # create image num in regular or random mode
+        idx = if random then Math.floor(Math.random()*@_selectedImages.length) else i%@_selectedImages.length
+        created.push(new Field(
+          mapId: @model.id
+          typeId: type.get('_id')
+          num: @_selectedImages[idx]
+          x: coord.x
+          y: coord.y
+        ))
+      # and saves them
+      Field.collection.save(created)
 
     # **private**
     # Field affectation handler.
-    # Removes existing fields, and then creates new field with relevant type and image instead
+    # Removes existing fields, and then creates new field with relevant type and image instead.
+    # If affectation occurs in a multiple selection, displays a dialog to choose which image to affect
     #
     # @param event [Event] the drop event on map widget
     # @param details [Object] drop details:
@@ -194,19 +226,62 @@ define [
     # @option details coord [Object] x and y coordinates of the drop tile
     # @option details inSelection [Boolean] indicates wheter the drop tile is in a multiple selection
     _onAffect: (event, details) =>
-      # removes current field
-      for field in @_mapWidget.options.data when field.x is details.coord.x and field.y is details.coord.y
-        # stored fields are just Json object, not Backbone.Model
-        new Field(field).destroy()
+      unless details.inSelection
+        # removes current field
+        for field in @_mapWidget.options.data when field.x is details.coord.x and field.y is details.coord.y
+          # stored fields are just Json object, not Backbone.Model
+          new Field(field).destroy()
 
-      # and add new one instead
-      new Field(
-        mapId: @model.id
-        typeId: details.typeId
-        num: details.num
-        x: details.coord.x
-        y: details.coord.y
-      ).save()
+        # and add new one instead
+        new Field(
+          mapId: @model.id
+          typeId: details.typeId
+          num: details.num
+          x: details.coord.x
+          y: details.coord.y
+        ).save()
+      else
+        # retrieves the field type
+        type = FieldType.collection.get(details.typeId)
+        return unless type
+        # displays the multiple affectation dialog
+        dialog = $("<div class=\"affect-field\" title=\"#{i18n.titles.multipleAffectation}\">#{i18n.msgs.multipleAffectation}</div>").dialog(
+          modal: true
+          close: (event) ->
+            # unbound click handler and remove dialog
+            $(this).find('.images-container > *').unbind()
+            $(this).remove()
+          buttons: [{
+            text: i18n.labels.ok,
+            icons:
+              primary: 'valid small'
+            click: (event) =>
+              # triggers affectation and close window
+              @_multipleAffect(type, $('.affect-field input:checked').length is 1)
+              $('.affect-field').dialog('close')
+          }]
+        )
+        # empties selected images
+        @_selectedImages = []
+        # adds all possible field type images to the dialog
+        container = $('<div class="images-container"></div>').appendTo(dialog)
+        for image, i in type.get('images')
+          $('<span></span>').loadableImage(
+            source: image
+          ).attr('tabindex', 0).data('num', i).on('click keyup', (event) =>
+            # for keypress, just take in account spaces
+            return if event.type is 'keyup' and event.which isnt 32
+            img = $(event.target).closest('.loadable')
+            num = img.data('num')
+            img.toggleClass('selected')
+            # store image number inside the selecte array
+            if img.hasClass('selected')
+              @_selectedImages.push(num)
+            else
+              @_selectedImages.splice(@_selectedImages.indexOf(num), 1)
+          ).appendTo(container)
+        # adds a random affectation checkbox
+        $("<label><input type=\"checkbox\"/>#{i18n.labels.randomAffect}</label>").appendTo(dialog)
 
     # **private**
     # Field destruction handler.

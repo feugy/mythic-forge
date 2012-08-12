@@ -601,12 +601,12 @@ define [
       # extract dragged datas
       idx = details.helper.data('idx')
       id = details.helper.data('id')
-      console.log("drops images #{idx} of field #{id} at coordinates x:#{o._cursor.x}, y:#{o._cursor.y}")
       # indicates if it's in selection or not
       inSelection = false
       for selected in o.selection when selected.x is o._cursor.x and selected.y is o._cursor.y
         inSelection = true
         break
+      console.log("drops images #{idx} of field #{id} at coordinates x:#{o._cursor.x}, y:#{o._cursor.y}, in selection: #{inSelection}")
       # triggers affectation.
       @_trigger('affect', event,
         typeId: id

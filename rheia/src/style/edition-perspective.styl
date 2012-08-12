@@ -25,6 +25,46 @@ body
 img.dragged
   width 40px
 
+.affect-field 
+  size = 50px
+
+  .images-container
+    margin 1em 0
+
+  .loadable:focus
+    border-color grey
+
+  .loadable
+    border 1px dotted transparent
+    display inline-block
+    width size
+    margin 0 0.5em
+    cursor pointer
+
+    *
+      cursor pointer
+
+    p 
+      width size
+      height size - 13
+      font-size 10px
+      margin 0
+      padding-top 13px
+      vertical-align bottom
+
+    img
+      width size
+      height size
+
+    .ui-icon
+      display none
+
+  .loadable.selected
+    box-shadow: 0 0 10px 5px #AAA
+
+.affect-field.ui-dialog-content
+    text-align center
+
 .edition.perspective
   position relative
   width 100%

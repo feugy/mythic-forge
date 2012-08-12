@@ -78,6 +78,6 @@
             - **[done]** zoom in, zoom out
             - **[done]** selection with Ctrl
             - **[done]** selection with Shift
-            - multiple affectation
+            - **[done]** multiple affectation
             - diamond map widget
             - square map widget

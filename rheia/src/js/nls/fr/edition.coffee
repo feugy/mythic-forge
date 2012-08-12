@@ -33,6 +33,7 @@ define
       rules: 'Règles'
       turnRules: 'Règles de tour'
       fields: 'Terrains'
+    multipleAffectation: 'Affectation multiple'
 
   msgs:
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
@@ -46,6 +47,7 @@ define
     invalidExecutableNameError: "le nom d'un executable ne peut contenir que des caractères alphanumeriques"
     saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
     removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
+    multipleAffectation: 'Choisisez les images que vous aller affecter dans la séléction (l\'ordre est significatif)'
 
   buttons:
     'new': 'Nouveau...'
@@ -90,6 +92,7 @@ define
       {name: '2D-iso carrée', value:'diamond'}
       {name: '2D carrée', value:'square'}
     ]
+    randomAffect: 'affectation aléatoire'
 
   tips:
     save: "Enregistrer l'onglet en cours d'édition"
