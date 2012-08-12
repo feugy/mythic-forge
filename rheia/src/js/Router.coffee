@@ -35,6 +35,7 @@ requirejs.config
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.3.3-min'
     'md5': 'lib/md5-2.2-min'
+    'html5slider': 'lib/html5slider-min'
     'ace': 'lib/ace'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
@@ -84,6 +85,7 @@ define [
   'hotkeys'
   'mousewheel'
   'md5'
+  'html5slider'
   ], (_, _string, $, Backbone, EditionPerspectiveView, ImagesService) ->
 
   # mix in non-conflict functions to Underscore namespace if you want

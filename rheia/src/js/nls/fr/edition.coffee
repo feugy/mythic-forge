@@ -86,13 +86,16 @@ define
       date: 'date'
       object: 'objet'
       array: "tableau d'objets"
-    mapKind: 'type'
+    mapKind: 'Type'
     mapKinds: [
       {name: '2D-iso hexagonale', value:'hexagon'}
       {name: '2D-iso carrée', value:'diamond'}
       {name: '2D carrée', value:'square'}
     ]
     randomAffect: 'affectation aléatoire'
+    zoom: 'Zoom'
+    gridShown: 'Grille'
+    markersShown: 'Graduation'
 
   tips:
     save: "Enregistrer l'onglet en cours d'édition"

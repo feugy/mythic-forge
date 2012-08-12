@@ -74,15 +74,12 @@ define [
       upperCoord: {x:0, y:0}
 
       # Awaited with and height for individual tiles, with normal zoom.
-      # Read-only, use `setOption('tileWidth', ...)` to modify.
       tileDim: 100
 
       # Number of vertical displayed tiles 
-      # Read-only, use `setOption('verticalTileNum', ...)` to modify.
       verticalTileNum: 10
 
       # Number of horizontal displayed tiles.
-      # Read-only, use `setOption('horizontalTileNum', ...)` to modify.
       horizontalTileNum: 10
 
       # Flag that indicates wether or not display the tile grid.
@@ -288,7 +285,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['lowerCoord', 'displayGrid', 'displayMarkers']
+      return $.Widget.prototype._setOption.apply @, arguments unless key in ['lowerCoord', 'displayGrid', 'displayMarkers', 'zoom']
       switch key
         when 'lowerCoord'
           @options[key] = value
@@ -308,6 +305,10 @@ define [
         when 'displayMarkers'
           @options[key] = value
           @_drawMarkers()
+        when 'zoom'
+          @options[key] = value
+          # change zoom without triggering the event
+          @_zoom(@options.zoom, true)
 
     # **private**
     # If no image loading remains, and if a clone layer exists, then its content is 

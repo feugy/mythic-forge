@@ -36,6 +36,12 @@ define [
   # Displays and edit a map on edition perspective
   class MapView extends BaseEditionView
 
+    # map view events to methods
+    events: 
+      'click .toggle-grid': '_onToggleGrid'
+      'click .toggle-markers': '_onToggleMarkers'
+      'change .zoom': '_onZoomed'
+
     # **private**
     # name of the model class
     _modelClassName: 'Map'
@@ -71,6 +77,10 @@ define [
     # **private**
     # ordered array that stores field type image numbers during a multiple affectation
     _selectedImages: []
+
+    # **private**
+    # inhibit zoom handler to avoid looping when updating view rendering
+    _inhibitZoom: false
 
     # The view constructor.
     #
@@ -140,14 +150,24 @@ define [
         displayGrid: true
         displayMarkers: true
         dndType: i18n.constants.fieldAffectation
+        affect: @_onAffect
         coordChanged: () =>
           # reloads map content
           @model.consult(@_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord)
         selectionChanged: () =>
           # update action bar button state
           @_removeSelectionButton.button('option', 'disabled', @_mapWidget.options.selection.length is 0)
-        affect: @_onAffect
+        zoomChanged: () =>
+          @_inhibitZoom = true
+          @$el.find('.zoom').val(@_mapWidget.options.zoom)
       ).data('authoringMap')
+
+      # update map commands
+      @$el.find('.toggle-grid').removeAttr('checked')
+      @$el.find('.toggle-grid').attr('checked', 'checked') if @_mapWidget.options.displayGrid
+      @$el.find('.toggle-markers').removeAttr('checked')
+      @$el.find('.toggle-markers').attr('checked', 'checked') if @_mapWidget.options.displayMarkers
+      @$el.find('.zoom').val(@_mapWidget.options.zoom)
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -301,5 +321,28 @@ define [
       # creates Backbone models, and remove them in block
       removed[i] = new Field(field) for field, i in removed
       Field.collection.destroy(removed)
-        
+      
+    # **private**  
+    # Toggle map grid when the corresponding map command is changed.
+    # 
+    # @param event [Event] click event on the grid checkbox
+    _onToggleGrid: (event) =>
+      @_mapWidget.setOption('displayGrid', $(event.target).is(':checked'))
+
+    # **private**  
+    # Toggle map markers when the corresponding map command is changed.
+    # 
+    # @param event [Event] click event on the grid checkbox
+    _onToggleMarkers: (event) =>
+      @_mapWidget.setOption('displayMarkers', $(event.target).is(':checked'))
+
+    # **private**
+    # Change the map zoom when the zoom slider command changes.
+    #
+    # @param event [Event] slider change event
+    _onZoomed: (event) =>
+      unless @_inhibitZoom
+        @_mapWidget.setOption('zoom', $(event.target).val())
+      @_inhibitZoom = false
+
   return MapView

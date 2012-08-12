@@ -79,5 +79,6 @@
             - **[done]** selection with Ctrl
             - **[done]** selection with Shift
             - **[done]** multiple affectation
+            - **[done]** zoom, toggle markers and toggle grid commands
             - diamond map widget
             - square map widget

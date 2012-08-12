@@ -3,11 +3,19 @@
 <div class="right">
   <label>{{i18n.labels.name}}{{i18n.labels.fieldSeparator}}</label>
   <span class="name field"></span>
+</div>
+<div class="right">
   <label>{{i18n.labels.mapKind}}{{i18n.labels.fieldSeparator}}</label>
   <select class="field" disabled>
     {{#i18n.labels.mapKinds}}
     <option value="{{value}}">{{name}}</option>
     {{/i18n.labels.mapKinds}}
   </select>
+  <label>{{i18n.labels.gridShown}}{{i18n.labels.fieldSeparator}}</label>
+  <input type="checkbox" class="toggle-grid"/>
+  <label>{{i18n.labels.markersShown}}{{i18n.labels.fieldSeparator}}</label>
+  <input type="checkbox" class="toggle-markers"/>
+  <label>{{i18n.labels.zoom}}{{i18n.labels.fieldSeparator}}</label>
+  <input type="range" min="0.1" max="2" step="0.05" class="zoom"/>
 </div>
 <div class="map"></div>
