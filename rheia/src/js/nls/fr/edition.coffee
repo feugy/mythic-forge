@@ -95,4 +95,5 @@ define
     save: "Enregistrer l'onglet en cours d'édition"
     remove: "Supprimer l'onglet en cours d'édition"
     addProperty: 'Ajoute une nouvelle propriété'
+    removeSelection: 'Supprime la séléction courante de la carte éditée'
     description: 'TODO description'

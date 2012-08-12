@@ -63,6 +63,10 @@ define [
     # map content widget
     _mapWidget: null
 
+    # **private**
+    # action button for selection removal
+    _removeSelectionButton: null
+
     # The view constructor.
     #
     # @param router [Router] the event bus
@@ -117,6 +121,9 @@ define [
         coordChanged: () =>
           # reloads map content
           @model.consult(@_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord)
+        selectionChanged: () =>
+          # update action bar button state
+          @_removeSelectionButton.button('option', 'disabled', @_mapWidget.options.selection.length is 0)
         affect: @_onAffect
       ).data('authoringMap')
 
@@ -159,9 +166,27 @@ define [
       console.dir comparable
       return comparable
 
+    # Extends inherited method to add button for selection removal
+    #
+    # @return the action bar rendering.
+    getActionBar: () =>
+      bar = super()
+      # adds specific buttons
+      if bar.find('.remove-selection').length is 0
+        @_removeSelectionButton = $('<a class="remove-selection"></a>')
+          .attr('title', i18n.tips.removeSelection)
+          .button(
+            icons: 
+              primary: 'remove-selection small'
+            text: false
+            disabled: true
+          ).appendTo(bar).click(@_onRemoveSelection) 
+      return bar
+
     # **private**
     # Field affectation handler.
-    # Removes existing field, and then creates new field with relevant type and image instead
+    # Removes existing fields, and then creates new field with relevant type and image instead
+    #
     # @param event [Event] the drop event on map widget
     # @param details [Object] drop details:
     # @option details typeId [String] dragged field's type id
@@ -183,4 +208,23 @@ define [
         y: details.coord.y
       ).save()
 
+    # **private**
+    # Field destruction handler.
+    # Removes existing fields inside the map selection
+    #
+    # @param event [Event] the drop event on map widget
+    # @param details [Object] drop details:
+    # @option details typeId [String] dragged field's type id
+    # @option details num [Number] image number of the dragged field
+    # @option details coord [Object] x and y coordinates of the drop tile
+    # @option details inSelection [Boolean] indicates wheter the drop tile is in a multiple selection
+    _onRemoveSelection: (event) =>
+      # gets JSON fields from map Widget that are selected
+      removed = _.filter(@_mapWidget.options.data, (field) => 
+        return true for selected in @_mapWidget.options.selection when field.x is selected.x and field.y is selected.y
+      ) 
+      # creates Backbone models, and remove them in block
+      removed[i] = new Field(field) for field, i in removed
+      Field.collection.destroy(removed)
+        
   return MapView

@@ -299,6 +299,8 @@ define [
             y: value.y+Math.round(o._height/(o._tileH*0.75)) # TODO specific iso
           # creates a clone layer while reloading
           o._cloneLayer = $("<canvas width=\"#{o._width*3}\" height=\"#{o._height*3}\"></canvas>")
+          # empty datas
+          o.data = []
           @_trigger('coordChanged')
         when 'displayGrid'
           @options[key] = value
