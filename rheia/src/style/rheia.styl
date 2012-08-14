@@ -32,6 +32,7 @@ borderColor = #ccc
 shadowColor = #ccc
 bgColor = #fff
 hoverColor = darken(#fff, 8%)
+inactiveColor = darken(#fff, 20%)
 focusColor = #75B9F0
 errorColor = lighten(orange, 20%)
 
@@ -136,6 +137,11 @@ table-header()
   background-repeat repeat-x 
   background-position 50% 50%
   background-color #CCCCCC
+
+// Inactive mixin for labels
+inactive()
+  color inactiveColor
+  text-decoration line-through
 
 // CSS Reset 
 

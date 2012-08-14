@@ -63,12 +63,13 @@ define [
 
     # The view constructor.
     #
-    # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
-    constructor: (id) ->
-      super(id, 'rule')
-      # on content changes, displays category.
+    # @param className [String] optional CSS className, used by subclasses
+    constructor: (id, className = 'rule') ->
+      super(id, className)
+      # on content changes, displays category and active status
       @model.on('change:category', @_onCategoryChange)
+      @model.on('change:active', @_onActiveChange)
       console.log("creates rule edition view for #{if id? then @model.id else 'a new rule'}")
 
     # **private**
@@ -90,6 +91,7 @@ define [
       super()
       @_editorWidget.setOption('text', @model.get('content'))
       @_onCategoryChange()
+      @_onActiveChange()
       @_onChange()
 
 
@@ -159,5 +161,10 @@ define [
     _onCategoryChange: () =>
       category = @model.get('category')
       @$el.find('.category').html(if category then category else i18n.labels.noRuleCategory)
+
+    # **private**
+    # Refresh active displayal when the model's content changed.
+    _onActiveChange: () =>
+      @$el.toggleClass('inactive', !@model.get('active'))
 
   return RuleView

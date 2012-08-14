@@ -29,9 +29,6 @@ path = require 'path'
 fs = require 'fs'
 logger = require('../logger').getLogger 'service'
 
-# Local cache of existing rules.
-# Rules are stored with their name as index.
-rules = {}
 # frequency, in seconds.
 frequency = utils.confKey 'turn.frequency'
 
@@ -280,60 +277,68 @@ class _RuleService
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
         obj = require '.\\'+ path.relative module.filename, executable.compiledPath
-        rules.push obj if obj? and utils.isA obj, TurnRule
+        rules.push obj if obj? and utils.isA(obj, TurnRule)
 
-      # @todo sort rules
+      # sort rules by rank
+      rules.sort (a, b) -> a.rank - b.rank
 
-      # arrays of modified objects
-      saved = []
-      removed = []
-
-      # function that select target of a rule and execute it on them
-      selectAndExecute = (rule, end) =>
-        rule.select (err, targets) =>
-          # stop a first selection error.
-          return callback "Failed to select targets for rule #{rule.name}: #{err}" if err?
-          logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
-
-          # function that execute the current rule on a target
-          execute = (target, end) =>
-            rule.execute target, (err) =>
-              # stop a first execution error.
-              return callback "Failed to execute rule #{rule.name} on target #{target.get '_id'}: #{err}" if err?
-              # store modified object for later
-              saved = saved.concat rule.created
-              @_filterModified target, saved
-              removed = removed.concat rule.removed
-              end()
-
-          # execute on each target and leave at the end.
-          async.forEach targets, execute, end
-
-      # select and execute each turn rule
-      async.forEach rules, selectAndExecute, =>
+      # function that updates dbs with rule's modifications
+      updateDb = (saved, removed, end) =>
         # at the end, save and remove modified items
-        removeModel = (target, end) =>
+        removeModel = (target, removeEnd) =>
           logger.debug "remove model #{target.get '_id'}"
           target.remove (err) =>
             # stop a first execution error.
             return callback "Failed to remove model #{target.get '_id'} at the end of the turn: #{err}" if err?
-            end()
+            removeEnd()
         # first removals
         async.forEach removed, removeModel, => 
-          saveModel = (target, end) =>
+          saveModel = (target, saveEnd) =>
             logger.debug "save model #{target.get '_id'}"
             target.save (err) =>
               # stop a first execution error.
               return callback "Failed to save model #{target.get '_id'} at the end of the turn: #{err}" if err?
-              end()
+              saveEnd()
           # then saves
-          async.forEach saved, saveModel, => 
-            logger.debug 'end of turn'
-            # trigger the next turn
-            setTimeout @triggerTurn, nextTurn(), callback, true if _auto
-            # return callback
-            callback null
+          async.forEach saved, saveModel, end
 
+      # function that select target of a rule and execute it on them
+      selectAndExecute = (rule, end) =>
+        # ignore disabled rules
+        return end() unless rule.active
+
+        rule.select (err, targets) =>
+          # stop a first selection error.
+          return callback "Failed to select targets for rule #{rule.name}: #{err}" if err?
+          return end() unless Array.isArray(targets)
+          logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
+          # arrays of modified objects
+          saved = []
+          removed = []
+
+          # function that execute the current rule on a target
+          execute = (target, executeEnd) =>
+            rule.execute target, (err) =>
+              # stop a first execution error.
+              return callback "Failed to execute rule #{rule.name} on target #{target.get '_id'}: #{err}" if err?
+              # store modified object for later
+              saved.push obj for obj in rule.created
+              @_filterModified target, saved
+              removed.push obj for obj in rule.removed
+              executeEnd()
+
+          # execute on each target and leave at the end.
+          async.forEach targets, execute, =>
+            # save all modified and removed object after the rule has executed
+            updateDb saved, removed, end
+
+      # select and execute each turn rule, NOT in parallel !
+      async.forEachSeries rules, selectAndExecute, => 
+        logger.debug 'end of turn'
+        # trigger the next turn
+        setTimeout @triggerTurn, nextTurn(), callback, true if _auto
+        # return callback
+        callback null
 
   # **private**
   # Populate the `modified` parameter array with models that have been modified.
@@ -341,7 +346,7 @@ class _RuleService
   # Can also handle Fields and Players
   #
   # @param item [Object] root model that begins the analysis
-  # @return an array (may be empty) of modified models
+  # @param modified [Array] array of already modified object, concatenated with found modified objects
   _filterModified: (item, modified) =>
     # do not process if already known
     return if item in modified 
@@ -391,7 +396,7 @@ class _RuleService
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
         obj = require '.\\'+ path.relative module.filename, executable.compiledPath
-        rules.push obj if obj? and utils.isA obj, Rule
+        rules.push obj if obj? and(utils.isA obj, Rule) and obj.active
 
       logger.debug "#{rules.length} candidate rules"
       # evaluates the number of target. No targets ? leave immediately.

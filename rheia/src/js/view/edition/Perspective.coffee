@@ -30,7 +30,8 @@ define [
   'view/edition/FieldType'
   'view/edition/Map'
   'view/edition/Rule'
-], ($, _, Backbone, i18n, template, Milk, Explorer, ItemTypeView, FieldTypeView, MapView, RuleView) ->
+  'view/edition/TurnRule'
+], ($, _, Backbone, i18n, template, Milk, Explorer, ItemTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
 
   i18n = $.extend {}, i18n
 
@@ -159,6 +160,7 @@ define [
         when 'FieldType' then view = new FieldTypeView(id)
         when 'ItemType' then view = new ItemTypeView(id)
         when 'Rule' then view = new RuleView(id)
+        when 'TurnRule' then view = new TurnRuleView(id)
         when 'Map' then view = new MapView(id)
         else return
 

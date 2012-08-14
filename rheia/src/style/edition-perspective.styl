@@ -183,9 +183,14 @@ img.dragged
       margin-right 0px
 
     dd.rules img 
+    dd.turn-rules img
       height 0
       width 0.3em
       vertical-align top
+
+    dd.rules .inactive
+    dd.turn-rules .inactive
+      inactive()
 
   .ui-tabs.views
     takeSpace 40px, 0, 0
@@ -302,7 +307,14 @@ img.dragged
         min-width 50%
 
   // rule views
+
+  .view.rule.inactive
+  .view.turn-rule.inactive
+    > h1
+      inactive()
+
   .view.rule:not(.icon)
+  .view.turn-rule:not(.icon)
     takeSpace(1em, 1.4em, 1em, 1.4em)
 
     > div input[type="text"]
@@ -319,6 +331,7 @@ img.dragged
         line-height 16px
       
   .view.rule.error > .content.ace_editor
+  .view.turn-rule.error > .content.ace_editor
     top 100px
 
   // map view

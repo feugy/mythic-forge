@@ -31,6 +31,9 @@ class Rule
   # Rule's category
   category: ''
 
+  # Active status. true by default
+  active: true
+
   # All objects created by the rule must be added to this array to be saved in database
   created: []
 
@@ -41,6 +44,7 @@ class Rule
   constructor: (@name, @category = '') ->
     @removed= []
     @created= []
+    @active= true
  
   # This method indicates wheter or not the rule apply to a given situation.
   # Beware: `canExecute`  is intended to be invoked on server and client side, thus, database access are not allowed.

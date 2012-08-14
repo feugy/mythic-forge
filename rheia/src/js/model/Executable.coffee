@@ -22,7 +22,10 @@ define [
   'model/BaseModel'
   'model/sockets'
   'coffeescript'
-], (Base, sockets, coffee) ->
+  'utils/utilities'
+  'model/TurnRule'
+  'model/Rule'
+], (Base, sockets, coffee, utils, TurnRule, Rule) ->
 
   # Compiles and requires the executable content.
   # First, NodeJS requires are transformed into their RequireJS equivalent,
@@ -98,6 +101,13 @@ define [
     # Local cache for models.
     @collection = new Executables(@)
 
+    # Executable kind: rule, turnRule or null.
+    # First guessed on the executable content, then enforced after compilation
+    kind: null
+
+    # the exported object present inside the executable's content.
+    exported: null
+
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Executable'
@@ -107,12 +117,16 @@ define [
     _i18nAttributes: []
 
     # **private**
-    # the exported object present inside the executable's content.
-    _exported: null
+    # the old value of exported rule's category.
+    _oldCategory: null
 
     # **private**
-    # the old value of exported category.
-    _oldCategory: null
+    # the old value of exported turn rule's rank.
+    _oldRank: null
+
+    # **private**
+    # the old value of exported turn rule's active status.
+    _oldActive: null
 
     # Provide a custom sync method to wire Types to the server.
     # Customize the update behaviour to rename if necessary.
@@ -136,18 +150,37 @@ define [
       super(key, value, options)
 
       if key is 'content' or typeof key is 'object' and 'content' of key
+        @kind = 'rule' if @get('content')?.indexOf('extends Rule') isnt -1
+        @kind = 'turnRule' if @get('content')?.indexOf('extends TurnRule') isnt -1
         # recompiles content and store exported
         compile(@, (err, exported) => 
-          @_exported = exported
-          if @_exported?.category isnt @_oldCategory
-            @_oldCategory = @_exported?.category
-            @trigger('change:category', @)
+          @exported = exported
+          if exported instanceof Rule
+            # rule specificity: category management
+            @kind = 'rule'
+            if @exported?.category isnt @_oldCategory
+              @_oldCategory = @exported?.category
+              @trigger('change:category', @)
+
+          else if exported instanceof TurnRule
+            # turn rule specificity: rank management
+            @kind = 'turnRule'
+            if @exported?.rank isnt @_oldRank
+              @_oldRank = @exported?.rank
+              @trigger('change:rank', @)
+
+          if @exported?.active isnt @_oldActive
+            @_oldActive = @exported?.active
+            @trigger('change:active', @)
         )
 
-    # Overload inherited getter to add "virtual" attribute `category`
+    # Overload inherited getter to add "virtual" attribute `category`, `rank` and `active`
     get: (key) =>
       # invoked superclass
-      return super(key) unless key is 'category'
-      return @_exported?.category
+      switch key
+        when 'category' then @exported?.category
+        when 'rank' then @exported?.rank
+        when 'active' then @exported?.active
+        else super(key)
 
   return Executable

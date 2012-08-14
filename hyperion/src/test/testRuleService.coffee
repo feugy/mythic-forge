@@ -460,6 +460,7 @@ describe 'RuleService tests', ->
           type1 = new ItemType({name: 'dog'})
           type1.setProperty 'name', 'string', ''
           type1.setProperty 'fed', 'integer', 0
+          type1.setProperty 'execution', 'string', ''
           type1.save (err, saved) ->
             type1 = saved
             # given two items
@@ -486,24 +487,155 @@ describe 'RuleService tests', ->
               Item.find {type: new ObjectId "#{type1._id}"}, callback
             execute: (target, callback) =>
               target.set 'fed', target.get('fed')+1
-              callback null, "\#{target.get 'name'} was fed"
+              callback null
           )()"""
       script.save (err) ->
         throw new Error err if err?
-        Item.count {type: type1._id}, (err, count) =>
+        # when executing a trurn
+        service.triggerTurn (err)->
+          throw new Error "Unable to trigger turn: #{err}" if err?
+
+          # then the both dogs where fed
+          Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+            throw new Error "Unable to find item: #{err}" if err?
+            assert.equal 1, existing.get('fed'), 'lassie wasn\'t fed'
+         
+            Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
+              throw new Error "Unable to find item: #{err}" if err?
+              assert.equal 1, existing.get('fed'), 'medor wasn\'t fed'
+              done()
+
+    it 'should turn rule be executed in right order', (done) ->
+      # given a first turn rule on lassie with rank 10
+      script = new Executable
+        _id:'rule7', 
+        content: """TurnRule = require '../main/model/TurnRule'
+          Item = require '../main/model/Item'
+
+          module.exports = new (class Dumb extends TurnRule
+            constructor: ->
+              @name= 'rule 7'
+              @rank= 10
+            select: (callback) =>
+              Item.find {name: 'lassie'}, callback
+            execute: (target, callback) =>
+              target.set 'fed', 1
+              target.set 'execution', target.get('execution')+','+@name
+              callback null
+          )()"""
+      script.save (err) ->
+        throw new Error err if err?
+
+        # given a another turn rule on lassie with rank 1
+        script = new Executable
+          _id:'rule8', 
+          content: """TurnRule = require '../main/model/TurnRule'
+            Item = require '../main/model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 8'
+                @rank= 1
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                target.set 'fed', 10
+                target.set 'execution', target.get('execution')+','+@name
+                callback null
+            )()"""
+        script.save (err) ->
+          throw new Error err if err?
+
           # when executing a trurn
           service.triggerTurn (err)->
             throw new Error "Unable to trigger turn: #{err}" if err?
 
-            # then the both dogs where fed
+            # then lassie fed status was reseted, and execution order is correct
             Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
               throw new Error "Unable to find item: #{err}" if err?
-              assert.equal 1, existing.get('fed'), 'lassie wasn\'t fed'
-           
-              Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
-                throw new Error "Unable to find item: #{err}" if err?
-                assert.equal 1, existing.get('fed'), 'medor wasn\'t fed'
-                done()
+              assert.equal ',rule 8,rule 7', existing.get('execution'), 'wrong execution order'
+              assert.equal 1, existing.get('fed'), 'lassie was fed'
+              done()
+
+    it 'should disabled turn rule not be executed', (done) ->
+      # given a disabled turn rule on lassie
+      script = new Executable
+        _id:'rule9', 
+        content: """TurnRule = require '../main/model/TurnRule'
+          Item = require '../main/model/Item'
+
+          module.exports = new (class Dumb extends TurnRule
+            constructor: ->
+              @name= 'rule 9'
+              @active = false
+            select: (callback) =>
+              Item.find {name: "#{item1.get('name')}"}, callback
+            execute: (target, callback) =>
+              target.set 'fed', -1
+              callback null
+          )()"""
+      script.save (err) ->
+        throw new Error err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          throw new Error "Unable to trigger turn: #{err}" if err?
+
+          # then lassie wasn't fed
+          Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+            throw new Error "Unable to find item: #{err}" if err?
+            assert.equal 0, existing.get('fed'), 'disabled rule was executed'
+            done()
+
+    it 'should disabled rule not be resolved', (done) ->
+      # Creates a dumb rule that always match
+      script = new Executable 
+        _id:'rule10', 
+        content: """Rule = require '../main/model/Rule'
+          
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 10'
+              @active = false
+            canExecute: (actor, target, callback) =>
+              callback null, true;
+            execute: (actor, target, callback) =>
+              target.set 'name', 'changed !'
+              callback null, 'hello !'
+          )()"""
+      script.save (err) ->
+        # Creates a type
+        throw new Error err if err?
+        # when resolving rule
+        service.resolve item1._id, item1._id, (err, results) ->
+          throw new Error "Unable to resolve rules: #{err}" if err?
+          # then the rule was not resolved
+          assert.ok results[item1._id].length isnt 1, 'Disabled rule was resolved'
+          done()
+
+    it 'should disabled rule not be executed', (done) ->
+      # Creates a dumb rule that always match
+      script = new Executable 
+        _id:'rule11', 
+        content: """Rule = require '../main/model/Rule'
+          
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 11'
+              @active = false
+            canExecute: (actor, target, callback) =>
+              callback null, true;
+            execute: (actor, target, callback) =>
+              target.set 'name', 'changed !'
+              callback null, 'hello !'
+          )()"""
+      script.save (err) ->
+        # Creates a type
+        throw new Error err if err?
+        # when executing rule
+        service.execute 'rule 11', item1._id, item1._id, (err, results) ->
+          # then the rule was not resolved
+          assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
+          done()
 
     it 'should not turn rule be exportable to client', (done) ->
       # when exporting rules to client

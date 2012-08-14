@@ -21,8 +21,9 @@ define
   titles:
     itemType: "Type d'objets %s"
     fieldType: 'Type de terrains %s'
-    rule: "Règle"
-    map: "Carte %s"
+    rule: 'Règle'
+    turnRule: 'Règle de tour'
+    map: 'Carte %s'
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
     external: 'Modification externe'
@@ -54,6 +55,7 @@ define
     newItemType: "Type d'objets"
     newFieldType: 'Type de terrains'
     newRule: 'Règle'
+    newTurnRule: 'Règle de tour'
     newMap: 'Carte'
 
   labels:
@@ -65,6 +67,7 @@ define
     descImage: 'Type'
     images: 'Instances'
     category: 'Catégorie'
+    rank: 'Rang'
     fieldSeparator: ' : '
     name: 'Nom'
     desc: 'Description'

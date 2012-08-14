@@ -31,10 +31,17 @@ class TurnRule
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
 
+  # Active status. true by default
+  active: true
+
+  # Turn rule rank inside existing rules
+  rank: 0
+
   # Construct a rule, with a friendly name.
-  constructor: (@name) ->
+  constructor: (@name, @rank = 0) ->
     @removed= []
     @created= []
+    @active= true
  
   # This method select a set of element on which execute will be applied.
   # Objects can be read directly from database, but modification is not allowed.

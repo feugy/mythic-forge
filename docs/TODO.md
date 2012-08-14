@@ -46,18 +46,23 @@
     - **[done]** Field type CRUD
     - **[done]** Map CRUD
     - **[done]** Field CRUD
+    - **[done]** disabled turn-rules/rules
+    - **[done]** turn-rules ordering rank
     - bugs
         - **[done]** remove item type property does not update existing items
 - Rheia
     - bugs
         - **[done]** spaces inside tab names 
     - edition perspective
+        - Search
         - **[done]** ItemType
             - **[done]** static fields and description image
             - **[done]** properties
             - **[done]** instance images
             - **[done]** sprites
             - **[done]** validation
+            - categories ?
+            - playable status ?
         - **[done]** Rule
             - **[done]** categories in explorer
             - **[done]** static fields (name, category) with validation
@@ -68,6 +73,8 @@
             - **[done]** static fields and description image
             - **[done]** instance images
             - **[done]** image carousel in explorer
+        - EventType
+        - **[done]** TurnRule
         - Maps
             - **[done]** map name and validation
             - **[done]** map kind (square, diamond, hexa)
@@ -82,3 +89,9 @@
             - **[done]** zoom, toggle markers and toggle grid commands
             - diamond map widget
             - square map widget
+
+
+# Changes
+    - no more distinction between Items and Actors
+    - hexagonal maps
+    - date-kind attributes for Items and Events
