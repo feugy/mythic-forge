@@ -57,6 +57,7 @@ define
     newRule: 'Règle'
     newTurnRule: 'Règle de tour'
     newMap: 'Carte'
+    newEventType: "Type d'évènements"
 
   labels:
     yes: 'Oui'

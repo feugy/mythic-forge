@@ -27,11 +27,12 @@ define [
   'utils/Milk'
   'view/edition/Explorer'
   'view/edition/ItemType'
+  'view/edition/EventType'
   'view/edition/FieldType'
   'view/edition/Map'
   'view/edition/Rule'
   'view/edition/TurnRule'
-], ($, _, Backbone, i18n, template, Milk, Explorer, ItemTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
+], ($, _, Backbone, i18n, template, Milk, Explorer, ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
 
   i18n = $.extend {}, i18n
 
@@ -159,6 +160,7 @@ define [
       switch type
         when 'FieldType' then view = new FieldTypeView(id)
         when 'ItemType' then view = new ItemTypeView(id)
+        when 'EventType' then view = new EventTypeView(id)
         when 'Rule' then view = new RuleView(id)
         when 'TurnRule' then view = new TurnRuleView(id)
         when 'Map' then view = new MapView(id)

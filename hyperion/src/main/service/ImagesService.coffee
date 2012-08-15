@@ -24,12 +24,13 @@ path= require 'path'
 utils = require '../utils'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
+EventType = require '../model/EventType'
 logger = require('../logger').getLogger 'service'
 
 # enforce folder existence
 utils.enforceFolderSync utils.confKey('images.store'), false, logger
 
-supported = ['ItemType', 'FieldType']
+supported = ['ItemType', 'FieldType', 'EventType']
 
 # The ImagesService allow to save and remove images associated to a given model.
 # It saved all images in a folder, which path is read in configuration at key `images.store`.
@@ -69,6 +70,7 @@ class _ImagesService
     switch modelName
       when 'ItemType' then modelClass = ItemType
       when 'FieldType' then modelClass = FieldType
+      when 'EventType' then modelClass = EventType
 
     # gets the concerned model
     modelClass.findCached id, (err, model) ->
@@ -151,7 +153,9 @@ class _ImagesService
     return callback "No image can be uploaded for #{modelName}" unless modelName in supported
     modelClass = null
     switch modelName
-      when 'ItemType' then modelClass = ItemType
+      when 'ItemType' then modelClass = ItemType      
+      when 'FieldType' then modelClass = FieldType      
+      when 'EventType' then modelClass = EventType
 
     # gets the concerned model
     modelClass.findCached id, (err, model) ->

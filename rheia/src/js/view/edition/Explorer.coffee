@@ -25,11 +25,12 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'model/ItemType'
+  'model/EventType'
   'model/FieldType'
   'model/Executable'
   'model/Map'
   'widget/Carousel'
-], ($, Backbone, utils, i18n, i18nEdition, ItemType, FieldType, Executable, Map) ->
+], ($, Backbone, utils, i18n, i18nEdition, ItemType, EventType, FieldType, Executable, Map) ->
 
   i18n = $.extend(i18n, i18nEdition)
 
@@ -146,6 +147,8 @@ define [
       name: i18n.titles.categories.events
       className: 'event-types'
       id: 'EventType'
+      load: -> 
+        EventType.collection.fetch()
     },{
       name: i18n.titles.categories.rules
       className: 'rules'
@@ -169,7 +172,7 @@ define [
       super({tagName: 'div', className:'explorer'})
 
       # bind changes to collections
-      for model in [ItemType, FieldType, Executable, Map]
+      for model in [ItemType, FieldType, Executable, EventType, Map]
         @bindTo(model.collection, 'reset', @_onResetCategory)
         @bindTo(model.collection, 'add', (element, collection) =>
           @_onUpdateCategory(element, collection, null, 'add'))
@@ -217,10 +220,7 @@ define [
           category = @_categories[title.data('idx')]
           return unless category?
           console.log("loading category #{category.name}")
-          if 'load' of category
-            category.load()
-          else 
-            console.error("#{category.name} loading not implemented yet")
+          category.load()
 
     # **private**
     # Open the element clicked by issu ing an event on the bus.
@@ -256,6 +256,7 @@ define [
         when Map.collection then idx = 0
         when FieldType.collection then idx = 1
         when ItemType.collection then idx = 2
+        when EventType.collection then idx = 3
         when Executable.collection
           # Execuables are both used to rule and turn rules. We must distinguish them
           @$el.find('dt[data-idx=4], dt[data-idx=5]').addClass('loaded')
@@ -324,6 +325,8 @@ define [
           if operation isnt 'update' or '_name' of changes or 'images' of changes then idx = 1
         when ItemType.collection
           if operation isnt 'update' or '_name' of changes or 'descImage' of changes then idx = 2
+        when EventType.collection
+          if operation isnt 'update' or '_name' of changes or 'descImage' of changes then idx = 3
         when Executable.collection 
           if operation isnt 'update' or '_id' of changes 
             idx = if element.kind is 'rule' then 4 else 5

@@ -48,6 +48,8 @@
     - **[done]** Field CRUD
     - **[done]** disabled turn-rules/rules
     - **[done]** turn-rules ordering rank
+    - **[done]** Event type CRUD
+    - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items
 - Rheia
@@ -64,17 +66,17 @@
             - **[done]** validation
             - categories ?
             - playable status ?
+        - **[done]** EventType
+        - **[done]** FieldType
+            - **[done]** static fields and description image
+            - **[done]** instance images
+            - **[done]** image carousel in explorer
         - **[done]** Rule
             - **[done]** categories in explorer
             - **[done]** static fields (name, category) with validation
             - **[done]** rule body
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
-        - **[done]** FieldType
-            - **[done]** static fields and description image
-            - **[done]** instance images
-            - **[done]** image carousel in explorer
-        - EventType
         - **[done]** TurnRule
         - Maps
             - **[done]** map name and validation
