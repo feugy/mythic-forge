@@ -18,12 +18,10 @@
 ###
 
 Item = require '../main/model/Item'
-checkType = Item.checkType
 assert = require('chai').assert
+utils = require '../main/utils'
 
 property = {}
-
-matrix = 
 
 generateTest = (type, def, specs) ->
   return ->
@@ -34,14 +32,14 @@ generateTest = (type, def, specs) ->
   
     for spec in specs
       it "should #{spec.name} be #{spec.status}", ->
-        err = checkType spec.value, property
+        err = utils.checkPropertyType spec.value, property
         if 'accepted' is spec.status
           assert.ok err is null or err is undefined
         else 
           assert.ok 0 <= err?.indexOf('isn\'t a valid')
 
 # integer value tests
-describe 'Item dynamic properties tests', ->
+describe 'Dynamic properties check tests', ->
 
   describe 'given an integer definition', generateTest 'integer', 10, [
     {name: 'null', value: null, status: 'accepted'}

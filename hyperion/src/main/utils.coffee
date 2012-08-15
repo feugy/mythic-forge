@@ -144,3 +144,52 @@ module.exports =
       .set (value) ->
         @get("_#{field}")[@get 'locale'] = value
         @markModified "_#{field}"
+
+  # Enforce that a property value does not violate its corresponding definition.
+  #
+  # @param value [Object] the checked value.
+  # @param property [Object] the property definition
+  # @option property type [String] the awaited type. Could be: string, text, boolean, integer, float, date, array or object
+  # @option property def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
+  checkPropertyType: (value,  property) ->
+    err = null
+
+    # string and text: null or typeof is string
+    checkString = ->
+      err = "#{value} isn't a valid string" unless value is null or 
+        typeof value is 'string'
+
+    # object: null or object with a __proto__ that have the good name.    
+    checkObject = (val, isArray) ->
+      err = "#{value} isn't a valid #{property.def}" if val isnt null and 
+        (typeof val isnt 'object' or val?.collection?.name isnt property.def.toLowerCase()+'s')
+
+    switch property.type 
+      # integer: null or float = int value of a number/object
+      when 'integer' then err = "#{value} isn't a valid integer" unless value is null or 
+        ((typeof value is 'number' or typeof value is 'object') and 
+        parseFloat(value, 10) is parseInt(value, 10))
+      # foat: null or float value of a number/object
+      when 'float' then err = "#{value} isn't a valid float" unless value is null or 
+        ((typeof value is 'number' or typeof value is 'object') and not 
+        isNaN parseFloat(value, 10))
+      # boolean: null or value is false or true and not a string
+      when 'boolean' 
+        strVal = "#{value}".toLowerCase()
+        err = "#{value} isn't a valid boolean" if value isnt null and
+          (typeof value is 'string' or 
+          (strVal isnt 'true' and strVal isnt 'false'))
+      # date : null or typeof is date
+      when 'date' then err = "#{value} isn't a valid date" unless value is null or 
+        value instanceof Date
+      when 'object' then checkObject(value, false)
+      # array: array that contains object at each index.
+      when 'array'
+        if value instanceof Array 
+          checkObject obj for obj in value
+        else 
+          err = "#{value} isn't a valid array of #{property.def}"
+      when 'string' then checkString()
+      when 'text' then checkString()
+      else err = "#{property.type} isn't a valid type"
+    err

@@ -204,7 +204,7 @@ describe 'RuleService tests', ->
       # when resolving applicable rules at a coordinate
       service.resolve item1._id, 1, 2, (err, results)->
         throw new Error "Unable to resolve rules: #{err}" if err?
-        
+
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
         assert.ok item2._id of results, 'The item2\'s id is not in results'

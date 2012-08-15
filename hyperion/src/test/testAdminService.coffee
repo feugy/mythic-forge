@@ -20,8 +20,10 @@
 ItemType = require '../main/model/ItemType'
 Item = require '../main/model/Item'
 FieldType = require '../main/model/FieldType'
-Executable = require '../main/model/Executable'
 Field = require '../main/model/Field'
+EventType = require '../main/model/EventType'
+Event = require '../main/model/Event'
+Executable = require '../main/model/Executable'
 Map = require '../main/model/Map'
 service = require('../main/service/AdminService').get()
 watcher = require('../main/model/ModelWatcher').get()
@@ -30,6 +32,7 @@ utils = require '../main/utils'
 assert = require('chai').assert
      
 itemTypes = []
+eventTypes = []
 fieldTypes = []
 executables = []
 maps = []
@@ -39,6 +42,7 @@ describe 'AdminService tests', ->
 
   beforeEach (done) ->
     itemTypes = []
+    eventTypes = []
     executables = []
     fieldTypes = []
     maps = []
@@ -46,26 +50,29 @@ describe 'AdminService tests', ->
       Executable.resetAll -> 
         ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop -> Field.collection.drop ->
-            Map.collection.drop ->
-              # creates fixtures
-              created = [
-                {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-                {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-                {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
-                {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
-                {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
-                {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
-                {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
-                {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
-              ]
-              create = (def) ->
-                return done() unless def?
-                new def.clazz(def.args).save (err, saved) ->
-                  throw new Error err if err?
-                  def.store.push saved
-                  create created.pop()
+            EventType.collection.drop -> Event.collection.drop ->
+              Map.collection.drop ->
+                # creates fixtures
+                created = [
+                  {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                  {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                  {clazz: EventType, args: {name: 'type 5', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
+                  {clazz: EventType, args: {name: 'type 6', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
+                  {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
+                  {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
+                  {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
+                  {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
+                  {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
+                  {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
+                ]
+                create = (def) ->
+                  return done() unless def?
+                  new def.clazz(def.args).save (err, saved) ->
+                    throw new Error err if err?
+                    def.store.push saved
+                    create created.pop()
 
-              create created.pop()
+                create created.pop()
 
   it 'should list fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -85,6 +92,17 @@ describe 'AdminService tests', ->
       assert.equal modelName, 'ItemType'
       assert.ok itemTypes[0].equals(list[0])
       assert.ok itemTypes[1].equals(list[1])
+      done()
+
+  it 'should list returns event types', (done) ->
+    # when listing all event types
+    service.list 'EventType', (err, modelName, list) ->
+      throw new Error "Can't list eventTypes: #{err}" if err?
+      # then the two created types are retrieved
+      assert.equal list.length, 2
+      assert.equal modelName, 'EventType'
+      assert.ok eventTypes[0].equals(list[0])
+      assert.ok eventTypes[1].equals(list[1])
       done()
 
   it 'should list returns field types', (done) ->
@@ -153,6 +171,34 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       ItemType.findById model._id, (err, obj) ->
         throw new Error "Can't find itemType in db #{err}" if err?
+        assert.ok obj.equals model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should save create new event type', (done) ->
+    # given new values
+    values = {name: 'eventtype 3', properties:{weight:{def:5.2, type:'float'}}}
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'EventType'
+      assert.equal operation, 'creation'
+      assert.equal instance._name.default, 'eventtype 3'
+      awaited = true
+
+    # when saving new event type
+    service.save 'EventType', values, (err, modelName, model) ->
+      throw new Error "Can't save eventType: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok model._id?
+      assert.equal model.get('name'), values.name
+      assert.equal model.get('properties'), values.properties
+
+      # then the model exists in DB
+      EventType.findById model._id, (err, obj) ->
+        throw new Error "Can't find eventType in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -287,6 +333,56 @@ describe 'AdminService tests', ->
               throw new Error "Can't get item from db #{err}" if err?
               assert.equal 'to be defined', item.get('desc')
               assert.ok item.get('strength') is undefined, 'Item still has strength property'
+              watcher.removeAllListeners 'change'
+              done()
+
+  it 'should save update existing event type', (done) ->
+    # given existing values
+    values = eventTypes[1].toObject()
+
+    # given an event for this type
+    new Event({type: eventTypes[1]}).save (err, event) ->
+      throw new Error "Can't save event: #{err}" if err?
+      assert.equal event.get('content'), 'hello'
+        
+      # given a property raw change
+      values.properties.desc = {type:'string', def:'to be defined'}
+      delete values.properties.content
+
+      awaited = false
+      # then a creation event was issued
+      watcher.on 'change', (operation, className, instance) ->
+        return unless className is 'EventType'
+        assert.equal operation, 'update'
+        assert.ok eventTypes[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
+        awaited = true
+
+      # when saving existing event type
+      service.save 'EventType', values, (err, modelName, model) ->
+        throw new Error "Can't save eventType: #{err}" if err?
+        # then the created values are returned
+        assert.ok eventTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
+        assert.equal model.get('name'), eventTypes[1].get('name')
+        assert.ok 'desc' of model.get('properties'), 'Desc not added in properties'
+        assert.equal model.get('properties').desc.type, 'string'
+        assert.equal model.get('properties').desc.def, 'to be defined'
+
+        # then the model exists in DB
+        EventType.findById model._id, (err, obj) ->
+          throw new Error "Can't find eventType in db #{err}" if err?
+          assert.ok obj.equals model, 'EventType cannot be found in DB'
+
+          # then the model was updated, not created in DB
+          EventType.find {}, (err, list) ->
+            throw new Error "Can't find eventTypes in db #{err}" if err?
+            assert.equal list.length, 2
+            assert.ok awaited, 'watcher wasn\'t invoked'
+
+            # then the instance has has only property property desc
+            Event.findById event._id, (err, event) ->
+              throw new Error "Can't get event from db #{err}" if err?
+              assert.equal 'to be defined', event.get('desc')
+              assert.ok event.get('content') is undefined, 'Event still has content property'
               watcher.removeAllListeners 'change'
               done()
 
@@ -480,6 +576,14 @@ describe 'AdminService tests', ->
       assert.ok 0 is err.indexOf "Unexisting ItemType"
       done()
 
+  it 'should remove fails on unknown event type', (done) ->
+    # when removing unknown event type
+    service.remove 'EventType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+      # then an error occured
+      assert.ok err?
+      assert.ok 0 is err.indexOf "Unexisting EventType"
+      done()
+
   it 'should remove fails on unknown field type', (done) ->
     # when removing unknown field type
     service.remove 'FieldType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
@@ -514,6 +618,28 @@ describe 'AdminService tests', ->
 
       # then the model do not exists anymore in DB
       ItemType.findById model._id, (err, obj) ->
+        assert.ok obj is null
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should remove delete existing event type', (done) ->
+    awaited = false
+    # then a deletion event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'EventType'
+      assert.equal operation, 'deletion'
+      assert.ok eventTypes[1].equals instance
+      awaited = true
+
+    # when removing existing item type
+    service.remove 'EventType', eventTypes[1], (err, modelName, model) ->
+      throw new Error "Can't remove eventType: #{err}" if err?
+      # then the removed values are returned
+      assert.ok model?
+      assert.ok eventTypes[1]._id.equals model._id
+
+      # then the model do not exists anymore in DB
+      EventType.findById model._id, (err, obj) ->
         assert.ok obj is null
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()

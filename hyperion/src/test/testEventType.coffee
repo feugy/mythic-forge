@@ -17,33 +17,33 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Item = require '../main/model/Item'
-ItemType = require '../main/model/ItemType'
+Event = require '../main/model/Event'
+EventType = require '../main/model/EventType'
 watcher = require('../main/model/ModelWatcher').get()
 assert = require('chai').assert
 
-item1 = null
-item2 = null
-item3 = null
+event1 = null
+event2 = null
+event3 = null
 type = null
 
-describe 'ItemType tests', -> 
+describe 'EventType tests', -> 
 
   beforeEach (done) ->
-    # empty items and types.
-    Item.collection.drop -> ItemType.collection.drop -> done()
+    # empty events and types.
+    Event.collection.drop -> EventType.collection.drop -> done()
 
   it 'should type\'s properties be distinct', (done) ->
     # given a type with a property
-    type = new ItemType({name: 'vehicule'})
-    type.setProperty 'wheels', 'integer', 4
+    type = new EventType({name: 'birth'})
+    type.setProperty 'weight', 'float', 3.5
     type.save (err) ->
       if (err?)
         throw new Error err
         done()
       # when creating another type with distinct property
-      type2 = new ItemType({name: 'animal'})
-      type2.setProperty 'mammal', 'boolean', true
+      type2 = new EventType({name: 'death'})
+      type2.setProperty 'when', 'date', new Date()
       type2.save (err) ->
         if (err?)
           throw new Error err
@@ -52,15 +52,15 @@ describe 'ItemType tests', ->
         keys = Object.keys(type.get('properties'))
         keys2 = Object.keys(type2.get('properties'))
         assert.equal keys.length, 1 
-        assert.equal keys[0], 'wheels'
+        assert.equal keys[0], 'weight'
         assert.equal keys2.length, 1
-        assert.equal keys2[0], 'mammal'
+        assert.equal keys2[0], 'when'
         done()
 
   it 'should type be created', (done) -> 
-    # given a new ItemType
-    type = new ItemType()
-    name = 'montain'
+    # given a new EventType
+    type = new EventType()
+    name = 'talk'
     type.set 'name', name
 
     # when saving it
@@ -68,7 +68,7 @@ describe 'ItemType tests', ->
       throw new Error "Can't save type: #{err}" if err?
 
       # then it is in mongo
-      ItemType.find {}, (err, types) ->
+      EventType.find {}, (err, types) ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
@@ -76,12 +76,12 @@ describe 'ItemType tests', ->
         done()
 
   it 'should name and desc be internationalizables', (done) -> 
-    # given a new ItemType with translated name
-    type = new ItemType()
-    name = 'dust'
+    # given a new EventType with translated name
+    type = new EventType()
+    name = 'talk'
     type.set 'name', name
     type.locale = 'fr'
-    nameFr = 'poussière'
+    nameFr = 'discussion'
     type.set 'name', nameFr
 
     # when saving it
@@ -96,17 +96,17 @@ describe 'ItemType tests', ->
 
       # when setting the tanslated description and saving it
       saved.locale = null
-      desc = 'another one bites the dust'
+      desc = 'a speech between players'
       saved.set 'desc', desc
       saved.locale = 'fr'
-      descFr = 'encore un qui mort la poussière' 
+      descFr = 'une discussion entre joueurs' 
       saved.set 'desc', descFr
 
       saved.save (err, saved) ->
         throw new Error "Can't save type: #{err}" if err?
 
         # then it is in mongo
-        ItemType.find {}, (err, types) ->
+        EventType.find {}, (err, types) ->
           # then it's the only one document
           assert.equal 1, types.length
           # then it's values were saved
@@ -120,64 +120,64 @@ describe 'ItemType tests', ->
   describe 'given a type with a property', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
-      type = new ItemType()
-      type.set 'name', 'river'
-      type.setProperty 'color', 'string', 'blue'
+      type = new EventType()
+      type.set 'name', 'talk'
+      type.setProperty 'content', 'string', '---'
       type.save (err, saved) -> 
         type = saved
         done()
 
     afterEach (done) ->
       # removes the type at the end.
-      ItemType.collection.drop -> Item.collection.drop -> done()
+      EventType.collection.drop -> Event.collection.drop -> done()
 
     it 'should type be removed', (done) ->
-      # when removing an item
+      # when removing an event
       type.remove ->
 
       # then it's in mongo anymore
-      ItemType.find {}, (err, types) ->
+      EventType.find {}, (err, types) ->
         assert.equal types.length, 0
         done()
 
     it 'should type properties be created', (done) ->
       # when adding a property
-      type.setProperty 'depth', 'integer', 10
+      type.setProperty 'length', 'integer', 100
       type.save ->
 
-        ItemType.find {}, (err, types) ->
+        EventType.find {}, (err, types) ->
           # then it's the only one document
           assert.equal types.length, 1
           # then only the relevant values were modified
-          assert.equal types[0].get('name'), 'river',
-          assert.ok 'depth' of types[0].get('properties'), 'no depth in properties'
-          assert.equal types[0].get('properties').depth?.type, 'integer'
-          assert.equal types[0].get('properties').depth?.def, 10
+          assert.equal types[0].get('name'), 'talk',
+          assert.ok 'length' of types[0].get('properties'), 'no length in properties'
+          assert.equal types[0].get('properties').length?.type, 'integer'
+          assert.equal types[0].get('properties').length?.def, 100
           done()
 
     it 'should type properties be updated', (done) ->
-      assert.ok 'color' of type.get('properties'), 'no color in properties'
-      assert.equal type.get('properties').color?.type, 'string'
-      assert.equal type.get('properties').color?.def, 'blue'
+      assert.ok 'content' of type.get('properties'), 'no content in properties'
+      assert.equal type.get('properties').content?.type, 'string'
+      assert.equal type.get('properties').content?.def, '---'
 
       # when updating a property 
-      type.setProperty 'color', 'integer', 10
+      type.setProperty 'content', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
-        assert.equal saved.get('properties').color?.type, 'integer'
-        assert.equal saved.get('properties').color?.def, 10
+        assert.equal saved.get('properties').content?.type, 'integer'
+        assert.equal saved.get('properties').content?.def, 10
         done()
 
     it 'should type properties be removed', (done) ->
       # when removing a property
-      type.unsetProperty 'color'
+      type.unsetProperty 'content'
       type.save (err, saved) ->
         if err? 
-          assert.fail "Can't save item: #{err}"
+          assert.fail "Can't save event: #{err}"
           return done()
 
         # then the property was removed
-        assert.ok not ('color' of saved.get('properties')), 'color still in properties'
+        assert.ok not ('content' of saved.get('properties')), 'content still in properties'
         done()
 
     it 'should unknown type properties fail on remove', (done) ->
@@ -187,71 +187,71 @@ describe 'ItemType tests', ->
         assert.fail 'Error must be raised when removing unknwown property'
       catch err
         # then an error is thrown
-        assert.equal err?.message, 'Unknown property unknown for type river'
+        assert.equal err?.message, 'Unknown property unknown for type talk'
       done()
 
-  describe 'given a type and some items', ->
+  describe 'given a type and some events', ->
 
     beforeEach (done) ->
-      # creates a type with a string property 'color' and an array property 'affluents'.
-      type = new ItemType {name: 'river'}
-      type.setProperty 'color', 'string', 'blue'
-      type.setProperty 'affluents', 'array', 'Item'
+      # creates a type with a string property 'color' and an array property 'subTalks'.
+      type = new EventType {name: 'talk'}
+      type.setProperty 'content', 'string', ''
+      type.setProperty 'subTalks', 'array', 'Event'
       type.save (err, saved) -> 
         throw new Error(err) if err?
         type = saved
-        # creates three items of this type.
-        item1 = new Item {type: type, affluents: []}
-        item1.save (err) ->
+        # creates three events of this type.
+        event1 = new Event {type: type, subTalks: []}
+        event1.save (err) ->
           throw new Error(err) if err?
-          item2 = new Item {type: type, affluents: []}
-          item2.save (err) ->
+          event2 = new Event {type: type, subTalks: []}
+          event2.save (err) ->
             throw new Error(err) if err?
-            item3 = new Item {type: type, affluents: []}
-            item3.save (err) -> 
+            event3 = new Event {type: type, subTalks: []}
+            event3.save (err) -> 
               throw new Error(err) if err?
               done()
 
-    it 'should existing items be updated when setting a type property', (done) ->
+    it 'should existing events be updated when setting a type property', (done) ->
       updates = []
+      defaultLength = 30
+      
       # then a modification event was issued
       watcher.on 'change', (operation, className, instance)->
-        return if className isnt 'Item'
+        return if className isnt 'Event'
         updates.push instance._id+''
         assert.equal operation, 'update'
-        assert.equal instance.depth, 30
+        assert.equal instance.length, defaultLength
 
       # when setting a property to a type
-      defaultDepth = 30
-      type.setProperty 'depth', 'integer', defaultDepth
+      type.setProperty 'length', 'integer', defaultLength
       type.save (err) -> 
         block = ->
-          Item.find {type: type._id}, (err, items) ->
-            for item in items
-              assert.equal item.get('depth'), defaultDepth
-              assert.ok item._id+'' in updates
+          Event.find {type: type._id}, (err, events) ->
+            for event in events
+              assert.equal event.get('length'), defaultLength
+              assert.ok event._id+'' in updates
             watcher.removeAllListeners 'change'
             done()
         setTimeout block, 50
 
-    it 'should existing items be updated when removing a type property', (done) ->
+    it 'should existing events be updated when removing a type property', (done) ->
       updates = []
       # then a modification event was issued
       watcher.on 'change', (operation,className, instance)->
-        return if className isnt 'Item'
+        return if className isnt 'Event'
         assert.equal operation, 'update'
         updates.push instance._id+''
-        assert.ok instance.color is undefined
+        assert.ok instance.content is undefined
 
       # when setting a property to a type
-      defaultDepth = 30
-      type.unsetProperty 'color'
+      type.unsetProperty 'content'
       type.save (err) -> 
         block = ->
-          Item.find {type: type._id}, (err, items) ->
-            for item in items
-              assert.ok undefined is item.get('color'), 'color still present'
-              assert.ok item._id+'' in updates
+          Event.find {type: type._id}, (err, events) ->
+            for event in events
+              assert.ok undefined is event.get('content'), 'content still present'
+              assert.ok event._id+'' in updates
             watcher.removeAllListeners 'change'
             done()
         setTimeout block, 50

@@ -21,12 +21,13 @@
 _ = require 'underscore'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
+EventType = require '../model/EventType'
 Map = require '../model/Map'
 Field = require '../model/Field'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
 
-supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map']
+supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType']
 listSupported = supported[1..]
 
 # The AdminService export administration features.
@@ -34,7 +35,7 @@ listSupported = supported[1..]
 class _AdminService
 
   # The list method retrieve all instances of a given model, in:
-  # Map, ItemType, Executable, FieldType. 
+  # Map, ItemType, Executable, FieldType, EventType. 
   # Field and items must be retrieved with `GameService.consult()`.
   #
   # @param modelName [String] class name of the listed models
@@ -48,6 +49,7 @@ class _AdminService
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
       when 'FieldType' then FieldType.find (err, result) -> callback err, modelName, result
+      when 'EventType' then EventType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
       when 'Map' then Map.find (err, result) -> callback err, modelName, result
 
@@ -69,6 +71,7 @@ class _AdminService
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
+      when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType
       when 'Map' then modelClass = Map
       when 'Field'
@@ -178,6 +181,7 @@ class _AdminService
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
+      when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType
       when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
