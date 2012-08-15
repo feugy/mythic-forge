@@ -57,7 +57,7 @@
         - **[done]** spaces inside tab names 
     - edition perspective
         - Search
-        - auto-adjust .ui-tabs-panel top to .ui-tab-nav height
+        - **[done]** auto-adjust panel top when tabs are added/removed and when window is resized
         - **[done]** ItemType
             - **[done]** static fields and description image
             - **[done]** properties

@@ -20,6 +20,7 @@
 define
   titles:
     itemType: "Type d'objets %s"
+    eventType: "Type d'évènements %s"
     fieldType: 'Type de terrains %s'
     rule: 'Règle'
     turnRule: 'Règle de tour'

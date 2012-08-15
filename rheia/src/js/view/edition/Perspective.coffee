@@ -72,11 +72,14 @@ define [
       $(document).bind("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
         .bind("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
         .bind("keydown.#{@cid}", {keys:'ctrl+q', includeInputs:true}, @_onCloseHotKey)
+      # bind tab adjustment on resize
+      $(window).bind("resize.#{@cid}", @_onTabsChanged)
 
     # The view destroyer: unbinds shortcuts
     destroy: () =>
       # removes shortcuts
       $(document).unbind(".#{@cid}")
+      $(window).unbind(".#{@cid}")
       super()
 
     # The `render()` method is invoked by backbone to display view content at screen.
@@ -96,6 +99,8 @@ define [
                 <i class="ui-icon ui-icon-close"></i>
               </a>
             </li> """
+          add: @_onTabsChanged
+          remove: @_onTabsChanged
         })
         # handlers
         .bind('tabsadd', @_onTabAdded)
@@ -270,5 +275,10 @@ define [
       link.closest('li').attr('aria-controls', "actionBar-#{newId}")
       # updates action bar panel
       @_actionBars.element.find("#actionBar-#{oldId}").attr('id', "actionBar-#{newId}")
+
+    # **private**
+    # Handler that adjust the top position of tabs to be just under the navigation bar.
+    _onTabsChanged: () =>
+      @_tabs?.panels.css('top', @_tabs.element.find('.ui-tabs-nav').outerHeight())
 
   return EditionPerspective
