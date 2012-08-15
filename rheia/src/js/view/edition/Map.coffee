@@ -23,7 +23,7 @@ define [
   'underscore'
   'i18n!nls/common'
   'i18n!nls/edition'
-  'text!view/edition/template/Map.html'
+  'text!tpl/editionMap.html'
   'view/edition/BaseEditionView'
   'model/Map'
   'model/Field'

@@ -22,7 +22,7 @@ define [
   'jquery'
   'underscore'
   'i18n!nls/edition'
-  'text!view/edition/template/FieldType.html'
+  'text!tpl/FieldType.html'
   'view/edition/BaseEditionView'
   'model/FieldType'
   'widget/loadableImage'

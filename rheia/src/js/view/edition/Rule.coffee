@@ -21,7 +21,7 @@
 define [
   'jquery'
   'i18n!nls/edition'
-  'text!view/edition/template/Rule.html'
+  'text!tpl/rule.html'
   'utils/validators'
   'view/edition/BaseEditionView'
   'model/Executable'

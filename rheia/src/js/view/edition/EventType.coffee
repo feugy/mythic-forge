@@ -22,7 +22,7 @@ define [
   'jquery'
   'underscore'
   'i18n!nls/edition'
-  'text!view/edition/template/EventType.html'
+  'text!tpl/EventType.html'
   'view/edition/BaseEditionView'
   'utils/validators'
   'model/EventType'

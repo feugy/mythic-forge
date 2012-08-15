@@ -22,7 +22,7 @@ define [
   'jquery'
   'underscore'
   'i18n!nls/edition'
-  'text!view/edition/template/ItemType.html'
+  'text!tpl/itemType.html'
   'view/edition/EventType'
   'model/ItemType'
   'widget/spriteImage'

@@ -21,7 +21,7 @@
 define [
   'jquery'
   'i18n!nls/edition'
-  'text!view/edition/template/TurnRule.html'
+  'text!tpl/turnRule.html'
   'view/edition/Rule'
   'model/Executable'
 ], ($, i18n, template, RuleView, Executable) ->

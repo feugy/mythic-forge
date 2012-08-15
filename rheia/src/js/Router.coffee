@@ -39,6 +39,8 @@ requirejs.config
     'ace': 'lib/ace'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
+    'nls': '../nls'
+    'tpl': '../templates'
     
   shim:
     'backbone': 

@@ -23,7 +23,7 @@ define [
   'underscore'
   'backbone'
   'i18n!nls/edition'
-  'text!view/edition/template/Perspective.html'
+  'text!tpl/editionPerspective.html'
   'utils/Milk'
   'view/edition/Explorer'
   'view/edition/ItemType'
