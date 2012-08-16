@@ -57,6 +57,22 @@
         - **[done]** spaces inside tab names 
     - edition perspective
         - Search
+            - (item, event, field, map, rule, turn-rule) search by id (val is string)
+                db.collection.find({"_id":ObjectId(val)})
+            - (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
+                db.collection.find({"_name.locale": val})
+            - (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
+                db.collection.find({"_desc.locale": val})
+            - (item, event) search property 'p' existence
+                db.collection.find({"properties.p":{$exists:1}})
+            - (item, event) search property 'p' default value 'val' (anything)
+                db.collection.find({"properties.p.def": val)
+            - (item) search quantifiable 'val' (boolean)
+                db.collection.find({"quantifiable": val)
+            - (rule) search 'val' (as string/regexp) in category
+            - (turn-rule) search 'val' (as number) in rank
+            - (rule, turn-rule) search 'val' (as string/regexp) in body
+
         - **[done]** auto-adjust panel top when tabs are added/removed and when window is resized
         - **[done]** ItemType
             - **[done]** static fields and description image
@@ -93,8 +109,10 @@
             - diamond map widget
             - square map widget
 
-
 # Changes
     - no more distinction between Items and Actors
+    - no more event on actors
+    - no more link between rules and actors
     - hexagonal maps
-    - date-kind attributes for Items and Events
+    - event-kind properties
+    - date-kind properties
