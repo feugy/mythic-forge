@@ -65,6 +65,63 @@ compileFile = (executable, silent, callback) ->
     # and invoke final callback
     callback null, executable
 
+# Search inside existing executables. The following searches are supported:
+# - {id,_id,name: String,RegExp]}: search by ids
+# - {content: String,RegExp}: search inside executable content
+# - {rank: Number}: search inside executable's exported rank attribute
+# - {category: String,RegExp}: search inside executable's exported category attribute
+# - {and: []}: logical AND between terms inside array
+# - {or: []}: logical OR between terms inside array
+# Error can be thrown if query isn't valid
+#
+# @param query [Object] the query object, which structure is validated
+# @param all [Array] array of all executable to search within
+# @param _operator [String] **inner usage only** operator used for recursion.
+# @return a list (that may be empty) of matching executables
+search = (query, all, _operator = null) ->
+  if Array.isArray query
+    return "arrays must contains at least two terms" if query.length < 2
+
+    # we found an array inside a boolean term
+    results = []
+    for term, i in query
+      # search each term
+      tmp = search term, all
+      if _operator is 'and' and i isnt 0
+        # logical AND: retain only global results that match current results
+        results = results.filter (result) -> -1 isnt tmp.indexOf result
+      else 
+        # logical OR: concat to global results, and avoid duplicates
+        results = results.concat tmp.filter (result) -> -1 is results.indexOf result
+    return results
+
+  if 'object' is utils.type query
+    # we found a term:  `{or: []}`, `{and: []}`, `{toto:1}`, `{toto:''}`, `{toto://}`
+    keys = Object.keys query
+    throw new Error "only one attribute is allowed inside query terms" if keys.length isnt 1
+    
+    field = keys[0] 
+    value = query[field]
+    if field is 'and' or field is 'or'
+      # this is a boolean term: search inside
+      return search value, all, field
+    else
+      field = '_id' if field is 'id' or field is 'name'
+      if field is 'category' or field is 'rank'
+        # TODO
+        throw new Error 'not implemented yet'
+      # this is a terminal term, validates value's type
+      switch utils.type value
+        when 'string', 'number', 'boolean'
+          # performs exact match
+          return all.filter (executable) -> executable[field] is value
+        when 'regexp'
+          # performs regexp match
+          return all.filter (executable) -> value.test executable[field]
+        else throw new Error "#{field}:#{value} is not a valid value"
+  else
+    throw new Error "'#{query}' is nor an array, nor an object"
+
 # local cache of executables
 executables = {}
 
@@ -103,16 +160,29 @@ class Executable
         logger.debug 'Local executables cached successfully reseted' unless err?
         callback err
 
-  # Find all existing executables.
+  # Find existing executables.
   #
+  # @param query [Object] optionnal condition to select relevant executables. Same syntax as MongoDB queries, supports:
+  # - $and
+  # - $or
+  # - '_id'|'id'|'name' field (search by id) with string
+  # - 'content' field (search in content) with string or regexp
+  # - 'category' field (search rules' category) with string or regexp
+  # - 'rank' field (search turn rules' rank) with number
   # @param callback [Function] invoked when all executables were retrieved
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback executables [Array<Executable>] list (may be empty) of executables
-  @find: (callback) ->
+  @find: (query, callback) ->
+    if 'function' is utils.type query
+      callback = query
+      query = null
+
+    results = []
     # just take the local cache and transforms it into an array.
-    array = []
-    array.push executable for _id, executable of executables
-    callback null, array
+    results.push executable for _id, executable of executables
+    # and perform search if relevant
+    results = search query, results if query?
+    callback null, results
 
   # Find existing executable by id, from the cache.
   #
@@ -175,5 +245,12 @@ class Executable
           # propagate change
           modelWatcher.change 'deletion', "Executable", @
           callback null, @
+
+  # Provide the equals() method to check correctly the equality between _ids.
+  #
+  # @param other [Object] other object against which the current object is compared
+  # @return true if both objects have the same _id, false otherwise
+  equals: (object) =>
+    @_id is object?._id
 
 module.exports = Executable

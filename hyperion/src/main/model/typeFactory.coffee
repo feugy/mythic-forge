@@ -23,6 +23,7 @@ utils = require '../utils'
 fs = require 'fs'
 path = require 'path'
 async = require 'async'
+ObjectId = require('mongodb').BSONPure.ObjectID
 modelWatcher = require('./ModelWatcher').get()
 imageStore = require('../utils').confKey('images.store')
 logger = require('../logger').getLogger 'model'
@@ -111,7 +112,8 @@ module.exports = (typeName, spec, options = {}) ->
   # @param other [Object] other object against which the current object is compared
   # @return true if both objects have the same _id, false otherwise
   AbstractType.methods.equals = (object) ->
-    @_id.equals object?._id
+    return false unless utils.isA(object?._id, ObjectId) or 'string' is utils.type(object?._id) and object._id.length is 24
+    @_id.equals object._id
 
   unless options?.noCache
     # This special finder maintains an in-memory cache of types, to faster type retrieval by ids.

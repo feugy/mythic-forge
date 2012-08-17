@@ -49,6 +49,16 @@
     - **[done]** disabled turn-rules/rules
     - **[done]** turn-rules ordering rank
     - **[done]** Event type CRUD
+    - Search service
+        - **[done]** (item, event, field, map, rule, turn-rule) search by id (val is string)
+        - **[done]** (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
+        - **[done]** (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
+        - **[done]** (item, event) search property 'p' existence
+        - **[done]** (item, event) search property 'p' default value 'val' (anything)
+        - **[done]** (item) search quantifiable 'val' (boolean)
+        - (rule) search 'val' (as string/regexp) in category
+        - (turn-rule) search 'val' (as number) in rank
+        - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items
@@ -57,22 +67,8 @@
         - **[done]** spaces inside tab names 
     - edition perspective
         - Search
-            - (item, event, field, map, rule, turn-rule) search by id (val is string)
-                db.collection.find({"_id":ObjectId(val)})
-            - (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
-                db.collection.find({"_name.locale": val})
-            - (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
-                db.collection.find({"_desc.locale": val})
-            - (item, event) search property 'p' existence
-                db.collection.find({"properties.p":{$exists:1}})
-            - (item, event) search property 'p' default value 'val' (anything)
-                db.collection.find({"properties.p.def": val)
-            - (item) search quantifiable 'val' (boolean)
-                db.collection.find({"quantifiable": val)
-            - (rule) search 'val' (as string/regexp) in category
-            - (turn-rule) search 'val' (as number) in rank
-            - (rule, turn-rule) search 'val' (as string/regexp) in body
-
+            - input query with help and validation
+            - display result and navigates
         - **[done]** auto-adjust panel top when tabs are added/removed and when window is resized
         - **[done]** ItemType
             - **[done]** static fields and description image

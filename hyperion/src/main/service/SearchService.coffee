@@ -61,18 +61,45 @@ validateQuery = (query) ->
 
 # Enhance query by making-it Mongo-db compliant:
 # - add ObjectId constructor for id search
+# - add 'properties.' before arbitrary properties
+# - support locale for 'name' and 'desc'
+# - check arbitrary property existence
+# - transforms 'and'/'or' to '$and'/'$or'
 #
 # @param query [Object] query that is enhanced
-enhanceQuery = (query) ->
+# @param locale [String] desired locale
+enhanceQuery = (query, locale) ->
   if Array.isArray query
     # recursive enhancement inside term arrays
     enhanceQuery term for term in query
   else
     attr = Object.keys(query)[0]
+    value = query[attr]
     switch attr
+      when 'and', 'or'
+        query["$#{attr}"] = value
+        delete query[attr]
+        enhanceQuery value, locale
       when 'id'
-        query._id = new ObjectId query[attr]
+        try 
+          query._id = new ObjectId query[attr]
+        catch exc
+          # not a valid ObjectId, put an invalid ObjectId
+          query._id = null
         delete query.id
+      when 'name', 'desc'
+        query["_#{attr}.#{locale}"] = value
+        delete query[attr]
+      when 'quantifiable'
+         # nothing to do
+      else
+        # for properties, append the "properties" root
+        delete query[attr]
+        attr = "properties.#{attr}"
+        if value is '!'
+          query[attr] = {$exists:1} 
+        else 
+          query["#{attr}.def"] = value
   
 # The SearchService allows to performs search on some attributes of types 
 # (ItemType, FieldType, EventType, Map, Executable)
@@ -96,32 +123,52 @@ class _SearchService
   # - `quantifiable:*val*` search quantifiable status, *val* is true|false (item)
   # - `category:*val*` search in categories, *val* is a string or a regexp (rule, turn-rule)
   # - `rank:*val*` search by order, *val* is an integer (turn-rule)
-  # - `file:*val*` search in file content, *val* is a string or a regexp (rule, turn-rule)
+  # - `content:*val*` search in file content, *val* is a string or a regexp (rule, turn-rule)
   #
-  # @param query [Object] the search query
   # @param callback [Function] result callback, invoked with arguments
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching types
-  searchType: (query, callback) =>
+  #
+  # @overload searchType(query, callback)
+  #   Search with default locale
+  #   @param query [Object] the search query
+  #
+  # @overload searchType(query, locale, callback)
+  #   Search with specified locale
+  #   @param query [Object] the search query
+  #   @param locale [String] the desired locale
+  searchType: (args..., callback) =>
+    switch args.length
+      when 1
+        query = args[0]
+        locale = 'default'
+      when 2
+        query = args[0]
+        locale = args[1]
+      else new Error 'searchType() must be call with query and callback, or query, locale and callback'
+
     # first, validate query syntax
     err = validateQuery query
     return callback "Failed to parse query: #{err}" if err?
 
-    # second, enhance the query
-    enhanceQuery query
-
     results = []
-    # third, define a search function on a single database collection
+    # second, define a search function on a single database collection
     search = (collection, next) =>
       collection.find query, (err, collResults) =>
         return callback "Failed to execute query: #{err}" if err?
         results = results.concat collResults
         next()
 
-    # then, perform it on each database collection
-    async.forEach [ItemType, EventType, FieldType, Map], search, (err) =>
-      # return aggregated results
-      callback null, results
+    # third, trigger search inside Executables
+    search Executable, =>
+
+      # fourth, enhance the query for mongoDB
+      enhanceQuery query, locale
+
+      # then, perform it on each database collection
+      async.forEach [ItemType, EventType, FieldType, Map,], search, (err) =>
+        # return aggregated results
+        callback null, results
 
 # singleton instance
 _instance = undefined
