@@ -71,10 +71,14 @@ validateQuery = (query) ->
 enhanceQuery = (query, locale) ->
   if Array.isArray query
     # recursive enhancement inside term arrays
-    enhanceQuery term for term in query
+    enhanceQuery term, locale for term in query
   else
     attr = Object.keys(query)[0]
     value = query[attr]
+    # special case of regexp strings that must be transformed
+    if 'string' is utils.type(value)
+      match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
+      value = new RegExp match[1], match[2], match[3] if match?
     switch attr
       when 'and', 'or'
         query["$#{attr}"] = value
@@ -125,19 +129,19 @@ class _SearchService
   # - `rank:*val*` search by order, *val* is an integer (turn-rule)
   # - `content:*val*` search in file content, *val* is a string or a regexp (rule, turn-rule)
   #
+  # @param query [Object|String] the search query. In case of a string, must be a JSON compliant string.
+  # Regexp values are supported: "/.*/i" will be parsed into /.*/i
   # @param callback [Function] result callback, invoked with arguments
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching types
   #
   # @overload searchType(query, callback)
   #   Search with default locale
-  #   @param query [Object] the search query
   #
   # @overload searchType(query, locale, callback)
   #   Search with specified locale
-  #   @param query [Object] the search query
   #   @param locale [String] the desired locale
-  searchType: (args..., callback) =>
+  searchTypes: (args..., callback) =>
     switch args.length
       when 1
         query = args[0]
@@ -146,6 +150,10 @@ class _SearchService
         query = args[0]
         locale = args[1]
       else new Error 'searchType() must be call with query and callback, or query, locale and callback'
+
+    # special case: string query must be parse to object
+    if 'string' is utils.type query
+      query = JSON.parse query
 
     # first, validate query syntax
     err = validateQuery query

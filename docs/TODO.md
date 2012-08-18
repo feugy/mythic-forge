@@ -49,15 +49,15 @@
     - **[done]** disabled turn-rules/rules
     - **[done]** turn-rules ordering rank
     - **[done]** Event type CRUD
-    - Search service
+    - **[done]** Search service
         - **[done]** (item, event, field, map, rule, turn-rule) search by id (val is string)
         - **[done]** (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
         - **[done]** (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
         - **[done]** (item, event) search property 'p' existence
         - **[done]** (item, event) search property 'p' default value 'val' (anything)
         - **[done]** (item) search quantifiable 'val' (boolean)
-        - (rule) search 'val' (as string/regexp) in category
-        - (turn-rule) search 'val' (as number) in rank
+        - **[done]** (rule) search 'val' (as string/regexp) in category
+        - **[done]** (turn-rule) search 'val' (as number) in rank
         - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
     - test images for field types and event types
     - bugs

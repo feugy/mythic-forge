@@ -26,6 +26,7 @@ gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
 adminService = require('../service/AdminService').get()
 imagesService = require('../service/ImagesService').get()
+searchService = require('../service/SearchService').get()
 watcher = require('../model/ModelWatcher').get()
 
 # If an ssl certificate is found, use it.
@@ -97,11 +98,12 @@ io.of('/player').on 'connection', (socket) ->
 # socket.io `admin` namespace 
 #
 # configure the differents message allowed
-# 'admin' namespace is associated to AdminService
+# 'admin' namespace is associated to AdminService, ImageService and SearchService
 # @see {AdminService}
 io.of('/admin').on 'connection', (socket) ->
   exposeMethods adminService, socket
   exposeMethods imagesService, socket
+  exposeMethods searchService, socket
 
 # socket.io `updates` namespace 
 #

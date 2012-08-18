@@ -69,6 +69,7 @@ compileFile = (executable, silent, callback) ->
 # - {id,_id,name: String,RegExp]}: search by ids
 # - {content: String,RegExp}: search inside executable content
 # - {rank: Number}: search inside executable's exported rank attribute
+# - {active: Boolean}: search inside executable's exported active attribute
 # - {category: String,RegExp}: search inside executable's exported category attribute
 # - {and: []}: logical AND between terms inside array
 # - {or: []}: logical OR between terms inside array
@@ -102,23 +103,37 @@ search = (query, all, _operator = null) ->
     
     field = keys[0] 
     value = query[field]
+    # special case of regexp strings that must be transformed
+    if 'string' is utils.type(value)
+      match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
+      value = new RegExp match[1], match[2], match[3] if match?
+
     if field is 'and' or field is 'or'
       # this is a boolean term: search inside
       return search value, all, field
     else
       field = '_id' if field is 'id' or field is 'name'
-      if field is 'category' or field is 'rank'
-        # TODO
-        throw new Error 'not implemented yet'
+      candidates = all.concat()
+      if field is 'category' or field is 'rank' or field is 'active'
+        # We must replace executables by their exported object.
+        candidates = all.map (candidate) -> 
+          # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+          # and singleton (like ModuleWatcher) will be broken.
+          return require '.\\'+ path.relative module.filename, candidate.compiledPath
+      # matching candidates ids
+      ids = []
       # this is a terminal term, validates value's type
       switch utils.type value
         when 'string', 'number', 'boolean'
           # performs exact match
-          return all.filter (executable) -> executable[field] is value
+          candidates.forEach (candidate, i) -> ids.push i if candidate[field] is value
         when 'regexp'
           # performs regexp match
-          return all.filter (executable) -> value.test executable[field]
+          candidates.filter (candidate, i) -> ids.push i if value.test candidate[field]
         else throw new Error "#{field}:#{value} is not a valid value"
+      # return the matching executable. Do not use candidates array because it may contains exported rules, 
+      # not executables
+      return all.filter (executable, i) -> i in ids
   else
     throw new Error "'#{query}' is nor an array, nor an object"
 
@@ -162,13 +177,15 @@ class Executable
 
   # Find existing executables.
   #
-  # @param query [Object] optionnal condition to select relevant executables. Same syntax as MongoDB queries, supports:
+  # @param query [Object|String] optionnal condition to select relevant executables. Same syntax as MongoDB queries, supports:
   # - $and
   # - $or
   # - '_id'|'id'|'name' field (search by id) with string
   # - 'content' field (search in content) with string or regexp
   # - 'category' field (search rules' category) with string or regexp
   # - 'rank' field (search turn rules' rank) with number
+  # - 'active' field (search (turn) rules' active) with boolean
+  # Regexp values are supported in String version: "/.*/i" will be parsed into /.*/i
   # @param callback [Function] invoked when all executables were retrieved
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback executables [Array<Executable>] list (may be empty) of executables

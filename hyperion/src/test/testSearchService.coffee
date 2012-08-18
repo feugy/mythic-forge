@@ -124,7 +124,7 @@ describe 'SearchService tests', ->
                   args: 
                     _id: 'move'
                     content:"""Rule = require '../main/model/Rule'
-                      return new (class Move extends Rule
+                      module.exports = new (class Move extends Rule
                         constructor: ->
                           @name= 'move'
                           @category= 'map'
@@ -139,15 +139,47 @@ describe 'SearchService tests', ->
                   args:
                     _id: 'attack'
                     content:"""Rule = require '../main/model/Rule'
-                      return new (class Attack extends Rule
+                      module.exports = new (class Attack extends Rule
                         constructor: ->
                           @name= 'attack'
+                          @active= false
                         canExecute: (actor, target, callback) =>
                           callback null, true;
                         execute: (actor, target, callback) =>
                           callback null
                       )()"""
                   store: rules
+                ,                
+                  clazz: Executable
+                  args:
+                    _id: 'sell'
+                    content:"""TurnRule = require '../main/model/TurnRule'
+                      module.exports = new (class Sell extends TurnRule
+                        constructor: ->
+                          @name= 'sell'
+                          @rank= 3
+                          @active= false
+                        select: (callback) =>
+                          callback null, []
+                        execute: (target, callback) =>
+                          callback null
+                      )()"""
+                  store: turnRules
+                ,                
+                  clazz: Executable
+                  args:
+                    _id: 'monsters'
+                    content:"""TurnRule = require '../main/model/TurnRule'
+                      module.exports = new (class Monsters extends TurnRule
+                        constructor: ->
+                          @name= 'monsters'
+                          @rank= 10
+                        select: (callback) =>
+                          callback null, []
+                        execute: (target, callback) =>
+                          callback null
+                      )()"""
+                  store: turnRules
                 ,
                   clazz: Map
                   args: 
@@ -182,7 +214,7 @@ describe 'SearchService tests', ->
 
   it 'should search item types by id', (done) ->
     # when searching an item type by id
-    service.searchType {id:"#{itemTypes[0]._id}"}, (err, results)->
+    service.searchTypes {id:"#{itemTypes[0]._id}"}, (err, results)->
       throw new Error err if err?
       # then only the first item type is returned
       assert.equal results?.length, 1
@@ -191,7 +223,7 @@ describe 'SearchService tests', ->
 
   it 'should search field types by id', (done) ->
     # when searching a field type by id
-    service.searchType {id:"#{fieldTypes[1]._id}"}, (err, results)->
+    service.searchTypes {id:"#{fieldTypes[1]._id}"}, (err, results)->
       throw new Error err if err?
       # then only the second field type is returned
       assert.equal results?.length, 1
@@ -200,7 +232,7 @@ describe 'SearchService tests', ->
 
   it 'should search event types by id', (done) ->
     # when searching an event type by id
-    service.searchType {id:"#{eventTypes[0]._id}"}, (err, results)->
+    service.searchTypes {id:"#{eventTypes[0]._id}"}, (err, results)->
       throw new Error err if err?
       # then only the first event type is returned
       assert.equal results?.length, 1
@@ -209,7 +241,7 @@ describe 'SearchService tests', ->
 
   it 'should search maps by id', (done) ->
     # when searching a map by id
-    service.searchType {id:"#{maps[1]._id}"}, (err, results)->
+    service.searchTypes {id:"#{maps[1]._id}"}, (err, results)->
       throw new Error err if err?
       # then only the second map is returned
       assert.equal results?.length, 1
@@ -218,7 +250,7 @@ describe 'SearchService tests', ->
 
   it 'should search executable by id', (done) ->
     # when searching a rule by id
-    service.searchType {id:"#{rules[0]._id}"}, (err, results)->
+    service.searchTypes {id:"#{rules[0]._id}"}, (err, results)->
       throw new Error err if err?
       # then only the second map is returned
       assert.equal results?.length, 1
@@ -227,7 +259,7 @@ describe 'SearchService tests', ->
 
   it 'should search by exact name', (done) ->
     # when searching an item type by name
-    service.searchType {name:"#{itemTypes[0].get('name')}"}, (err, results)->
+    service.searchTypes {name:"#{itemTypes[0].get('name')}"}, (err, results)->
       throw new Error err if err?
       # then only the first item type is returned
       assert.equal results?.length, 1
@@ -236,20 +268,21 @@ describe 'SearchService tests', ->
 
   it 'should search by regexp name', (done) ->
     # when searching by name regexp
-    service.searchType {name:/t/i}, (err, results)->
+    service.searchTypes {name:/t/i}, (err, results)->
       throw new Error err if err?
-      # then first item type, both Event types, second Field type, second rule are returned
-      assert.equal results?.length, 5
+      # then first item type, both Event types, second Field type, second rule, second turn-rule are returned
+      assert.equal results?.length, 6
       assert.contains results, itemTypes[0], 'first item type not returned'
       assert.contains results, eventTypes[0], 'first event type not returned'
       assert.contains results, eventTypes[1], 'second event type not returned'
       assert.contains results, fieldTypes[1], 'second field type not returned'
       assert.contains results, rules[1], 'second rule not returned'
+      assert.contains results, turnRules[1], 'second turn-rule not returned'
       done()
 
   it 'should search by regexp name for other locale', (done) ->
     # when searching by french name regexp
-    service.searchType {name:/é/i}, 'fr', (err, results)->
+    service.searchTypes {name:/é/i}, 'fr', (err, results)->
       throw new Error err if err?
       # then first event type, second item type are returned
       assert.equal results?.length, 2
@@ -259,7 +292,7 @@ describe 'SearchService tests', ->
 
   it 'should search by exact desc', (done) ->
     # when searching an event type by desc
-    service.searchType {desc:"#{eventTypes[1].get('desc')}"}, (err, results)->
+    service.searchTypes {desc:"#{eventTypes[1].get('desc')}"}, (err, results)->
       throw new Error err if err?
       # then only the second event type is returned
       assert.equal results?.length, 1
@@ -268,7 +301,7 @@ describe 'SearchService tests', ->
 
   it 'should search by regexp desc', (done) ->
     # when searching by desc regexp
-    service.searchType {desc:/an/i}, (err, results)->
+    service.searchTypes {desc:/an/i}, (err, results)->
       throw new Error err if err?
       # then first item type, both field types are returned
       assert.equal results?.length, 3
@@ -279,7 +312,7 @@ describe 'SearchService tests', ->
 
   it 'should search by regexp desc for other locale', (done) ->
     # when searching by french desc regexp
-    service.searchType {desc:/joueur/i}, 'fr', (err, results)->
+    service.searchTypes {desc:/joueur/i}, 'fr', (err, results)->
       throw new Error err if err?
       # then first item type, both event types are returned
       assert.equal results?.length, 3
@@ -290,7 +323,7 @@ describe 'SearchService tests', ->
 
   it 'should search by exact content', (done) ->
     # when searching a rule by content
-    service.searchType {content:"#{rules[0].content}"}, (err, results)->
+    service.searchTypes {content:"#{rules[0].content}"}, (err, results)->
       throw new Error err if err?
       # then only the first rule is returned
       assert.equal results?.length, 1
@@ -299,7 +332,7 @@ describe 'SearchService tests', ->
 
   it 'should search by regexp content', (done) ->
     # when searching by content regexp
-    service.searchType {content:/extends rule/i}, (err, results)->
+    service.searchTypes {content:/extends rule/i}, (err, results)->
       throw new Error err if err?
       # then both rules are returned
       assert.equal results?.length, 2
@@ -309,7 +342,7 @@ describe 'SearchService tests', ->
 
   it 'should search by property existence', (done) ->
     # when searching by strength property existence
-    service.searchType {strength: '!'}, (err, results)->
+    service.searchTypes {strength: '!'}, (err, results)->
       throw new Error err if err?
       # then both item types, first event type are returned
       assert.equal results?.length, 3
@@ -320,7 +353,7 @@ describe 'SearchService tests', ->
 
   it 'should search by property number value', (done) ->
     # when searching by strength property number value
-    service.searchType {strength: 10}, (err, results)->
+    service.searchTypes {strength: 10}, (err, results)->
       throw new Error err if err?
       # then both item types are returned
       assert.equal results?.length, 2
@@ -330,7 +363,7 @@ describe 'SearchService tests', ->
 
   it 'should search by property string value', (done) ->
     # when searching by content property string value
-    service.searchType {content: '---'}, (err, results)->
+    service.searchTypes {content: '---'}, (err, results)->
       throw new Error err if err?
       # then second event type is returned
       assert.equal results?.length, 1
@@ -339,7 +372,7 @@ describe 'SearchService tests', ->
 
   it 'should search by property boolean value', (done) ->
     # when searching by knight property boolean value
-    service.searchType {knight: false}, (err, results)->
+    service.searchTypes {knight: false}, (err, results)->
       throw new Error err if err?
       # then first item type is returned
       assert.equal results?.length, 1
@@ -348,18 +381,20 @@ describe 'SearchService tests', ->
 
   it 'should search by property regexp value', (done) ->
     # when searching by content property regexp value
-    service.searchType {content: /.*/}, (err, results)->
+    service.searchTypes {content: /.*/}, (err, results)->
       throw new Error err if err?
-      # then second event type, both rules are returned
-      assert.equal results?.length, 3
+      # then second event type, both rules, both turn-rules are returned
+      assert.equal results?.length, 5
       assert.contains results, eventTypes[1], 'second event type not returned'
       assert.contains results, rules[0], 'first rule not returned'
       assert.contains results, rules[1], 'second rule not returned'
+      assert.contains results, turnRules[0], 'first turn-rule not returned'
+      assert.contains results, turnRules[1], 'second turn-rule not returned'
       done()
 
   it 'should search by quantifiable', (done) ->
     # when searching by quantifiable
-    service.searchType {quantifiable: true}, (err, results)->
+    service.searchTypes {quantifiable: true}, (err, results)->
       throw new Error err if err?
       # then second item type is returned
       assert.equal results?.length, 1
@@ -368,7 +403,7 @@ describe 'SearchService tests', ->
 
   it 'should combined search with triple or', (done) ->
     # when searching with true possible condition
-    service.searchType {or: [{name: 'character'}, {name: 'move'}, {strength:'!'}]}, (err, results)->
+    service.searchTypes {or: [{name: 'character'}, {name: 'move'}, {strength:'!'}]}, (err, results)->
       throw new Error err if err?
       # then both item types, first event type, first rule are returned
       assert.equal results?.length, 4
@@ -380,8 +415,8 @@ describe 'SearchService tests', ->
 
   it 'should combined search with triple and', (done) ->
     # when searching with true possible condition
-    # TODO service.searchType {and: [{name: 'move'}, {content: /extends rule/i}, {category:'map'}]}, (err, results)->
-    service.searchType {and: [{name: 'move'}, {content: /extends rule/i}]}, (err, results)->
+    # TODO service.searchTypes {and: [{name: 'move'}, {content: /extends rule/i}, {category:'map'}]}, (err, results)->
+    service.searchTypes {and: [{name: 'move'}, {content: /extends rule/i}]}, (err, results)->
       throw new Error err if err?
       # then first rule is returned
       assert.equal results?.length, 1
@@ -390,7 +425,7 @@ describe 'SearchService tests', ->
 
   it 'should combined search with and or', (done) ->
     # when searching with true possible condition
-    service.searchType {or: [{and: [{name: 'attack'}, {content: /extends rule/i}]}, {strength:5}]}, (err, results)->
+    service.searchTypes {or: [{and: [{name: 'attack'}, {content: /extends rule/i}]}, {strength:5}]}, (err, results)->
       throw new Error err if err?
       # then second rule, first event type are returned
       assert.equal results?.length, 2
@@ -398,5 +433,49 @@ describe 'SearchService tests', ->
       assert.contains results, rules[1], 'second rule not returned'
       done()
 
-  # TODO turn-rules' rank (number),
-  # TODO rules' category (String/regexp)
+  it 'should search by rank value', (done) ->
+    # when searching by rank value
+    service.searchTypes {rank: 3}, (err, results)->
+      throw new Error err if err?
+      # then first turn-rule is returned
+      assert.equal results?.length, 1
+      assert.contains results, turnRules[0], 'first turn-rule not returned'
+      done()
+
+  it 'should search by active value', (done) ->
+    # when searching by active value
+    service.searchTypes {active: false}, (err, results)->
+      throw new Error err if err?
+      # then second rule, first turn-rule are returned
+      assert.equal results?.length, 2
+      assert.contains results, rules[1], 'second rule not returned'
+      assert.contains results, turnRules[0], 'first turn-rule not returned'
+      done()
+
+  it 'should search by exact category', (done) ->
+    # when searching by exact category
+    service.searchTypes {category: 'map'}, (err, results)->
+      throw new Error err if err?
+      # then first rule is returned
+      assert.equal results?.length, 1
+      assert.contains results, rules[0], 'first rule not returned'
+      done()
+
+  it 'should search by category regexp', (done) ->
+    # when searching by category regexp
+    service.searchTypes {category: /m.*/}, (err, results)->
+      throw new Error err if err?
+      # then first rule is returned
+      assert.equal results?.length, 1
+      assert.contains results, rules[0], 'first rule not returned'
+      done()
+
+  it 'should string query be usable', (done) ->
+    # when searching by category regexp
+    service.searchTypes '{"or": [{"and": [{"name": "attack"}, {"content": "/extends rule/i"}]}, {"strength":5}]}', (err, results)->
+      throw new Error err if err?
+      # then second rule, first event type are returned
+      assert.equal results?.length, 2
+      assert.contains results, eventTypes[0], 'first event type not returned'
+      assert.contains results, rules[1], 'second rule not returned'
+      done()

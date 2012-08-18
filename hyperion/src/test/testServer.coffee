@@ -43,10 +43,8 @@ player = null
 describe 'server tests', ->
 
   before (done) ->
-    # given a clean ItemTypes and Items collections
-    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop ->
-      # given a working server
-      server.listen port, 'localhost', done
+    # given a working server
+    server.listen port, 'localhost', done
 
   after (done) ->
     server.close()
@@ -64,22 +62,24 @@ describe 'server tests', ->
     describe 'given a map, a type and two characters', ->
 
       beforeEach (done) ->
-        new Map({name: 'server-test'}).save (err, saved) ->
-          throw new Error err if err?
-          map = saved
-          character = new ItemType {name: 'character'}
-          character.setProperty 'name', 'string', ''
-          character.save (err, saved) ->
+        # given a clean ItemTypes and Items collections
+        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop ->
+          new Map({name: 'server-test'}).save (err, saved) ->
             throw new Error err if err?
-            character = saved
-            # given two characters, jack and john
-            new Item({map: map, type: character, name: 'Jack', x:0, y:0}).save (err, saved) ->
+            map = saved
+            character = new ItemType {name: 'character'}
+            character.setProperty 'name', 'string', ''
+            character.save (err, saved) ->
               throw new Error err if err?
-              jack = saved
-              new Item({map: map, type: character, name: 'John', x:10, y:10}).save (err, saved) ->
+              character = saved
+              # given two characters, jack and john
+              new Item({map: map, type: character, name: 'Jack', x:0, y:0}).save (err, saved) ->
                 throw new Error err if err?
-                john = saved
-                done()
+                jack = saved
+                new Item({map: map, type: character, name: 'John', x:10, y:10}).save (err, saved) ->
+                  throw new Error err if err?
+                  john = saved
+                  done()
 
       it 'should the consultMap be invoked', (done) ->
         # given a connected socket.io client
@@ -165,6 +165,23 @@ describe 'server tests', ->
               script.save (err) ->
                 throw new Error err if err?
                 done()
+
+        it 'should types be searchable', (done) ->
+          # given a connected socket.io client
+          socket = socketClient.connect "#{rootUrl}/admin"
+
+          # then the item type and rule were found
+          socket.once 'searchTypes-resp', (err, results) ->
+            throw new Error err if err?
+            assert.equal results.length, 2
+            tmp = results.filter (obj) -> map.equals obj
+            assert.ok tmp.length is 1, 'map was not found'
+            tmp = results.filter (obj) -> character.equals obj
+            assert.ok tmp.length is 1, 'character was not found'
+            done()
+
+          # when searching all types
+          socket.emit 'searchTypes', '{"or": [{"name": "/'+map.get('name')+'/i"}, {"id": "'+character._id+'"}]}'
 
         it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client
