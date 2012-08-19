@@ -101,7 +101,7 @@ define [
     # Local cache for models.
     @collection = new Executables(@)
 
-    # Executable kind: rule, turnRule or null.
+    # Executable kind: Rule, TurnRule or null.
     # First guessed on the executable content, then enforced after compilation
     kind: null
 
@@ -150,21 +150,21 @@ define [
       super(key, value, options)
 
       if key is 'content' or typeof key is 'object' and 'content' of key
-        @kind = 'rule' if @get('content')?.indexOf('extends Rule') isnt -1
-        @kind = 'turnRule' if @get('content')?.indexOf('extends TurnRule') isnt -1
+        @kind = 'Rule' if @get('content')?.indexOf('extends Rule') isnt -1
+        @kind = 'TurnRule' if @get('content')?.indexOf('extends TurnRule') isnt -1
         # recompiles content and store exported
         compile(@, (err, exported) => 
           @exported = exported
           if exported instanceof Rule
             # rule specificity: category management
-            @kind = 'rule'
+            @kind = 'Rule'
             if @exported?.category isnt @_oldCategory
               @_oldCategory = @exported?.category
               @trigger('change:category', @)
 
           else if exported instanceof TurnRule
             # turn rule specificity: rank management
-            @kind = 'turnRule'
+            @kind = 'TurnRule'
             if @exported?.rank isnt @_oldRank
               @_oldRank = @exported?.rank
               @trigger('change:rank', @)

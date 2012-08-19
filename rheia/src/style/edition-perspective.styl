@@ -66,152 +66,82 @@ img.dragged
     text-align center
 
 .edition.perspective
-  position relative
+  space = 1em
+  display box
+  overflow hidden
   width 100%
   height 100%
 
-  .row 
-    // Grid system freely inspired by http://semantic.gs/examples/fluid/fluid.html 
-    padding = 15px
-    columnWidth = 60px
-    columns = 12
-    leftSpan = 2
-    gridWidth = (columnWidth+padding)*columns - padding
-    totalWidth = 100%
-    hMargin = totalWidth*((padding*0.5)/gridWidth)/2
+  > *
+    box-flex 1
+    box-sizing border-box
+    padding space space space 0
 
-    // Compute the cell width
-    // @param num [Number] number of column spaned.
-    getWidth(num)
-      totalWidth * ((((padding+columnWidth)*num) - padding)/gridWidth)
+    // itself a vertical blex-box
+    overflow hidden
+    height 100%
+    display box
+    box-orient vertical
 
-    position absolute
-    top padding
-    left padding*0.5
-    right padding*0.5
-    bottom padding
+  > *:first-child
+    padding-left space
 
-    .cell
-      float left
-      height 100%
-      position relative
+  > .left
+    box-flex 0
+    width 250px
 
-    .left.cell
-      width getWidth(leftSpan)
-      margin 0 hMargin
+  > .right
+    typeIcons '.new', 25 
 
-    .right.cell
-      width getWidth(columns - leftSpan)
-      margin 0 hMargin
+    .new-button 
+      vertical-align middle
+
+    .ui-tabs 
+      box-flex 1
+
+    .ui-tabs-nav .content.modified:before
+      content '*'
+
+    .ui-tabs.action-bars
+      display inline-block
       padding 0
-      typeIcons '.new', 25 
+      border none
+      margin-left 20px
+      vertical-align middle
 
-      .new-button 
-        vertical-align middle
+      .ui-tabs-nav
+        display none
 
-      .ui-tabs-nav .content.modified:before
-        content '*'
-
-      .ui-tabs.action-bars
-        display inline-block
+      .ui-tabs-panel
         padding 0
-        border none
-        margin-left 20px
-        vertical-align middle
 
-        .ui-tabs-nav
-          display none
+    .ui-tabs.views
+      margin-top space
 
-        .ui-tabs-panel
-          padding 0
+      .ui-tabs-nav
+        width 100%
+        padding-top 2px
+        box-sizing border-box
+
+      .ui-tabs-panel
+        takeSpace 0, 0, 0, 0
+        overflow auto
+
+      .ui-icon-close
+        display inline-block
+        cursor: pointer
+
+      li a
+        padding: 0.2em 0.5em
+        typeIcons '.icon', 25, 0
 
   // explorer behaviour
   .explorer 
+    box-flex 1
     overflow auto
-    height 100%
-    width 100%
-
-    dt 
-      hoverable()
-      typeIcons '> i',  25, 0 5px 0 0
-      font-size 1.1em
-      padding 5px 2px
-
-    // open/close icons
-    dt::before
-      content ''
-      display: inline-block
-      background-image url(images/tree.png)
-      background-repeat no-repeat
-      height 18px 
-      width 18px
-      vertical-align middle
-      margin-right -5px
-
-    dt.open::before
-      background-position -18px 0px
-
-    dd > *:not(dd)
-      hoverable()
-      padding 0.5em 0 0.5em 1em
-      imageDim = 40px
-
-      img
-        width imageDim
-        height imageDim
-
-      .carousel
-      img
-        vertical-align -1.2em
-        margin-right 5px
-        display inline-block
-
-      .carousel
-        .mask
-        .thumbnail
-          height imageDim
-          width imageDim
-
-        .previous
-        .next 
-          vertical-align (imageDim/3)px
-
-    dd > dd
-      margin-left 1em
-
-    dd > dt::before
-      margin-right 0px
-
-    dd.rules img 
-    dd.turn-rules img
-      height 0
-      width 0.3em
-      vertical-align top
-
-    dd.rules .inactive
-    dd.turn-rules .inactive
-      inactive()
-
-  .ui-tabs.views
-    takeSpace 40px, 0, 0
-
-    .ui-tabs-nav
-      width 100%
-      padding-top 2px
-      box-sizing border-box
-
-    .ui-tabs-panel
-      takeSpace 0, 0, 0, 0
-      overflow auto
-
-    .ui-icon-close
-      display inline-block
-      cursor: pointer
-
-    li a
-      padding: 0.2em 0.5em
-      typeIcons '.icon', 25, 0
-
+    // firefox fix: to allow overflow, must have an height, event unrelevant
+    height 1px
+    
   // views
   .view
 

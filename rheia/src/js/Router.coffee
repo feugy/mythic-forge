@@ -34,6 +34,7 @@ requirejs.config
     'socket.io': 'lib/socket.io-0.9.6-min'
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.3.3-min'
+    'queryparser': 'lib/queryparser-1.0.0-min'
     'md5': 'lib/md5-2.2-min'
     'html5slider': 'lib/html5slider-min'
     'ace': 'lib/ace'
@@ -68,18 +69,21 @@ requirejs.config
       exports: 'async'
     'utils/Milk': 
       exports: 'Milk'
+    'queryparser':
+      exports: 'QueryParser'
 
 # initialize rheia global namespace
 window.rheia = {}
 
 define [
   'underscore'
-  'underscore.string'
   'jquery' 
   'backbone'
   'view/edition/Perspective'
   'service/ImagesService'
+  'service/SearchService'
   # unwired dependencies
+  'utils/extensions'
   'jquery-ui' 
   'numeric' 
   'transit'
@@ -88,49 +92,7 @@ define [
   'mousewheel'
   'md5'
   'html5slider'
-  ], (_, _string, $, Backbone, EditionPerspectiveView, ImagesService) ->
-
-  # mix in non-conflict functions to Underscore namespace if you want
-  _.mixin(_string.exports())
-  _.mixin(
-    includeStr: _string.include
-    reverseStr: _string.reverse
-  )
-
-  # enhance Backbone views with close() mechanism
-  _.extend Backbone.View.prototype, 
-
-    # **private**
-    # Array of bounds between targets and the view, that are unbound by `destroy`
-    _bounds: []
-
-    # overload the initialize method to bind `destroy()`
-    initialize: () ->
-      # initialize to avoid static behaviour
-      @_bounds = []
-      # bind to remove element to call the close method.
-      @$el.bind('remove', ()=> @dispose())
-
-    # Allows to bound a callback of this view to the specified emitter
-    # bounds are keept and automatically unbound by the `destroy` method.
-    #
-    # @param emitter [Backbone.Event] the emitter on which callback is bound
-    # @param events [String] events on which the callback is bound
-    # @parma callback [Function] the bound callback
-    bindTo: (emitter, events, callback) ->
-      emitter.on(events, callback)
-      @_bounds.push([emitter, events, callback])
-
-    # The destroy method correctly free DOM  and event handlers
-    # It must be overloaded by subclasses to unsubsribe events.
-    dispose: () ->
-      # automatically remove bound callback
-      spec[0].off(spec[1], spec[2]) for spec in @_bounds
-      # unbind DOM callback
-      @$el.unbind()
-      # remove rendering
-      @remove()
-      @trigger('dispose', @)
+  ], (_, $, Backbone, EditionPerspectiveView, ImagesService, SearchService) ->
 
   class Router extends Backbone.Router
 
@@ -151,6 +113,7 @@ define [
 
       # instanciates singletons.
       rheia.imagesService = new ImagesService()
+      rheia.searchService = new SearchService()
       rheia.editionPerspective = new EditionPerspectiveView()
 
       Backbone.history.start({pushState: true, root: conf.basePath})

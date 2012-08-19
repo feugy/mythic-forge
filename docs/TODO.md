@@ -66,9 +66,9 @@
     - bugs
         - **[done]** spaces inside tab names 
     - edition perspective
-        - Search
-            - input query with help and validation
-            - display result and navigates
+        - **[done]** Search
+            - **[done]** input query with help and validation
+            - **[done]** display result and navigates
         - **[done]** auto-adjust panel top when tabs are added/removed and when window is resized
         - **[done]** ItemType
             - **[done]** static fields and description image
@@ -104,6 +104,7 @@
             - **[done]** zoom, toggle markers and toggle grid commands
             - diamond map widget
             - square map widget
+        - contextual menus in search and explorer
 
 # Changes
     - no more distinction between Items and Actors

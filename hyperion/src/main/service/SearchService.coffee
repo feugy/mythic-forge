@@ -153,7 +153,10 @@ class _SearchService
 
     # special case: string query must be parse to object
     if 'string' is utils.type query
-      query = JSON.parse query
+      try 
+        query = JSON.parse query
+      catch exc
+        return callback "Failed to parse query: #{exc}" 
 
     # first, validate query syntax
     err = validateQuery query

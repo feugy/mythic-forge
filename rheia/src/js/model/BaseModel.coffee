@@ -81,6 +81,8 @@ define [
       return unless className is @_className
       # add the created raw model. An event will be triggered
       @add(model)
+      # propagates changes on collection to global change event
+      rheia.router.trigger('modelChanged')
 
     # **private**
     # Callback invoked when a database update is received.
@@ -99,6 +101,8 @@ define [
 
       # emit a change.
       @trigger('update', model, @, changes)
+      # propagates changes on collection to global change event
+      rheia.router.trigger('modelChanged')
 
     # **private**
     # Callback invoked when a database deletion is received.
@@ -110,6 +114,8 @@ define [
       return unless className is @_className
       # removes the deleted item after enrich it to allow recognition. An event will be triggered
       @remove(new @model(model)) 
+      # propagates changes on collection to global change event
+      rheia.router.trigger('modelChanged')
 
   # BaseModel provides common behaviour for model.
   #

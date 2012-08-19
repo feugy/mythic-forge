@@ -219,42 +219,24 @@ define [
     canClose: () =>
       # allow if we are closing, or if no change found
       return true if @_isClosing or !@canSave()
-      $("""<div id="confirmClose-#{@getId()}" title="#{i18n.titles.closeConfirm}">
-              <span class="ui-icon question"></span>#{_.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute))}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.yes,
-          icons:
-            primary: 'valid small'
-          click: () =>
-            # close dialog
-            $("#confirmClose-#{@getId()}").dialog('close')
-            # and save
-            @_isClosing = true
-            @saveModel()
-        },{
-          text: i18n.labels.no,
-          icons: {
-            primary: 'invalid small'
-          }
-          click: =>
-            # close dialog
-            $("#confirmClose-#{@getId()}").dialog('close')
-            # and close
-            @_isClosing = true
-            @trigger 'close'
-        },{
-          text: i18n.labels.cancel
-          icons:
-            primary: 'cancel small'
-          click: =>
-            # just close dialog
-            $("#confirmClose-#{@getId()}").dialog('close')
-        }]
-      )
+      utilities.popup(i18n.titles.closeConfirm, _.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute)), 'question', [
+        text: i18n.labels.yes
+        icon: 'valid'
+        click: () =>
+          # save
+          @_isClosing = true
+          @saveModel()
+      ,
+        text: i18n.labels.no
+        icon: 'invalid'
+        click: () =>
+          # just close view
+          @_isClosing = true
+          @trigger 'close'
+      ,
+        text: i18n.labels.cancel
+        icon: 'cancel'
+      ], 2)
       # stop closure
       return false
 
@@ -285,30 +267,17 @@ define [
     removeModel: (event = null) =>
       event?.preventDefault()
       return unless @canRemove()
-      $("""<div id="confirmRemove-#{@getId()}" title="#{i18n.titles.removeConfirm}">
-          <span class="ui-icon question"></span>#{_.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute))}
-          </div>""").dialog
-        modal: true,
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.no
-          showText:false
-          icons:
-            primary: 'invalid small'
-          click: ->
-            # simply close the dialog
-            $(this).dialog('close')
-        },{
-          text: i18n.labels.yes 
-          icons:
-            primary: 'valid small'
-          click: =>
-            # close the dialog and remove the model
-            $("\#confirmRemove-#{@getId()}").dialog('close')
-            @_removeInProgress = true
-            @model.destroy()
-        }]
+      utilities.popup(i18n.titles.removeConfirm, _.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute)), 'question', [
+        text: i18n.labels.no
+        icon: 'invalid'
+      ,
+        text: i18n.labels.yes
+        icon: 'valid'
+        click: () =>
+          # destroy model
+          @_removeInProgress = true
+          @model.destroy()
+      ])
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: () =>
@@ -472,37 +441,17 @@ define [
     # Displays warning dialog when edited object have been removed externally.
     _notifyExternalRemove: () =>
       return if $("#externalRemove-#{@getId()}").length > 0
-      $("""<div id="externalRemove-#{@getId()}" title="#{i18n.titles.external}">
-              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute))}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.ok,
-          click: =>
-            # just close dialog
-            $("#externalRemove-#{@getId()}").dialog('close')
-        }]
-      )
+      utilities.popup(i18n.titles.external, _.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute)), 'warning', [
+        text: i18n.labels.ok
+      ])
 
     # **private**
     # Displays warning dialog when edited object have been modified externally.
     _notifyExternalChange: () =>
       return if $("#externalChange-#{@getId()}").length > 0
-      $("""<div id="externalChange-#{@getId()}" title="#{i18n.titles.external}">
-              <span class="ui-icon warning"></span>#{_.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute))}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.ok,
-          click: =>
-            # just close dialog
-            $("#externalChange-#{@getId()}").dialog('close')
-        }]
-      )
+      utilities.popup(i18n.titles.external, _.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute)), 'warning', [
+        text: i18n.labels.ok
+      ])
 
     # **private**
     # Displays error dialog when current server operation failed on edited object.
@@ -512,19 +461,9 @@ define [
       return if $("#serverError-#{@getId()}").length > 0
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
-      $("""<div id="serverError-#{@getId()}" title="#{i18n.titles.serverError}">
-              <span class="ui-icon cancel"></span>#{_.sprintf(msgKey, @model.get(@_nameAttribute), err)}
-            </div>""").dialog(
-        modal: true
-        close: ->
-          $(this).remove()
-        buttons: [{
-          text: i18n.labels.ok,
-          click: =>
-            # just close dialog
-            $("#serverError-#{@getId()}").dialog('close')
-        }]
-      )
+      utilities.popup(i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute)), 'cancel', [
+        text: i18n.labels.ok
+      ])
 
     # **private**
     # Change handler, wired to any changes from the rendering.

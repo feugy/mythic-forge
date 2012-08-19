@@ -227,3 +227,110 @@ loadablePadding = 2px
     .hover
     .selection
       opacity 0.5
+
+
+// Search
+.search
+  position relative
+
+  .results
+    position absolute
+    background white
+    padding 16px
+    overflow auto
+    width 200px
+    box-shadow 0 3px 5px shadowColor
+
+  .nb-results
+    font-size fontSize*0.9
+    padding 3px 5px
+
+  .error
+    position absolute
+    opacity 0
+    transition all 500ms
+    background errorColor
+    color white
+    border-radius 4px
+    box-shadow 0 3px 5px shadowColor
+    padding 0.5em 1em
+    line-height 1.2em
+    font-size fontSize*0.9
+
+  input    
+    padding-right 20px
+    width 75%
+
+  .ui-icon.ui-icon-search
+    cursor pointer
+    display inline-block
+    margin-bottom -3px
+    margin-left -25px
+
+  .ui-icon.help
+    float right
+
+.search.invalid
+
+  .error 
+    opacity 1
+
+// Type details
+.type-details
+  padding 0.5em 0 0.5em 1em
+  imageDim = 40px
+
+  img
+    width imageDim
+    height imageDim
+
+  .carousel
+  img
+    vertical-align -1.2em
+    margin-right 5px
+    display inline-block
+
+  .carousel
+    .mask
+    .thumbnail
+      height imageDim
+      width imageDim
+
+    .previous
+    .next 
+      vertical-align (imageDim/3)px
+
+.type-details.inactive
+  inactive()
+
+// Type tree
+.type-tree
+  
+  dt 
+    hoverable()
+    typeIcons '> i',  25, 0 5px 0 0
+    font-size 1.1em
+    padding 5px 2px
+
+  // open/close icons
+  dt::before
+    content ''
+    display: inline-block
+    background-image url(images/tree.png)
+    background-repeat no-repeat
+    height 18px 
+    width 18px
+    vertical-align middle
+    margin-right -5px
+
+  dt.open::before
+    background-position -18px 0px
+
+  dd > *:not(dd)
+    hoverable()
+
+  dd > dd
+    margin-left 1em
+
+  dd > dt::before
+    margin-right 0px

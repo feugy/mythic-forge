@@ -22,9 +22,11 @@ define [
   'jquery'
   'underscore'
   'backbone'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/editionPerspective.html'
   'utils/Milk'
+  'utils/utilities'
   'view/edition/Explorer'
   'view/edition/ItemType'
   'view/edition/EventType'
@@ -32,9 +34,10 @@ define [
   'view/edition/Map'
   'view/edition/Rule'
   'view/edition/TurnRule'
-], ($, _, Backbone, i18n, template, Milk, Explorer, ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
+  'widget/search'
+], ($, _, Backbone, i18n, i18nEdition, template, Milk, utils, Explorer, ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
 
-  i18n = $.extend {}, i18n
+  i18n = $.extend(true, i18n, i18nEdition)
 
   # The edition perspective manages types, rules and maps
   class EditionPerspective extends Backbone.View
@@ -60,6 +63,10 @@ define [
     # **private**
     # bypass the close confirmation when closing a view. Used when object was removed.
     _forceClose: false
+
+    # **private**
+    # search Widget.
+    _searchWidget: null
    
     # The view constructor.
     constructor: () ->
@@ -67,7 +74,19 @@ define [
 
       # construct explorer
       @explorer = new Explorer()
+
+      # bind to global events
       @bindTo(rheia.router, 'open', @_onOpenElement)
+      @bindTo(rheia.router, 'searchResults', (err, results) =>
+        if err?
+          # displays an error
+          @_searchWidget.setOption('results', [])
+          return utils.popup(i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [{
+            text: i18n.labels.ok
+          }])
+        @_searchWidget.setOption('results', results)
+      )
+
       # bind shortcuts
       $(document).bind("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
         .bind("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
@@ -88,9 +107,9 @@ define [
       # creates the two columns
       @$el.empty().append(Milk.render(template, {i18n:i18n}))
       # render the explorer on the left
-      @$el.find('.cell.left').append(@explorer.render().$el)
+      @$el.find('> .left').append(@explorer.render().$el)
       # instanciates a tab widget for views
-      @_tabs = @$el.find('.cell.right .ui-tabs.views').tabs({
+      @_tabs = @$el.find('> .right .ui-tabs.views').tabs({
           # template with close button
           tabTemplate: """ <li>
               <a href="\#{href}">
@@ -107,12 +126,19 @@ define [
         .bind('tabsselect', (event, ui) => @_actionBars?.select(ui.index))
         .data('tabs')
       # instanciates a tab widget for action bars
-      @_actionBars = @$el.find('.cell.right .ui-tabs.action-bars').tabs().data('tabs')
+      @_actionBars = @$el.find('> .right .ui-tabs.action-bars').tabs().data('tabs')
 
       # new button and its dropdown menu
-      @$el.find('.right .new-button').button({icons: {secondary: 'ui-icon-triangle-1-s'}})
+      @$el.find('> .right .new-button').button({icons: {secondary: 'ui-icon-triangle-1-s'}})
         .on('click', (event) => event.preventDefault(); @$el.find('.new-button-menu').addClass('open'))
       @$el.find('.new-button-menu').on('mouseleave click', () -> $(this).removeClass('open'))
+
+      # creates a search widget
+      @_searchWidget = @$el.find('> .left .search').search(
+        helpTip: i18n.tips.searchTypes
+        search: (event, query) -> rheia.searchService.searchTypes(query)
+        open: (event, details) -> rheia.router.trigger('open', details.category, details.id)
+      ).data 'search'
 
       # for chaining purposes
       return @

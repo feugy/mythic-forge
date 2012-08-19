@@ -20,6 +20,12 @@
 define
   loadableImage:
     noImage: 'Aucune image'
+
+  search:
+    noResults: 'Aucun résultat'
+    oneResult: '1 résultat'
+    nbResults: '%d résultats'
+
   spriteImage:
     dimensions: 'l x h '
     sprites: 'Sprites :'
@@ -30,6 +36,7 @@ define
     add: 'Nouveau'
     newName: 'sprite'
     unsavedSprite: 'Le nom du sprite "%s" est déjà utilisé, merci d\'en choisir un autre'
+
   property:
     isNull: 'nul'
     isTrue: 'vrai'

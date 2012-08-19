@@ -20,8 +20,18 @@
 define
   titles:
     serverError: 'Erreur server'
+    categories:
+      items: 'Objets'
+      maps: 'Cartes'
+      events: 'Evènements'
+      rules: 'Règles'
+      turnRules: 'Règles de tour'
+      fields: 'Terrains'
     
   validator:
     required: 'la valeur de "%s" est requise'
     spacesNotAllowed: '"%s" ne peut pas contenir d\'espaces'
     unmatch: '"%s" ne correspond pas à la valeur attendue'
+
+  msgs:
+    searchFailed: 'La recherche à échouée :<br/><br/>%s'

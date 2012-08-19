@@ -28,13 +28,6 @@ define
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
     external: 'Modification externe'
-    categories:
-      items: 'Objets'
-      maps: 'Cartes'
-      events: 'Evènements'
-      rules: 'Règles'
-      turnRules: 'Règles de tour'
-      fields: 'Terrains'
     multipleAffectation: 'Affectation multiple'
 
   msgs:
@@ -44,7 +37,7 @@ define
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
     externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
-    externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet va être fermé.</p>"
+    externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet a été fermé.</p>"
     invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
     invalidExecutableNameError: "le nom d'un executable ne peut contenir que des caractères alphanumeriques"
     saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
@@ -108,3 +101,17 @@ define
     addProperty: 'Ajoute une nouvelle propriété'
     removeSelection: 'Supprime la séléction courante de la carte éditée'
     description: 'TODO description'
+    searchTypes: """Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateur (or, and) et groupé avec des parenthèses.
+
+        Les champs suivants de recherche suivants sont disponibles :
+        - `id: *val*` tous types par id
+        - `name: *val*` tous types par nom (dépend de la locale courante)
+        - `desc: *val*` types d'objets, évènements et terrains par description (dépend de la locale courante)
+        - `*prop*: '!'` types d'objets et d'évènements possédant la propriété *prop*
+        - `*prop*: *val*` types d'objets et d'évènements dont la propriété *prop* à la valeur *val* par défaut
+        - `quantifiable: *val*` types d'objet quantifiables ou non
+        - `category: *val*` règle par catégorie
+        - `rank: *val*` règles de tour par ordre
+        - `content: *val*` règles et règles de tour par contenu
+        
+        Les valeur peuvent être des chaînes de caractères, des nombres, des booléens ou des expression régulières"""
