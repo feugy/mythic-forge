@@ -1,3 +1,22 @@
+/*
+  Copyright 2010,2011,2012 Damien Feugas
+  
+    This file is part of Mythic-Forge.
+
+    Myth is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Myth is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser Public License for more details.
+
+    You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 // cross-browser compatibility
 transition(args...)
   -wekbit-transition args
@@ -127,7 +146,7 @@ typeIcons(selector, size, margin = 0)
     {selector}.{icon}
       background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
 
-// Generate selectors for the 4 size of icons: 'x-small', 'small', '' and 'big'.
+// Generate selectors for the 5 size of icons: 'x-small', 'small', '', 'big' and 'x-big'.
 // Selector also inside elements 'a' and 'button'
 //
 // @param names [Array<String>] list of icons names used inside selectors
@@ -152,9 +171,13 @@ multiIcon(names, row = 0)
       background-position unit(-25*i, 'px') unit(-25*row, 'px')
 
     .ui-icon.{name}
+      icon 35
+      background-position unit(-35*i, 'px') unit(-35*row, 'px')
+
+    .ui-icon.{name}.big
       icon 50
       background-position unit(-50*i, 'px') unit(-50*row, 'px')
 
-    .ui-icon.{name}.big
+    .ui-icon.{name}.x-big
       icon 75
       background-position unit(-75*i, 'px') unit(-75*row, 'px')

@@ -20,6 +20,7 @@
 define
   titles:
     serverError: 'Erreur server'
+    editionPerspective: 'Edition du monde'
     categories:
       items: 'Objets'
       maps: 'Cartes'
@@ -35,3 +36,5 @@ define
 
   msgs:
     searchFailed: 'La recherche à échouée :<br/><br/>%s'
+    powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
+    copyright: '&copy; 2010-2012 Damien Feugas'

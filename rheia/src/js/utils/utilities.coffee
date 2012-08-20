@@ -90,7 +90,7 @@ define [
         buttonSpec[buttonSpec.length-1].icons = {primary: "small #{spec.icon}"} if spec.icon?
 
       html = "<div id='#{id}' title='#{title}'>"
-      html += "<span class='ui-icon #{messageIcon}'></span>" if messageIcon?
+      html += "<span class='ui-icon big #{messageIcon}'></span>" if messageIcon?
       html += "#{message}</div>"
       $(html).dialog(
           modal: true

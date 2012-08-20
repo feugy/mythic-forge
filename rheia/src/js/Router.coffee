@@ -37,6 +37,7 @@ requirejs.config
     'queryparser': 'lib/queryparser-1.0.0-min'
     'md5': 'lib/md5-2.2-min'
     'html5slider': 'lib/html5slider-min'
+    'hogan': 'lib/hogan-2.0.0-min'
     'ace': 'lib/ace'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
@@ -67,8 +68,8 @@ requirejs.config
       exports: 'io'
     'async': 
       exports: 'async'
-    'utils/Milk': 
-      exports: 'Milk'
+    'hogan': 
+      exports: 'Hogan'
     'queryparser':
       exports: 'QueryParser'
 
@@ -79,9 +80,10 @@ define [
   'underscore'
   'jquery' 
   'backbone'
-  'view/edition/Perspective'
+  'view/Layout'
   'service/ImagesService'
   'service/SearchService'
+  'i18n!nls/common'
   # unwired dependencies
   'utils/extensions'
   'jquery-ui' 
@@ -92,13 +94,13 @@ define [
   'mousewheel'
   'md5'
   'html5slider'
-  ], (_, $, Backbone, EditionPerspectiveView, ImagesService, SearchService) ->
+  ], (_, $, Backbone, LayoutView, ImagesService, SearchService, i18n) ->
 
   class Router extends Backbone.Router
 
     routes:
       # Define some URL routes
-      'home': 'home'
+      'edition': '_onEdition'
 
     # Object constructor.
     #
@@ -114,7 +116,7 @@ define [
       # instanciates singletons.
       rheia.imagesService = new ImagesService()
       rheia.searchService = new SearchService()
-      rheia.editionPerspective = new EditionPerspectiveView()
+      rheia.layoutView = new LayoutView()
 
       Backbone.history.start({pushState: true, root: conf.basePath})
 
@@ -125,18 +127,35 @@ define [
       )
 
       # route link special behaviour
-      ###$('a[data-route]').on 'click', (e) =>
-        e.preventDefault()
-        route = $(e.target).data 'route'
-        console.log "Run client route: #{route}"
-        @navigate route, trigger: true###
-      
-      # display map first
-      @navigate('home', trigger: true)
+      $('body').on('click', 'a[data-route]', (event) =>
+        event.preventDefault()
+        route = $(event.target).data('route')
+        @navigate(route, trigger: true)
+      )
 
-    # Displays home view
-    home: =>
-      $('body').empty().append(rheia.editionPerspective.render().$el)
+      # display layout
+      $('body').empty().append(rheia.layoutView.render().$el)
+
+      # TODO 
+      @navigate('edition', trigger: true)
+
+    # **private**
+    # Show a perspective inside the wrapper
+    _showPerspective: (name, path) =>
+      rheia.layoutView.loading(i18n.titles[name])
+      # puts perspective content inside layout if it already exists
+      return rheia.layoutView.show(rheia[name].$el) if name of rheia
+
+      # or requires, instanciate and render the view
+      require([path], (Perspective) ->
+        rheia[name] = new Perspective()
+        rheia.layoutView.show(rheia[name].render().$el)
+      ) 
+
+    # **private**
+    # Displays the edition perspective
+    _onEdition: =>
+      @_showPerspective('editionPerspective', 'view/edition/Perspective')
 
   app = new Router()
   return app

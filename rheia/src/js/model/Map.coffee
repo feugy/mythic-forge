@@ -37,7 +37,7 @@ define [
   class Map extends Base.Model
 
     # Local cache for models.
-    @collection = new Maps(@)
+    @collection: new Maps(@)
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes

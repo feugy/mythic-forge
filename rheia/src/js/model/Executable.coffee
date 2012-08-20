@@ -99,7 +99,7 @@ define [
   class Executable extends Base.Model
 
     # Local cache for models.
-    @collection = new Executables(@)
+    @collection: new Executables(@)
 
     # Executable kind: Rule, TurnRule or null.
     # First guessed on the executable content, then enforced after compilation

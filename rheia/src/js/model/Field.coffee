@@ -124,7 +124,7 @@ define [
   class Field extends Backbone.Model
 
     # Local cache for models.
-    @collection = new Fields(@)
+    @collection: new Fields(@)
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'

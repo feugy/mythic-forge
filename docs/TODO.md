@@ -59,13 +59,47 @@
         - **[done]** (rule) search 'val' (as string/regexp) in category
         - **[done]** (turn-rule) search 'val' (as number) in rank
         - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
+    - GameAuthoring service and FSItem
+        - get root content
+        - get fsitem
+        - save fsitem
+        - remove fsitem
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items
+
 - Rheia
     - bugs
         - **[done]** spaces inside tab names 
+
+    - **[done]** perspective loader
+
+    - game creation perspective
+        - Perspective
+            - file tab widget
+            - action bar (new file, new folder, upload)
+        - File Explorer
+            - contextual menu
+        - File View
+            - action bar (save, rename, delete)
+            - editor widget
+
     - edition perspective
+        - contextual menus in search and explorer
+        - Maps
+            - diamond map widget
+            - square map widget
+            - **[done]** map name and validation
+            - **[done]** map kind (square, diamond, hexa)
+            - **[done]** hexagonal map widget
+            - **[done]** drag'n drop from explorer
+            - **[done]** remove selection
+            - **[done]** display/hide grid
+            - **[done]** zoom in, zoom out
+            - **[done]** selection with Ctrl
+            - **[done]** selection with Shift
+            - **[done]** multiple affectation
+            - **[done]** zoom, toggle markers and toggle grid commands
         - **[done]** Search
             - **[done]** input query with help and validation
             - **[done]** display result and navigates
@@ -90,21 +124,6 @@
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
         - **[done]** TurnRule
-        - Maps
-            - **[done]** map name and validation
-            - **[done]** map kind (square, diamond, hexa)
-            - **[done]** hexagonal map widget
-            - **[done]** drag'n drop from explorer
-            - **[done]** remove selection
-            - **[done]** display/hide grid
-            - **[done]** zoom in, zoom out
-            - **[done]** selection with Ctrl
-            - **[done]** selection with Shift
-            - **[done]** multiple affectation
-            - **[done]** zoom, toggle markers and toggle grid commands
-            - diamond map widget
-            - square map widget
-        - contextual menus in search and explorer
 
 # Changes
     - no more distinction between Items and Actors

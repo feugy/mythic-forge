@@ -44,7 +44,7 @@ define [
 
     # player local cache.
     # A Backbone.Collection subclass
-    @collection = new Players(@)
+    @collection: new Players(@)
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'

@@ -82,7 +82,7 @@ define [
 
     # item local cache.
     # A Backbone.Collection subclass
-    @collection = new Items(@)
+    @collection: new Items(@)
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'

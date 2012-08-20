@@ -25,7 +25,6 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/editionPerspective.html'
-  'utils/Milk'
   'utils/utilities'
   'view/edition/Explorer'
   'view/edition/ItemType'
@@ -35,7 +34,8 @@ define [
   'view/edition/Rule'
   'view/edition/TurnRule'
   'widget/search'
-], ($, _, Backbone, i18n, i18nEdition, template, Milk, utils, Explorer, ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
+], ($, _, Backbone, i18n, i18nEdition, template, utils, Explorer, 
+    ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
 
   i18n = $.extend(true, i18n, i18nEdition)
 
@@ -47,6 +47,10 @@ define [
       'click .new-button-menu > *': '_onNewElement'
       # do not use click because jQuery-ui tabs prevent them in nav bar.
       'mouseup .ui-tabs-nav .ui-icon-close': '_onCloseTab'
+
+    # **private**
+    # View's mustache template
+    _template: template
 
     # **private**
     # views displayed into the tab container.
@@ -104,8 +108,7 @@ define [
     # The `render()` method is invoked by backbone to display view content at screen.
     # Draws the login form.
     render: () =>
-      # creates the two columns
-      @$el.empty().append(Milk.render(template, {i18n:i18n}))
+      super()
       # render the explorer on the left
       @$el.find('> .left').append(@explorer.render().$el)
       # instanciates a tab widget for views
@@ -158,6 +161,13 @@ define [
         @_actionBars?.remove(idx)
       else
         console.log("view #{view.getTitle()} cancels its closure")
+
+    # **private**
+    # Provide template data for rendering
+    #
+    # @return an object used as template data
+    _getRenderData:() =>
+      {i18n:i18n}
 
     # **private**
     # Finds the position of a view inside the `_views` array, with its id.

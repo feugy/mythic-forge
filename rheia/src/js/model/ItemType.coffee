@@ -35,7 +35,7 @@ define [
   class ItemType extends Base.Model
 
     # Local cache for models.
-    @collection = new ItemTypes(@)
+    @collection: new ItemTypes(@)
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes

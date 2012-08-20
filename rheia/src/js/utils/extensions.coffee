@@ -22,7 +22,8 @@ define [
   'underscore'
   'underscore.string'
   'backbone'
-], (_, _string, Backbone) ->
+  'hogan'
+], (_, _string, Backbone, Hogan) ->
 
   # mix in non-conflict functions to Underscore namespace if you want
   _.mixin(_string.exports())
@@ -33,6 +34,11 @@ define [
 
   # enhance Backbone views with close() mechanism
   _.extend Backbone.View.prototype, 
+
+    # **protected**
+    # For views that wants templating, put their the string version of a mustache template,
+    # that will be compiled with Hogan
+    _template: null
 
     # **private**
     # Array of bounds between targets and the view, that are unbound by `destroy`
@@ -65,3 +71,21 @@ define [
       # remove rendering
       @remove()
       @trigger('dispose', @)
+
+    # The `render()` method is invoked by backbone to display view content at screen.
+    # if a template is defined, use it
+    render: () ->
+      # template rendering
+      if @_template? 
+        # first compilation if necessary  
+        @_template = Hogan.compile(@_template) if _.isString(@_template)
+        # then rendering
+        @$el.empty().append(@_template.render(@_getRenderData()))
+      # for chaining purposes
+      return @
+
+    # **protected**
+    # This method is intended to by overloaded by subclass to provide template data for rendering
+    #
+    # @return an object used as template data (this by default)
+    _getRenderData: () -> @

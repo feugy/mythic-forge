@@ -25,9 +25,8 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'utils/utilities'
-  'utils/Milk'
   'utils/validators'
-], ($, _, Backbone, i18n, i18nEdition, utilities, Milk, validators) ->
+], ($, _, Backbone, i18n, i18nEdition, utilities, validators) ->
 
   i18n = $.extend(true, i18n, i18nEdition)
 
@@ -282,7 +281,7 @@ define [
     # The `render()` method is invoked by backbone to display view content at screen.
     render: () =>
       # template rendering
-      @$el.empty().append(Milk.render(@_template, @_getRenderData()))
+      super()
 
       # creates property for name and description
       @_nameWidget = @$el.find('.name.field').property(
@@ -319,14 +318,6 @@ define [
     # Effectively creates a new model.
     # **Must be overriden by subclasses**
     _createNewModel: () =>
-      throw new Error('the _createNewModel() method must be overriden by subclasses')
-
-    # **private**
-    # Prepare data to be rendered into the template
-    # **Must be overriden by subclasses**
-    #
-    # @return data filled into the template
-    _getRenderData: () =>
       throw new Error('the _createNewModel() method must be overriden by subclasses')
 
     # **private**

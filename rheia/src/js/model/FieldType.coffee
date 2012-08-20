@@ -35,7 +35,7 @@ define [
   class FieldType extends Base.Model
 
     # Local cache for models.
-    @collection = new FieldTypes(@)
+    @collection: new FieldTypes(@)
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
