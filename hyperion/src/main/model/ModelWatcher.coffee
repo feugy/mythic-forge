@@ -51,7 +51,7 @@ class _ModelWatcher extends EventEmitter
       # but send the map if it changed
       parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
     if operation is 'update'
-      if className isnt 'Executable'
+      if className isnt 'Executable' and className isnt 'FSItem'
         # for update, only emit modified datas
         parameter = 
           _id: instance._id

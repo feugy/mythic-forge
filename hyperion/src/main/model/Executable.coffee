@@ -248,9 +248,9 @@ class Executable
 
   # Remove an existing executable.
   # 
-  # @param callback [Function] called when the save is finished, with two arguments:
+  # @param callback [Function] called when the removal is finished, with two arguments:
   #   @param err [String] error string. Null if save succeeded
-  #   @param item [Item] the saved item
+  #   @param item [Item] the removed item
   remove: (callback) =>
     fs.exists @path, (exists) =>
       return callback "Error while removing executable #{@_id}: this executable does not exists" if not exists

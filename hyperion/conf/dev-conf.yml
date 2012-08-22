@@ -23,8 +23,12 @@ mongo:
 
 # Executable scripts
 executable:
-  source: ../proto-game
+  source: ../proto-game/rules
   target: ./hyperion/lib/compiled
+
+# Game client
+game:
+  source: ../proto-game/client
 
 # Turns execution settings. Frequency in seconds
 turn:

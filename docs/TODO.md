@@ -59,11 +59,13 @@
         - **[done]** (rule) search 'val' (as string/regexp) in category
         - **[done]** (turn-rule) search 'val' (as number) in rank
         - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
-    - GameAuthoring service and FSItem
-        - get root content
-        - get fsitem
-        - save fsitem
-        - remove fsitem
+    - Authoring service and FSItem
+        - **[done]** get FSItem
+        - **[done]** save FSItem
+        - **[done]** remove FSItem
+        - rename/move FSItem
+        - **[done]** service layer
+        - **[done]** web layer
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items

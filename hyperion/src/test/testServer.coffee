@@ -26,6 +26,7 @@ Player = require '../main/model/Player'
 Map = require '../main/model/Map'
 ItemType = require '../main/model/ItemType'
 Executable = require '../main/model/Executable'
+FSItem = require '../main/model/FSItem'
 utils = require '../main/utils'
 request = require 'request'
 testUtils = require './utils/testUtils'
@@ -58,6 +59,67 @@ describe 'server tests', ->
         assert.equal res.statusCode, 200
         assert.equal body, '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
         done()
+
+    it 'should game root be consultable', (done) ->
+      # given a connected socket.io client
+      socket = socketClient.connect "#{rootUrl}/admin"
+
+      # then the root fsItem is returned
+      socket.once 'getRootFSItem-resp', (err, fsItem) ->
+        throw new Error err if err?
+        assert.isNotNull fsItem
+        assert.isTrue fsItem.isFolder
+        assert.equal fsItem.path, ''
+        done()
+
+      # when consulting the root FSItem
+      socket.emit 'getRootFSItem'
+
+    it 'should file be created, read and removed', (done) ->
+      # given a connected socket.io client
+      socket = socketClient.connect "#{rootUrl}/admin"
+
+      # given a file with binary content
+      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, imgData) ->
+        throw new Error err if err?
+        file = 
+          path: path.join 'images', 'image1.png'
+          isFolder: false
+          content: imgData.toString('base64')
+        
+        # then the saved fsItem is returned
+        socket.once 'saveFSItem-resp', (err, saved) ->
+          throw new Error err if err?
+          assert.isNotNull saved
+          assert.isFalse saved.isFolder
+          assert.equal saved.path, file.path
+          assert.equal saved.content, file.content
+
+          # then the read fsItem is returned with valid content
+          socket.once 'readFSItem-resp', (err, read) ->
+            throw new Error err if err?
+            assert.isNotNull read
+            assert.isFalse read.isFolder
+            assert.equal read.path, file.path
+            assert.equal read.content, imgData.toString('base64')
+
+            # then the fsItem was removed
+            socket.once 'removeFSItem-resp', (err, removed) ->
+              throw new Error err if err?
+              assert.isNotNull removed
+              assert.isFalse removed.isFolder
+              assert.equal removed.path, file.path
+              done()
+
+            # when removing it
+            socket.emit 'removeFSItem', file
+
+          # when reading its content
+          file.content = null
+          socket.emit 'readFSItem', file
+
+        # when saving a new file
+        socket.emit 'saveFSItem', file
 
     describe 'given a map, a type and two characters', ->
 
@@ -221,7 +283,7 @@ describe 'server tests', ->
                 assert.ok created, 'watcher wasn\'t invoked for creation'
                 assert.ok updated, 'watcher wasn\'t invoked for update'
                 done()
-              , 1000
+              , 500
 
             # then an deletion is received for jack
             socket2.once 'deletion', (className, item) ->

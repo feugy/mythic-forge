@@ -20,7 +20,7 @@
 
 _ = require 'underscore'
 yaml = require 'js-yaml'
-rimraf = require 'rimraf'
+fsExtra = require 'fs-extra'
 fs = require 'fs'
 pathUtil = require 'path'
 
@@ -100,11 +100,11 @@ module.exports =
   # @param logger [Object] optional logger
   enforceFolderSync: (folderPath, forceRemove = false, logger = null) ->
     # force Removal if specified
-    rimraf.sync folderPath if forceRemove and fs.existsSync folderPath
+    fsExtra.removeSync folderPath if forceRemove and fs.existsSync folderPath
       
     if not fs.existsSync folderPath
       try 
-        fs.mkdirSync folderPath
+        fsExtra.mkdirSync folderPath
         logger?.info "Folder '#{folderPath}' successfully created"
       catch err
         throw "Unable to create the Executable folder '#{folderPath}': #{err}"

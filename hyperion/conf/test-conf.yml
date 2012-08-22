@@ -20,8 +20,12 @@ mongo:
 
 # Executable scripts
 executable:
-  source: ./hyperion/lib/game-test
+  source: ./hyperion/lib/game-test/rules
   target: ./hyperion/lib/compiled-test
+
+# Game client
+game:
+  source: ./hyperion/lib/game-test/client
 
 # Turns execution settings. Frequency in seconds
 turn:
