@@ -18,9 +18,10 @@
 ###
 
 define
-  fr: true
-  root: 
-    constants:
-      fieldAffectation: 'affectField'
-    TOTRANSLATE: true    
-
+  tips:
+    newFile: 'Crée un fichier dans le dossier séléctioné, ou la racine'
+    newFolder: 'Crée un dossier dans le dossier séléctioné, ou la racine'
+    uploadFile: 'Upload un fichier dans le dossier séléctioné, ou la racine'
+    saveFile: 'Sauvegarde le fichier actuellement édité'
+    removeFSItem: 'Supprime le fichier ou le dossier séléctioné'
+    renameFSItem: 'Renomme le fichier ou le dossier séléctionné'

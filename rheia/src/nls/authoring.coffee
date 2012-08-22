@@ -20,7 +20,5 @@
 define
   fr: true
   root: 
-    constants:
-      fieldAffectation: 'affectField'
     TOTRANSLATE: true    
 

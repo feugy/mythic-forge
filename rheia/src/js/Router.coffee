@@ -101,6 +101,7 @@ define [
     routes:
       # Define some URL routes
       'edition': '_onEdition'
+      'authoring': '_onAuthoring'
 
     # Object constructor.
     #
@@ -129,7 +130,7 @@ define [
       # route link special behaviour
       $('body').on('click', 'a[data-route]', (event) =>
         event.preventDefault()
-        route = $(event.target).data('route')
+        route = $(event.target).closest('a').data('route')
         @navigate(route, trigger: true)
       )
 
@@ -137,7 +138,7 @@ define [
       $('body').empty().append(rheia.layoutView.render().$el)
 
       # TODO 
-      @navigate('edition', trigger: true)
+      @navigate('authoring', trigger: true)
 
     # **private**
     # Show a perspective inside the wrapper
@@ -156,6 +157,11 @@ define [
     # Displays the edition perspective
     _onEdition: =>
       @_showPerspective('editionPerspective', 'view/edition/Perspective')
+
+    # **private**
+    # Displays the game authoring perspective
+    _onAuthoring: =>
+      @_showPerspective('authoringPerspective', 'view/authoring/Perspective')
 
   app = new Router()
   return app

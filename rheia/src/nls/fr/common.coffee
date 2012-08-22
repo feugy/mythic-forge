@@ -21,6 +21,7 @@ define
   titles:
     serverError: 'Erreur server'
     editionPerspective: 'Edition du monde'
+    authoringPerspective: 'Client de jeu'
     categories:
       items: 'Objets'
       maps: 'Cartes'

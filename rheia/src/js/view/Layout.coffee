@@ -59,7 +59,8 @@ define [
     #
     # @param title [String] the new title used for the layout
     loading: (title) =>
-      @_container.empty()
+      # detach previous content to avoid its destruction
+      @_container.children().detach()
       @$el.find('.loader').show()
       @$el.find('header h1').text(title)
 
@@ -67,7 +68,7 @@ define [
     #
     # @param content [jQuery] the content put inside layout
     show: (content) =>
-      @_container.empty().append(content)
+      @_container.append(content)
       @$el.find('.loader').hide()
 
     # **private**
