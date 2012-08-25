@@ -26,8 +26,9 @@ Map = require '../model/Map'
 Field = require '../model/Field'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
+AuthoringService = require('./AuthoringService').get()
 
-supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType']
+supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
 listSupported = supported[1..]
 
 # The AdminService export administration features.
@@ -35,7 +36,7 @@ listSupported = supported[1..]
 class _AdminService
 
   # The list method retrieve all instances of a given model, in:
-  # Map, ItemType, Executable, FieldType, EventType. 
+  # Map, ItemType, Executable, FieldType, EventType and FSItem (AuthoringService.readRoot()). 
   # Field and items must be retrieved with `GameService.consult()`.
   #
   # @param modelName [String] class name of the listed models
@@ -52,6 +53,7 @@ class _AdminService
       when 'EventType' then EventType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
       when 'Map' then Map.find (err, result) -> callback err, modelName, result
+      when 'FSItem' then AuthoringService.readRoot (err, root) -> callback err, modelName, root.content unless err?
 
   # Saves an instance of any model.
   #
@@ -99,6 +101,9 @@ class _AdminService
           # create new if not found
           model = new Executable values 
           return _save model
+
+      when 'FSItem'
+        return AuthoringService.save values, (err, saved) -> callback err, modelName, saved
 
     # do not directly save Mongoose models
     if 'toObject' of values and values.toObject instanceof Function
@@ -176,7 +181,7 @@ class _AdminService
   # @option callback model [Object] saved model
   remove: (modelName, values, callback) =>
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
-    unless 'Field' is modelName or '_id' of values
+    unless 'Field' is modelName or 'FSItem' is modelName or '_id' of values
       return callback "Cannot remove #{modelName} because no '_id' specified", modelName 
     modelClass = null
     switch modelName
@@ -202,6 +207,9 @@ class _AdminService
             model.remove unqueue
 
         return unqueue null
+
+      when 'FSItem'
+        return AuthoringService.remove values, (err, removed) -> callback err, modelName, removed
 
     # get existing values
     modelClass.findCached values._id, (err, model) ->

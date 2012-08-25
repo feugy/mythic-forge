@@ -49,7 +49,8 @@ assertFSItemSave = (item, isFolder, content, isNew, done) ->
   watcher.once 'change', (operation, className, instance)->
     assert.equal className, 'FSItem'
     assert.equal operation, if isNew then 'creation' else 'update'
-    assert.ok item.equals instance
+    # path in change must ends original path
+    assert.isNotNull item.path.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
     assert.equal item.isFolder, instance.isFolder
     assert.equal item.content, instance.content
     awaited = true
@@ -79,7 +80,8 @@ assertFSItemRemove = (item, done) ->
   watcher.once 'change', (operation, className, instance)->
     assert.equal className, 'FSItem'
     assert.equal operation, 'deletion'
-    assert.ok item.equals instance
+    # path in change must ends original path
+    assert.isNotNull item.path.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
     assert.equal item.isFolder, instance.isFolder
     awaited = true
 
@@ -97,7 +99,7 @@ assertFSItemRemove = (item, done) ->
 
 # Empties the root folder and re-creates it.
 cleanRoot = (done) ->
-  root = pathUtils.join __dirname, '_tmp'
+  root = utils.confKey 'game.source'
   fsExtra.remove root, (err) ->
     fsExtra.mkdir root, (err) ->
       throw new Error err if err?

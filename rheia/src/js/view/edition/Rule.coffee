@@ -20,15 +20,16 @@
 
 define [
   'jquery'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/rule.html'
   'utils/validators'
   'view/edition/BaseEditionView'
   'model/Executable'
   'widget/advEditor'
-], ($, i18n, template, validators, BaseEditionView, Executable) ->
+], ($, i18n, i18nEdition, template, validators, BaseEditionView, Executable) ->
 
-  i18n = $.extend true, {}, i18n
+  i18n = $.extend true, i18n, i18nEdition
 
   # Displays and edit a Rule on edition perspective
   class RuleView extends BaseEditionView
@@ -52,10 +53,6 @@ define [
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removeRuleConfirm
-    
-    # **private**
-    # close popup confirmation text, that can take the edited object's name in parameter
-    _confirmCloseMessage: i18n.msgs.closeConfirm
 
     # **private**
     # widget that allows content edition
@@ -111,6 +108,7 @@ define [
     #
     # @return optionnal attributes that may be specificaly saved. Null or undefined to save all model
     _specificSave: =>
+      super()
       if @_tempId?
         @model.set '_id', @_nameWidget.options.value
         # we need to unset id because it allows Backbone to differentiate creation from update
@@ -132,6 +130,7 @@ define [
     # Performs view specific rendering operations.
     # Creates the editor and category widgets.
     _specificRender: =>
+      super()
       @_editorWidget = @$el.find('.content').advEditor(
         change: @_onChange
         mode: 'coffee'

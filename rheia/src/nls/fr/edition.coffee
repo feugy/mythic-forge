@@ -25,23 +25,16 @@ define
     rule: 'Règle'
     turnRule: 'Règle de tour'
     map: 'Carte %s'
-    removeConfirm: 'Suppression'
-    closeConfirm: 'Fermeture'
-    external: 'Modification externe'
     multipleAffectation: 'Affectation multiple'
 
   msgs:
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
+    removeEventTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'évènements <b>%s</b> ?</p><p>Tous les évènements de ce type seront aussi supprimés.</p>"
     removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
-    closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
-    externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
-    externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet a été fermé.</p>"
     invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
     invalidExecutableNameError: "le nom d'un executable ne peut contenir que des caractères alphanumeriques"
-    saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
-    removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
     multipleAffectation: 'Choisisez les images que vous aller affecter dans la séléction (l\'ordre est significatif)'
 
   buttons:
@@ -54,10 +47,6 @@ define
     newEventType: "Type d'évènements"
 
   labels:
-    yes: 'Oui'
-    no: 'Non'
-    ok: 'Ok'
-    cancel: 'Annuler'
     newType: '(nouveau)'
     descImage: 'Type'
     images: 'Instances'

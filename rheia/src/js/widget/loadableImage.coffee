@@ -64,8 +64,6 @@ define [
           .appendTo(@element).click (event) => @_onDelete event
 
       # reload image
-      @_createAlt()
-
       @_setOption 'source', @options.source
 
     # **private**
@@ -79,10 +77,11 @@ define [
         when 'source' 
           @options.source = value
           # display alternative text
+          @options._image.removeAttr 'src'
           @_createAlt()
           # load image from images service
           if @options.source is null 
-            setTimeout ( => @_onLoaded false), 0
+            setTimeout (=> @_onLoaded false), 0
           else 
             rheia.router.trigger 'loadImage', "/images/#{@options.source}"
 
@@ -128,8 +127,8 @@ define [
     # @param event [Event]loading failure event or click event.
     _onDelete: (event) ->
       console.log 'change image: none'
-      # now, displays the alternative text
       @options._image.removeAttr 'src'
+      # now, displays the alternative text
       @_createAlt()
       @options.source = null
       @_trigger 'change', event

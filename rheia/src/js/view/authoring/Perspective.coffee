@@ -26,9 +26,10 @@ define [
   'i18n!nls/common'
   'i18n!nls/authoring'
   'text!tpl/authoringPerspective.html'
+  'model/FSItem'
   'view/authoring/FileExplorer'
   'view/authoring/File'
-], ($, _, Backbone, TabPerspective, i18n, i18nAuthoring, template, FileExplorer, FileView) ->
+], ($, _, Backbone, TabPerspective, i18n, i18nAuthoring, template, FSItem, FileExplorer, FileView) ->
 
   i18n = $.extend true, i18n, i18nAuthoring
 
@@ -70,9 +71,14 @@ define [
     # Button to rename selected file/folder
     _renameButton: null
 
+    # **private**
+    # array that contains path of opening file
+    _readPending: []
+
     # The view constructor.
     constructor: ->
       super 'authoring'
+      @_readPending = []
 
       # construct explorer
       @_explorer = new FileExplorer()
@@ -88,13 +94,13 @@ define [
 
       # build buttons.
       buttons = [
-        icon: 'new-file'
+        icon: 'save'
         handler: (event) => 
           event?.preventDefault()
           @_onOpenElement null
         attribute: '_newFileButton'
       ,
-        icon: 'new-folder'
+        icon: 'remove'
         handler: null
         attribute: '_newFolderButton'
       ]
@@ -119,17 +125,12 @@ define [
     # Delegate method the instanciate a view from a type and an id, either
     # when opening an existing view, or when creating a new one.
     #
-    # @param type [String] type of the opened/created instance
+    # @param type [String] type of the opened/created instance. Must be null.
     # @param id [String] optional id of the opened instance. Null for creations
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
-      view = null
-      unless type?
-        view = new FileView 
-          path: 'test.txt'
-          isFolder: false
-          content: 'coucou !'
-      return view
+      return null if type?
+      new FileView id
 
     # **private**
     # Selection handler inside the file explorer.
@@ -139,4 +140,9 @@ define [
     # @param selected [String] path of the currently selected fsitem. May be null
     # @param previous [String] path of the previously selected fsitem. May be null
     _onSelect: (selected, previous) =>
-      console.dir arguments
+      if selected?
+        # get the selected FSItem
+        selected = FSItem.collection.get selected
+        return unless selected?
+        # Open the relevant file view
+        @_onOpenElement null, selected.id unless selected.get 'isFolder'

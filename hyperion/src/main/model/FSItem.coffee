@@ -86,7 +86,7 @@ class FSItem
     callback 'not implemented yet'
 
   # Find fs-item content. If the searched fs-item is a folder, @content will contains
-  # an array of FSItems, and if it's a file, @content will containsa buffer with raw content.
+  # an array of FSItems, and if it's a file, @content will be a base64 encoded string
   #
   # @param callback [Function] invoked when new content is saved
   # @option callback err [String] an error message if an error occured. null otherwise

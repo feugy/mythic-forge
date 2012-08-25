@@ -37,22 +37,23 @@ class _AuthoringService
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback root [FSItem] the root fSItem folder, populated
-  getRootFSItem: (callback) =>
+  readRoot: (callback) =>
     new FSItem(root, true).read (err, rootFolder) =>
       return callback "Failed to get root content: #{err}" if err?
       # make root relative
       rootFolder.path = ''
-      file.path = pathUtils.relative(root, file.path) for file in rootFolder.content
+      file.path = pathUtils.relative root, file.path for file in rootFolder.content
       callback null, rootFolder
 
   # Saves a given FSItem, creating it if necessary. File FSItem can be updated with new content.
   # A creation or update event will be triggered.
+  # File content must base64 encoded
   #
   # @param item [FSItem] saved FSItem
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback saved [FSItem] the saved fSItem
-  saveFSItem: (item, callback) =>
+  save: (item, callback) =>
     try 
       item = new FSItem item
     catch exc
@@ -73,7 +74,7 @@ class _AuthoringService
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback removed [FSItem] the removed fSItem
-  removeFSItem: (item, callback) =>
+  remove: (item, callback) =>
     try 
       item = new FSItem item
     catch exc
@@ -95,7 +96,7 @@ class _AuthoringService
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback moved [FSItem] the moved fSItem
-  moveFSItem: (item, newPath, callback) =>
+  move: (item, newPath, callback) =>
     try 
       item = new FSItem item
     catch exc
@@ -110,13 +111,14 @@ class _AuthoringService
       callback null, moved
 
   # Retrieves the FSItem content, either file or folder.
+  # File content is returned base64 encoded
   #
   # @param item [FSItem] read FSItem
   # @param newPath [String] new path for this item
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback read [FSItem] the read fSItem populated with its content
-  readFSItem: (item, callback) =>
+  read: (item, callback) =>
     try 
       item = new FSItem item
     catch exc

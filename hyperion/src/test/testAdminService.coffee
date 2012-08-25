@@ -25,10 +25,13 @@ EventType = require '../main/model/EventType'
 Event = require '../main/model/Event'
 Executable = require '../main/model/Executable'
 Map = require '../main/model/Map'
+FSItem = require '../main/model/FSItem'
+authoringService = require('../main/service/AuthoringService').get()
 service = require('../main/service/AdminService').get()
 watcher = require('../main/model/ModelWatcher').get()
 testUtils = require './utils/testUtils'
 utils = require '../main/utils'
+fsExtra = require 'fs-extra'
 assert = require('chai').assert
      
 itemTypes = []
@@ -37,6 +40,8 @@ fieldTypes = []
 executables = []
 maps = []
 fields = []
+fsItem = null
+gameClientRoot = utils.confKey 'game.source'
 
 describe 'AdminService tests', -> 
 
@@ -46,33 +51,42 @@ describe 'AdminService tests', ->
     executables = []
     fieldTypes = []
     maps = []
-    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+    testUtils.cleanFolder utils.confKey('executable.source'), -> 
       Executable.resetAll -> 
         ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop -> Field.collection.drop ->
             EventType.collection.drop -> Event.collection.drop ->
               Map.collection.drop ->
-                # creates fixtures
-                created = [
-                  {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-                  {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-                  {clazz: EventType, args: {name: 'type 5', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
-                  {clazz: EventType, args: {name: 'type 6', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
-                  {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
-                  {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
-                  {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
-                  {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
-                  {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
-                  {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
-                ]
-                create = (def) ->
-                  return done() unless def?
-                  new def.clazz(def.args).save (err, saved) ->
+                fsExtra.remove gameClientRoot, -> fsExtra.mkdir gameClientRoot, ->
+                  # creates a single fsItem
+                  authoringService.save 
+                    path: 'folder/test.txt'
+                    isFolder: false
+                    content: new Buffer('Hi !').toString 'base64'
+                  , (err, result) ->
                     throw new Error err if err?
-                    def.store.push saved
-                    create created.pop()
+                    fsItem = result
+                    # creates fixtures
+                    created = [
+                      {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                      {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                      {clazz: EventType, args: {name: 'type 5', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
+                      {clazz: EventType, args: {name: 'type 6', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
+                      {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
+                      {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
+                      {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
+                      {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
+                      {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
+                      {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
+                    ]
+                    create = (def) ->
+                      return done() unless def?
+                      new def.clazz(def.args).save (err, saved) ->
+                        throw new Error err if err?
+                        def.store.push saved
+                        create created.pop()
 
-                create created.pop()
+                    create created.pop()
 
   it 'should list fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -137,6 +151,20 @@ describe 'AdminService tests', ->
       assert.ok maps[0].equals(list[0])
       assert.ok maps[1].equals(list[1])
       done()
+
+  it 'should list returns fsItems in root', (done) ->
+    authoringService.readRoot (err, expected) ->
+      throw new Error err if err?
+
+      # when listing all fs items
+      service.list 'FSItem', (err, modelName, list) ->
+        throw new Error "Can't list root FSItems: #{err}" if err?
+        # then the authoring service result were returned
+        assert.equal modelName, 'FSItem'
+        assert.equal list.length, expected.content.length
+        for item, i in expected.content
+          assert.ok item.equals list[i]
+        done()
 
   it 'should save fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -282,6 +310,36 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Map.findById model._id, (err, obj) ->
         throw new Error "Can't find map in db #{err}" if err?
+        assert.ok obj.equals model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should save create new fsItem', (done) ->
+    # given new values
+    values = path: 'test2.txt', isFolder: false, content: new Buffer('Hi !').toString('base64')
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'FSItem'
+      assert.equal operation, 'creation'
+      assert.equal instance.path, values.path
+      assert.isFalse instance.isFolder
+      assert.equal instance.content, values.content
+      awaited = true
+
+    # when saving new fsitem
+    service.save 'FSItem', values, (err, modelName, model) ->
+      throw new Error "Can't save fsitem: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.equal model.path, values.path
+      assert.equal model.content, values.content
+      assert.isFalse model.isFolder
+
+      # then the authoring servce serve this fsitem
+      authoringService.read model, (err, obj) ->
+        throw new Error "Can't find fsitem with authoring servce #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -461,6 +519,37 @@ describe 'AdminService tests', ->
           assert.equal list.length, 2
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
+
+  it 'should save update existing fsItem', (done) ->
+    # given new values
+    newContent = new Buffer('Hi !! 2').toString('base64')
+    fsItem.content = newContent
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'FSItem'
+      assert.equal operation, 'update'
+      assert.equal instance.path, fsItem.path
+      assert.equal instance.content, newContent
+      awaited = true
+
+    # when saving existing fsitem
+    service.save 'FSItem', fsItem, (err, modelName, model) ->
+      throw new Error "Can't save fsitem: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.equal model.path, fsItem.path
+      assert.equal model.content, newContent
+      assert.isFalse model.isFolder
+
+      # then the authoring servce serve this fsitem
+      authoringService.read fsItem, (err, obj) ->
+        throw new Error "Can't find fsitem with authoring servce #{err}" if err?
+        assert.ok obj.equals model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        assert.equal obj.content, newContent
+        done()
 
   it 'should save creates new fields', (done) ->
     saved = []
@@ -745,6 +834,29 @@ describe 'AdminService tests', ->
               assert.ok returned[1].equals removed[1]
               watcher.removeAllListeners 'change'
               done()
+
+  it 'should remove delete existing fsItem', (done) ->
+    awaited = false
+    # then a deletion event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'FSItem'
+      assert.equal operation, 'deletion'
+      assert.ok fsItem.equals instance
+      awaited = true
+
+    # when removing existing fsItem
+    service.remove 'FSItem', fsItem, (err, modelName, model) ->
+      throw new Error "Can't remove fieldType: #{err}" if err?
+      # then the removed values are returned
+      assert.ok model?
+      assert.ok fsItem.equals model
+
+      # then the model is not readable with authoring service
+      authoringService.read fsItem, (err, obj) ->
+        assert.isNotNull err
+        assert.ok -1 isnt err.indexOf 'Cannot read item: Error: ENOENT'
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
 
   it 'should remove fails on non array parameter', (done) ->
     # when removing field without array

@@ -60,21 +60,6 @@ describe 'server tests', ->
         assert.equal body, '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
         done()
 
-    it 'should game root be consultable', (done) ->
-      # given a connected socket.io client
-      socket = socketClient.connect "#{rootUrl}/admin"
-
-      # then the root fsItem is returned
-      socket.once 'getRootFSItem-resp', (err, fsItem) ->
-        throw new Error err if err?
-        assert.isNotNull fsItem
-        assert.isTrue fsItem.isFolder
-        assert.equal fsItem.path, ''
-        done()
-
-      # when consulting the root FSItem
-      socket.emit 'getRootFSItem'
-
     it 'should file be created, read and removed', (done) ->
       # given a connected socket.io client
       socket = socketClient.connect "#{rootUrl}/admin"
@@ -88,15 +73,16 @@ describe 'server tests', ->
           content: imgData.toString('base64')
         
         # then the saved fsItem is returned
-        socket.once 'saveFSItem-resp', (err, saved) ->
+        socket.once 'save-resp', (err, modelName, saved) ->
           throw new Error err if err?
+          assert.equal modelName, 'FSItem'
           assert.isNotNull saved
           assert.isFalse saved.isFolder
           assert.equal saved.path, file.path
           assert.equal saved.content, file.content
 
           # then the read fsItem is returned with valid content
-          socket.once 'readFSItem-resp', (err, read) ->
+          socket.once 'read-resp', (err, read) ->
             throw new Error err if err?
             assert.isNotNull read
             assert.isFalse read.isFolder
@@ -104,22 +90,23 @@ describe 'server tests', ->
             assert.equal read.content, imgData.toString('base64')
 
             # then the fsItem was removed
-            socket.once 'removeFSItem-resp', (err, removed) ->
+            socket.once 'remove-resp', (err, modelName, removed) ->
               throw new Error err if err?
+              assert.equal modelName, 'FSItem'
               assert.isNotNull removed
               assert.isFalse removed.isFolder
               assert.equal removed.path, file.path
               done()
 
             # when removing it
-            socket.emit 'removeFSItem', file
+            socket.emit 'remove', 'FSItem', file
 
           # when reading its content
           file.content = null
-          socket.emit 'readFSItem', file
+          socket.emit 'read', file
 
         # when saving a new file
-        socket.emit 'saveFSItem', file
+        socket.emit 'save', 'FSItem', file
 
     describe 'given a map, a type and two characters', ->
 

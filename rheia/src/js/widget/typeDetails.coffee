@@ -83,9 +83,9 @@ define [
         $('<div></div>').carousel(
           images: @options.model.get 'images'
         ).draggable(
-          scope: i18n.constants.fieldAffectation,
-          appendTo: 'body',
-          cursorAt: top:-5, left:-5,
+          scope: i18n.constants.fieldAffectation
+          appendTo: 'body'
+          cursorAt: top:-5, left:-5
           helper: (event) ->
             carousel = $(this)
             # extract the current displayed image from the carousel
@@ -95,7 +95,7 @@ define [
             dragged.data 'idx', idx
             dragged.data 'id', carousel.closest(".#{categoryClass}").data 'id'
             dragged.addClass 'dragged'
-            return dragged
+            dragged
         ).prependTo @element
       else
         @element.prepend "<img/>" if category in ['ItemType', 'EventType']

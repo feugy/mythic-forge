@@ -57,10 +57,6 @@ define [
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removeMapConfirm
-    
-    # **private**
-    # close popup confirmation text, that can take the edited object's name in parameter
-    _confirmCloseMessage: i18n.msgs.closeConfirm
 
     # **private**
     # map kind rendering
@@ -141,6 +137,7 @@ define [
     # Allows subclass to add specific widgets right after the template was rendered and before first 
     # call to `fillRendering`. 
     _specificRender: =>
+      super()
       @_kindWidget = @$el.find('select.field').change @_onChange
       @_mapWidget = @$el.find('.map').authoringMap(
         tileDim: 75

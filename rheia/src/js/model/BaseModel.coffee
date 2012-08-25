@@ -93,7 +93,7 @@ define [
     _onUpdate: (className, changes) =>
       return unless className is @_className
       # first, get the cached item type and quit if not found
-      model = @get changes._id
+      model = @get changes[@model.prototype.idAttribute]
       return unless model?
       # then, update the local cache.
       model.set key, value for key, value of changes when key isnt '_id'
@@ -175,12 +175,19 @@ define [
         when 'create', 'update' 
           sockets.admin.once 'save-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          sockets.admin.emit 'save', @_className, @toJSON()
+          sockets.admin.emit 'save', @_className, @_serialize()
         when 'delete' 
           sockets.admin.once 'save-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          sockets.admin.emit 'remove', @_className, @toJSON()
+          sockets.admin.emit 'remove', @_className, @_serialize()
         else throw new Error "Unsupported #{method} operation on #{@_className}"
+
+    # **private** 
+    # Method used to serialize a model when saving and removing it
+    # Uses the Backbone @toJSON() existing method
+    #
+    # @return a serialized version of this model
+    _serialize: => @toJSON()
 
     # An equality method that tests ids.
     #

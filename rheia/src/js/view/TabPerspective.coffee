@@ -170,11 +170,14 @@ define [
         tab = @_tabs.element.find "a[href=#tabs-#{md5(view.getId())}] .content"
         # toggle Css class modified wether we can save the view
         tab.toggleClass 'modified', view.canSave()
+        # adds the class name to the icon
+        tab.prev('.icon').attr 'class', "icon #{view.className}"
         # updates title
         tab.html _.truncate view.getTitle(), 15
 
       # bind close we view ask for it
       view.on 'close', => @tryCloseTab view
+      $(ui.tab).find('.icon').attr 'class', "icon #{view.className}"
       # bind Id affectation, to update tabs' ids when the model is created
       view.on 'affectId', @_onAffectViewId
 
@@ -183,8 +186,6 @@ define [
       if @_actionBars?
         $(@_actionBars.panels[ui.index]).append view.getActionBar()
 
-      # adds the class name to the icon
-      $(ui.tab).find('.icon').addClass view.className
       # renders the corresponding view inside the tab and displays it
       $(ui.panel).append view.render().$el
       @_tabs.select @_views.indexOf view

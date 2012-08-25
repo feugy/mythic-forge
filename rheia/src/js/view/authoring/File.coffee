@@ -21,60 +21,105 @@
 define [
   'jquery'
   'underscore'
-  'backbone'
+  'view/BaseView'
   'i18n!nls/common'
   'i18n!nls/authoring'
+  'model/FSItem'
   'widget/advEditor'
-], ($, _, Backbone, i18n, i18nAuthoring) ->
+], ($, _, BaseView, i18n, i18nAuthoring, FSItem) ->
 
   i18n = $.extend(true, i18n, i18nAuthoring)
 
-  # View that allows to edit files
-  class FileView extends Backbone.View
+  # map that indicates to which extension corresponds which editor mode
+  # extensions are keys, mode are values
+  extToMode =
+    'coffee': 'coffee'
+    'json': 'json'
+    'js': 'javascript'
+    'html': 'html'
+    'htm': 'html'
+    'css': 'css'
+    'xml': 'xml'
+    'svg': 'svg'
+    'yaml': 'yaml'
+    'yml': 'yaml'
+    'stylus': 'stylus'
+    'styl': 'stylus'
 
-    # the edited FSItem
-    file: null    
+  # Returns the supported mode of a given file
+  #
+  # @param item [FSItem] the concerned item
+  # @return the supported mode
+  getMode = (item) ->
+    if item.extension of extToMode then extToMode[item.extension] else 'text'
+
+  # View that allows to edit files
+  class FileView extends BaseView
+
+    # **private**
+    # models collection on which the view is bound
+    _collection: FSItem.collection
+
+    # **private**
+    # removal popup confirmation text, that can take the edited object's name in parameter
+    _confirmRemoveMessage: i18n.msgs.removeFileConfirm
+    
+    # **private**
+    # close popup confirmation text, that can take the edited object's name in parameter
+    _confirmCloseMessage: i18n.msgs.closeFileConfirm
+
+    # **private**
+    # name of the model attribute that holds name.
+    _nameAttribute: 'path'
 
     # **private**
     # widget that allows content edition
     _editorWidget: null
 
-    # The view constructor.
+    # The view constructor. The edited file system item must be a file, with its content poplated
     #
     # @param file [FSItem] the edited object.
-    constructor: (@file) ->
-      super tagName: 'div', className:"file view"
-     
-      @_canSave = false
-
-    # Returns a unique id. 
-    #
-    # @return If the edited object is persisted on server, return its id. Otherwise, a temporary unic id.
-    getId: =>
-      @file.path
+    constructor: (id) ->
+      super id, 'file'
+      
+      if id?
+        # get the file content, and display when arrived without external warning
+        @_saveInProgress = true
+        FSItem.collection.fetch item:@model
 
     # Returns the view's title
     #
     # @return the edited object name.
-    getTitle:  =>
-      @file.path.substring @file.path.lastIndexOf('\\')+1
+    getTitle: => @model.id.substring @model.id.lastIndexOf('\\')+1
 
-    # The `render()` method is invoked by backbone to display view content at screen.
-    render: =>
-      # template rendering
-      super()
+    # **private**
+    # Allows subclass to add specific widgets right after the template was rendered and before first 
+    _specificRender: =>
+      @className += " #{getMode @model}"
 
       # instanciate the content editor
       @_editorWidget = $('<div class="content"></div>').advEditor(
-        #change: @_onChange
-        #mode: 'coffee'
+        change: @_onChange
       ).data 'advEditor'
       @$el.empty().append @_editorWidget.element
 
-      # for chaining purposes
-      return @
+    # **private**
+    # Gets values from rendering and saved them into the edited object.
+    _fillModel: => 
+      @model.set 'content', @_editorWidget.options.text
+      
+    # **private**
+    # Updates rendering with values from the edited object.
+    _fillRendering: =>
+      console.log @model.get 'content'
+      @_editorWidget.setOption 'mode', getMode @model
+      @_editorWidget.setOption 'text', @model.get 'content'
+      # to update displayed icon
+      @_onChange()
 
-    # Method invoked when the view must be closed.
-    # @return true if the view can be closed, false to cancel closure
-    canClose: =>
-      return true
+    # **private**
+    # Change handler, wired to any changes from the rendering.
+    # Detect text changes and triggers the change event.
+    _onChange: =>
+      @_canSave = @model.get('content') isnt @_editorWidget.options.text
+      super()

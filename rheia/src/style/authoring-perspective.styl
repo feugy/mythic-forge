@@ -72,7 +72,6 @@
         background-position -80px -80px
       .file.css > i
         background-position -96px -80px
-      
 
       .content
         margin-left iconSize
@@ -89,6 +88,11 @@
       overflow hidden
       padding 2px 0 0
       display box
+
+    .ui-tabs-nav
+      for icon, idx in file stylus coffee javascript html svg css
+        li a i.{icon}
+          background-position unit(-25*idx, 'px') -125px
 
   .view.file:not(.icon)
     position relative

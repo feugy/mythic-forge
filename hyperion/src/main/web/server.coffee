@@ -61,24 +61,26 @@ app.get '/konami', (req, res) ->
 #
 # @param service [Object] the service instance which is exposed.
 # @param socket [Object] the socket namespace that will expose service methods.
-exposeMethods = (service, socket) ->
+# @param except [Array] optionnal array of ignored method. dafault to empty array
+exposeMethods = (service, socket, except = []) ->
   # exposes all methods
-  for method of service.__proto__
-    do(method) ->
-      socket.on method, ->
-        # add return callback to incoming arguments
-        originalArgs = Array.prototype.slice.call arguments
-        args = originalArgs.concat()
-        args.push ->
-          logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
-          # returns the callback arguments
-          returnArgs = Array.prototype.slice.call arguments
-          returnArgs.splice 0, 0, "#{method}-resp"
-          socket.emit.apply socket, returnArgs
+  for method of service.__proto__ 
+    unless method in except
+      do(method) ->
+        socket.on method, ->
+          # add return callback to incoming arguments
+          originalArgs = Array.prototype.slice.call arguments
+          args = originalArgs.concat()
+          args.push ->
+            logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
+            # returns the callback arguments
+            returnArgs = Array.prototype.slice.call arguments
+            returnArgs.splice 0, 0, "#{method}-resp"
+            socket.emit.apply socket, returnArgs
 
-        # invoke the service layer with arguments 
-        logger.debug "processing #{method} message with arguments #{originalArgs}"
-        service[method].apply service, args
+          # invoke the service layer with arguments 
+          logger.debug "processing #{method} message with arguments #{originalArgs}"
+          service[method].apply service, args
 
 # socket.io `game` namespace 
 #
@@ -105,7 +107,7 @@ io.of('/admin').on 'connection', (socket) ->
   exposeMethods adminService, socket
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
-  exposeMethods authoringService, socket
+  exposeMethods authoringService, socket, ['readRoot', 'save', 'remove']
 
 # socket.io `updates` namespace 
 #

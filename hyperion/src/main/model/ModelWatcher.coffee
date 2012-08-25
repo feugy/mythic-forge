@@ -18,8 +18,13 @@
 ###
 'use strict'
 
+_ = require 'underscore'
+pathUtils = require 'path'
+utils = require '../utils'
 logger = require('../logger').getLogger 'model'
 EventEmitter = require('events').EventEmitter
+
+gameClientRoot = utils.confKey 'game.source'
 
 # The ModelWatcher track model modifications.
 # It exposes a singleton class. The unic instance is retrieved by the `get()` method.
@@ -44,7 +49,7 @@ class _ModelWatcher extends EventEmitter
     if '_doc' of instance
       parameter[key] = value for own key,value of instance._doc
     else 
-      parameter = instance
+      parameter = _.clone instance
     # do not embed the linked map and type for items and fields
     parameter.type = parameter.type?._id if className is 'Item'
     unless modified and 'map' in modified
@@ -58,6 +63,9 @@ class _ModelWatcher extends EventEmitter
         parameter[path] = instance.get path for path in modified
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
+
+    # Specific case of FSItem that must be relative to gameClient root
+    parameter.path = pathUtils.relative gameClientRoot, parameter.path if className is 'FSItem'
 
     logger.debug "change propagation: #{operation} of instance #{parameter._id}"
     @emit 'change', operation, className, parameter

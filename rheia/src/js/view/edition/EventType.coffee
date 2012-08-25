@@ -21,15 +21,16 @@
 define [
   'jquery'
   'underscore'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/EventType.html'
   'view/edition/BaseEditionView'
   'utils/validators'
   'model/EventType'
   'widget/property'
-], ($, _, i18n, template, BaseEditionView, validators, EventType) ->
+], ($, _, i18n, i18nEdition, template, BaseEditionView, validators, EventType) ->
 
-  i18n = $.extend true, {}, i18n
+  i18n = $.extend true, i18n, i18nEdition
 
   addImageClass = 'add-image'
 
@@ -53,10 +54,6 @@ define [
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removeEventTypeConfirm
-    
-    # **private**
-    # close popup confirmation text, that can take the edited object's name in parameter
-    _confirmCloseMessage: i18n.msgs.closeConfirm
 
     # **private**
     # array of edited properties values, to distinct edited values from model values

@@ -41,7 +41,7 @@ describe 'AuthoringService tests', ->
     # given a new file
     item = new FSItem "file.txt", false
     # when saving it 
-    service.saveFSItem item, (err, saved) ->
+    service.save item, (err, saved) ->
       throw new Error "Cannot save file: #{err}" if err?
       # then the file was saved
       assert.ok item.equals saved
@@ -53,7 +53,7 @@ describe 'AuthoringService tests', ->
     # given a new file
     item = new FSItem "folder", true
     # when saving it 
-    service.saveFSItem item, (err, saved) ->
+    service.save item, (err, saved) ->
       throw new Error "Cannot save folder: #{err}" if err?
       # then the file was saved
       assert.ok item.equals saved
@@ -80,7 +80,7 @@ describe 'AuthoringService tests', ->
 
     it 'should root retrieve populated root folder', (done) ->
       # when retrieving root folder
-      service.getRootFSItem (err, folder) ->
+      service.readRoot (err, folder) ->
         throw new Error "Cannot retrieve root folder: #{err}" if err?
         # then all awaited subitems are present.
         assert.equal folder.content.length, content.length
@@ -100,7 +100,7 @@ describe 'AuthoringService tests', ->
         throw new Error err if err?
         file = new FSItem 'folder/image1.png', false
         file.content = data
-        service.saveFSItem file, (err, saved) ->
+        service.save file, (err, saved) ->
           throw new Error err if err?
           file = saved
           done()
@@ -108,7 +108,7 @@ describe 'AuthoringService tests', ->
     it 'should file content be read', (done) -> 
       file.content = null
       # when reading the file
-      service.readFSItem file, (err, read) ->
+      service.read file, (err, read) ->
         throw new Error "Cannot read file: #{err}" if err?
         # then read data is correct
         fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
@@ -122,7 +122,7 @@ describe 'AuthoringService tests', ->
         throw new Error err if err?
         file.content = data
         # when saving it 
-        service.saveFSItem file, (err, saved) ->
+        service.save file, (err, saved) ->
           throw new Error "Cannot save existing file: #{err}" if err?
           # then the file was saved
           assert.ok file.equals saved
@@ -135,7 +135,7 @@ describe 'AuthoringService tests', ->
 
     it 'should file be removed', (done) -> 
       # when removing the file
-      service.removeFSItem file, (err, removed) ->
+      service.remove file, (err, removed) ->
         throw new Error "Cannot remove file: #{err}" if err?
         # then the file was removed
         assert.ok file.equals removed
@@ -149,13 +149,13 @@ describe 'AuthoringService tests', ->
 
     before (done) ->
       folder = new FSItem 'folder/folder2', true
-      service.saveFSItem folder, (err, saved) ->
+      service.save folder, (err, saved) ->
         throw new Error err if err?
         folder = saved
         async.forEach ['file1.txt', 'file2.txt'], (file, next) ->
           item = new FSItem pathUtils.join(folder.path, file), false
           files.push item
-          service.saveFSItem item, next
+          service.save item, next
         , (err) ->
           throw new Error err if err?
           done()
@@ -163,7 +163,7 @@ describe 'AuthoringService tests', ->
     it 'should folder content be read', (done) -> 
       folder.content = null
       # when reading the folder
-      service.readFSItem folder, (err, read) ->
+      service.read folder, (err, read) ->
         throw new Error "Cannot read folder: #{err}" if err?
         # then read data is correct
         assert.equal read.content.length, files.length
@@ -177,7 +177,7 @@ describe 'AuthoringService tests', ->
     
     it 'should folder be removed', (done) -> 
       # when removing the folder
-      service.removeFSItem folder, (err, removed) ->
+      service.remove folder, (err, removed) ->
         throw new Error "Cannot remove folder: #{err}" if err?
         # then the file was removed
         assert.ok folder.equals removed

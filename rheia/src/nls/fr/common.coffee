@@ -22,6 +22,9 @@ define
     serverError: 'Erreur server'
     editionPerspective: 'Edition du monde'
     authoringPerspective: 'Client de jeu'
+    removeConfirm: 'Suppression'
+    closeConfirm: 'Fermeture'
+    external: 'Modification externe'
     categories:
       items: 'Objets'
       maps: 'Cartes'
@@ -29,13 +32,24 @@ define
       rules: 'Règles'
       turnRules: 'Règles de tour'
       fields: 'Terrains'
-    
+      
+  labels:
+    yes: 'Oui'
+    no: 'Non'
+    ok: 'Ok'
+    cancel: 'Annuler'
+
   validator:
     required: 'la valeur de "%s" est requise'
     spacesNotAllowed: '"%s" ne peut pas contenir d\'espaces'
     unmatch: '"%s" ne correspond pas à la valeur attendue'
 
   msgs:
+    closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
+    externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
+    externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet a été fermé.</p>"
+    saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
+    removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
     searchFailed: 'La recherche à échouée :<br/><br/>%s'
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2012 Damien Feugas'

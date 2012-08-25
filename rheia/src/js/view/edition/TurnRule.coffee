@@ -20,13 +20,14 @@
 
 define [
   'jquery'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/turnRule.html'
   'view/edition/Rule'
   'model/Executable'
-], ($, i18n, template, RuleView, Executable) ->
+], ($, i18n, i18nEdition, template, RuleView, Executable) ->
 
-  i18n = $.extend true, {}, i18n
+  i18n = $.extend true, i18n, i18nEdition
 
   # Displays and edit a Rule on edition perspective
   class TurnRuleView extends RuleView

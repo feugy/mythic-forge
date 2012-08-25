@@ -21,14 +21,15 @@
 define [
   'jquery'
   'underscore'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/FieldType.html'
   'view/edition/BaseEditionView'
   'model/FieldType'
   'widget/loadableImage'
-], ($, _, i18n, template, BaseEditionView, FieldType) ->
+], ($, _, i18n, i18nEdition, template, BaseEditionView, FieldType) ->
 
-  i18n = $.extend true, {}, i18n
+  i18n = $.extend true, i18n, i18nEdition
 
   addImageClass = 'add-image'
 
@@ -52,10 +53,6 @@ define [
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removeFieldTypeConfirm
-    
-    # **private**
-    # close popup confirmation text, that can take the edited object's name in parameter
-    _confirmCloseMessage: i18n.msgs.closeConfirm
 
     # **private**
     # instance images widget
@@ -93,6 +90,7 @@ define [
     #
     # @return optionnal arguments for the `save` Backbone method.
     _specificSave: () =>
+      super()
       # keeps instance images uploads       
       currents = @_computeImageSpecs()
       originals = @model.get 'images'

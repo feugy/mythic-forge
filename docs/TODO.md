@@ -73,21 +73,25 @@
 - Rheia
     - bugs
         - **[done]** spaces inside tab names 
-        - rule with category appears in turnRules in search results
+        - **[done]** rule with category appears in turnRules in search results
 
     - **[done]** perspective loader
 
     - authoring perspective
         - Perspective
-            - file tab widget
+            - **[done]** file tab widget
             - action bar (new file, new folder, upload)
         - File Explorer
             - **[done]** items loading
             - **[done]** items navigation and selection
+            - update when item added or removed
             - contextual menu
         - File View
+            - choose name for new file
             - action bar (save, rename, delete)
-            - editor widget
+            - **[done]** editor widget
+            - **[done]** loading/save content
+            - **[done]** external modification/removal notification
 
     - edition perspective
         - contextual menus in search and explorer

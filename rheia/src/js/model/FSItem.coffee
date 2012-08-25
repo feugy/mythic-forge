@@ -19,24 +19,25 @@
 'use strict'
 
 define [
-  'backbone'
+  'model/BaseModel'
   'model/sockets'
-], (Backbone, sockets) ->
+], (Base, sockets) ->
 
   # Client cache of FSItems.
-  # Wired to the server through socket.io
-  class _FSItems extends Backbone.Collection
+  class _FSItems extends Base.Collection
 
-    constructor: (@model, @options) ->
-      super options
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'FSItem'
+      
+    # Collection constructor, that wired on events.
+    #
+    # @param model [Object] the managed model
+    # @param options [Object] unused
+    constructor: (model, @options) ->
+      super model, options
       # bind consultation response
-      sockets.admin.on 'getRootFSItem-resp', @_onRead
-      sockets.admin.on 'readFSItem-resp', @_onRead
-
-      # connect server response callbacks
-      #sockets.updates.on('update', @_onUpdate)
-      #sockets.updates.on('creation', @_onAdd)
-      #sockets.updates.on('deletion', @_onRemove)
+      sockets.admin.on 'read-resp', @_onRead
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -49,9 +50,9 @@ define [
       throw new Error "Unsupported #{method} operation on Items" unless 'read' is method
       item = args?.item
       # Ask for the root content if no item specified
-      return sockets.admin.emit 'getRootFSItem' unless item?
+      return sockets.admin.emit 'list', 'FSItem' unless item?
       # Or read the item
-      return sockets.admin.emit 'readFSItem', item.toJSON()
+      return sockets.admin.emit 'read', item.toJSON()
 
     # **private**
     # End of a FSItem content retrieval. For a folder, adds its content. For a file, triggers an update.
@@ -75,43 +76,37 @@ define [
       @_onUpdate 'FSItem', rawItem
 
     # **private**
-    # Callback invoked when a database creation is received.
+    # Enhanced to dencode file content from base64.
     #
     # @param className [String] the modified object className
-    # @param item [Object] created item.
-    _onAdd: (className, item) =>
-      return unless className is 'FSItem'
-      # add the created raw item. An event will be triggered
-      @add item
+    # @param model [Object] created model.
+    _onAdd: (className, model) =>
+      return unless className is @_className
+      # transforms from base64 to utf8 string
+      model.content = atob model.content unless model.isFolder or model.content is null
+      super className, model
 
     # **private**
-    # Callback invoked when a database update is received.
+    # Enhanced to dencode file content from base64.
     #
     # @param className [String] the modified object className
-    # @param changes [Object] new changes for a given FSItem.
+    # @param changes [Object] new changes for a given model.
     _onUpdate: (className, changes) =>
-      return unless className is 'FSItem'
-      # first, get the cached FSItem and quit if not found
-      fsitem = @get changes.path
-      return unless fsitem?
-      # then, update the local cache.
-      fsitem.set key, value for key, value of changes
-
-      # emit a change.
-      @trigger 'update', fsitem
-
-
-    # Override of the inherited method to disabled default behaviour.
-    # DO NOT reset anything on fetch.
-    reset: =>
+      return unless className is @_className
+      # transforms from base64 to utf8 string
+      changes.content = atob changes.content unless changes.isFolder or changes.content is null
+      super className, changes
 
   # Modelisation of a single File System Item.
-  # Not wired to the server : use collection FSItems instead
-  class FSItem extends Backbone.Model
+  class FSItem extends Base.Model
 
     # FSItem local cache.
     # A Backbone.Collection subclass
     @collection: new _FSItems @
+
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'FSItem'
 
     # bind the Backbone attribute to the path name
     idAttribute: 'path'
@@ -127,9 +122,13 @@ define [
       # update file extension
       @extension = @get('path').substring @get('path').lastIndexOf('.')+1 unless @get 'isFolder'
 
-    # An equality method that tests ids.
+    # **private** 
+    # Method used to serialize a model when saving and removing it
+    # Enhanced to encode in base64 file content.
     #
-    # @param other [Object] the object against which the current item is tested
-    # @return true if both object have the samge ids, and false otherwise.
-    equals: (other) =>
-      @.id is other?.id
+    # @return a serialized version of this model
+    _serialize: => 
+      raw = super()
+      # transforms from utf8 to base64 string
+      raw.content = btoa raw.content unless raw.isFolder or raw.content is null
+      raw

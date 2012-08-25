@@ -21,14 +21,15 @@
 define [
   'jquery'
   'underscore'
+  'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/itemType.html'
   'view/edition/EventType'
   'model/ItemType'
   'widget/spriteImage'
-], ($, _, i18n, template, EventTypeView, ItemType) ->
+], ($, _, i18n, i18nEdition, template, EventTypeView, ItemType) ->
 
-  i18n = $.extend true, {}, i18n
+  i18n = $.extend true, i18n, i18nEdition
 
   # Displays and edit an ItemType on edition perspective
   # Triggers the following events:
@@ -50,10 +51,6 @@ define [
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removeItemTypeConfirm
-    
-    # **private**
-    # close popup confirmation text, that can take the edited object's name in parameter
-    _confirmCloseMessage: i18n.msgs.closeConfirm
 
     # **private**
     # checkbox that displays the model's quantifiable property
@@ -108,6 +105,7 @@ define [
     #
     # @return optionnal arguments for the `save` Backbone method.
     _specificSave: =>
+      super()
       # keeps instance images uploads       
       currents = @_computeImageSpecs()
       originals = @model.get 'images'
@@ -132,6 +130,7 @@ define [
     # Performs view specific rendering operations.
     # Bind quantifiable rendering to change event.
     _specificRender: =>
+      super()
       @_quantifiable = @$el.find('.quantifiable.field').change @_onChange
     
     # **private**

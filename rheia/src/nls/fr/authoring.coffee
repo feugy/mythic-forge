@@ -25,3 +25,7 @@ define
     saveFile: 'Sauvegarde le fichier actuellement édité'
     removeFSItem: 'Supprime le fichier ou le dossier séléctioné'
     renameFSItem: 'Renomme le fichier ou le dossier séléctionné'
+
+  msgs:
+    removeFileConfirm: "<p>Voulez-vous vraiment supprimer le fichier <b>%s</b> ?</p>"
+    closeFileConfirm: "<p>Vous avez modifié le fichier <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"

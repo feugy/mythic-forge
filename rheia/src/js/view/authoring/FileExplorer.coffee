@@ -91,6 +91,7 @@ define [
       super tagName: 'div', className:"file explorer"
 
       # bind to global events
+      @bindTo FSItem.collection, 'reset', @_onReset
       @bindTo FSItem.collection, 'update', @_onUpdate
 
     # The `render()` method is invoked by backbne to display view content at screen.
@@ -105,20 +106,27 @@ define [
       @
 
     # **private**
+    # Handler invoked when the root content have been retrieved
+    #
+    # @param collection [FSItem.collection] the list of root FSItem
+    _onReset: (collection) =>
+      # sort content: first folder, then item
+      collection.models.sort comparator
+
+      # redraw all content inside parent.
+      @$el.empty()
+      @$el.append renderItem subItem for subItem in collection.models
+
+    # **private**
     # Handler invoked when a new FSItem was updated
     # If folder, displayed its content inside explorer
     # 
     # @param item [FSItem] the updated FSItem
     _onUpdate: (item) =>
       return unless item.get 'isFolder'
-      parentNode = @$el
+      # Get the existing folder inside explorer
       path = item.get 'path'
-      animate = false
-
-      if path.length
-        # Get the existing folder inside explorer
-        parentNode = @$el.find "div[data-path='#{path.replace(/\\/g, '\\\\')}'] > .content"
-        animate = true
+      parentNode = @$el.find "div[data-path='#{path.replace(/\\/g, '\\\\')}'] > .content"
 
       content = item.get 'content'
       # sort content: first folder, then item
@@ -128,7 +136,7 @@ define [
       parentNode.empty()
       parentNode.append renderItem subItem for subItem in content
       # animate the container unless root
-      parentNode.show().css(x:-animShift).transition x:0, animDuration if animate
+      parentNode.show().css(x:-animShift).transition x:0, animDuration
 
     # **private**
     # Click handler in file explorer: de/select right node and trigger event.
