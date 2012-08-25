@@ -109,7 +109,7 @@ define [
     # and trigger route navigation.
     #
     # Starts history tracking in pushState mode
-    constructor: () ->
+    constructor: ->
       super()
       # global router instance
       rheia.router = @
@@ -119,49 +119,48 @@ define [
       rheia.searchService = new SearchService()
       rheia.layoutView = new LayoutView()
 
-      Backbone.history.start({pushState: true, root: conf.basePath})
+      Backbone.history.start
+        pushState: true
+        root: conf.basePath
 
       # general error handler
-      @on('serverError', (err, details) ->
-        console.error("server error: #{if typeof err is 'object' then err.message else err}")
-        console.dir(details)
-      )
+      @on 'serverError', (err, details) ->
+        console.error "server error: #{if typeof err is 'object' then err.message else err}"
+        console.dir details
+      
 
       # route link special behaviour
-      $('body').on('click', 'a[data-route]', (event) =>
+      $('body').on 'click', 'a[data-route]', (event) =>
         event.preventDefault()
-        route = $(event.target).closest('a').data('route')
-        @navigate(route, trigger: true)
-      )
+        route = $(event.target).closest('a').data 'route'
+        @navigate route, trigger: true
 
       # display layout
-      $('body').empty().append(rheia.layoutView.render().$el)
+      $('body').empty().append rheia.layoutView.render().$el
 
       # TODO 
-      @navigate('authoring', trigger: true)
+      @navigate 'authoring', trigger: true
 
     # **private**
     # Show a perspective inside the wrapper
     _showPerspective: (name, path) =>
-      rheia.layoutView.loading(i18n.titles[name])
+      rheia.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists
-      return rheia.layoutView.show(rheia[name].$el) if name of rheia
+      return rheia.layoutView.show rheia[name].$el if name of rheia
 
       # or requires, instanciate and render the view
-      require([path], (Perspective) ->
+      require [path], (Perspective) ->
         rheia[name] = new Perspective()
-        rheia.layoutView.show(rheia[name].render().$el)
-      ) 
+        rheia.layoutView.show rheia[name].render().$el
 
     # **private**
     # Displays the edition perspective
     _onEdition: =>
-      @_showPerspective('editionPerspective', 'view/edition/Perspective')
+      @_showPerspective 'editionPerspective', 'view/edition/Perspective'
 
     # **private**
     # Displays the game authoring perspective
     _onAuthoring: =>
-      @_showPerspective('authoringPerspective', 'view/authoring/Perspective')
+      @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
 
-  app = new Router()
-  return app
+  new Router()

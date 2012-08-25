@@ -28,7 +28,7 @@ define [
   'widget/spriteImage'
 ], ($, _, i18n, template, EventTypeView, ItemType) ->
 
-  i18n = $.extend(true, {}, i18n)
+  i18n = $.extend true, {}, i18n
 
   # Displays and edit an ItemType on edition perspective
   # Triggers the following events:
@@ -68,36 +68,36 @@ define [
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
-      super(id, 'item-type')
-      console.log("creates item type edition view for #{if id? then @model.id else 'a new object'}")
+      super id, 'item-type'
+      console.log "creates item type edition view for #{if id? then @model.id else 'a new object'}"
 
     # **private**
     # Effectively creates a new model.
-    _createNewModel: () =>
+    _createNewModel: =>
       @model = new ItemType()
-      @model.set('name', i18n.labels.newName)
-      @model.set('descImage', null)
+      @model.set 'name', i18n.labels.newName
+      @model.set 'descImage', null
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
-    _fillModel: () =>
+    _fillModel: =>
       # superclass handles description image, name, description and properties
       super()
 
-      @model.set('quantifiable', @_quantifiable.attr('checked') isnt undefined)
+      @model.set 'quantifiable', @_quantifiable.attr('checked') isnt undefined
 
       # update images specifications. File upload will be handled separately
       newImages = @_computeImageSpecs()
       image.file = '' for image in newImages when image.file isnt null and typeof image.file isnt 'string'
-      @model.set('images', newImages)
+      @model.set 'images', newImages
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: () =>
-      if @model.get('quantifiable')
-        @_quantifiable.attr('checked', 'checked') 
+    _fillRendering: =>
+      if @model.get 'quantifiable'
+        @_quantifiable.attr 'checked', 'checked'
       else 
-        @_quantifiable.removeAttr('checked')
+        @_quantifiable.removeAttr 'checked'
 
       # superclass handles description image, name, description and properties
       super()
@@ -107,32 +107,32 @@ define [
     # Adds instance images to pending uploads. 
     #
     # @return optionnal arguments for the `save` Backbone method.
-    _specificSave: () =>
+    _specificSave: =>
       # keeps instance images uploads       
       currents = @_computeImageSpecs()
-      originals = @model.get('images')
+      originals = @model.get 'images'
       for current, i in currents
         # something changed !
         if !originals or originals[i]?.file isnt current.file
           current.idx = i
-          @_pendingUploads.push(current)
+          @_pendingUploads.push current
 
     # **private**
     # Prepare data to be rendered into the template
     #
     # @return data filled into the template
-    _getRenderData: () =>
+    _getRenderData: =>
       # data needed by the template
-      return {
-        title: _.sprintf(i18n.titles.itemType, if @_tempId? then i18n.labels.newType else @model.id)
+      {
+        title: _.sprintf i18n.titles.itemType, if @_tempId? then i18n.labels.newType else @model.id
         i18n: i18n
       }
 
     # **private**
     # Performs view specific rendering operations.
     # Bind quantifiable rendering to change event.
-    _specificRender: () =>
-      @_quantifiable = @$el.find('.quantifiable.field').change(@_onChange)
+    _specificRender: =>
+      @_quantifiable = @$el.find('.quantifiable.field').change @_onChange
     
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -141,38 +141,38 @@ define [
     # - name: field name, for debug pourposes
     #
     # @return the comparable fields array
-    _getComparableFields: () =>
+    _getComparableFields: =>
       # superclass handles description image, name, description and properties
       comparable = super()
       # adds name and description
-      comparable.push(
+      comparable.push
         name: 'quantifiable'
-        original: @model.get('quantifiable')
-        current: @_quantifiable.attr('checked') isnt undefined)
+        original: @model.get 'quantifiable'
+        current: @_quantifiable.attr('checked') isnt undefined
       # adds images
-      comparable.push(
+      comparable.push
         name: 'images'
-        original: @model.get('images')
-        current: @_computeImageSpecs())
-      return comparable
+        original: @model.get 'images'
+        current: @_computeImageSpecs()
+      comparable
 
     # **private**
     # Allows subclass to add specific errors to be displayed when validating.
     # Validates sprite definitions.
     #
     # @return errors of sprite widgets
-    _specificValidate: () =>
+    _specificValidate: =>
       errors = []
       # we need to performs spriteImage widget validation
       for sprite in @_imageWidgets
-        errors = errors.concat(sprite.options.errors)
-      errors = errors.concat(@$el.find('.add-image.sprite').data('spriteImage').options.errors)
-      return errors
+        errors = errors.concat sprite.options.errors
+      errors = errors.concat @$el.find('.add-image.sprite').data('spriteImage').options.errors
+      errors
 
     # **private**
     # Extract image specifications from the widgets
     # @return an array containing image specifications
-    _computeImageSpecs: () =>
+    _computeImageSpecs: =>
       images = []
       length = @model.get('images')?.length
       for widget,i in @_imageWidgets 
@@ -187,45 +187,45 @@ define [
           else 
             # do not save an empty spec that is beyond existing length
             continue
-        images.push(spec)
-      return images
+        images.push spec
+      images
 
     # **private**
     # Creates LoadableImage for each images of the edited object
-    _createImages: () =>
+    _createImages: =>
       # superclass handles the description image
       super()
       # instances images: use sprite widget instead of loadable images
       @_imageWidgets = []
-      originals = @model.get('images')
+      originals = @model.get 'images'
       container = @$el.find('.images-container').empty()
       if originals?
         # creates images widgets
         for original in originals
-          @_imageWidgets.push($('<div></div>').spriteImage(
+          @_imageWidgets.push $('<div></div>').spriteImage(
             source: original.file
             spriteW: original.width
             spriteH: original.height
             sprites: original.sprites
             change: @_onImageChange
-          ).appendTo(container).data('spriteImage'))
+          ).appendTo(container).data 'spriteImage'
       # a special image to add new images  
       @_addNewImage() 
 
     # **private**
     # Adds a special spriteImage widget to upload a new image
-    _addNewImage: () =>
+    _addNewImage: =>
       addImage = $('<div class="add-image"></div>').spriteImage(
         change: (event, arg) =>
           # is it an upload ?
           if arg? and !arg.isSprite and addImage.options.source isnt null
             # transforms it into a regular image widget
-            addImage.element.removeClass('add-image')
+            addImage.element.removeClass 'add-image'
             addImage.change = @_onImageChange
-            @_imageWidgets.push(addImage)
+            @_imageWidgets.push addImage
             @_addNewImage()
           @_onChange()
-      ).appendTo(@$el.find('.images-container')).data('spriteImage')
+      ).appendTo(@$el.find('.images-container')).data 'spriteImage'
 
     # **private**
     # Instance image change handler. Trigger the general _onChange handler after an optionnal widget removal.
@@ -233,10 +233,8 @@ define [
     # @param event [Event] image change event.
     _onImageChange: (event) =>
       # remove from images widget if it's the last widget
-      widget = $(event.target).closest('.loadable').data('spriteImage')
+      widget = $(event.target).closest('.loadable').data 'spriteImage'
       if widget.options.source is null and @_imageWidgets.indexOf(widget) is @_imageWidgets.length-1
-        @_imageWidgets.splice(@_imageWidgets.length-1, 1)
+        @_imageWidgets.splice @_imageWidgets.length-1, 1
         widget.element.remove()
-      @_onChange(event)
-
-  return ItemTypeView
+      @_onChange event

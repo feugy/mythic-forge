@@ -28,7 +28,7 @@ define [
   'widget/advEditor'
 ], ($, i18n, template, validators, BaseEditionView, Executable) ->
 
-  i18n = $.extend(true, {}, i18n)
+  i18n = $.extend true, {}, i18n
 
   # Displays and edit a Rule on edition perspective
   class RuleView extends BaseEditionView
@@ -66,30 +66,30 @@ define [
     # @param id [String] the edited object's id, of null for a creation.
     # @param className [String] optional CSS className, used by subclasses
     constructor: (id, className = 'rule') ->
-      super(id, className)
+      super id, className
       # on content changes, displays category and active status
-      @model.on('change:category', @_onCategoryChange)
-      @model.on('change:active', @_onActiveChange)
-      console.log("creates rule edition view for #{if id? then @model.id else 'a new rule'}")
+      @model.on 'change:category', @_onCategoryChange
+      @model.on 'change:active', @_onActiveChange
+      console.log "creates rule edition view for #{if id? then @model.id else 'a new rule'}"
 
     # **private**
     # Effectively creates a new model.
-    _createNewModel: () =>
-      @model = new Executable({_id: i18n.labels.newName, content:''})
+    _createNewModel: =>
+      @model = new Executable _id: i18n.labels.newName, content:''
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
-    _fillModel: () =>
+    _fillModel: =>
       # superclass handles description image, name and description
       super()
-      @model.set('content', @_editorWidget.options.text)
+      @model.set 'content', @_editorWidget.options.text
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: () =>
+    _fillRendering: =>
       # superclass handles description image, name and description
       super()
-      @_editorWidget.setOption('text', @model.get('content'))
+      @_editorWidget.setOption 'text', @model.get 'content'
       @_onCategoryChange()
       @_onActiveChange()
       @_onChange()
@@ -97,24 +97,25 @@ define [
 
     # **private**
     # Extends inherited method to add a regular expression for Executable names
-    _createValidators: () =>
+    _createValidators: =>
       # superclass disposes validators, and creates name validator
       super()
-      @_validators.push(new validators.Regexp({
+      @_validators.push new validators.Regexp {
         invalidError: i18n.msgs.invalidExecutableNameError
         regexp: /^\w*$/i
-      }, i18n.labels.name, @_nameWidget.element, null, (node) -> node.find('input').val()))
+      }, i18n.labels.name, @_nameWidget.element, null, (node) -> node.find('input').val()
 
     # **private**
     # Performs view specific save operations, right before saving the model.
     # Specify new name if name changed
     #
     # @return optionnal attributes that may be specificaly saved. Null or undefined to save all model
-    _specificSave: () =>
+    _specificSave: =>
       if @_tempId?
-        @model.set('_id', @_nameWidget.options.value)
+        @model.set '_id', @_nameWidget.options.value
         # we need to unset id because it allows Backbone to differentiate creation from update
         @model.id = null
+        return null
       else if @_nameWidget.options.value isnt @model.id 
         # keeps the new id to allow tab renaming
         @_newId = @_nameWidget.options.value
@@ -124,20 +125,17 @@ define [
     # Prepare data to be rendered into the template
     #
     # @return data filled into the template
-    _getRenderData: () =>
-      # data needed by the template
-      return {
-        i18n: i18n
-      }
+    _getRenderData: =>
+      i18n: i18n
 
     # **private**
     # Performs view specific rendering operations.
     # Creates the editor and category widgets.
-    _specificRender: () =>
-      @_editorWidget = @$el.find('.content').advEditor({
+    _specificRender: =>
+      @_editorWidget = @$el.find('.content').advEditor(
         change: @_onChange
         mode: 'coffee'
-      }).data('advEditor')
+      ).data 'advEditor'
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -146,25 +144,22 @@ define [
     # - name: field name, for debug pourposes
     #
     # @return the comparable fields array
-    _getComparableFields: () =>
+    _getComparableFields: =>
       # superclass handles description image, name and description. We add content.
       comparable = super()
-      comparable.push(
+      comparable.push
         name: 'content'
-        original: @model.get('content')
+        original: @model.get 'content'
         current: @_editorWidget.options.text
-      )
-      return comparable
+      comparable
 
     # **private**
     # Refresh category displayal when the model's content changed.
-    _onCategoryChange: () =>
-      category = @model.get('category')
-      @$el.find('.category').html(if category then category else i18n.labels.noRuleCategory)
+    _onCategoryChange: =>
+      category = @model.get 'category'
+      @$el.find('.category').html if category then category else i18n.labels.noRuleCategory
 
     # **private**
     # Refresh active displayal when the model's content changed.
-    _onActiveChange: () =>
-      @$el.toggleClass('inactive', !@model.get('active'))
-
-  return RuleView
+    _onActiveChange: =>
+      @$el.toggleClass 'inactive', !@model.get 'active'

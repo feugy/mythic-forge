@@ -26,11 +26,10 @@ define [
 ], (_, _string, Backbone, Hogan) ->
 
   # mix in non-conflict functions to Underscore namespace if you want
-  _.mixin(_string.exports())
-  _.mixin(
+  _.mixin _string.exports()
+  _.mixin
     includeStr: _string.include
     reverseStr: _string.reverse
-  )
 
   # enhance Backbone views with close() mechanism
   _.extend Backbone.View.prototype, 
@@ -45,11 +44,11 @@ define [
     _bounds: []
 
     # overload the initialize method to bind `destroy()`
-    initialize: () ->
+    initialize: ->
       # initialize to avoid static behaviour
       @_bounds = []
       # bind to remove element to call the close method.
-      @$el.bind('remove', ()=> @dispose())
+      @$el.bind 'remove', => @dispose()
 
     # Allows to bound a callback of this view to the specified emitter
     # bounds are keept and automatically unbound by the `destroy` method.
@@ -58,19 +57,19 @@ define [
     # @param events [String] events on which the callback is bound
     # @parma callback [Function] the bound callback
     bindTo: (emitter, events, callback) ->
-      emitter.on(events, callback)
-      @_bounds.push([emitter, events, callback])
+      emitter.on events, callback
+      @_bounds.push [emitter, events, callback]
 
     # The destroy method correctly free DOM  and event handlers
     # It must be overloaded by subclasses to unsubsribe events.
-    dispose: () ->
+    dispose: ->
       # automatically remove bound callback
-      spec[0].off(spec[1], spec[2]) for spec in @_bounds
+      spec[0].off spec[1], spec[2] for spec in @_bounds
       # unbind DOM callback
       @$el.unbind()
       # remove rendering
       @remove()
-      @trigger('dispose', @)
+      @trigger 'dispose', @
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # if a template is defined, use it
@@ -78,14 +77,14 @@ define [
       # template rendering
       if @_template? 
         # first compilation if necessary  
-        @_template = Hogan.compile(@_template) if _.isString(@_template)
+        @_template = Hogan.compile @_template if _.isString @_template
         # then rendering
-        @$el.empty().append(@_template.render(@_getRenderData()))
+        @$el.empty().append @_template.render @_getRenderData()
       # for chaining purposes
-      return @
+      @
 
     # **protected**
     # This method is intended to by overloaded by subclass to provide template data for rendering
     #
     # @return an object used as template data (this by default)
-    _getRenderData: () -> @
+    _getRenderData: -> @

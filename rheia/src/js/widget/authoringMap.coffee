@@ -51,13 +51,13 @@ define [
   # @option return x the abscissa position
   # @option return y the ordinate position
   _mousePos= (event) ->
-    return {
+    {
       x: if $.browser.webkit then event.offsetX else event.originalEvent.layerX
       y: if $.browser.webkit then event.offsetY else event.originalEvent.layerY
     }
 
   # Base widget for maps that allows drag'n drop affectation and selections
-  AuthoringMap =
+  $.widget 'rheia.authoringMap', $.rheia.baseWidget,
 
     options:   
 
@@ -117,7 +117,7 @@ define [
 
       # **private**
       # Coordinate of the hidden top left tile, origin of the map.
-      _origin: {x:0, y:0}
+      _origin: x:0, y:0
 
       # **private**
       # Real tile width in pixel, taking zoom in account.
@@ -191,13 +191,13 @@ define [
       o = @options
       for data in added
         if data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
-          o.data.push(data)
+          o.data.push data
           img = "/images/#{data.typeId}-#{data.num}.png"
           unless img in o._loadedImages
-            o._loadedImages.push(img)
+            o._loadedImages.push img
             o._pendingImages++
             # data is inside displayed bounds: loads it
-            rheia.router.trigger('loadImage', img) 
+            rheia.router.trigger 'loadImage', img 
 
     # Removes field from map. Will be effective only if the field was displayed.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
@@ -205,21 +205,21 @@ define [
     # @param removed [Field] removed data (JSON array). 
     removeData: (removed) ->
       o = @options     
-      ctx = @element.find('.fields')[0].getContext('2d')
+      ctx = @element.find('.fields')[0].getContext '2d'
       for data in removed
         if data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
           # draw white tile at removed field coordinate
-          @_drawTile(ctx, data, 'white')
+          @_drawTile ctx, data, 'white'
           # removes from local cache
           for field, i in o.data when field._id is data._id
-            o.data.splice(i, 1)
+            o.data.splice i, 1
             break
 
     # **private**
     # Build rendering
-    _create: () ->
-      @element.empty().removeClass().addClass('map-widget')
-      o = @options;
+    _create: ->
+      @element.empty().removeClass().addClass 'map-widget'
+      o = @options
 
       # dimensions depends on the map kind.
       @_computeDimensions()
@@ -227,11 +227,10 @@ define [
       @element.css(
         height: o._height
         width: o._width
-      ).mousewheel((event, delta) => 
-        @_zoom(@options.zoom + delta*@options._zoomStep);
+      ).mousewheel (event, delta) => 
+        @_zoom @options.zoom + delta*@options._zoomStep
         event?.preventDefault()
         return false
-      )
 
       # creates the layer container, 3 times bigger to allow drag operations
       o._container = $('<div class="perspective"></div>').css(
@@ -241,42 +240,41 @@ define [
         left: -o._width
       ).draggable(
         distance: 5
-        helper: () => return @options._container
-        start: (event) => @_onDragStart(event)
-        drag: (event) => @_onDrag(event)
-        stop: (event, details) => @_onDragStop(event, details)
+        helper: => @options._container
+        start: (event) => @_onDragStart event
+        drag: (event) => @_onDrag event
+        stop: (event, details) => @_onDragStop event, details
       ).on('click', (event) =>
-        @_onClick(event)
+        @_onClick event
       ).on('mousemove', (event) => 
         return unless @options._moveJumper++ % 3 is 0
-        @options._cursor = @_getCoord(_mousePos(event));
+        @options._cursor = @_getCoord _mousePos event
         @_drawCursor()
-      ).appendTo(@element)
+      ).appendTo @element
 
       # creates the field canvas element      
       $("""<canvas class="fields" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").droppable(
         scope: o.dndType
-        drop: (event, details) => @_onDrop(event, details)
-      ).appendTo(o._container)
+        drop: (event, details) => @_onDrop event, details
+      ).appendTo o._container
 
       # creates the grid canvas element      
-      $("""<canvas class="selection" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo(o._container)
-      $("""<canvas class="grid" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo(o._container)
-      $("""<canvas class="markers" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo(o._container)
-      $("""<canvas class="hover" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo(o._container)
+      $("""<canvas class="selection" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo o._container
+      $("""<canvas class="grid" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo o._container
+      $("""<canvas class="markers" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo o._container
+      $("""<canvas class="hover" height="#{o._height*3}" width="#{o._width*3}"></canvas>""").appendTo o._container
 
       @_drawGrid()
       @_drawMarkers()
 
       # image loading loading handler
-      rheia.router.on('imageLoaded', (success, src, data) =>
-        @_onImageLoaded(success, src, data)
-      )
+      rheia.router.on 'imageLoaded', (success, src, data) =>
+        @_onImageLoaded success, src, data
   
       # gets first data
-      setTimeout(() =>
-        @setOption('lowerCoord', o.lowerCoord)
-      , 0)
+      setTimeout =>
+        @setOption 'lowerCoord', o.lowerCoord
+      , 0
 
     
     # **private**
@@ -292,13 +290,13 @@ define [
           o = @options
           # computes lower coordinates
           o.upperCoord = 
-            x: value.x+Math.round(o._width/o._tileW)
-            y: value.y+Math.round(o._height/(o._tileH*0.75)) # TODO specific iso
+            x: value.x+Math.round o._width/o._tileW
+            y: value.y+Math.round o._height/(o._tileH*0.75) # TODO specific iso
           # creates a clone layer while reloading
           o._cloneLayer = $("<canvas width=\"#{o._width*3}\" height=\"#{o._height*3}\"></canvas>")
           # empty datas
           o.data = []
-          @_trigger('coordChanged')
+          @_trigger 'coordChanged'
         when 'displayGrid'
           @options[key] = value
           @_drawGrid()
@@ -308,34 +306,34 @@ define [
         when 'zoom'
           @options[key] = value
           # change zoom without triggering the event
-          @_zoom(@options.zoom, true)
+          @_zoom @options.zoom, true
 
     # **private**
     # If no image loading remains, and if a clone layer exists, then its content is 
     # copied into the field layer
-    _replaceFieldClone: () ->
+    _replaceFieldClone: ->
       o = @options
       # only if no image loading is pendinf
       return unless o._pendingImages is 0 and o._cloneLayer?
       # all images were rendered on clone layer: copy it on field layer.
-      fieldLayer = o._container.find('.fields')
-      fieldLayer.css({top:0, left:0})
+      fieldLayer = o._container.find '.fields'
+      fieldLayer.css top:0, left:0
       canvas = fieldLayer[0]
       canvas.width = canvas.width
-      canvas.getContext('2d').putImageData(o._cloneLayer[0].getContext('2d').getImageData(0, 0, o._width*3, o._height*3), 0, 0)
+      canvas.getContext('2d').putImageData o._cloneLayer[0].getContext('2d').getImageData(0, 0, o._width*3, o._height*3), 0, 0
       o._cloneLayer.remove()
       o._cloneLayer = null
 
     # **private**
     # Allows sub-classes to compute individual tiles and map dimensions, without using zoom.
     # Must set attributes `_tileW`, `_tileH`, `_width`, `_height` and `_origin`
-    _computeDimensions: () ->
+    _computeDimensions: ->
       # horizontal hexagons: side length of an hexagon.
       s = @options.tileDim/2
 
       # dimensions of the square that embed an hexagon.
       # the angle used reflect the perspective effect. 60° > view from above. 45° > isometric perspective
-      @options._tileH = s*Math.sin(45*Math.PI/180)*2
+      @options._tileH = s*2*Math.sin 45*Math.PI/180
       @options._tileW = s*2
 
       # canvas dimensions (add 1 to take in account stroke width)
@@ -348,9 +346,9 @@ define [
 
     # **private**
     # Redraws the grid wireframe.
-    _drawGrid: () ->
+    _drawGrid: ->
       canvas = @element.find('.grid')[0]
-      ctx = canvas.getContext('2d')
+      ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       o = @options
       return unless o.displayGrid
@@ -361,24 +359,24 @@ define [
         for x in [0.5..o._width*3] by o._tileW    
           # horizontal hexagons
           # first hexagon: starts from top-right summit, and draws counter-clockwise until bottom summit
-          ctx.moveTo(x+o._tileW, y+o._tileH*0.25)
-          ctx.lineTo(x+o._tileW*0.5, y)
-          ctx.lineTo(x, y+o._tileH*0.25)
-          ctx.lineTo(x, y+o._tileH*0.75)
-          ctx.lineTo(x+o._tileW*0.5, y+o._tileH)
+          ctx.moveTo x+o._tileW, y+o._tileH*0.25
+          ctx.lineTo x+o._tileW*0.5, y
+          ctx.lineTo x, y+o._tileH*0.25
+          ctx.lineTo x, y+o._tileH*0.75
+          ctx.lineTo x+o._tileW*0.5, y+o._tileH
           # second hexagon: starts from top summit, and draws counter-clockwise until bottom-right summit
-          ctx.moveTo(x+o._tileW, y+o._tileH*0.75)
-          ctx.lineTo(x+o._tileW*0.5, y+o._tileH)
-          ctx.lineTo(x+o._tileW*0.5, y+o._tileH*1.5)
-          ctx.lineTo(x+o._tileW, y+o._tileH*1.75)
-          ctx.lineTo(x+o._tileW*1.5, y+o._tileH*1.5)
+          ctx.moveTo x+o._tileW, y+o._tileH*0.75
+          ctx.lineTo x+o._tileW*0.5, y+o._tileH
+          ctx.lineTo x+o._tileW*0.5, y+o._tileH*1.5
+          ctx.lineTo x+o._tileW, y+o._tileH*1.75
+          ctx.lineTo x+o._tileW*1.5, y+o._tileH*1.5
       ctx.stroke()
 
     # **private**
     # Redraws the grid markers.
-    _drawMarkers: () ->
+    _drawMarkers: ->
       canvas = @element.find('.markers')[0]
-      ctx = canvas.getContext('2d')
+      ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       o = @options
       return unless o.displayMarkers
@@ -393,7 +391,7 @@ define [
       line = 0
       for y in [0.5..o._height*3] by o._tileH*1.5
         for x in [0.5..o._width*3] by o._tileW   
-          gameX = originX + Math.floor(x/o._tileW)
+          gameX = originX + Math.floor x/o._tileW
           gameY = originY + line
 
           if gameX % 5 is 0
@@ -431,25 +429,24 @@ define [
 
     # **private**
     # Draws the current selection on the selection layer
-    _drawSelection: () ->
+    _drawSelection: ->
       o = @options
-      console.log('redraws map selection');
+      console.log 'redraws map selection'
       # clear selection
       canvas = @element.find('.selection')[0]
-      ctx = canvas.getContext('2d')
+      ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       o = @options
       ctx.fillStyle = o.colors.selection
-      for selected in o.selection
-        @_drawTile(ctx, selected, @options.colors.selection)
+      @_drawTile ctx, selected, @options.colors.selection for selected in o.selection
 
     # **private**
     # Redraws cursor on stored position (@options._cursor)
-    _drawCursor: () ->
+    _drawCursor: ->
       return unless @options._cursor
       canvas = @element.find('.hover')[0]
       canvas.width = canvas.width
-      @_drawTile(canvas.getContext('2d'), @options._cursor, @options.colors.hover)
+      @_drawTile canvas.getContext('2d'), @options._cursor, @options.colors.hover
 
     # **private**
     # Allows to zoom in and out the map
@@ -466,16 +463,14 @@ define [
       
       # stay within allowed bounds
       if zoom < 1
-        zoom = Math.max(zoom, o.minZoom)
+        zoom = Math.max zoom, o.minZoom
       else
-        zoom = Math.min(zoom, o.maxZoom)
+        zoom = Math.min zoom, o.maxZoom
       
-      console.log("new map zoom: #{zoom}")
+      console.log "new map zoom: #{zoom}"
       if noEvent or zoom != o.zoom
         # stop running timer
-        if o._zoomTimer
-          clearTimeout(o._zoomTimer)
-        
+        clearTimeout o._zoomTimer if o._zoomTimer
         o.zoom = zoom
         # computes again current dimensions
         @_computeDimensions()
@@ -493,20 +488,20 @@ define [
         canvas.width = canvas.width
         tmp = o.data
         o.data = []
-        @addData(tmp)
+        @addData tmp
 
         # trigger event
-        @_trigger('zoomChanged') unless noEvent
+        @_trigger 'zoomChanged' unless noEvent
         # and reload coordinages
-        o._zoomTimer = setTimeout(() =>
+        o._zoomTimer = setTimeout =>
           # compute new lowerCoord
           o = @options
           newCoord =
             x: o._origin.x+Math.round(o._width/o._tileW)-1
             y: o._origin.y+Math.round(o._height/(o._tileH*0.75)) # TODO specific iso
-          console.log('map zoom ends on x:'+newCoord.x+' y:'+newCoord.y)
-          @setOption('lowerCoord', newCoord)
-        , 300)
+          console.log "map zoom ends on x: #{newCoord.x} y:#{newCoord.y}"
+          @setOption 'lowerCoord', newCoord
+        , 300
 
     # **private**
     # Returns coordinates of the hovered tile
@@ -520,10 +515,10 @@ define [
     _getCoord: (mouse) ->
       o = @options
       # locate the upper rectangle in which the mouse hit
-      row = Math.floor(mouse.y/(o._tileH*0.75)) # TODO specific iso
+      row = Math.floor mouse.y/(o._tileH*0.75) # TODO specific iso
       if row % 2 isnt 0
         mouse.x -= o._tileW*0.5
-      col = Math.floor(mouse.x/o._tileW)
+      col = Math.floor mouse.x/o._tileW
 
       # upper summit of the hexagon
       a = 
@@ -551,7 +546,6 @@ define [
         x: col+o._origin.x+Math.abs(o._origin.y%2)*(Math.abs(y)+1)%2
         y: y
       }
-      return pos
 
     # **private**
     # Image loading end handler. Draws it on the field layer, and if it's the last awaited image, 
@@ -565,15 +559,15 @@ define [
       o = @options
       # do nothing if loading failed.
       return unless src in o._loadedImages
-      o._loadedImages.splice(o._loadedImages.indexOf(src), 1)
-      src = src.slice(src.lastIndexOf('/')+1)
+      o._loadedImages.splice o._loadedImages.indexOf(src), 1
+      src = src.slice src.lastIndexOf('/')+1
       o._pendingImages--
         
       return @_replaceFieldClone() unless success
         
-      ctx = @element.find('.fields')[0].getContext('2d')
+      ctx = @element.find('.fields')[0].getContext '2d'
       # write on field layer, unless a clone layer exists
-      ctx = o._cloneLayer[0].getContext('2d') if o._cloneLayer?
+      ctx = o._cloneLayer[0].getContext '2d' if o._cloneLayer?
 
       # looks for data corresponding to this image
       for data in o.data
@@ -584,7 +578,7 @@ define [
           row = (data.y-o._origin.y) * o._tileH * 0.75
           col = (data.x-o._origin.x-shift) * o._tileW + coeff * 0.5 * o._tileW
           # TODO speicfic iso: there is a tiny shift: 0.25 vertical and 0.5 horizontal
-          ctx.drawImage(img, col, row, o._tileW, o._tileH)
+          ctx.drawImage img, col, row, o._tileW, o._tileH
       # all images was loaded: remove temporary field layer
       @_replaceFieldClone()
           
@@ -597,24 +591,23 @@ define [
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
     _onDrop: (event, details) ->
-      o = this.options;
+      o = this.options
       return unless o._cursor
       # extract dragged datas
-      idx = details.helper.data('idx')
-      id = details.helper.data('id')
+      idx = details.helper.data 'idx'
+      id = details.helper.data 'id'
       # indicates if it's in selection or not
       inSelection = false
       for selected in o.selection when selected.x is o._cursor.x and selected.y is o._cursor.y
         inSelection = true
         break
-      console.log("drops images #{idx} of field #{id} at coordinates x:#{o._cursor.x}, y:#{o._cursor.y}, in selection: #{inSelection}")
+      console.log "drops images #{idx} of field #{id} at coordinates x:#{o._cursor.x}, y:#{o._cursor.y}, in selection: #{inSelection}"
       # triggers affectation.
-      @_trigger('affect', event,
+      @_trigger 'affect', event,
         typeId: id
         num: idx,
         coord: o._cursor,
         inSelection: inSelection and o.selection.length isnt 0
-      )
     
     # **private**
     # Drag'n drop start handler. Keep the widget dimensions, and the start tile for selections.
@@ -626,7 +619,7 @@ define [
       o = @options
       # computes the absolute position and dimension of the widget
       offset = @element.offset()
-      o._dim = $.extend({}, offset)
+      o._dim = $.extend {}, offset
       o._dim.right = o._dim.left + o._width
       o._dim.bottom = o._dim.top + o._height
 
@@ -634,14 +627,14 @@ define [
       # keeps the start coordinate for a selection
       if event.shiftKey
         o._offset = offset
-        o._start = @_getCoord({x:event.pageX+o._width-o._offset.left, y:event.pageY+o._height-o._offset.top})
+        o._start = @_getCoord x:event.pageX+o._width-o._offset.left, y:event.pageY+o._height-o._offset.top
         # adds a layer to draw selection
         o._selectLayer = @element.find('.selection').clone()
-        o._container.append(o._selectLayer)
-        o._onDragTemp = (event) => @_onDrag(event)
-        o._onSelectionEndTemp = (event) => @_onSelectionEnd(event)
-        $(document).mousemove(o._onDragTemp)
-        $(document).mouseup(o._onSelectionEndTemp)
+        o._container.append o._selectLayer
+        o._onDragTemp = (event) => @_onDrag event
+        o._onSelectionEndTemp = (event) => @_onSelectionEnd event
+        $(document).mousemove o._onDragTemp
+        $(document).mouseup o._onSelectionEndTemp
         cancel = true
 
         # empties current selection
@@ -649,7 +642,7 @@ define [
           o.selection = []
           @_drawSelection()
       
-      return !cancel
+      !cancel
     
     # **private**
     # Drag handler, that ends the operation if the mouse quit the widget's bounds.
@@ -662,31 +655,31 @@ define [
       while !('pageX' of event) 
         event = event.originalEvent
       
-      mouse = {left: event.pageX, top: event.pageY}
+      mouse = left: event.pageX, top: event.pageY
       if mouse.left < o._dim.left || mouse.left > o._dim.right || 
           mouse.top < o._dim.top || mouse.top > o._dim.bottom
         # we left the widget, stops the operation
         if o._start
-          @_onSelectionEnd(event)
+          @_onSelectionEnd event
         return false
 
       # draws temporary selection
       if o._start and o._selectLayer
         # compute temporary end of the selectionEvalue la fin temporaire de la séléction
-        end = @_getCoord({x:event.pageX+o._width-o._offset.left, y:event.pageY+o._height-o._offset.top})
+        end = @_getCoord x:event.pageX+o._width-o._offset.left, y:event.pageY+o._height-o._offset.top
         lower =
-          x: Math.min(end.x, o._start.x)
-          y: Math.min(end.y, o._start.y)
+          x: Math.min end.x, o._start.x
+          y: Math.min end.y, o._start.y
         higher =
-          x: Math.max(end.x, o._start.x)
-          y: Math.max(end.y, o._start.y)
+          x: Math.max end.x, o._start.x
+          y: Math.max end.y, o._start.y
         canvas = o._selectLayer[0]
-        ctx = canvas.getContext('2d')
+        ctx = canvas.getContext '2d'
         canvas.width = canvas.width
         # walk through selected tiles
         for x in [lower.x..higher.x]
           for y in [lower.y..higher.y]
-            @_drawTile(ctx, {x:x, y:y}, @options.colors.selection)
+            @_drawTile ctx, {x:x, y:y}, @options.colors.selection
     
     # **private**
     # Drag'n drop handler that ends selection or move map.
@@ -697,20 +690,20 @@ define [
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
     _onDragStop: (event, details) ->
-      delete(this.options._dim)
+      delete this.options._dim
       if event.shiftKey
         # selection end
-        @_onSelectionEnd(event)
+        @_onSelectionEnd event
       else
         # move end
         o = @options
         
-        moveX = -parseInt(o._container.css('left'))
-        moveY = -parseInt(o._container.css('top'))
+        moveX = -parseInt o._container.css 'left'
+        moveY = -parseInt o._container.css 'top'
 
         # update widget coordinates
-        origin = @_getCoord({x:o._width, y:o._height})
-        newPos =  @_getCoord({x:moveX, y:moveY})
+        origin = @_getCoord x:o._width, y:o._height
+        newPos =  @_getCoord x:moveX, y:moveY
         o._origin.x += newPos.x-origin.x
         o._origin.y += newPos.y-origin.y
 
@@ -735,27 +728,25 @@ define [
         fShiftY = origin.y-newPos.y
         if fShiftY % 2 isnt 0
           fShiftX += if o._origin.y % 2 then -0.5 else 0.5
-        o._container.find('.fields').css(
+        o._container.find('.fields').css
           left: fShiftX*o._tileW
           top: fShiftY*o._tileH*0.75
-        )
 
         # place the container, and run the end animation
-        o._container.css(
+        o._container.css
           left: -o._width+shiftX
           top: -o._height+shiftY
-        )
-        o._container.transition(
+
+        o._container.transition
           left: -o._width
           top: -o._height
-        , 500, () =>
+        , 500, =>
           # reloads map
           newCoord =
             x: o._origin.x+Math.round(o._width/o._tileW)-1
             y: o._origin.y+Math.round(o._height/(o._tileH*0.75)) # TODO specific iso
-          console.log('map move ends on x:'+newCoord.x+' y:'+newCoord.y)
-          @setOption('lowerCoord', newCoord)
-        )
+          console.log "map move ends on x:#{newCoord.x} y:#{newCoord.y}"
+          @setOption 'lowerCoord', newCoord
 
     # **private**
     # Drag'n drop selection end handler.
@@ -764,54 +755,51 @@ define [
     _onSelectionEnd: (event) ->
       o = @options
       # unbinds temporary handlers
-      $(document).unbind('mousemove', o._onDragTemp)
-      $(document).unbind('mouseup', o._onSelectionEndTemp)
+      $(document).unbind 'mousemove', o._onDragTemp
+      $(document).unbind 'mouseup', o._onSelectionEndTemp
       return unless o._start
 
       # removes temporary layer
-      o._selectLayer.remove();
+      o._selectLayer.remove()
       # compute end coordinate
-      end = @_getCoord({x:event.pageX+o._width-o._offset.left, y:event.pageY+o._height-o._offset.top})
-      console.log("selection between x:#{o._start.x} y:#{o._start.y} and x:#{end.x} y:#{end.y}")
+      end = @_getCoord x:event.pageX+o._width-o._offset.left, y:event.pageY+o._height-o._offset.top
+      console.log "selection between x:#{o._start.x} y:#{o._start.y} and x:#{end.x} y:#{end.y}"
 
       lower =
-        x: Math.min(end.x, o._start.x)
-        y: Math.min(end.y, o._start.y)
+        x: Math.min end.x, o._start.x
+        y: Math.min end.y, o._start.y
       higher =
-        x: Math.max(end.x, o._start.x)
-        y: Math.max(end.y, o._start.y)
+        x: Math.max end.x, o._start.x
+        y: Math.max end.y, o._start.y
       # walk through selected tiles
       for x in [lower.x..higher.x]
         for y in [lower.y..higher.y]
           found = false
           (found = true; break) for tile in o.selection when tile.x is x and tile.y is y
-          o.selection.push({x:x, y:y}) unless found
+          o.selection.push x:x, y:y unless found
       o._start = null;
       # redraw selection
       @_drawSelection()
-      @_trigger('selectionChanged')
+      @_trigger 'selectionChanged'
 
     # **private**
     # Click handler that toggle the clicked tile from selection if the ctrl key is pressed
     # @param event [Event] click event
     _onClick: (event) ->
-      coord = @_getCoord(_mousePos(event))
-      console.log("click on tile x:#{coord.x} y:#{coord.y} with control key #{event.ctrlKey}")
+      coord = @_getCoord _mousePos event
+      console.log "click on tile x:#{coord.x} y:#{coord.y} with control key #{event.ctrlKey}"
       add = true
       if event.ctrlKey
         # search in selection
         for tile, i in @options.selection when tile.x is coord.x and tile.y is coord.y
           add = false
-          @options.selection.splice(i, 1)
+          @options.selection.splice i, 1
           break
       else
         # empties selection
         @options.selection = []
 
       # selects the clicked tile and redraw
-      @options.selection.push(coord) if add
+      @options.selection.push coord if add
       @_drawSelection()
-      @_trigger('selectionChanged')
-
-
-  $.widget('rheia.authoringMap', $.rheia.baseWidget, AuthoringMap)
+      @_trigger 'selectionChanged'

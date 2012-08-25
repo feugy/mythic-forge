@@ -28,13 +28,13 @@ define [
   # @param image [Image] concerned Image object
   # @return the base 64 corresponding image data
   getImageString = (image) ->
-    canvas = $("<canvas></canvas>")[0];
-    canvas.width = image.width;
-    canvas.height = image.height;
+    canvas = $("<canvas></canvas>")[0]
+    canvas.width = image.width
+    canvas.height = image.height
     # Copy the image contents to the canvas
-    ctx = canvas.getContext('2d')
-    ctx.drawImage(image, 0, 0)
-    return canvas.toDataURL('image/png')
+    ctx = canvas.getContext '2d'
+    ctx.drawImage image, 0, 0
+    canvas.toDataURL 'image/png'
 
   class ImagesService
 
@@ -48,7 +48,7 @@ define [
     
     # Constructor. 
     constructor: ->
-      rheia.router.on('loadImage', @load)
+      rheia.router.on 'loadImage', @load
     
     # Load an image. Once it's available, `imageLoaded` event will be emitted on the bus.
     # If this image has already been loaded (url used as key), the event is imediately emitted.
@@ -56,25 +56,25 @@ define [
     # @param image [String] the image **ABSOLUTE** url
     # @return true if the image wasn't loaded, false if the cache will be used
     load: (image) =>
-      isLoading = false;
+      isLoading = false
       return isLoading unless image?
       # Use cache if available, with a timeout to simulate asynchronous behaviour
       if image of @_cache
-        setTimeout(() =>
-          rheia.router.trigger('imageLoaded', true, image, @_cache[image], getImageString(@_cache[image]))
-        , 0)
+        setTimeout =>
+          rheia.router.trigger 'imageLoaded', true, image, @_cache[image], getImageString @_cache[image]
+        , 0
       else unless image in @_pendingImages
-        console.log("load image #{image}...")
-        @_pendingImages.push(image)
+        console.log "load image #{image}..."
+        @_pendingImages.push image
         # creates an image facility
         imgData = new Image()
         # bind loading handlers
-        $(imgData).load(@_onImageLoaded)
-        $(imgData).error(@_onImageFailed)
+        $(imgData).load @_onImageLoaded
+        $(imgData).error @_onImageFailed
         # adds a timestamped value to avoid browser cache
         imgData.src = "#{image}?#{new Date().getTime()}"
         isLoading = true
-      return isLoading
+      isLoading
 
     # Uploads a type or instance image for a given model.
     # Triggers the `imageUploaded` event at the end, with the image name and model id in parameter.
@@ -89,35 +89,34 @@ define [
       # when image data was read
       reader.onload = (event) =>
         # computes image type, and remove the type prefix
-        ext = file.type.replace('image/', '')
-        data = event.target.result.replace("data:#{file.type};base64,", '')
+        ext = file.type.replace 'image/', ''
+        data = event.target.result.replace "data:#{file.type};base64,", ''
 
         # file's name for cache
         src = "/images/#{id}-#{if idx? then idx else 'type'}.#{ext}"
         
         # update cache content
-        delete(@_cache[src])
+        delete @_cache[src]
 
         # wait for server response
-        sockets.admin.once('uploadImage-resp', (err, saved) =>
-          throw new Error("Failed to upload image for model #{modelName} #{id}: #{err}") if err?
+        sockets.admin.once 'uploadImage-resp', (err, saved) =>
+          throw new Error "Failed to upload image for model #{modelName} #{id}: #{err}" if err?
           # populate cache
-          @load(src)
+          @load src
 
-          console.log("image #{src} uploaded")
+          console.log "image #{src} uploaded"
           # trigger end of upload
-          rheia.router.trigger('imageUploaded', saved._id, src)
-        )
+          rheia.router.trigger 'imageUploaded', saved._id, src
 
-        console.log("upload new image #{src}...")
+        console.log "upload new image #{src}..."
         # upload data to server
         if idx?
-          sockets.admin.emit('uploadImage', modelName, id, ext, data, idx)
+          sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
         else 
-          sockets.admin.emit('uploadImage', modelName, id, ext, data)
+          sockets.admin.emit 'uploadImage', modelName, id, ext, data
 
       # read data from file
-      reader.readAsDataURL(file)
+      reader.readAsDataURL file
 
     # Removes a type or instance image for a given model.
     # Triggers the `imageRemoved` event at the end, with the image name and model id in parameter.
@@ -130,52 +129,50 @@ define [
       # file's name for cache
       src = "/images/#{oldName}"
       # update cache content
-      delete(@_cache[src])
+      delete @_cache[src]
 
       # wait for server response
-      sockets.admin.once('removeImage-resp', (err, saved) =>
-        throw new Error("Failed to remove image for model #{modelName} #{id}: #{err}") if err?
-        console.log("image #{src} removed")
+      sockets.admin.once 'removeImage-resp', (err, saved) =>
+        throw new Error "Failed to remove image for model #{modelName} #{id}: #{err}" if err?
+        console.log "image #{src} removed"
         # trigger end of upload
-        rheia.router.trigger('imageRemoved', saved._id, src)
-      )
-      console.log("removes new image #{src}...")
+        rheia.router.trigger 'imageRemoved', saved._id, src
+
+      console.log "removes new image #{src}..."
       # remove image from server
       if idx?
-        sockets.admin.emit('removeImage', modelName, id, idx)
+        sockets.admin.emit 'removeImage', modelName, id, idx
       else 
-        sockets.admin.emit('removeImage', modelName, id)
+        sockets.admin.emit 'removeImage', modelName, id
 
     # **private**
     # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
     #
     # @param event [Event] image loading success event
     _onImageLoaded: (event) =>
-      src = event.target.src.replace(/\?\d*$/, '')
-      src = _.find(@_pendingImages, (image) -> _(src).endsWith(image))
+      src = event.target.src.replace /\?\d*$/, ''
+      src = _.find @_pendingImages, (image) -> _(src).endsWith image
       return unless src?
-      console.log("image #{src} loaded")
+      console.log "image #{src} loaded"
       # Remove event from pending array
-      @_pendingImages.splice(@_pendingImages.indexOf(src), 1)
+      @_pendingImages.splice @_pendingImages.indexOf(src), 1
       # Gets the image data with a canvas temporary element
-      canvas = $("<canvas></canvas>")[0];
-      canvas.width = event.target.width;
-      canvas.height = event.target.height;
+      canvas = $("<canvas></canvas>")[0]
+      canvas.width = event.target.width
+      canvas.height = event.target.height
       # Store Image object and emit on the event bus
       @_cache[src] = event.target
-      rheia.router.trigger('imageLoaded', true, src, event.target, getImageString(event.target))
+      rheia.router.trigger 'imageLoaded', true, src, event.target, getImageString event.target
   
     # **private**
     # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
     # @param event [Event] image loading fail event
     _onImageFailed: (event) =>
-      src = event.target.src.replace(/\?\d*$/, '')
-      src = _.find(@_pendingImages, (image) -> _(src).endsWith(image))
+      src = event.target.src.replace /\?\d*$/, ''
+      src = _.find @_pendingImages, (image) -> _(src).endsWith image
       return unless src?
-      console.log("image #{src} loading failed")
+      console.log "image #{src} loading failed"
       # Remove event from pending array
-      @_pendingImages.splice(@_pendingImages.indexOf(src), 1)
+      @_pendingImages.splice @_pendingImages.indexOf(src), 1
       # Emit an error on the event bus
-      rheia.router.trigger('imageLoaded', false, src)
-
-  return ImagesService
+      rheia.router.trigger 'imageLoaded', false, src

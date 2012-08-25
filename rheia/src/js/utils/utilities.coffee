@@ -24,13 +24,13 @@ define [
 ], ($, _) ->
 
   classToType = {}
-  for name in "Boolean Number String Function Array Date RegExp Undefined Null".split(" ")
+  for name in 'Boolean Number String Function Array Date RegExp Undefined Null'.split ' '
     classToType["[object " + name + "]"] = name.toLowerCase()
 
-  generateId = () ->
-    return "#{parseInt(Math.random()*1000000000)}" 
+  generateId = ->
+    "#{parseInt(Math.random()*1000000000)}" 
 
-  return {
+  {
 
     # This method is intended to replace the broken typeof() Javascript operator.
     #
@@ -40,7 +40,7 @@ define [
     #
     # @see http://arcturo.github.com/library/coffeescript/07_the_bad_parts.html
     type: (obj) ->
-      strType = Object::toString.call(obj)
+      strType = Object::toString.call obj
       return classToType[strType] or "object"
 
     # Generates a pseudo random id.
@@ -73,30 +73,29 @@ define [
     # @return the generated popup dialog
     popup: (title, message, messageIcon, buttons, closeIndex = 0) ->
       # parameter validations
-      throw new Error('popup() must be called with at least one button') unless Array.isArray(buttons) and buttons.length > 0
-      throw new Error("closeIndex #{closeIndex} is not a valid index in the buttons array") unless closeIndex >= 0 and closeIndex < buttons.length
+      throw new Error 'popup() must be called with at least one button' unless Array.isArray(buttons) and buttons.length > 0
+      throw new Error "closeIndex #{closeIndex} is not a valid index in the buttons array" unless closeIndex >= 0 and closeIndex < buttons.length
       id = generateId()
 
       buttonSpec = []
       for spec in buttons
-        buttonSpec.push( 
+        buttonSpec.push
           text: spec.text
           click: ((handler)-> (event) -> 
             # remove popup and invoke possible handler
             $("##{id}").remove()
             handler() if handler?
           )(spec.click)
-        )
-        buttonSpec[buttonSpec.length-1].icons = {primary: "small #{spec.icon}"} if spec.icon?
+
+        buttonSpec[buttonSpec.length-1].icons = primary: "small #{spec.icon}" if spec.icon?
 
       html = "<div id='#{id}' title='#{title}'>"
       html += "<span class='ui-icon big #{messageIcon}'></span>" if messageIcon?
       html += "#{message}</div>"
-      $(html).dialog(
-          modal: true
-          close: (event) -> buttonSpec[closeIndex].click()
-          buttons: buttonSpec
-        )
+      $(html).dialog
+        modal: true
+        close: (event) -> buttonSpec[closeIndex].click()
+        buttons: buttonSpec
 
     # Transforms a ccmel case string into a dash separated lower case string
     #

@@ -26,7 +26,7 @@ define [
 ], (Base, sockets, Field, Item) ->
 
   # Client cache of maps.
-  class Maps extends Base.Collection
+  class _Maps extends Base.Collection
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -37,7 +37,7 @@ define [
   class Map extends Base.Model
 
     # Local cache for models.
-    @collection: new Maps(@)
+    @collection: new _Maps @
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -58,9 +58,9 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
-      super(attributes)
+      super attributes
       # connect server response callbacks
-      sockets.game.on('consultMap-resp', @_onConsult)
+      sockets.game.on 'consultMap-resp', @_onConsult
 
     # Allows to retrieve items and fields on this map by coordinates, in a given rectangle.
     #
@@ -73,9 +73,9 @@ define [
     consult: (low, up) =>
       return if @_consultRunning
       @_consultRunning = true
-      console.log("Consult map #{@get 'name'} between #{low.x}:#{low.y} and #{up.x}:#{up.y}")
+      console.log "Consult map #{@get 'name'} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
       # emit the message on the socket.
-      sockets.game.emit('consultMap', @id, low.x, low.y, up.x, up.y)
+      sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
 
     # **private**
     # Return callback of consultMap server operation.
@@ -86,11 +86,9 @@ define [
     _onConsult: (err, items, fields) =>
       if @_consultRunning
         @_consultRunning = false
-        return console.error("Fail to retrieve map content: #{err}") if err?
+        return console.error "Fail to retrieve map content: #{err}" if err?
         # add them to the collection (Item model will be created)
-        console.log("#{items.length} map item(s) received #{@get 'name'}")
-        Item.collection.add(items)
-        console.log("#{fields.length} map item(s) received on #{@get 'name'}")
-        Field.collection.add(fields)
-
-  return Map
+        console.log "#{items.length} map item(s) received #{@get 'name'}"
+        Item.collection.add items
+        console.log "#{fields.length} map item(s) received on #{@get 'name'}"
+        Field.collection.add fields

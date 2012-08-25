@@ -27,7 +27,7 @@ define [
 
   # Widget that encapsulate the Ace editor to expose a more jQuery-ui compliant interface
   # Triggers a `change`event when necessary.
-  AdvEditor = 
+  $.widget 'rheia.advEditor', $.rheia.baseWidget,
 
     options:    
 
@@ -52,33 +52,32 @@ define [
       _editor: null
 
     # Frees DOM listeners
-    destroy: () ->
+    destroy: ->
       @_editor.destroy()
-      $.Widget.prototype.destroy.apply(@, arguments)
+      $.Widget.prototype.destroy.apply @, arguments
 
     # **private**
     # Builds rendering
-    _create: () ->
-      @element.addClass('adv-editor')
+    _create: ->
+      @element.addClass 'adv-editor'
       
       # creates and wire the editor
-      @options._editor = ace.edit(@element[0])
+      @options._editor = ace.edit @element[0]
       session = @options._editor.getSession()
       
-      session.on('change', () => 
+      session.on 'change', => 
         # update inner value and fire change event
         @options.text = @options._editor.getValue()
-        @_trigger('change', null, @options.text)
-      )
+        @_trigger 'change', null, @options.text
       
       # configure it
-      session.setUseSoftTabs(true);
+      session.setUseSoftTabs true
 
       # fills its content
-      @_setOption('text', @options.text)
-      @_setOption('tabSize', @options.tabSize)
-      @_setOption('theme', @options.theme)
-      @_setOption('mode', @options.mode)
+      @_setOption 'text', @options.text
+      @_setOption 'tabSize', @options.tabSize
+      @_setOption 'theme', @options.theme
+      @_setOption 'mode', @options.mode
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `source` changed.
@@ -86,27 +85,25 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply(@, arguments) unless key in ['text', 'mode', 'theme', 'tabSize']
+      return $.Widget.prototype._setOption.apply @, arguments unless key in ['text', 'mode', 'theme', 'tabSize']
       switch key
         when 'text' 
           # keeps the undo manager
           undoMgr = @options._editor.getSession().getUndoManager()
           # keeps the cursor position if possible
           position = @options._editor.selection.getCursor()
-          @options._editor.setValue(value)
+          @options._editor.setValue value
           # setValue will select all new text. rheiaeset the cursor to original position.
           @options._editor.clearSelection()
-          @options._editor.selection.moveCursorToPosition(position)
-          @options._editor.getSession().setUndoManager(undoMgr)
+          @options._editor.selection.moveCursorToPosition position
+          @options._editor.getSession().setUndoManager undoMgr
         when 'tabSize'
           @options.tabSize = value
-          @options._editor.getSession().setTabSize(value)
+          @options._editor.getSession().setTabSize value
         when 'theme'
           @options.theme = value
-          require(["ace/theme/#{value}"], () => @options._editor.setTheme("ace/theme/#{value}"))
+          require ["ace/theme/#{value}"], => @options._editor.setTheme "ace/theme/#{value}"
         when 'mode'
           @options.mode = value
-          require(["ace/mode/#{value}"], () => @options._editor.getSession().setMode("ace/mode/#{value}"))
-
-  $.widget("rheia.advEditor", $.rheia.baseWidget, AdvEditor)
+          require ["ace/mode/#{value}"], => @options._editor.getSession().setMode "ace/mode/#{value}"
     

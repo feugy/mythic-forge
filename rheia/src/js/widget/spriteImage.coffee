@@ -31,7 +31,7 @@ define [
   # A special data flag is added to the `change` event to differentiate changes from sprite specification
   # from thoses from image upload/removal.
   # When the flag is true, then the changes is not about image source.
-  SpriteImage = 
+  $.widget 'rheia.spriteImage', $.rheia.loadableImage, 
 
     options:
 
@@ -63,27 +63,26 @@ define [
       _validators: []
 
     # Frees DOM listeners
-    destroy: () ->
+    destroy: ->
       @element.find('input').unbind()
       @element.unbind()
       validator.dispose() for validator in @options._validators
-      $.rheia.loadableImage.prototype.destroy.apply(@, arguments)
+      $.rheia.loadableImage.prototype.destroy.apply @, arguments
 
     # **private**
     # Builds rendering. Adds inputs for image dimensions
-    _create: () ->
-      $.rheia.loadableImage.prototype._create.apply(@, arguments) 
+    _create: ->
+      $.rheia.loadableImage.prototype._create.apply @, arguments
       @options._silent = true
-      @element.addClass('sprite')
-      @element.hover((event) => 
-        @element.addClass('show').find('.details').transition({opacity:1}, @options.duration)
+      @element.addClass 'sprite'
+      @element.hover (event) => 
+        @element.addClass('show').find('.details').transition {opacity:1}, @options.duration
       , (event) =>
-        @element.removeClass('show').find('.details').transition({opacity:0}, @options.duration)
-      )
+        @element.removeClass('show').find('.details').transition {opacity:0}, @options.duration
 
       # inputs for width and height
       $("""<div class="dimensions">#{i18n.spriteImage.dimensions}<input type="numer" class="spriteW"/>
-        <input type="numer" class="spriteH"/></div>""").appendTo(@element)
+        <input type="numer" class="spriteH"/></div>""").appendTo @element
 
       $("""<div class="details">
         <h1>#{i18n.spriteImage.sprites}</h1>
@@ -99,32 +98,31 @@ define [
           <tbody></tbody>
         </table>
         <a href="#" class="add"></a>
-      </div>""").appendTo(@element)
+      </div>""").appendTo @element
 
       @element.find('.details .add').button(
         label: i18n.spriteImage.add
         icons:
           primary: 'add small'
-      ).click((event) => 
+      ).click (event) => 
         event?.preventDefault()
         @options.sprites[i18n.spriteImage.newName] =
           duration: 0
           number: 0
           rank: @element.find('.details tbody tr').length
         @_refreshSprites()
-        @_trigger('change', event, {isSprite: true})
-      )
+        @_trigger 'change', event, isSprite: true
 
       @_refreshSprites()
 
-      @element.find('.dimensions input').keyup((event) => @_onDimensionChange(event))
-      @setOption('spriteW', @options.spriteW)
-      @setOption('spriteH', @options.spriteH)
+      @element.find('.dimensions input').keyup (event) => @_onDimensionChange event
+      @setOption 'spriteW', @options.spriteW
+      @setOption 'spriteH', @options.spriteH
       @options._silent = false
 
     # **private**
     # Empties and rebuilds sprite specifications rendering.
-    _refreshSprites: () ->
+    _refreshSprites: ->
       # disposes validators
       validator.dispose() for validator in @options._validators
       @options._validators = []
@@ -139,7 +137,7 @@ define [
           @_validates()
           value = arg.value
 
-          name = $(event.target).closest('tr').data('name')
+          name = $(event.target).closest('tr').data 'name'
           prev = if key? then @options.sprites[name][key] else name 
           return unless value isnt prev
           if key?
@@ -149,15 +147,14 @@ define [
             # change name, keeping other values, without erasing existing name
             @options.sprites[value] = @options.sprites[name]
             delete @options.sprites[name]
-            $(event.target).closest('tr').data('name', value)
+            $(event.target).closest('tr').data 'name', value
           else 
             # add special error to indicate unsave
-            @options.errors.push({err: 'unsaved', msg: _.sprintf(i18n.spriteImage.unsavedSprite, value)})
-            @element.addClass('validation-error')
+            @options.errors.push err: 'unsaved', msg: _.sprintf i18n.spriteImage.unsavedSprite, value
+            @element.addClass 'validation-error'
 
-          console.dir @options.sprites
           # the last parameters allow to split changes from the image from those from sprite definition
-          @_trigger('change', event, {isSprite: true}) unless @options._silent
+          @_trigger 'change', event, isSprite: true unless @options._silent
 
       for name, spec of @options.sprites
         line = $("""<tr data-name="#{name}">
@@ -166,52 +163,53 @@ define [
             <td><div class="rank"></div></td>
             <td><div class="number"></div></td>
             <td><div class="duration"></div></td>
-          </tr>""").appendTo(table)
+          </tr>""").appendTo table
         # creates widgets for edition
-        line.find('.rank').property(
+        line.find('.rank').property
           type: 'integer'
           value: spec.rank
           allowNull: false
-          change: onChangeFactory('rank'))
-        line.find('.name').property(
+          change: onChangeFactory 'rank'
+
+        line.find('.name').property
           type: 'string'
           value: name
           allowNull: false
-          change: onChangeFactory())
-        line.find('.number').property(
+          change: onChangeFactory()
+
+        line.find('.number').property
           type: 'integer'
           value: spec.number
           allowNull: false
-          change: onChangeFactory('number'))
-        line.find('.duration').property(
+          change: onChangeFactory 'number'
+
+        line.find('.duration').property
           type: 'integer'
           value: spec.duration
           allowNull: false
-          change: onChangeFactory('duration'))
+          change: onChangeFactory 'duration'
+
         line.find('td > a').button(
           icons:
             primary: 'remove x-small'
-        ).click((event)=>
+        ).click (event)=>
           event.preventDefault()
-          delete @options.sprites[$(event.target).closest('tr').data('name')]
+          delete @options.sprites[$(event.target).closest('tr').data 'name']
           @_refreshSprites()
           @_validates()
-          @_trigger('change', event, {isSprite: true})
-        )
+          @_trigger 'change', event, isSprite: true
+        
         # creates a validator for name.
-        @options._validators.push(new validators.String({required: true},
-          i18n.spriteImage.name, line.find('.name input'), null))
+        @options._validators.push new validators.String {required: true},
+          i18n.spriteImage.name, line.find('.name input'), null
 
     # **private**
     # Validates each created validators, and fills the `errors` attribute. 
     # Toggles the error class on the widget's root.
-    _validates: () ->
+    _validates: ->
       @options.errors = []
-
-      for validator in @options._validators
-        @options.errors = @options.errors.concat(validator.validate()) 
-
-      @element.toggleClass('validation-error', @options.errors.length isnt 0)
+      @options.errors = @options.errors.concat validator.validate() for validator in @options._validators
+      @element.toggleClass 'validation-error', @options.errors.length isnt 0
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `spriteH` or `spriteW` changed.
@@ -219,13 +217,13 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.rheia.loadableImage.prototype._setOption.apply(@, arguments) unless key in ['spriteW', 'spriteH', 'sprite']
+      return $.rheia.loadableImage.prototype._setOption.apply @, arguments unless key in ['spriteW', 'spriteH', 'sprite']
       switch key
         when 'spriteW', 'spriteH' 
-          value = parseInt(value)
-          value = 0 if isNaN(value)
+          value = parseInt value
+          value = 0 if isNaN value
           @options[key] = value
-          @element.find(".#{key}").val(value)
+          @element.find(".#{key}").val value
         when 'sprite'
           @element.find('.details *').unbind().remove()
           @_refreshSprites()
@@ -236,13 +234,8 @@ define [
     # @param event [Event] change event on dimension imputs
     _onDimensionChange: (event) ->
       for key in ['spriteW', 'spriteH']
-        value = parseInt(@element.find(".#{key}").val())
-        value = 0 if isNaN(value)
-        @element.find(".#{key}").val(value)
+        value = parseInt @element.find(".#{key}").val()
+        value = 0 if isNaN value
+        @element.find(".#{key}").val value
         @options[key] = value
-
-      @_trigger('change', event, {isSprite: true}) unless @options._silent
-
-
-  $.widget("rheia.spriteImage", $.rheia.loadableImage, SpriteImage)
-    
+      @_trigger 'change', event, isSprite: true unless @options._silent

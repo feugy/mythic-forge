@@ -51,7 +51,7 @@ define [
   # Organize models in categories.
   # Triggers `open` event when opening a category (with category in parameter)
   # Triggers `click` event when clicking an item (with category and id in parameter)
-  TypeTree =
+  $.widget 'rheia.typeTree', $.rheia.baseWidget,
     
     options:  
       # duration of category toggle animations
@@ -67,32 +67,32 @@ define [
       openAtStart: false
 
     # Frees DOM listeners
-    destroy: () ->
-      @element.off('click')
-      $.Widget.prototype.destroy.apply(@, arguments)
+    destroy: ->
+      @element.off 'click'
+      $.Widget.prototype.destroy.apply @, arguments
 
     # **private**
     # Builds rendering
-    _create: () ->
-      @element.on('click', 'dt', (event) => @_onToggleCategory(event))
-      @element.on('click', 'dd > div', (event) => @_onOpenElement(event))
+    _create: ->
+      @element.on 'click', 'dt', (event) => @_onToggleCategory event
+      @element.on 'click', 'dd > div', (event) => @_onOpenElement event
 
       @element.addClass('type-tree').empty()
       # creates categories, and fill with relevant models
       for category in categories
-        content = @options.content.filter((model) -> model?._className is category.id or model?.kind is category.id)
+        content = @options.content.filter (model) -> model?._className is category.id or model?.kind is category.id
         # discard category unless there is content or were told not to do
         continue unless content.length > 0 or !@options.hideEmpty
 
         categoryClass = utils.dashSeparated(category.id)
-        @element.append("""<dt class="#{if @options.openAtStart then 'open' else ''}">
+        @element.append """<dt class="#{if @options.openAtStart then 'open' else ''}">
             <i class="#{categoryClass}"></i>#{category.name}
           </dt>
-          <dd data-category=#{category.id} class="#{categoryClass}"></dd>""")
-        container = @element.find("dd.#{categoryClass}")
+          <dd data-category=#{category.id} class="#{categoryClass}"></dd>"""
+        container = @element.find "dd.#{categoryClass}"
         container.hide() unless @options.openAtStart
 
-        $('<div></div>').typeDetails({model:model}).appendTo(container) for model in content 
+        $('<div></div>').typeDetails({model:model}).appendTo container for model in content 
           
     # **private**
     # Method invoked when the widget options are set. Update rendering if `model` is changed.
@@ -100,10 +100,10 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply(@, arguments) unless key in ['content']
+      return $.Widget.prototype._setOption.apply @, arguments unless key in ['content']
       switch key
         when 'content' 
-          value = [] unless Array.isArray(value)
+          value = [] unless Array.isArray value
           @options.content = value
           @_create()
 
@@ -113,23 +113,20 @@ define [
     #
     # @param event [Event] the click event
     _onToggleCategory: (event) ->
-      title = $(event.target).closest('dt')
+      title = $(event.target).closest 'dt'
       # gets the corresponding 
       if title.hasClass 'open'
-        title.next('dd').hide(@options.animDuration, () -> title.removeClass('open'))   
+        title.next('dd').hide @options.animDuration, -> title.removeClass 'open'   
       else 
-        title.next('dd').show(@options.animDuration, () -> title.addClass('open')) 
-        @_trigger('open', event, title.next('dd').data('category'))
+        title.next('dd').show @options.animDuration, -> title.addClass 'open' 
+        @_trigger 'open', event, title.next('dd').data 'category'
 
     # **private**
     # Open the element clicked by issu ing an event on the bus.
     #
     # @param event [Event] the click event
     _onOpenElement: (event) ->
-      element = $(event.target).closest('div')
-      @_trigger('click', event, 
-        category: element.data('category')
-        id: element.data('id')
-      )
-
-  $.widget("rheia.typeTree", $.rheia.baseWidget, TypeTree)
+      element = $(event.target).closest 'div'
+      @_trigger 'click', event, 
+        category: element.data 'category'
+        id: element.data 'id'

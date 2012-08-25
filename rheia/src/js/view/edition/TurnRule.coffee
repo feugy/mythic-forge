@@ -26,7 +26,7 @@ define [
   'model/Executable'
 ], ($, i18n, template, RuleView, Executable) ->
 
-  i18n = $.extend(true, {}, i18n)
+  i18n = $.extend true, {}, i18n
 
   # Displays and edit a Rule on edition perspective
   class TurnRuleView extends RuleView
@@ -40,27 +40,25 @@ define [
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
-      super(id, 'turn-rule')
+      super id, 'turn-rule'
       # on content changes, displays rank.
-      @model.on('change:rank', @_onRankChange)
-      console.log("creates turn rule edition view for #{if id? then @model.id else 'a new turn rule'}")
+      @model.on 'change:rank', @_onRankChange
+      console.log "creates turn rule edition view for #{if id? then @model.id else 'a new turn rule'}"
 
     # **private**
     # Effectively creates a new model.
-    _createNewModel: () =>
-      @model = new Executable({_id: i18n.labels.newName, content:''})
+    _createNewModel: =>
+      @model = new Executable _id: i18n.labels.newName, content:''
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: () =>
+    _fillRendering: =>
       @_onRankChange()
       # superclass handles description image, name, description and content
       super()
 
     # **private**
     # Refresh rank displayal when the model's content changed.
-    _onRankChange: () =>
-      rank = @model.get('rank')
-      @$el.find('.rank').html(if rank then rank else 0)
-
-  return TurnRuleView
+    _onRankChange: =>
+      rank = @model.get 'rank'
+      @$el.find('.rank').html if rank then rank else 0

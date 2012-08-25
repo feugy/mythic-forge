@@ -35,6 +35,7 @@ hoverColor = darken(#fff, 8%)
 inactiveColor = darken(#fff, 20%)
 focusColor = #75B9F0
 errorColor = lighten(orange, 20%)
+selectedColor = darken(#fff, 12%)
 
 // CSS Reset 
 @import 'reset'
@@ -80,6 +81,7 @@ select
 // Button
 
 .action-bars .ui-button 
+.action-bar .ui-button 
   display: inline-block;
   margin-right 10px
   min-height 27px
@@ -94,7 +96,7 @@ multiIcon(valid invalid cancel warning question help success failure login logou
 
 multiIcon(save remove open remove-selection upload unlink rename add, 1)
 
-multiIcon(add-folder add-file add-param add-property new-actor new-item new-event new-player field script, 2)
+multiIcon(new-folder new-file add-param add-property new-actor new-item new-event new-player field script, 2)
 
 multiIcon(world-edition world-moderation game-authoring admin, 4)
 
@@ -205,6 +207,60 @@ body
         top 0.5em
         right 0
 
+// Common style for perspective layout
+
+.perspective
+  space = 1em
+  // Perspective is an horizontal flex-box
+  display box
+  overflow hidden
+
+  > *
+    // Each child of the perspective is itself a vertical flex-box
+    box-flex 1
+    box-sizing border-box
+    padding space space space 0
+
+    overflow hidden
+    display box
+    box-orient vertical    
+
+    > *:first-child
+      padding-bottom space
+
+  > *:first-child
+    padding-left space
+
+  > .left
+    box-flex 0
+
+  > .right
+
+    .ui-tabs 
+      box-flex 1
+
+    .ui-tabs.views
+      display box
+      box-orient vertical
+
+      .ui-tabs-nav
+        width 100%
+        padding-top 2px
+        box-sizing border-box
+
+      .ui-tabs-panel
+        box-flex 1
+        height 1px // Firefox bug: must have an height to overflow
+        overflow auto
+        position relative
+
+      .ui-icon-close
+        display inline-block
+        cursor: pointer
+
+      li a
+        padding: 0.2em 0.5em
+        typeIcons '.icon', 25, 0
 
 // Overridable imports
 @import 'edition-perspective'

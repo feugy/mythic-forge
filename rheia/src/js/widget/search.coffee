@@ -32,7 +32,7 @@ define [
   # for search results.
   # the `search` event is triggered when a search need to be performed, with query as parameter.
   # the `click` event is triggered when clicking an item in results (with category and id in parameter)
-  Search =
+  $.widget 'rheia.search', $.rheia.baseWidget,
     
     options:  
       
@@ -68,17 +68,19 @@ define [
     # **private**
     # For unbind purposes
     _changeCallback : null
+    _kindCallback: null
 
     # **private**
     # Allow to distinguish search triggered by refresh.
     _refresh: false
 
     # Frees DOM listeners
-    destroy: () ->
-      rheia.router.off('modelChanged', @_changeCallback)
+    destroy: ->
+      rheia.router.off 'modelChanged', @_changeCallback
+      rheia.router.off 'kindChanged', @_kindChanged
       @element.unbind()
       @element.find('input, .ui-icon-search').unbind()
-      $.Widget.prototype.destroy.apply(@, arguments)
+      $.Widget.prototype.destroy.apply @, arguments
 
     # Parse the input query, and if correct, trigger the server call.
     #
@@ -90,63 +92,63 @@ define [
 
       # parse query
       try 
-        query = parser.parse(@element.find('input').val())
+        query = parser.parse @element.find('input').val()
       catch exc
-        return @element.addClass('invalid').find('.error').show().text(exc)
+        return @element.addClass('invalid').find('.error').show().text exc
 
       # avoid empty queries unless told to do
       return if query is '' and !force
       @_searchPending = true
-      clearTimeout(@_searchTimout) if @_searchTimout?
+      clearTimeout @_searchTimout if @_searchTimout?
 
       # hide results
       @_onHideResults()
       # no query: just empties results
-      return @setOption('results', []) if query is ''
+      return @setOption 'results', [] if query is ''
       # or trigger search
+      console.log "new search of #{JSON.stringify query}"
       @_trigger 'search', null, query
 
     # **private**
     # Builds rendering
-    _create: () ->
+    _create: ->
       # general change handler: refresh search
-      @_changeCallback = () => 
+      @_changeCallback = => 
         @_refresh = true
         @triggerSearch()
-      rheia.router.on('modelChanged', @_changeCallback)
+      rheia.router.on 'modelChanged', @_changeCallback
+      
+      # Executable kind changed: refresh results
+      @_kindChanged = => 
+        return unless Array.isArray(@options.results) and @options.results.length
+        @_results.typeTree 'option', 'content', @options.results
+      rheia.router.on 'kindChanged', @_kindChanged
 
-      @element.addClass('search').append("""<input type="text"/>
+      @element.addClass('search').append """<input type="text"/>
         <div class="ui-icon ui-icon-search"></div>
         <div class="ui-icon small help"></div>
         <div class="nb-results"></div>
         <div class="error"></div>
-        <div class="results"></div>
-      """)
+        <div class="results"></div>"""
+
       # help tooltip
-      @element.find('.help').attr('title', @options.helpTip)# todo.tooltip()
+      @element.find('.help').attr 'title', @options.helpTip
       
       # bind on input changes and click events
-      @element.find('input').keyup((event) => @_onChange(event))
-      @element.find('.ui-icon-search').click((event) => @triggerSearch())
-      @_results = @element.find('.results').hide().typeTree(
+      @element.find('input').keyup (event) => @_onChange event
+      @element.find('.ui-icon-search').click (event) => @triggerSearch()
+      @_results = @element.find('.results').hide().typeTree
         openAtStart: true
         hideEmpty: true
-        click: (event, category, id) =>
-          @_trigger('open', event, category, id)
-      )
+        click: (event, category, id) => @_trigger 'open', event, category, id
       
       # toggle results visibility
-      @element.hover((event) =>
+      @element.hover (event) =>
         # stop closure if necessary
-        if @_hideTimeout?
-          clearTimeout(@_hideTimeout)
-          @_hideTimeout = null
+        clearTimeout @_hideTimeout if @_hideTimeout?
         @_onShowResults()
       , (event) =>
-        @_hideTimeout = setTimeout(() =>
-          @_onHideResults()
-        ,1000)
-      )
+        @_hideTimeout = setTimeout (=> @_onHideResults()),1000
 
     # **private**
     # Method invoked when the widget options are set. Update popup if `results` changed.
@@ -154,11 +156,11 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply(@, arguments) unless key in ['results']
+      return $.Widget.prototype._setOption.apply @, arguments unless key in ['results']
       switch key
         when 'results'
           # checks that results are an array
-          return unless Array.isArray(value)
+          return unless Array.isArray value
           @_searchPending = false
           @options.results = value
 
@@ -169,54 +171,47 @@ define [
           else if @options.results.length is 1
             html = i18n.search.oneResult
           else
-            html = _.sprintf(i18n.search.nbResults, @options.results.length)
-          @element.find('.nb-results').html(html)
+            html = _.sprintf i18n.search.nbResults, @options.results.length
+          @element.find('.nb-results').html html
 
           # set max height because results are absolutely positionned
-          @_results.css('max-height', @element.offsetParent().height()*0.8)
+          @_results.css 'max-height', @element.offsetParent().height()*0.8
           # update tree content
-          @_results.typeTree('option', 'content', @options.results)
+          @_results.typeTree 'option', 'content', @options.results
 
           @_onShowResults() unless @_refresh
           @_refresh = false
 
     # **private**
     # Displays the result popup, with a slight delay to avoir openin if mouse leave the widget.
-    _onShowResults: () ->
+    _onShowResults: ->
       if @options.results?.length > 0 and @_showTimeout is null
         # show results with slight delay
-        @_showTimeout = setTimeout(() =>
-          @_showTimeout = null
-          @_results.show().transition({opacity:1}, @options.animDuration, () =>
+        @_showTimeout = setTimeout =>
+          @_results.show().transition {opacity:1}, @options.animDuration, =>
             # in case of collapsing hide/show calls
-            @_results.show() unless @_results.is(':visible')
-          )
-        , 200)
+            @_showTimeout = null
+            @_results.show() unless @_results.is ':visible'
+        , 200
 
     # **private**
     # Hides the result popup, or cancel opening if necessary.
-    _onHideResults: () ->
-      if @options.results?.length > 0 and @_results.is(':visible')
+    _onHideResults: ->
+      if @options.results?.length > 0 and @_results.is ':visible'
         # cancels opening 
         if @_showTimeout?
-          clearTimeout(@_showTimeout)
+          clearTimeout @_showTimeout 
           @_showTimeout = null
         else
-          @_results.transition({opacity: 0}, @options.animDuration, () => @_results.hide())
+          @_results.transition {opacity: 0}, @options.animDuration, => @_results.hide()
 
     # **private**
     # input change handler: waits a little before sending to server unless input is ENTER
     #
     # @param event [Event] keyboard event
     _onChange: (event) ->
-      clearTimeout(@_searchTimout) if @_searchTimout?
-      if event.keyCode is $.ui.keyCode.ENTER
-        # manually triggers research
-        @triggerSearch(true)
-      else
-        # defer search
-        @_searchTimout = setTimeout(() => 
-          @triggerSearch()
-        , 1000)
-
-  $.widget("rheia.search", $.rheia.baseWidget, Search)
+      clearTimeout @_searchTimout if @_searchTimout?
+      # manually triggers research
+      return @triggerSearch true if event.keyCode is $.ui.keyCode.ENTER
+      # defer search
+      @_searchTimout = setTimeout (=> @triggerSearch()), 1000

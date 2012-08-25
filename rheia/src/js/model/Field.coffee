@@ -27,37 +27,35 @@ define [
   # Field collection to handle multiple operaions on fields.
   # Do not provide any local cache, nor allows field retrival. Use `Map.consult()` method instead.
   # Wired to server changes events.
-  class Fields extends Backbone.Collection
+  class _Fields extends Backbone.Collection
 
     # Collection constructor, that wired on events.
     #
     # @param model [Object] the managed model
     # @param options [Object] unused
     constructor: (@model, @options) ->
-      super(options)
+      super options
       # bind updates
-      sockets.updates.on('creation', @_onAdd)
-      sockets.updates.on('deletion', @_onRemove)
+      sockets.updates.on 'creation', @_onAdd
+      sockets.updates.on 'deletion', @_onRemove
 
     # Allow multiple saves on fields. Update is not permitted.
     #
     # @param fields [Array<Field>] saved fields
     save: (fields) =>
-      sockets.admin.once('save-resp', (err) =>
-        rheia.router.trigger('serverError', err, {method:"Fields.save", arg:fields}) if err?
-      )
+      sockets.admin.once 'save-resp', (err) =>
+        rheia.router.trigger 'serverError', err, method:'Fields.save', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      sockets.admin.emit('save', 'Field', fields)
+      sockets.admin.emit 'save', 'Field', fields
 
     # Allow multiple removes on fields
     #
     # @param fields [Array<Field>] removed fields
     destroy: (fields) =>
-      sockets.admin.once('remove-resp', (err) =>
-        rheia.router.trigger('serverError', err, {method:"Fields.remove", arg:fields}) if err?
-      )
+      sockets.admin.once 'remove-resp', (err) =>
+        rheia.router.trigger 'serverError', err, method:'Fields.remove', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      sockets.admin.emit('remove', 'Field', fields)
+      sockets.admin.emit 'remove', 'Field', fields
 
     # Provide a custom sync method to wire model to the server.
     # No operation supported.
@@ -66,7 +64,7 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, collection, args) =>
-      throw new Error("Unsupported #{method} operation on #{@_className}")
+      throw new Error "Unsupported #{method} operation on #{@_className}"
 
     # Extends the inherited method to unstore added models.
     # Storing fields is a nonsense in Rheia because no browser action will occur on Fields.
@@ -76,10 +74,10 @@ define [
     # @param options [Object] optional arguments, like silent
     add: (models, options) =>
       # calls the inherited method
-      super(models, options)
-      models = if _.isArray(models) then models.slice() else [models]
+      super models, options
+      models = if _.isArray models then models.slice() else [models]
       for model in models
-        @_removeReference(@_byId[model._id])
+        @_removeReference @_byId[model._id]
       # deletes local caching
       @models = []
       @_byCid = {}
@@ -94,10 +92,8 @@ define [
     # @param options [Object] optional arguments, like silent
     remove: (models, options) =>
       # manually trigger remove events
-      models = if _.isArray(models) then models.slice() else [models]
-      for model in models
-        @trigger('remove', @_prepareModel(model, options), @, options)
-
+      models = if _.isArray models then models.slice() else [models]
+      @trigger 'remove', @_prepareModel(model, options), @, options for model in models
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -108,7 +104,7 @@ define [
     _onAdd: (className, model) =>
       return unless className is 'Field'
       # only to trigger add event
-      @add(model)
+      @add model
 
     # **private**
     # Callback invoked when a database deletion is received.
@@ -118,13 +114,13 @@ define [
     # @param model [Object] deleted model.
     _onRemove: (className, model) =>
       # only to trigger add event
-      @remove(new @model(model)) 
+      @remove new @model model
 
   # Field model class. Allow creation and removal. Update is not permitted.
   class Field extends Backbone.Model
 
     # Local cache for models.
-    @collection: new Fields(@)
+    @collection: new _Fields @
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
@@ -137,9 +133,9 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       switch method 
-        when 'create' then Field.collection.save([@]) 
-        when 'delete' then Field.collection.destroy([@]) 
-        else throw new Error("Unsupported #{method} operation on #{@_className}")
+        when 'create' then Field.collection.save [@]
+        when 'delete' then Field.collection.destroy [@]
+        else throw new Error "Unsupported #{method} operation on #{@_className}"
 
     # An equality method that tests ids.
     #
@@ -147,5 +143,3 @@ define [
     # @return true if both object have the samge ids, and false otherwise.
     equals: (other) =>
       @.id is other?.id
-
-  return Field

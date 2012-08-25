@@ -23,7 +23,7 @@ define [
 ], (Base) ->
 
   # Client cache of field types.
-  class FieldTypes extends Base.Collection
+  class _FieldTypes extends Base.Collection
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -35,7 +35,7 @@ define [
   class FieldType extends Base.Model
 
     # Local cache for models.
-    @collection: new FieldTypes(@)
+    @collection: new _FieldTypes @
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -44,5 +44,3 @@ define [
     # **private**
     # List of model attributes that are localized.
     _i18nAttributes: ['name', 'desc']
-
-  return FieldType

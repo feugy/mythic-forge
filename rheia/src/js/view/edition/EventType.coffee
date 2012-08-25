@@ -29,7 +29,7 @@ define [
   'widget/property'
 ], ($, _, i18n, template, BaseEditionView, validators, EventType) ->
 
-  i18n = $.extend(true, {}, i18n)
+  i18n = $.extend true, {}, i18n
 
   addImageClass = 'add-image'
 
@@ -71,13 +71,13 @@ define [
     # @param id [String] the edited object's id, of null for a creation.
     # @param className [String] css class used for this view, by default 'event-type'. Use by subclasses to override
     constructor: (id, className = 'event-type') ->
-      super(id, className)
-      console.log("creates event type edition view for #{if id? then @model.id else 'a new object'}")
+      super id, className
+      console.log "creates event type edition view for #{if id? then @model.id else 'a new object'}"
 
     # Returns the view's action bar, and creates it if needed.
     #
     # @return the action bar rendering.
-    getActionBar: () =>
+    getActionBar: =>
       bar = super()
       # adds specific buttons
       if bar.find('.add-property').length is 0
@@ -87,36 +87,36 @@ define [
             icons: 
               primary: 'add-property small'
             text: false
-          ).appendTo(bar).click(@_onNewProperty) 
-      return bar
+          ).appendTo(bar).click @_onNewProperty
+      bar
 
     # **private**
     # Effectively creates a new model.
-    _createNewModel: () =>
+    _createNewModel: =>
       @model = new EventType()
-      @model.set('name', i18n.labels.newName)
-      @model.set('descImage', null)
+      @model.set 'name', i18n.labels.newName
+      @model.set 'descImage', null
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
-    _fillModel: () =>
+    _fillModel: =>
       # superclass handles description image, name and description
       super()
 
       # totally replace model's property with the view ones
       properties = {}
-      $.extend(true, properties, @_editedProperties)
-      @model.set('properties', properties)
+      $.extend true, properties, @_editedProperties
+      @model.set 'properties', properties
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: () =>
+    _fillRendering: =>
       # superclass handles description image, name and description
       super()
 
       # keep a copy of edited properties in the view
       @_editedProperties = {}
-      $.extend(true, @_editedProperties, @model.get('properties'))
+      $.extend true, @_editedProperties, @model.get 'properties'
       # will trigger _onChange
       @_updateProperties()
 
@@ -124,10 +124,10 @@ define [
     # Prepare data to be rendered into the template
     #
     # @return data filled into the template
-    _getRenderData: () =>
+    _getRenderData: =>
       # data needed by the template
-      return {
-        title: _.sprintf(i18n.titles.eventType, if @_tempId? then i18n.labels.newType else @model.id)
+      {
+        title: _.sprintf i18n.titles.eventType, if @_tempId? then i18n.labels.newType else @model.id
         i18n: i18n
       }
 
@@ -144,36 +144,36 @@ define [
       @_inhibitPropertyChange = true
       for uidName, prop of @_editedProperties
         # a line for each property
-        line = $("""<tr class="property"></tr>""").appendTo(@$el.find('.properties > tbody'))
+        line = $("""<tr class="property"></tr>""").appendTo @$el.find '.properties > tbody'
 
         # removal button
         remove = $('<a href="#"></a>').button(
           icons:
             primary: 'remove x-small'
-        ).click(@._onRemoveProperty).wrap('<td></td>')
-        line.append(remove.parent())
+        ).click(@._onRemoveProperty).wrap '<td></td>'
+        line.append remove.parent()
 
         # input for property's name
         name = $("""<input class="uidName" type="text" value="#{uidName}"/>""")
-            .keyup(@_onPropertyChange).wrap('<td></td>')
-        line.append(name.parent())
+            .keyup(@_onPropertyChange).wrap '<td></td>'
+        line.append name.parent()
 
         # select for property's type
         markup = '';
         for name, value of i18n.labels.propertyTypes
           markup += """<option value="#{name}" #{if prop.type is name then 'selected="selected"'}>#{value}</option>"""
         markup += '</select>';
-        select = $("""<select class="type">#{markup}</select>""").change(@_onPropertyChange).wrap('<td></td>')
-        line.append(select.parent())
+        select = $("""<select class="type">#{markup}</select>""").change(@_onPropertyChange).wrap '<td></td>'
+        line.append select.parent()
 
         # at last, property widget for default value
         defaultValue = $('<div class="defaultValue"></div>').property(
           type: prop.type, 
           value: prop.def,
           change:@_onPropertyChange
-        ).wrap('<td></td>')
+        ).wrap '<td></td>'
 
-        line.append(defaultValue.parent())
+        line.append defaultValue.parent()
       
       # re-creates all validators.
       @_createValidators()
@@ -189,14 +189,14 @@ define [
     # - name: field name, for debug pourposes
     #
     # @return the comparable fields array
-    _getComparableFields: () =>
+    _getComparableFields: =>
       # superclass handles description image, name and description 
       comparable = super()
       # adds properties
-      comparable.push(
+      comparable.push
         name: 'properties'
-        original: @model.get('properties')
-        current: @_editedProperties)
+        original: @model.get 'properties'
+        current: @_editedProperties
       return comparable
     
     # **private**
@@ -205,18 +205,18 @@ define [
     # - name
     # - properties' uidName
     # - sprite names
-    _createValidators: () =>
+    _createValidators: =>
       # superclass disposes validators, and creates name validator
       super()
       # adds a validator per properties
-      for uidName in @$el.find('.properties input.uidName')
+      for uidName in @$el.find '.properties input.uidName'
 
-        @_validators.push(new validators.Regexp({
+        @_validators.push new validators.Regexp {
           invalidError: i18n.msgs.invalidUidError
           regexp: /^[$_\u0041-\uff70].*$/i
           required: true
           spacesAllowed: false
-        }, i18n.labels.propertyUidField, $(uidName), null))
+        }, i18n.labels.propertyUidField, $(uidName), null
 
     # **private**
     # Some properties changed, either its name, type or its default value.
@@ -226,7 +226,7 @@ define [
     _onPropertyChange: (event) =>
       return if @_inhibitPropertyChange
       # get the property index
-      rows = $(event.target).closest('.properties').find('tbody > tr')
+      rows = $(event.target).closest('.properties').find 'tbody > tr'
       newProperties = {}
       for row in rows
         row = $(row)
@@ -234,11 +234,10 @@ define [
         newType = row.find('.type').val()
         # updates default value if type changes
         if newType isnt @_editedProperties[uidName]?.type
-          row.find('.defaultValue').property('option', 'type', newType)
-        newProperties[uidName] = {
+          row.find('.defaultValue').property 'option', 'type', newType
+        newProperties[uidName] =
           type: newType
           def: row.find('.defaultValue').data('property').options.value
-        }
 
       @_editedProperties = newProperties
       # triggers validation
@@ -249,10 +248,9 @@ define [
     # 
     # @param event [Event] click event on the add property button
     _onNewProperty: (event) =>
-      @_editedProperties[i18n.labels.propertyDefaultName] = {
+      @_editedProperties[i18n.labels.propertyDefaultName] =
         type: 'string'
         def: ''
-      }
       # and re-creates property rendering
       @_updateProperties()
       event?.preventDefault()
@@ -267,5 +265,3 @@ define [
       # and re-creates property rendering
       @_updateProperties()
       event?.preventDefault()
-
-  return EventTypeView

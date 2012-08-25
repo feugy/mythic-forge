@@ -18,6 +18,88 @@
 */
 
 .authoring.perspective
-  space = 1em
-  display box
-  overflow hidden
+  
+  > .left
+    width 250px
+
+    .explorer
+      iconSize = 18px
+
+      .file
+      h1
+        hoverable()
+        padding 5px 2px
+
+      > .file
+        margin-left unit(iconSize/2, 'px')
+
+      // folder icons
+      h1 > i,
+      h1::before,
+      .file > i
+        display inline-block
+        background-image url(images/tree.png)
+        background-repeat no-repeat
+        height iconSize 
+        width iconSize
+        vertical-align middle
+
+      h1::before,
+      .file::before
+        content ''
+      .open > h1::before
+        background-position -18px 0
+      h1 > i
+        background-position -36px 0
+        margin-right 3px
+      .open > h1 > i
+        background-position -54px 0
+      .file > i
+        background-image url(images/icons-16.png)
+        background-position 0px -80px
+
+      .file.styl > i
+        background-position -16px -80px
+      .file.coffee > i
+        background-position -32px -80px
+      .file.js > i
+      .file.json > i
+        background-position -48px -80px
+      .file.html > i
+      .file.htm > i
+        background-position -64px -80px
+      .file.svg > i
+        background-position -80px -80px
+      .file.css > i
+        background-position -96px -80px
+      
+
+      .content
+        margin-left iconSize
+
+      .selected > h1
+      .selected:hover > h1
+      .file.selected
+      .file.selected:hover
+        background-color selectedColor
+
+  > .right
+
+    .ui-tabs .ui-tabs-panel
+      overflow hidden
+      padding 2px 0 0
+      display box
+
+  .view.file:not(.icon)
+    position relative
+    width 100%
+    box-flex 1
+
+    .content.ace_editor
+      height 100%
+      width 100%
+
+      *
+        font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
+        font-size 12px
+        line-height 16px

@@ -65,28 +65,28 @@ define [
       for name, value of attributes
         @[name] = value
       @_errors = []
-      @_node.on(@eventName, @validate) if @eventName?
+      @_node.on @eventName, @validate if @eventName?
     
     # Triggers validation. Could be invoked manually or on node change.
     # 
     #  @return array of generated erros, that may be empty if value is valid.
-    validate: () =>
+    validate: =>
       # does validation
-      @_errors = @_doValidation(@_getValue(@_node))
+      @_errors = @_doValidation @_getValue @_node
       # S'il y a une erreur, on remet la classe d'erreur
-      @_node.toggleClass(@errorClass, @_errors.length isnt 0)
+      @_node.toggleClass @errorClass, @_errors.length isnt 0
       return @_errors
 
     # Do not forget to invoke the dispose method to remove binding !
-    dispose: () =>
-      @_node.unbind(@eventName) if @eventName?
+    dispose: =>
+      @_node.unbind @eventName if @eventName?
 
     # **private**
     # the validation method that must be overriden by subclasses
     # @param value [String] the validated value
     # @return an array of errors. Empty if the value is valid.
     _doValidation: (value) =>
-      throw new Error('_doValidation must be overriden by subclasses')
+      throw new Error '_doValidation must be overriden by subclasses'
 
   # StringValidator class allows to check the existence of strings.
   class StringValidator extends BaseValidator
@@ -108,18 +108,16 @@ define [
     _doValidation: (value) =>
       results = []
       if @required and !value
-        results.push(
+        results.push
           error: 'required'
-          msg: _.sprintf(@requiredError, @name)
-        )
+          msg: _.sprintf @requiredError, @name
       
-      if !@spacesAllowed and value and _.includeStr(value, ' ')
-        results.push(
+      if !@spacesAllowed and value and _.includeStr value, ' '
+        results.push
           error: 'spacesNotAllowed'
-          msg: _.sprintf(@spacesNotAllowedError, @name)
-        )
+          msg: _.sprintf @spacesNotAllowedError, @name
       
-      return results
+      results
 
   # RegexpValidator class allows to check arbitrary regular expression agains value.
   class RegexpValidator extends StringValidator
@@ -133,16 +131,16 @@ define [
     # **private**
     # Validate the value's match against the regexp
     _doValidation: (value) =>
-      results = super(value)
-      if value and !value.match(@regexp)
-        results.push(
+      results = super value
+      if value and !value.match @regexp
+        results.push
           error: 'invalid'
-          msg: _.sprintf(@invalidError, @name)
-        )
-      return results
+          msg: _.sprintf @invalidError, @name
+        
+      results
 
   # exports to outer world
-  return {
+  {
     Base: BaseValidator
     String: StringValidator
     Regexp: RegexpValidator

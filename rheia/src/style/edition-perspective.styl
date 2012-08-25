@@ -61,35 +61,18 @@ img.dragged
     text-align center
 
 .edition.perspective
-  space = 1em
-  display box
-  overflow hidden
-
-  > *
-    box-flex 1
-    box-sizing border-box
-    padding space space space 0
-
-    // itself a vertical blex-box
-    overflow hidden
-    display box
-    box-orient vertical
-
-  > *:first-child
-    padding-left space
 
   > .left
-    box-flex 0
     width 250px
+
+    .search
+      padding-bottom 0
 
   > .right
     typeIcons '.new', 25 
 
     .new-button 
       vertical-align middle
-
-    .ui-tabs 
-      box-flex 1
 
     .ui-tabs-nav .content.modified:before
       content '*'
@@ -106,26 +89,6 @@ img.dragged
 
       .ui-tabs-panel
         padding 0
-
-    .ui-tabs.views
-      margin-top space
-
-      .ui-tabs-nav
-        width 100%
-        padding-top 2px
-        box-sizing border-box
-
-      .ui-tabs-panel
-        takeSpace 0, 0, 0, 0
-        overflow auto
-
-      .ui-icon-close
-        display inline-block
-        cursor: pointer
-
-      li a
-        padding: 0.2em 0.5em
-        typeIcons '.icon', 25, 0
 
   // explorer behaviour
   .explorer 
@@ -215,7 +178,7 @@ img.dragged
 
       label 
         display inline-block
-        width 130px
+        width 120px
         margin-right 1em
         padding-top 0.4em
         text-align right
@@ -237,14 +200,14 @@ img.dragged
 
   .view.rule:not(.icon)
   .view.turn-rule:not(.icon)
-    takeSpace(1em, 1.4em, 1em, 1.4em)
 
     > div input[type="text"]
       min-width 25%
       
     > .content.ace_editor
-      takeSpace(65px)
-      margin 0
+      takeSpace 65px
+      margin 12px 15px
+      width auto
       border 1px solid borderColor
 
       *

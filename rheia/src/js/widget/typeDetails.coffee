@@ -29,8 +29,8 @@ define [
   # This widget renders a type model to be displayed in explorer.
   # Draws the type image for EventType and ItemType, use a carousel for FieldType, and displays 
   # just name for others
-  TypeDetails =
-    
+  $.widget 'rheia.typeDetails', $.rheia.baseWidget,
+
     options:  
       # The displayed type model
       model: null
@@ -44,63 +44,62 @@ define [
     _pendingImage: null
 
     # Frees DOM listeners
-    destroy: () ->
-      rheia.router.off('imageLoaded', @_loadCallback) if @_loadCallback?
-      $.Widget.prototype.destroy.apply(@, arguments)
+    destroy: ->
+      rheia.router.off 'imageLoaded', @_loadCallback if @_loadCallback?
+      $.Widget.prototype.destroy.apply @, arguments
 
     # **private**
     # Builds rendering
-    _create: () ->
+    _create: ->
       @element.addClass('type-details').empty()
       name = null
       category = @options.model._className
-      categoryClass = utils.dashSeparated(category)
+      categoryClass = utils.dashSeparated category
 
       # load descriptive image.
-      img = @options.model.get('descImage')
+      img = @options.model.get 'descImage'
       if img? and category.id isnt 'FieldType'
         @_pendingImage = "/images/#{img}"
-        @_loadCallback = (success, src, img, data) =>
-          @_onImageLoaded(success, src, img, data)
-        rheia.router.on('imageLoaded', @_loadCallback)
-        rheia.imagesService.load(@_pendingImage)
+        @_loadCallback = (success, src, img, data) => @_onImageLoaded success, src, img, data
+        rheia.router.on 'imageLoaded', @_loadCallback
+        rheia.imagesService.load @_pendingImage
 
       switch category
-        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.get('name')
+        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.get 'name'
         when 'Executable' 
           name = @options.model.id
           # for opening behaviour, when need to distinguish Rules from TurnRules
           category = @options.model.kind
-          categoryClass = utils.dashSeparated(category)
+          categoryClass = utils.dashSeparated category
 
       @element.addClass(@options.model.id)
         .data('id', @options.model.id)
         .data('category', category)
         .addClass(categoryClass)
-        .text(name)
+        .text name
 
       # field types uses a carousel instead of an image
       if category is 'FieldType'
         $('<div></div>').carousel(
-          images: @options.model.get('images')
+          images: @options.model.get 'images'
         ).draggable(
           scope: i18n.constants.fieldAffectation,
           appendTo: 'body',
-          cursorAt: {top:-5, left:-5},
+          cursorAt: top:-5, left:-5,
           helper: (event) ->
             carousel = $(this)
             # extract the current displayed image from the carousel
             idx = carousel.data('carousel').options.current
             dragged = carousel.find("img:nth-child(#{idx+1})").clone()
             # add informations on the dragged field
-            dragged.data('idx', idx)
-            dragged.data('id', carousel.closest(".#{categoryClass}").data('id'))
-            dragged.addClass('dragged')
+            dragged.data 'idx', idx
+            dragged.data 'id', carousel.closest(".#{categoryClass}").data 'id'
+            dragged.addClass 'dragged'
             return dragged
-        ).prependTo(@element)
+        ).prependTo @element
       else
-        @element.prepend("""<img/>""") if category in ['ItemType', 'EventType']
-        @element.toggleClass('inactive', !@options.model.get('active')) if category in ['TurnRule', 'Rule']
+        @element.prepend "<img/>" if category in ['ItemType', 'EventType']
+        @element.toggleClass 'inactive', !@options.model.get 'active' if category in ['TurnRule', 'Rule']
           
     # **private**
     # Method invoked when the widget options are set. Update rendering if `model` is changed.
@@ -108,12 +107,11 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply(@, arguments) unless key in ['model']
+      return $.Widget.prototype._setOption.apply @, arguments unless key in ['model']
       switch key
         when 'model' 
           @options.model = value
           @_create()
-
 
     # **private**
     # Image loading handler. Displays image.
@@ -124,8 +122,6 @@ define [
     # @param data [String] the image base 64 encoded string, null in case of failure
     _onImageLoaded: (success, src, img, data) ->
       return unless @_pendingImage is src
-      rheia.router.off('imageLoaded', @_loadCallback)
+      rheia.router.off 'imageLoaded', @_loadCallback
       @_loadCallback = null
-      @element.find("img").attr('src', data) if success
-
-  $.widget("rheia.typeDetails", $.rheia.baseWidget, TypeDetails)
+      @element.find("img").attr 'src', data if success

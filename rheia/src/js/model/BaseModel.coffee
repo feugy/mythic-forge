@@ -40,14 +40,14 @@ define [
     # @param model [Object] the managed model
     # @param options [Object] unused
     constructor: (@model, @options) ->
-      super(options)
+      super options
       # bind _onGetList response
-      sockets.admin.on('list-resp', @_onGetList)
+      sockets.admin.on 'list-resp', @_onGetList
 
       # bind updates
-      sockets.updates.on('creation', @_onAdd)
-      sockets.updates.on('update', @_onUpdate)
-      sockets.updates.on('deletion', @_onRemove)
+      sockets.updates.on 'creation', @_onAdd
+      sockets.updates.on 'update', @_onUpdate
+      sockets.updates.on 'deletion', @_onRemove
 
     # Provide a custom sync method to wire model to the server.
     # Only read operation is supported.
@@ -56,8 +56,8 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, collection, args) =>
-      throw new Error("Unsupported #{method} operation on #{@_className}") unless method is 'read'
-      sockets.admin.emit('list', @_className)
+      throw new Error "Unsupported #{method} operation on #{@_className}" unless method is 'read'
+      sockets.admin.emit 'list', @_className
 
     # **private**
     # Return handler of `list` server method.
@@ -67,9 +67,9 @@ define [
     # @param models [Array<Object>] raw models.
     _onGetList: (err, modelName, models) =>
       return unless modelName is @_className
-      return rheia.router.trigger('serverError', err, {method:"#{@_className}.collection.sync", details:'read'}) if err?
+      return rheia.router.trigger 'serverError', err, method:"#{@_className}.collection.sync", details:'read' if err?
       # add returned types in current collection
-      @reset(models)
+      @reset models
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -80,9 +80,9 @@ define [
     _onAdd: (className, model) =>
       return unless className is @_className
       # add the created raw model. An event will be triggered
-      @add(model)
+      @add model
       # propagates changes on collection to global change event
-      rheia.router.trigger('modelChanged')
+      rheia.router.trigger 'modelChanged'
 
     # **private**
     # Callback invoked when a database update is received.
@@ -93,16 +93,15 @@ define [
     _onUpdate: (className, changes) =>
       return unless className is @_className
       # first, get the cached item type and quit if not found
-      model = @get(changes._id)
+      model = @get changes._id
       return unless model?
       # then, update the local cache.
-      for key, value of changes
-        model.set(key, value) if key isnt '_id'
+      model.set key, value for key, value of changes when key isnt '_id'
 
       # emit a change.
-      @trigger('update', model, @, changes)
+      @trigger 'update', model, @, changes
       # propagates changes on collection to global change event
-      rheia.router.trigger('modelChanged')
+      rheia.router.trigger 'modelChanged'
 
     # **private**
     # Callback invoked when a database deletion is received.
@@ -113,9 +112,9 @@ define [
     _onRemove: (className, model) =>
       return unless className is @_className
       # removes the deleted item after enrich it to allow recognition. An event will be triggered
-      @remove(new @model(model)) 
+      @remove new @model model 
       # propagates changes on collection to global change event
-      rheia.router.trigger('modelChanged')
+      rheia.router.trigger 'modelChanged'
 
   # BaseModel provides common behaviour for model.
   #
@@ -148,8 +147,8 @@ define [
     # @param attr [String] the retrieved attribute
     # @return the corresponding attribute value
     get: (attr) =>
-      return super(attr) unless attr in @_i18nAttributes
-      value = super("_#{attr}")
+      return super attr unless attr in @_i18nAttributes
+      value = super "_#{attr}"
       if value? then value[@locale] else undefined
 
     # Overrides inherited setter to handle i18n fields.
@@ -163,7 +162,7 @@ define [
         val ||= {}
         val[@locale] = value
         value = val
-      super(attr, value)
+      super attr, value
 
     # Provide a custom sync method to wire Types to the server.
     # Only create and delete operations are supported.
@@ -174,16 +173,14 @@ define [
     sync: (method, collection, args) =>
       switch method 
         when 'create', 'update' 
-          sockets.admin.once('save-resp', (err) =>
-            rheia.router.trigger('serverError', err, {method:"#{@_className}.sync", details:method, id:@id}) if err?
-          )
-          sockets.admin.emit('save', @_className, @toJSON())
+          sockets.admin.once 'save-resp', (err) =>
+            rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
+          sockets.admin.emit 'save', @_className, @toJSON()
         when 'delete' 
-          sockets.admin.once('save-resp', (err) =>
-            rheia.router.trigger('serverError', err, {method:"#{@_className}.sync", details:method, id:@id}) if err?
-          )
-          sockets.admin.emit('remove', @_className, @toJSON())
-        else throw new Error("Unsupported #{method} operation on #{@_className}")
+          sockets.admin.once 'save-resp', (err) =>
+            rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
+          sockets.admin.emit 'remove', @_className, @toJSON()
+        else throw new Error "Unsupported #{method} operation on #{@_className}"
 
     # An equality method that tests ids.
     #
@@ -192,7 +189,7 @@ define [
     equals: (other) =>
       @.id is other?.id
 
-  return {
+  {
     Collection: BaseCollection
     Model: BaseModel
   }

@@ -26,13 +26,13 @@ define [
 
   # Client cache of items.
   # Wired to the server through socket.io
-  class Items extends Backbone.Collection
+  class _Items extends Backbone.Collection
 
     constructor: (@model, @options) ->
-      super(options)
+      super options
       # connect server response callbacks
-      sockets.updates.on('update', @_onUpdate)
-      sockets.updates.on('creation', @_onAdd)
+      sockets.updates.on 'update', @_onUpdate
+      sockets.updates.on 'creation', @_onAdd
 
     # Provide a custom sync method to wire Items to the server.
     # Disabled.
@@ -41,7 +41,7 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, instance, args) =>
-      throw new Error("Unsupported #{method} operation on Items")
+      throw new Error "Unsupported #{method} operation on Items"
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -51,7 +51,7 @@ define [
     _onAdd: (className, item) =>
       return unless className is 'Item'
       # add the created raw item. An event will be triggered
-      @add(item)
+      @add item
 
     # **private**
     # Callback invoked when a database update is received.
@@ -61,14 +61,13 @@ define [
     _onUpdate: (className, changes) =>
       return unless className is 'Item'
       # first, get the cached item and quit if not found
-      item = @get(changes._id)
+      item = @get changes._id
       return unless item?
       # then, update the local cache.
-      for key, value of changes
-        item.set(key, value) if key isnt '_id' and key isnt 'type' and key isnt 'map'
+      item.set key, value for key, value of changes when key isnt '_id' and key isnt 'type' and key isnt 'map'
 
       # emit a change.
-      @trigger('update', item)
+      @trigger 'update', item 
 
 
     # Override of the inherited method to disabled default behaviour.
@@ -82,7 +81,7 @@ define [
 
     # item local cache.
     # A Backbone.Collection subclass
-    @collection: new Items(@)
+    @collection: new _Items @
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
@@ -97,52 +96,52 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
-      super(attributes) 
+      super attributes
       # Construct a Map around the raw map.
       if attributes?.map?
         # to avoid circular dependencies
-        Map = require('model/Map')
+        Map = require 'model/Map'
         if typeof attributes.map is 'string'
           # gets by id
-          map = Map.collection.get(attributes.map)
+          map = Map.collection.get attributes.map
           unless map
             # trick: do not retrieve map, and just construct with empty name.
-            @set('map', new Map({_id: attributes.map}))
+            @set 'map', new Map _id: attributes.map
           else 
-            @set('map', map)
+            @set 'map', map
         else
           # or construct directly
-          map = new Map(attributes.map)
-          Map.collection.add(map)
-          @set('map', new Map(attributes.map))
+          map = new Map attributes.map
+          Map.collection.add map
+          @set 'map', new Map attributes.map
 
       # Construct an ItemType around the raw type.
       if attributes?.type?
         if typeof attributes.type is 'string'
           # resolve by id
-          type = ItemType.collection.get(attributes.type)
+          type = ItemType.collection.get attributes.type
           # not found on client: get it from server
           unless type?
-            ItemType.collection.on('add', @_onTypeFetched)
-            ItemType.collection.fetch(attributes.type)
+            ItemType.collection.on 'add', @_onTypeFetched
+            ItemType.collection.fetch attributes.type
           else 
-            @set('type', type)
+            @set 'type', type
         else 
           # contruct with all data.
-          type = new ItemType(attributes.type)
-          ItemType.collection.add(type)
-          @set('type', type)
+          type = new ItemType attributes.type
+          ItemType.collection.add type
+          @set 'type', type
 
     # Handler of type retrieval. Updates the current type with last values
     #
     # @param type [ItemType] an added type.      
     _onTypeFetched: (type) =>
-      if type.id is @get('type')
-        console.log("type #{type.id} successfully fetched from server for item #{@id}")
+      if type.id is @get 'type'
+        console.log "type #{type.id} successfully fetched from server for item #{@id}"
         # remove handler
-        ItemType.collection.off('add', @_onTypeFetched)
+        ItemType.collection.off 'add', @_onTypeFetched
         # update the type object
-        @set('type', type)
+        @set 'type', type
 
     # An equality method that tests ids.
     #
@@ -161,11 +160,11 @@ define [
     resolve: (callback) =>
       needResolution = false
       # identify each linked properties 
-      console.log("search linked ids in item #{@id}")
+      console.log "search linked ids in item #{@id}"
       # gets the corresponding properties definitions
-      properties = @get('type').get('properties')
+      properties = @get('type').get 'properties'
       for prop, def of properties
-        value = @get(prop)
+        value = @get prop
         if def.type is 'object' and typeof value is 'string'
           # Do not resolve objects that were previously resolved
           needResolution = true
@@ -176,19 +175,16 @@ define [
           break
       
       # exit immediately if no resolution needed  
-      return callback(null, @) unless needResolution
+      return callback null, @ unless needResolution
 
       # now that we have the linked ids, get the corresponding items.
-      sockets.game.once('getItems-resp', (err, items) =>
-        return callback("Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}") if err?
+      sockets.game.once 'getItems-resp', (err, items) =>
+        return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
         # silentely update local cache
-        idx = @collection.indexOf(@)
-        @collection.add(items[0], {at:idx, silent: true})
+        idx = @collection.indexOf @
+        @collection.add items[0], at:idx, silent: true
         # end of resolution.
-        console.log("linked ids for item #{@id} resolved")
-        callback(null, items[0])
-      )
+        console.log "linked ids for item #{@id} resolved"
+        callback null, items[0]
 
-      sockets.game.send('getItems', [@id])
-
-  return Item
+      sockets.game.send 'getItems', [@id]

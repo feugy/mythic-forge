@@ -25,10 +25,10 @@ define [
 
   # Client cache of players.
   # Wired to the server through socket.io
-  class Players extends Backbone.Collection
+  class _Players extends Backbone.Collection
 
     constructor: (@model, @options) ->
-      super(options)
+      super options
 
     # Provide a custom sync method to wire Items to the server.
     # Disabled.
@@ -37,14 +37,14 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, instance, args) =>
-      throw new Error("Unsupported #{method} operation on Players")
+      throw new Error "Unsupported #{method} operation on Players"
 
   # Player account.
   class Player extends Backbone.Model
 
     # player local cache.
     # A Backbone.Collection subclass
-    @collection: new Players(@)
+    @collection: new _Players @
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
@@ -59,10 +59,10 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
-      super(attributes) 
+      super attributes
       # constructs an Item for the corresponding character
       if attributes?.character?
-        @set('character', new Item(attributes.character))
+        @set 'character', new Item attributes.character
 
 
     # An equality method that tests ids.
@@ -71,5 +71,3 @@ define [
     # @return true if both object have the samge ids, and false otherwise.
     equals: (other) =>
       @.id is other?.id
-
-  return Player

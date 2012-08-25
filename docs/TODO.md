@@ -73,14 +73,17 @@
 - Rheia
     - bugs
         - **[done]** spaces inside tab names 
+        - rule with category appears in turnRules in search results
 
     - **[done]** perspective loader
 
-    - game creation perspective
+    - authoring perspective
         - Perspective
             - file tab widget
             - action bar (new file, new folder, upload)
         - File Explorer
+            - **[done]** items loading
+            - **[done]** items navigation and selection
             - contextual menu
         - File View
             - action bar (save, rename, delete)

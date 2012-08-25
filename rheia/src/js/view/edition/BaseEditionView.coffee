@@ -28,7 +28,7 @@ define [
   'utils/validators'
 ], ($, _, Backbone, i18n, i18nEdition, utilities, validators) ->
 
-  i18n = $.extend(true, i18n, i18nEdition)
+  i18n = $.extend true, i18n, i18nEdition
 
   # Base class for edition views
   class BaseEditionView extends Backbone.View
@@ -131,10 +131,10 @@ define [
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id, className) ->
-      super({tagName: 'div', className:"#{className} view"})
+      super tagName: 'div', className:"#{className} view"
       # creation of a new item type if necessary
       if id?
-        @model = @_collection.get(id)
+        @model = @_collection.get id
       else 
         @_createNewModel() 
         @_tempId = utilities.generateId()
@@ -142,51 +142,50 @@ define [
       @_canSave = false
       @_canRemove = @_tempId is null
       # bind change event to the update of action button bar
-      @on('change', () =>
+      @on 'change', =>
         return unless @_actionBar?
         if @canSave() then @_saveButton.enable() else @_saveButton.disable()
         if @canRemove() then @_removeButton.enable() else @_removeButton.disable()
-      )
 
       @_pendingUploads = []
 
       # bind to server events
-      @bindTo(@_collection, 'add', @_onCreated)
-      @bindTo(@_collection, 'update', @_onSaved)
-      @bindTo(@_collection, 'remove', @_onRemoved)
-      @bindTo(rheia.router, 'serverError', @_onServerError)
+      @bindTo @_collection, 'add', @_onCreated
+      @bindTo @_collection, 'update', @_onSaved
+      @bindTo @_collection, 'remove', @_onRemoved
+      @bindTo rheia.router, 'serverError', @_onServerError
 
     # Returns a unique id. 
     #
     # @return If the edited object is persisted on server, return its id. Otherwise, a temporary unic id.
-    getId: () =>
+    getId: =>
       return if @_tempId isnt null then @_tempId else @model.id
 
     # Returns the view's title
     #
     # @return the edited object name.
-    getTitle: () =>
-      return if @_nameWidget? then @_nameWidget.options.value else @model.get(@_nameAttribute)
+    getTitle: =>
+      return if @_nameWidget? then @_nameWidget.options.value else @model.get @_nameAttribute
 
     # Indicates wether or not this object can be removed.
     # When status changed, a `change` event is triggered on the view.
     #
     # @return the removable status of this object
-    canRemove: () =>
+    canRemove: =>
       return @_canRemove
 
     # Indicates wether or not this object can be saved.
     # When status changed, a `change` event is triggered on the view.
     #
     # @return the savable status of this object
-    canSave: () =>
+    canSave: =>
       return @_canSave and @_pendingUploads.length is 0
 
     # Returns the view's action bar, and creates it if needed.
     # may be overriden by subclasses to add buttons
     #
     # @return the action bar rendering.
-    getActionBar: () =>
+    getActionBar: =>
       return @_actionBar if @_actionBar?
       # creates the rendering
       @_actionBar = $('<div><a class="save"></a><a class="remove"></a><a class="addProperty"></a></div>')
@@ -199,7 +198,7 @@ define [
           text: false
         )
         .click(@saveModel)
-        .data('button')
+        .data 'button'
       # wire the remove button
       @_removeButton = @_actionBar.find('.remove')
         .attr('title', i18n.tips.remove)
@@ -210,55 +209,55 @@ define [
           disabled: true
         )
         .click(@removeModel)
-        .data('button')
-      return @_actionBar
+        .data 'button'
+      @_actionBar
 
     # Method invoked when the view must be closed.
     # @return true if the view can be closed, false to cancel closure
-    canClose: () =>
+    canClose: =>
       # allow if we are closing, or if no change found
       return true if @_isClosing or !@canSave()
-      utilities.popup(i18n.titles.closeConfirm, _.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute)), 'question', [
+      utilities.popup i18n.titles.closeConfirm, _.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute)), 'question', [
         text: i18n.labels.yes
         icon: 'valid'
-        click: () =>
+        click: =>
           # save
           @_isClosing = true
           @saveModel()
       ,
         text: i18n.labels.no
         icon: 'invalid'
-        click: () =>
+        click: =>
           # just close view
           @_isClosing = true
           @trigger 'close'
       ,
         text: i18n.labels.cancel
         icon: 'cancel'
-      ], 2)
+      ], 2
       # stop closure
-      return false
+      false
 
     # Saves the view, by filling edited object with rendering values and asking the server.
     #
     # @param event [event] optionnal click event on the save button
     saveModel: (event = null) =>
       return unless @canSave()
-      console.log("save asked for #{@getId()}")
+      console.log "save asked for #{@getId()}"
       event?.preventDefault()
       # fill the model and save it
       @_saveInProgress = true
       @_fillModel()
       if @_descImageWidget? and @model.get('descImage') isnt @_descImageWidget.options.source
-        spec = {file: @_descImageWidget.options.source}
+        spec = file: @_descImageWidget.options.source
         if @_descImageWidget.options.source is null
-          spec.oldName = @model.get('descImage')  
-        @_pendingUploads.push(spec)
+          spec.oldName = @model.get 'descImage'
+        @_pendingUploads.push spec
 
       # allows subclass to perform specific save operations
       args = @_specificSave()
       # and at last, saves model
-      @model.save(null, args)
+      @model.save null, args
 
     # Removes the view, after displaying a confirmation dialog. (the `remove` methods already exists)
     #
@@ -266,20 +265,20 @@ define [
     removeModel: (event = null) =>
       event?.preventDefault()
       return unless @canRemove()
-      utilities.popup(i18n.titles.removeConfirm, _.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute)), 'question', [
+      utilities.popup i18n.titles.removeConfirm, _.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute)), 'question', [
         text: i18n.labels.no
         icon: 'invalid'
       ,
         text: i18n.labels.yes
         icon: 'valid'
-        click: () =>
+        click: =>
           # destroy model
           @_removeInProgress = true
           @model.destroy()
-      ])
+      ]
 
     # The `render()` method is invoked by backbone to display view content at screen.
-    render: () =>
+    render: =>
       # template rendering
       super()
 
@@ -288,14 +287,14 @@ define [
         type: 'string'
         allowNull: false
         change: @_onChange
-      ).data('property')
+      ).data 'property'
 
       @_descWidget = @$el.find('.desc.field').property(
         type: 'text'
         allowNull: false
         tooltipFct: i18n.tips.desc
         change: @_onChange
-      ).data('property')
+      ).data 'property'
 
       # allows subclass to add specific widgets.
       @_specificRender()
@@ -307,24 +306,24 @@ define [
       @_fillRendering()
 
       # for chaining purposes
-      return @
+      @
 
     # Enrich the inherited dispose method to free validators.
-    dispose: () =>
+    dispose: =>
       validator.dispose() for validator in @_validators
       super()
 
     # **private**
     # Effectively creates a new model.
     # **Must be overriden by subclasses**
-    _createNewModel: () =>
+    _createNewModel: =>
       throw new Error('the _createNewModel() method must be overriden by subclasses')
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
     # call to `fillRendering`. Does nothing by default.
     # **May be overriden by subclasses**
-    _specificRender: () =>
+    _specificRender: =>
       # does nothing
 
     # **private**
@@ -332,31 +331,31 @@ define [
     # **May be overriden by subclasses**
     #
     # @return an empty array of errors by default.
-    _specificValidate: () =>
-      return []
+    _specificValidate: =>
+      []
 
     # **private**
     # Performs view specific save operations, right before saving the model.
     # **May be overriden by subclasses**
     #
     # @return optionnal arguments for the `save` Backbone method.
-    _specificSave: () =>
+    _specificSave: =>
       # does nothing  
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
-    _fillModel: () =>
-      @model.set(@_nameAttribute, @_nameWidget.options.value) unless @_nameAttribute is @model.idAttribute
-      @model.set('desc', @_descWidget.options.value) if @_descWidget?
+    _fillModel: =>
+      @model.set @_nameAttribute, @_nameWidget.options.value unless @_nameAttribute is @model.idAttribute
+      @model.set 'desc', @_descWidget.options.value if @_descWidget?
 
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
-      @model.set('descImage', null) if @_descImageWidget? and @_descImageWidget.options.source is null
+      @model.set 'descImage', null if @_descImageWidget? and @_descImageWidget.options.source is null
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: () =>
-      @_nameWidget.setOption('value', @model.get(@_nameAttribute))
-      @_descWidget.setOption('value', @model.get('desc')) if @_descWidget?
+    _fillRendering: =>
+      @_nameWidget.setOption 'value', @model.get @_nameAttribute
+      @_descWidget.setOption 'value', @model.get 'desc' if @_descWidget?
       @_createImages()
       @_onChange()
 
@@ -367,82 +366,76 @@ define [
     # - name: field name, for debug pourposes
     #
     # @return the comparable fields array
-    _getComparableFields: () =>
+    _getComparableFields: =>
       comparable = []
       # adds name and description
-      comparable.push( 
+      comparable.push
         name: 'name'
-        original: @model.get(@_nameAttribute)
-        current: @_nameWidget.options.value)
+        original: @model.get @_nameAttribute
+        current: @_nameWidget.options.value
       if @_descWidget?
-        comparable.push(
+        comparable.push
           name: 'description'
-          original: @model.get('desc')
-          current: @_descWidget.options.value) 
+          original: @model.get 'desc'
+          current: @_descWidget.options.value
       if @_descImageWidget?
-        comparable.push(
+        comparable.push
           name: 'descImage'
-          original: @model.get('descImage')
-          current: @_descImageWidget.options.source)
-      return comparable
+          original: @model.get 'descImage'
+          current: @_descImageWidget.options.source
+      comparable
 
     # **private**
     # Creates LoadableImage for each images of the edited object
-    _createImages: () =>
+    _createImages: =>
       # the description image
       unless @_descImageWidget?
         @_descImageWidget = @$el.find('.desc.image').loadableImage(
-          source: @model.get('descImage')
+          source: @model.get 'descImage'
           change: @_onChange
-        ).data('loadableImage')
+        ).data 'loadableImage'
       else 
-        @_descImageWidget.setOption('source', @model.get('descImage'))
+        @_descImageWidget.setOption 'source', @model.get 'descImage'
 
     # **private**
     # Re-creates validators, when refreshing the properties.
     # Existing validators are trashed, and validators created for:
     # - name
-    _createValidators: () =>
+    _createValidators: =>
       validator.dispose() for validator in @_validators
       @_validators = []
       # adds a validator for name
-      @_validators.push(new validators.String({required: true}, i18n.labels.name, 
-        @_nameWidget.element, null, (node) -> node.find('input').val()))
+      @_validators.push new validators.String {required: true}, i18n.labels.name, 
+        @_nameWidget.element, null, (node) -> node.find('input').val()
 
     # **private**
     # Allows to compute the rendering's validity.
     # 
     # @return true if all rendering's fields are valid
-    _validate: () =>
+    _validate: =>
       isValid = true;
       errors = []
       # view own validators
-      for validator in @_validators 
-        errors = errors.concat(validator.validate())
-
+      errors = errors.concat validator.validate() for validator in @_validators 
       # allows subclass to add specific errors
-      errors = errors.concat(@_specificValidate())
+      errors = errors.concat @_specificValidate()
 
       container = @$el.find('.errors').empty()
-      container.append("<p>#{error.msg}</p>") for error in errors
-      @$el.toggleClass('error', errors.length isnt 0)
-      return errors.length is 0
+      container.append "<p>#{error.msg}</p>" for error in errors
+      @$el.toggleClass 'error', errors.length isnt 0
+      errors.length is 0
 
     # **private**
     # Displays warning dialog when edited object have been removed externally.
     _notifyExternalRemove: () =>
       return if $("#externalRemove-#{@getId()}").length > 0
-      utilities.popup(i18n.titles.external, _.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute)), 'warning', [
-        text: i18n.labels.ok
-      ])
+      utilities.popup i18n.titles.external, _.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute)), 'warning', [text: i18n.labels.ok]
 
     # **private**
     # Displays warning dialog when edited object have been modified externally.
     _notifyExternalChange: () =>
       return if $("#externalChange-#{@getId()}").length > 0
-      utilities.popup(i18n.titles.external, _.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute)), 'warning', [
-        text: i18n.labels.ok
-      ])
+      utilities.popup i18n.titles.external, _.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute)), 'warning', [text: i18n.labels.ok]
 
     # **private**
     # Displays error dialog when current server operation failed on edited object.
@@ -452,14 +445,12 @@ define [
       return if $("#serverError-#{@getId()}").length > 0
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
-      utilities.popup(i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute)), 'cancel', [
-        text: i18n.labels.ok
-      ])
+      utilities.popup i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute)), 'cancel', [text: i18n.labels.ok]
 
     # **private**
     # Change handler, wired to any changes from the rendering.
     # Checks if the edited object effectively changed, and update if necessary the action bar state.
-    _onChange: () =>
+    _onChange: =>
       # first, rendering validity
       isValid = @_validate()
       hasChanged = false
@@ -473,11 +464,11 @@ define [
             console.log "field #{field.name} modified"
             break;
 
-      console.log("is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_tempId?}")
+      console.log "is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_tempId?}"
       @_canSave = isValid and hasChanged
       @_canRemove = @_tempId is null
       # trigger change
-      @trigger('change', @)
+      @trigger 'change', @
 
     # **private**
     # Invoked when a model is created on the server.
@@ -498,11 +489,11 @@ define [
         @_newId = null
 
       # indicates to perspective that we affected the id
-      @trigger('affectId', oldId, newId)
+      @trigger 'affectId', oldId, newId
       # just to allow `_onSaved` to perform
       @model.id = created.id
       # now refresh rendering
-      @_onSaved(created)
+      @_onSaved created
 
     # **private**
     # Invoked when a model is saved from the server.
@@ -515,7 +506,7 @@ define [
       # if it was a close save, trigger close once again
       if @_isClosing
         console.log "go on with closing #{@getId()}"
-        return @trigger('close')
+        return @trigger 'close'
 
       console.log "object #{@getId()} saved !"
       @_notifyExternalChange() unless @_saveInProgress
@@ -531,10 +522,10 @@ define [
       @_saveInProgress = true
       if 'oldName' of spec
         # removes existing data
-        rheia.imagesService.remove(@_modelClassName, @model.id, spec.oldName, if spec.idx? then spec.idx)
+        rheia.imagesService.remove @_modelClassName, @model.id, spec.oldName, if spec.idx? then spec.idx
       else
         # upload new file data
-        rheia.imagesService.upload(@_modelClassName, @model.id, spec.file, if spec.idx? then spec.idx)
+        rheia.imagesService.upload @_modelClassName, @model.id, spec.file, if spec.idx? then spec.idx
       
         
     # **private**
@@ -550,7 +541,7 @@ define [
 
       @_isClosing = true
       console.log "close the view of #{@getId()} because removal received"
-      @trigger('close')
+      @trigger 'close'
 
     # **private**
     # Invoked when a server operation failed.
@@ -562,8 +553,6 @@ define [
       # the current operation failed
       if (details.id is @getId() or @_tempId?) and (@_saveInProgress or _removeInProgress)
         # displays error.
-        @_notifyServerError(err)
+        @_notifyServerError err
         @_saveInProgress = false
         @_removeInProgress = false
-
-  return BaseEditionView

@@ -38,22 +38,21 @@ define [
 
     # The view constructor.
     constructor: () ->
-      super({tagName: 'div', className:'layout'})
-      Backbone.history.on('route', @_onRoute)
+      super tagName: 'div', className:'layout'
+      Backbone.history.on 'route', @_onRoute
 
     # the render method, which use the specified template
-    render:() =>
+    render: =>
       super()
-      @_container = @$el.find('.container')
-      @$el.find('header a').each( () -> 
-        $(this).button(
+      @_container = @$el.find '.container'
+      @$el.find('header a').each -> 
+        $(this).button
           text: false
           icons:
             primary: "ui-icon #{$(this).attr('class')}"
-        )
-      )
+
       # for chaining purposes
-      return @
+      @
 
     # Empties layout's content a display loading animation
     #
@@ -62,21 +61,21 @@ define [
       # detach previous content to avoid its destruction
       @_container.children().detach()
       @$el.find('.loader').show()
-      @$el.find('header h1').text(title)
+      @$el.find('header h1').text title
 
     # Hides the loader and put content inside the container.
     #
     # @param content [jQuery] the content put inside layout
     show: (content) =>
-      @_container.append(content)
+      @_container.append content
       @$el.find('.loader').hide()
 
     # **private**
     # Prepare data to be rendered into the template
     #
     # @return data filled into the template
-    _getRenderData: () =>
-      {i18n: i18n}
+    _getRenderData: =>
+      i18n: i18n
 
     # **private**
     # Route handler: activate the corresponding button
@@ -85,5 +84,5 @@ define [
     # @param handler [String] the ran handler
     _onRoute: (history, handler) =>
       for route, callback of history.routes when callback is handler
-        @$el.find('header a').removeClass('active').filter("[data-route='/#{route}']").addClass('active')
+        @$el.find('header a').removeClass('active').filter("[data-route='/#{route}']").addClass 'active'
         break

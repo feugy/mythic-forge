@@ -39,7 +39,7 @@ define [
   # @param silent [Boolean] disable the error log when something goes wrong. true by default.
   compile = (executable, callback, silent=true) ->
     # first, uncache the previous executable content.
-    require.undef(executable.id)
+    require.undef executable.id
 
     try 
       # then, modifies NodeJS's require into RequireJS dependencies
@@ -53,41 +53,39 @@ define [
       vars = []
       while -1 isnt content.search(depReg)
         # removes the require directive and extract relevant variable and path
-        content = content.replace(depReg, (str, variable, dep)->
-          deps.push(dep.replace(/^'\.\.\/main\//, "'"))
-          vars.push(variable)
+        content = content.replace depReg, (str, variable, dep)->
+          deps.push dep.replace /^'\.\.\/main\//, "'"
+          vars.push variable
           return ''
-        )
 
       # replace module.exports by return
-      content = content.replace('module.exports =', 'return')
+      content = content.replace 'module.exports =', 'return'
       # indent all lines
-      content = content.split('\n').join('\n  ')
+      content = content.split('\n').join '\n  '
       
       # adds the define part
       content = "define '#{executable.id}', [#{deps.join ','}], (#{vars.join ','}) ->\n  #{content}"
 
       # compiles and evaluates the resulting code
-      eval(coffee.compile(content))
+      eval coffee.compile content
 
       requirejs.onError = (err) =>
-        console.error(err) unless silent
-        delete(requirejs.onError)
-        callback(err, null)
+        console.error err unless silent
+        delete requirejs.onError
+        callback err, null
 
       # require the exported content
-      require([executable.id], (exported) => 
-        callback(null, exported)
-      )
+      require [executable.id], (exported) => 
+        callback null, exported
 
     catch exc
       unless silent
-        console.log(content)
-        console.error(exc) 
-      callback(exc, null)
+        console.log content
+        console.error exc
+      callback exc, null
 
   # Client cache of executables.
-  class Executables extends Base.Collection
+  class _Executables extends Base.Collection
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -99,7 +97,7 @@ define [
   class Executable extends Base.Model
 
     # Local cache for models.
-    @collection: new Executables(@)
+    @collection: new _Executables @
 
     # Executable kind: Rule, TurnRule or null.
     # First guessed on the executable content, then enforced after compilation
@@ -138,11 +136,10 @@ define [
       switch method 
         when 'update' 
           # for update, we do not use 'save' method, but the 'saveAndRename' one.
-          sockets.admin.once('saveAndRename-resp', (err) =>
-            rheia.router.trigger('serverError', err, {method:'Executable.sync', details:method, id:@id}) if err?
-          )
-          sockets.admin.emit('saveAndRename', @toJSON(), args.newId)
-        else super(method, collection, args)
+          sockets.admin.once 'saveAndRename-resp', (err) =>
+            rheia.router.trigger 'serverError', err, method:'Executable.sync', details:method, id:@id if err?
+          sockets.admin.emit 'saveAndRename', @toJSON(), args.newId
+        else super method, collection, args
 
     # Overload inherited setter to recompile when content changed.
     set: (key, value, options) =>
@@ -150,29 +147,33 @@ define [
       super(key, value, options)
 
       if key is 'content' or typeof key is 'object' and 'content' of key
-        @kind = 'Rule' if @get('content')?.indexOf('extends Rule') isnt -1
-        @kind = 'TurnRule' if @get('content')?.indexOf('extends TurnRule') isnt -1
+        @kind = 'Rule' if @get('content')?.indexOf 'extends Rule' isnt -1
+        @kind = 'TurnRule' if @get('content')?.indexOf 'extends TurnRule' isnt -1
         # recompiles content and store exported
-        compile(@, (err, exported) => 
+        compile @, (err, exported) => 
           @exported = exported
+          oldKind = @kind
+
           if exported instanceof Rule
             # rule specificity: category management
             @kind = 'Rule'
             if @exported?.category isnt @_oldCategory
               @_oldCategory = @exported?.category
-              @trigger('change:category', @)
+              @trigger 'change:category', @
 
           else if exported instanceof TurnRule
             # turn rule specificity: rank management
             @kind = 'TurnRule'
             if @exported?.rank isnt @_oldRank
               @_oldRank = @exported?.rank
-              @trigger('change:rank', @)
+              @trigger 'change:rank', @
 
           if @exported?.active isnt @_oldActive
             @_oldActive = @exported?.active
-            @trigger('change:active', @)
-        )
+            @trigger 'change:active', @
+
+          # we missed the kind when constructing the model. Indicates to other parts
+          rheia.router.trigger 'kindChanged', @ if oldKind isnt @kind
 
     # Overload inherited getter to add "virtual" attribute `category`, `rank` and `active`
     get: (key) =>
@@ -181,6 +182,4 @@ define [
         when 'category' then @exported?.category
         when 'rank' then @exported?.rank
         when 'active' then @exported?.active
-        else super(key)
-
-  return Executable
+        else super key

@@ -27,7 +27,7 @@ define [
 
   # Widget that displays an image and two action buttons to upload a new version or delete the existing one.
   # Triggers a `change`event when necessary.
-  LoadableImage = 
+  $.widget 'rheia.loadableImage', $.rheia.baseWidget, 
 
     options:    
 
@@ -40,34 +40,33 @@ define [
       _image: null
 
     # Frees DOM listeners
-    destroy: () ->
+    destroy: ->
       @element.find('.ui-icon').unbind()
-      $.Widget.prototype.destroy.apply(@, arguments)
+      $.Widget.prototype.destroy.apply @, arguments
 
     # **private**
     # Builds rendering
-    _create: () ->
+    _create: ->
       # encapsulates the image element in a div
-      @element.addClass('loadable')
-      @options._image = $('<img/>').appendTo(@element)
+      @element.addClass 'loadable'
+      @options._image = $('<img/>').appendTo @element
       # loading handler
-      rheia.router.on('imageLoaded', (success, src, img, data) => 
+      rheia.router.on 'imageLoaded', (success, src, img, data) => 
         return unless src is "/images/#{@options.source}"
-        @_onLoaded(success, data)
-      )
+        @_onLoaded success, data
       
       # add action buttons
       $("""<div class="ui-icon ui-icon-folder-open">
             <input type="file" accept="image/*"/>
-          </div>""").appendTo(@element).change((event) => @_onUpload(event))
+          </div>""").appendTo(@element).change (event) => @_onUpload event
 
       $('<span class="ui-icon ui-icon-trash">delete</span>')
-          .appendTo(@element).click((event) => @_onDelete(event))
+          .appendTo(@element).click (event) => @_onDelete event
 
       # reload image
       @_createAlt()
 
-      @_setOption('source', @options.source)
+      @_setOption 'source', @options.source
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `source` changed.
@@ -75,7 +74,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply(@, arguments) unless key in ['source']
+      return $.Widget.prototype._setOption.apply @, arguments unless key in ['source']
       switch key
         when 'source' 
           @options.source = value
@@ -85,14 +84,14 @@ define [
           if @options.source is null 
             setTimeout ( => @_onLoaded false), 0
           else 
-            rheia.router.trigger('loadImage', "/images/#{@options.source}")
+            rheia.router.trigger 'loadImage', "/images/#{@options.source}"
 
     # **private**
     # Creates an alternative text if necessary
     _createAlt: ->
       return if @element.find('.alt').length isnt 0
       # do not use regular HTML alt attribute because Chrome doesn't handle it correctly: position cannot be set
-      @element.prepend("<p class=\"alt\">#{i18n.loadableImage.noImage}</p>")
+      @element.prepend "<p class=\"alt\">#{i18n.loadableImage.noImage}</p>"
       
     # **private**
     # Invoked when a file have been choosen.
@@ -107,20 +106,20 @@ define [
       file = input.files[0]
 
       # ignore if something else than a image was choosen
-      return unless file.type.match('image/*')
+      return unless file.type.match 'image/*'
 
       # use a FileReader to load image
       reader = new FileReader()
       reader.onload = (event) =>
         # change the image source
-        @options._image.attr('src', event.target.result)
+        @options._image.attr 'src', event.target.result
         @element.find('.alt').remove()
-      reader.readAsDataURL(file)
+      reader.readAsDataURL file
 
       # trigger the change
       @options.source = file
-      console.log("change image: #{file}")
-      @_trigger('change', event)
+      console.log "change image: #{file}"
+      @_trigger 'change', event
     
     # **private**
     # Image loading failure handler: displays the alternative text.
@@ -128,12 +127,12 @@ define [
     # 
     # @param event [Event]loading failure event or click event.
     _onDelete: (event) ->
-      console.log('change image: none')
+      console.log 'change image: none'
       # now, displays the alternative text
-      @options._image.removeAttr('src')
+      @options._image.removeAttr 'src'
       @_createAlt()
       @options.source = null
-      @_trigger('change', event)
+      @_trigger 'change', event
       
 
     # **private**
@@ -144,11 +143,8 @@ define [
     _onLoaded: (success, data) ->
       if success 
         # displays image data and hides alertnative text
-        @options._image.attr('src', data)
+        @options._image.attr 'src', data
         @element.find('.alt').remove()
       else 
         # displays the alternative text
         @_createAlt()
-
-  $.widget("rheia.loadableImage", $.rheia.baseWidget, LoadableImage)
-    

@@ -31,7 +31,7 @@ define [
   'widget/authoringMap'
 ], ($, _, i18n, i18nEdition, template, BaseEditionView, Map, Field, FieldType) ->
 
-  i18n = $.extend(true, i18n, i18nEdition)
+  i18n = $.extend true, i18n, i18nEdition
 
   # Displays and edit a map on edition perspective
   class MapView extends BaseEditionView
@@ -87,26 +87,26 @@ define [
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id) ->
-      super(id, 'map')
+      super id, 'map'
       # register on fields modification to update map displayal
-      @bindTo(Field.collection, 'add', (added) =>
+      @bindTo Field.collection, 'add', (added) =>
         return unless @_mapWidget? and added.get('mapId') is @model.id
-        added = [added] unless Array.isArray(added)
+        added = [added] unless Array.isArray added
         added[i] = obj.toJSON() for obj, i in added
-        @_mapWidget.addData(added)
-      )
-      @bindTo(Field.collection, 'remove', (removed) =>
+        @_mapWidget.addData added
+
+      @bindTo Field.collection, 'remove', (removed) =>
         return unless @_mapWidget? and removed.get('mapId') is @model.id
-        removed = [removed] unless Array.isArray(removed)
+        removed = [removed] unless Array.isArray removed
         removed[i] = obj.toJSON() for obj, i in removed
-        @_mapWidget.removeData(removed)
-      )
-      console.log("creates map edition view for #{if id? then @model.id else 'a new object'}")
+        @_mapWidget.removeData removed
+
+      console.log "creates map edition view for #{if id? then @model.id else 'a new object'}"
 
     # Extends inherited method to add button for selection removal
     #
     # @return the action bar rendering.
-    getActionBar: () =>
+    getActionBar: =>
       bar = super()
       # adds specific buttons
       if bar.find('.remove-selection').length is 0
@@ -117,31 +117,31 @@ define [
               primary: 'remove-selection small'
             text: false
             disabled: true
-          ).appendTo(bar).click(@_onRemoveSelection) 
-      return bar
+          ).appendTo(bar).click @_onRemoveSelection
+      bar
 
     # **private**
     # Effectively creates a new model.
-    _createNewModel: () =>
-        @model = new Map()
-        @model.set('name', i18n.labels.newName)
+    _createNewModel: =>
+      @model = new Map()
+      @model.set 'name', i18n.labels.newName
 
     # **private**
     # Prepare data to be rendered into the template
     #
     # @return data filled into the template
-    _getRenderData: () =>
+    _getRenderData: =>
       # data needed by the template
-      return {
-        title: _.sprintf(i18n.titles.map, if @_tempId? then i18n.labels.newType else @model.id)
+      {
+        title: _.sprintf i18n.titles.map, if @_tempId? then i18n.labels.newType else @model.id
         i18n: i18n
       }
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
     # call to `fillRendering`. 
-    _specificRender: () =>
-      @_kindWidget = @$el.find('select.field').change(@_onChange)
+    _specificRender: =>
+      @_kindWidget = @$el.find('select.field').change @_onChange
       @_mapWidget = @$el.find('.map').authoringMap(
         tileDim: 75
         verticalTileNum: 14
@@ -151,40 +151,40 @@ define [
         displayMarkers: true
         dndType: i18n.constants.fieldAffectation
         affect: @_onAffect
-        coordChanged: () =>
+        coordChanged: =>
           # reloads map content
-          @model.consult(@_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord)
-        selectionChanged: () =>
+          @model.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
+        selectionChanged: =>
           # update action bar button state
-          @_removeSelectionButton.button('option', 'disabled', @_mapWidget.options.selection.length is 0)
-        zoomChanged: () =>
+          @_removeSelectionButton.button 'option', 'disabled', @_mapWidget.options.selection.length is 0
+        zoomChanged: =>
           @_inhibitZoom = true
-          @$el.find('.zoom').val(@_mapWidget.options.zoom)
-      ).data('authoringMap')
+          @$el.find('.zoom').val @_mapWidget.options.zoom
+      ).data 'authoringMap'
 
       # update map commands
-      @$el.find('.toggle-grid').removeAttr('checked')
-      @$el.find('.toggle-grid').attr('checked', 'checked') if @_mapWidget.options.displayGrid
-      @$el.find('.toggle-markers').removeAttr('checked')
-      @$el.find('.toggle-markers').attr('checked', 'checked') if @_mapWidget.options.displayMarkers
-      @$el.find('.zoom').val(@_mapWidget.options.zoom)
+      @$el.find('.toggle-grid').removeAttr 'checked'
+      @$el.find('.toggle-grid').attr 'checked', 'checked' if @_mapWidget.options.displayGrid
+      @$el.find('.toggle-markers').removeAttr 'checked'
+      @$el.find('.toggle-markers').attr 'checked', 'checked' if @_mapWidget.options.displayMarkers
+      @$el.find('.zoom').val @_mapWidget.options.zoom
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
-    _fillModel: () =>
+    _fillModel: =>
       # superclass handles description image, name and description
       super()
 
       # update map kind
-      @model.set('kind', @_kindWidget.find('option:selected').val())
+      @model.set 'kind', @_kindWidget.find('option:selected').val()
 
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: () =>
+    _fillRendering: =>
       # update kind rendering (before calling super)
-      @_kindWidget.find('option:selected').removeAttr('selected')
-      @_kindWidget.find("option[value='#{@model.get('kind')}']").attr('selected', 'selected')
-      @_mapWidget.setOption('kind', @model.get('kind'))
+      @_kindWidget.find('option:selected').removeAttr 'selected'
+      @_kindWidget.find("option[value='#{@model.get('kind')}']").attr 'selected', 'selected'
+      @_mapWidget.setOption 'kind', @model.get 'kind'
 
       # superclass handles description image, name and description, and trigger _onChange
       super()
@@ -196,17 +196,15 @@ define [
     # - name: field name, for debug pourposes
     #
     # @return the comparable fields array
-    _getComparableFields: () =>
+    _getComparableFields: =>
       # superclass handles description image, name and description 
       comparable = super()
       # adds images
-      comparable.push(
+      comparable.push
         name: 'kind'
-        original: @model.get('kind')
+        original: @model.get 'kind'
         current: @_kindWidget.find('option:selected').val()
-      )
-      console.dir comparable
-      return comparable
+      comparable
 
     # **private**
     # Multiple field affectation in the current map selection
@@ -215,7 +213,7 @@ define [
     # @param type [FieldType] the used field type
     # @param random [Boolean] true to randomly affect image num
     _multipleAffect: (type, random) =>
-      console.log("affect #{@_selectedImages.length} image(s) inside current selection in #{if random then 'random' else 'regular'} mode")
+      console.log "affect #{@_selectedImages.length} image(s) inside current selection in #{if random then 'random' else 'regular'} mode"
       return unless @_selectedImages.length isnt 0
       # first, remove existing fields
       @_onRemoveSelection()
@@ -224,15 +222,15 @@ define [
       for coord, i in @_mapWidget.options.selection
         # create image num in regular or random mode
         idx = if random then Math.floor(Math.random()*@_selectedImages.length) else i%@_selectedImages.length
-        created.push(new Field(
+        created.push new Field
           mapId: @model.id
-          typeId: type.get('_id')
+          typeId: type.get '_id'
           num: @_selectedImages[idx]
           x: coord.x
           y: coord.y
-        ))
+        
       # and saves them
-      Field.collection.save(created)
+      Field.collection.save created
 
     # **private**
     # Field affectation handler.
@@ -262,7 +260,7 @@ define [
         ).save()
       else
         # retrieves the field type
-        type = FieldType.collection.get(details.typeId)
+        type = FieldType.collection.get details.typeId
         return unless type
         # displays the multiple affectation dialog
         dialog = $("<div class=\"affect-field\" title=\"#{i18n.titles.multipleAffectation}\">#{i18n.msgs.multipleAffectation}</div>").dialog(
@@ -271,37 +269,37 @@ define [
             # unbound click handler and remove dialog
             $(this).find('.images-container > *').unbind()
             $(this).remove()
-          buttons: [{
+          buttons: [
             text: i18n.labels.ok,
             icons:
               primary: 'valid small'
             click: (event) =>
               # triggers affectation and close window
-              @_multipleAffect(type, $('.affect-field input:checked').length is 1)
-              $('.affect-field').dialog('close')
-          }]
+              @_multipleAffect type, $('.affect-field input:checked').length is 1
+              $('.affect-field').dialog 'close'
+          ]
         )
         # empties selected images
         @_selectedImages = []
         # adds all possible field type images to the dialog
-        container = $('<div class="images-container"></div>').appendTo(dialog)
-        for image, i in type.get('images')
+        container = $('<div class="images-container"></div>').appendTo dialog
+        for image, i in type.get 'images'
           $('<span></span>').loadableImage(
             source: image
           ).attr('tabindex', 0).data('num', i).on('click keyup', (event) =>
             # for keypress, just take in account spaces
             return if event.type is 'keyup' and event.which isnt 32
-            img = $(event.target).closest('.loadable')
-            num = img.data('num')
-            img.toggleClass('selected')
+            img = $(event.target).closest '.loadable'
+            num = img.data 'num'
+            img.toggleClass 'selected'
             # store image number inside the selecte array
-            if img.hasClass('selected')
-              @_selectedImages.push(num)
+            if img.hasClass 'selected'
+              @_selectedImages.push num
             else
-              @_selectedImages.splice(@_selectedImages.indexOf(num), 1)
-          ).appendTo(container)
+              @_selectedImages.splice @_selectedImages.indexOf(num), 1
+          ).appendTo container
         # adds a random affectation checkbox
-        $("<label><input type=\"checkbox\"/>#{i18n.labels.randomAffect}</label>").appendTo(dialog)
+        $("<label><input type=\"checkbox\"/>#{i18n.labels.randomAffect}</label>").appendTo dialog
 
     # **private**
     # Field destruction handler.
@@ -315,26 +313,26 @@ define [
     # @option details inSelection [Boolean] indicates wheter the drop tile is in a multiple selection
     _onRemoveSelection: (event) =>
       # gets JSON fields from map Widget that are selected
-      removed = _.filter(@_mapWidget.options.data, (field) => 
+      removed = _.filter @_mapWidget.options.data, (field) => 
         return true for selected in @_mapWidget.options.selection when field.x is selected.x and field.y is selected.y
-      ) 
+      
       # creates Backbone models, and remove them in block
-      removed[i] = new Field(field) for field, i in removed
-      Field.collection.destroy(removed)
+      removed[i] = new Field field for field, i in removed
+      Field.collection.destroy removed
       
     # **private**  
     # Toggle map grid when the corresponding map command is changed.
     # 
     # @param event [Event] click event on the grid checkbox
     _onToggleGrid: (event) =>
-      @_mapWidget.setOption('displayGrid', $(event.target).is(':checked'))
+      @_mapWidget.setOption 'displayGrid', $(event.target).is ':checked'
 
     # **private**  
     # Toggle map markers when the corresponding map command is changed.
     # 
     # @param event [Event] click event on the grid checkbox
     _onToggleMarkers: (event) =>
-      @_mapWidget.setOption('displayMarkers', $(event.target).is(':checked'))
+      @_mapWidget.setOption 'displayMarkers', $(event.target).is ':checked'
 
     # **private**
     # Change the map zoom when the zoom slider command changes.
@@ -342,7 +340,5 @@ define [
     # @param event [Event] slider change event
     _onZoomed: (event) =>
       unless @_inhibitZoom
-        @_mapWidget.setOption('zoom', $(event.target).val())
+        @_mapWidget.setOption 'zoom', $(event.target).val()
       @_inhibitZoom = false
-
-  return MapView

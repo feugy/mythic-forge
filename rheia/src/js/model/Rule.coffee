@@ -18,10 +18,13 @@
 ###
 'use strict'
 
-define [], () ->
+define [], ->
 
   # Game rules on client side only contains the `canExecute()` part:
   class Rule
+    
+    # Activation status. True by default
+    active: true
 
     # Construct a rule, with a friendly name and a category.
     constructor: (@name, @category = '') ->
@@ -36,6 +39,4 @@ define [], () ->
     #   @param err [String] error string. Null if no error occured
     #   @param apply [Boolean] true if the rule apply, false otherwise.
     canExecute: (actor, target, callback) =>
-      throw("#{module.filename}.canExecute() is not implemented yet !")
-
-  return Rule
+      throw "#{module.filename}.canExecute() is not implemented yet !"

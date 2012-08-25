@@ -33,7 +33,7 @@ define [
   'widget/typeTree'
 ], ($, Backbone, utils, i18n, i18nEdition, ItemType, EventType, FieldType, Executable, Map) ->
 
-  i18n = $.extend(true, i18n, i18nEdition)
+  i18n = $.extend true, i18n, i18nEdition
 
   rootCategory = utils.generateId()
 
@@ -71,23 +71,21 @@ define [
     switch kind
       when 'Rule'
         # group by category
-        grouped = _(collection.models).groupBy((model) ->
-          return model.get('category') || rootCategory
-        )
+        grouped = _(collection.models).groupBy (model) -> model.get('category') || rootCategory
+
         # sort categories
-        grouped = utils.sortAttributes(grouped)
+        grouped = utils.sortAttributes grouped
         # sort inside categories
-        _(grouped).each((content, group) ->
-          grouped[group] = _(content).sortBy((model) -> model.id)
-        )
+        _(grouped).each (content, group) -> grouped[group] = _(content).sortBy (model) -> model.id
+    
         return grouped
       when 'TurnRule' then criteria = 'rank'
       else criteria = 'name'
         
     return _.chain(collection.models).map((model) -> 
-        return {criteria:model.get(criteria), value:model}
+        {criteria:model.get(criteria), value:model}
       ).sortBy((model) ->
-        return model.criteria
+        model.criteria
       ).pluck('value').value()
 
   # duration of categories animation, in millis
@@ -106,21 +104,24 @@ define [
 
     # The view constructor.
     constructor: () ->
-      super({tagName: 'div', className:'explorer'})
+      super tagName: 'div', className:'explorer'
 
       # bind changes to collections
       for model in [ItemType, FieldType, Executable, EventType, Map]
-        @bindTo(model.collection, 'reset', @_onResetCategory)
-        @bindTo(model.collection, 'add', (element, collection) =>
-          @_onUpdateCategory(element, collection, null, 'add'))
-        @bindTo(model.collection, 'remove', (element, collection) =>
-          @_onUpdateCategory(element, collection, null, 'remove'))
-        @bindTo(model.collection, 'update', (element, collection, changes) =>
-          @_onUpdateCategory(element, collection, changes, 'update'))
+        @bindTo model.collection, 'reset', @_onResetCategory
+
+        @bindTo model.collection, 'add', (element, collection) =>
+          @_onUpdateCategory element, collection, null, 'add'
+
+        @bindTo model.collection, 'remove', (element, collection) =>
+          @_onUpdateCategory element, collection, null, 'remove'
+
+        @bindTo model.collection, 'update', (element, collection, changes) =>
+          @_onUpdateCategory element, collection, changes, 'update'
 
       # special case of executable categories that refresh the all tree item
-      @bindTo(Executable.collection, 'change:category', @_onCategoryChange)
-      @bindTo(Executable.collection, 'change:active', @_onActiveChange)
+      @bindTo Executable.collection, 'change:category', @_onCategoryChange
+      @bindTo Executable.collection, 'change:active', @_onActiveChange
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: () =>
@@ -131,15 +132,15 @@ define [
         open: (event, category) =>
           # avoid multiple loading
           node = $(event.currentTarget)
-          return if node.hasClass('loaded')
-          node.addClass('loaded')
+          return if node.hasClass 'loaded'
+          node.addClass 'loaded'
           # load the relevant category
           loaders[category]() if category of loaders
         click: (event, details) =>
-          rheia.router.trigger('open', details.category, details.id)
-      ).data('typeTree')
+          rheia.router.trigger 'open', details.category, details.id
+      ).data 'typeTree'
       # for chaining purposes
-      return @
+      @
 
     # **private**
     # Handler invoked when a category have been retrieved
@@ -155,9 +156,9 @@ define [
         when EventType.collection then category = 'EventType'
         when Executable.collection
           # Execuables are both used to rule and turn rules. We must distinguish them
-          @$el.find('dd[data-category="Rule"], dd[data-category="TurnRule"]').prev('dt').addClass('loaded')
-          ruleContainer = @$el.find('dd[data-category="Rule"]')
-          turnRuleContainer = @$el.find('dd[data-category="TurnRule"]')
+          @$el.find('dd[data-category="Rule"], dd[data-category="TurnRule"]').prev('dt').addClass 'loaded'
+          ruleContainer = @$el.find 'dd[data-category="Rule"]'
+          turnRuleContainer = @$el.find 'dd[data-category="TurnRule"]'
           containers = $([ruleContainer[0], turnRuleContainer[0]]).empty()
 
           # cast down between turn rules and rules
@@ -165,33 +166,32 @@ define [
           turnRules = []
           for executable in Executable.collection.models
             if executable.kind is 'TurnRule'
-              turnRules.push(executable) 
+              turnRules.push executable
             else 
-              rules.push(executable)
+              rules.push executable
 
           # rules specificity: organize in categories
-          grouped = sortCollection({models: rules}, 'Rule')
+          grouped = sortCollection models: rules, 'Rule'
           # and then displays
           for category, executables of grouped
             # inside a subcontainer if not in root
             unless category is rootCategory
               ruleContainer.append("<dt data-subcategory=\"#{category}\">#{category}</dt>")
-              catContainer = $('<dd></dd>').hide().appendTo(ruleContainer) 
+              catContainer = $('<dd></dd>').hide().appendTo ruleContainer
             else 
               catContainer = ruleContainer
             for executable in executables
-              catContainer.append($('<div></div>').typeDetails({model:executable}))
+              catContainer.append $('<div></div>').typeDetails model:executable
 
           # turn rules are organized by their rank
-          turnRules = sortCollection({models: turnRules}, 'TurnRule')
-          turnRuleContainer.append($('<div></div>').typeDetails({model:model})) for model in turnRules
+          turnRules = sortCollection models: turnRules, 'TurnRule'
+          turnRuleContainer.append $('<div></div>').typeDetails model:model for model in turnRules
 
       return unless category?
 
       container = @$el.find("dd[data-category='#{category}']").empty()
-      models = sortCollection(collection)
-      for model in models
-        container.append($('<div></div>').typeDetails({model:model}))
+      models = sortCollection collection
+      container.append $('<div></div>').typeDetails model:model for model in models
 
     # **private**
     # Handler invoked when a category item have been added or removed
@@ -216,8 +216,8 @@ define [
           if operation isnt 'update' or '_id' of changes then category = element.kind
       return unless category?
 
-      container = @$el.find("dd[data-category='#{category}']")
-      markup = $('<div></div>').typeDetails({model:element})
+      container = @$el.find "dd[data-category='#{category}']"
+      markup = $('<div></div>').typeDetails model:element
       shift = -250
       add = () =>
         # gets the list of updated models
@@ -227,33 +227,33 @@ define [
           turnRules = []
           for executable in Executable.collection.models
             if executable.kind is 'TurnRule'
-              turnRules.push(executable) 
+              turnRules.push executable
             else 
-              rules.push(executable)
-          models = sortCollection({models: if element.kind is 'Rule' then rules else turnRules}, element.kind)
+              rules.push executable
+          models = sortCollection {models: if element.kind is 'Rule' then rules else turnRules}, element.kind
         else 
-          models = sortCollection(collection)
+          models = sortCollection collection
 
         # compute the insertion index
         if collection is Executable.collection and element.kind is 'Rule'
           category = element.get('category') || rootCategory
-          container = @$el.find("dt[data-subcategory=#{element.get('category')}] + dd") unless category is rootCategory
-          idx = models[category].indexOf(element)
+          container = @$el.find "dt[data-subcategory=#{element.get('category')}] + dd" unless category is rootCategory
+          idx = models[category].indexOf element
         else
-          idx = models.indexOf(element)
+          idx = models.indexOf element
 
-        markup.css({x: shift})
+        markup.css x: shift
         if idx <= 0
-          container.prepend(markup)
+          container.prepend markup
         else
-          container.children().eq(idx-1).after(markup)
+          container.children().eq(idx-1).after markup
         # use a small delay to avoid animation while inserting into the DOM
-        _.delay(() => 
-          markup.transition({x:0}, animDuration)
-        , 10)
+        _.delay => 
+          markup.transition x:0, animDuration
+        , 10
         
       switch operation
-        when 'remove' then container.find(".#{element.id}").transition({x:shift}, animDuration, () -> $(this).remove())
+        when 'remove' then container.find(".#{element.id}").transition x:shift, animDuration, -> $(this).remove()
         when 'add' then add()
         when 'update' 
           container.find(".#{element.id}").remove()
@@ -261,17 +261,15 @@ define [
          
     # **private**
     # Refresh the executable content to displays sub-categories, with small delay to avoid too much refresh
-    _onCategoryChange: () =>  
-      clearTimeout(@_changeTimeout) if @_changeTimeout
-      @_changeTimeout = setTimeout(()=>
-        @_onResetCategory(Executable.collection)
-      , 50)
+    _onCategoryChange: =>  
+      clearTimeout @_changeTimeout if @_changeTimeout
+      @_changeTimeout = setTimeout =>
+        @_onResetCategory Executable.collection
+      , 50
 
     # **private**
     # Refresh the active status of a rule
     #
     # @param executable [Executable] the concerned executable
     _onActiveChange: (executable) =>  
-      @$el.find("[data-id=\"#{executable.id}\"]").toggleClass('inactive', !executable.get('active'))
-
-  return Explorer
+      @$el.find("[data-id=\"#{executable.id}\"]").toggleClass 'inactive', !executable.get 'active'
