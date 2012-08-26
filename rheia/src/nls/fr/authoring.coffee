@@ -18,14 +18,27 @@
 ###
 
 define
-  tips:
-    newFile: 'Crée un fichier dans le dossier séléctioné, ou la racine'
-    newFolder: 'Crée un dossier dans le dossier séléctioné, ou la racine'
-    uploadFile: 'Upload un fichier dans le dossier séléctioné, ou la racine'
-    saveFile: 'Sauvegarde le fichier actuellement édité'
-    removeFSItem: 'Supprime le fichier ou le dossier séléctioné'
-    renameFSItem: 'Renomme le fichier ou le dossier séléctionné'
+  titles:
+    newFolder: "Création d'un dossier"
+    newFile: "Création d'un fichier"
+
+  labels:
+    rootFolder: 'la racine'
+    fsItemName: 'nom'
 
   msgs:
+    newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b>:'
+    newFile: 'Veuillez choisir un nom (avec extension) pour le fichier dans <b>%s</b>:'
     removeFileConfirm: "<p>Voulez-vous vraiment supprimer le fichier <b>%s</b> ?</p>"
+    removeFolderConfirm: "<p>Voulez-vous vraiment supprimer le dosser <b>%s</b> et tout son contenu ?</p>"
     closeFileConfirm: "<p>Vous avez modifié le fichier <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
+    fsItemCreationFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
+
+  tips:
+    newFolder: 'Crée un nouveau dossier dans le dossier séléctioné ou la racine'
+    newFile: 'Crée un nouveau fichier dans le dossier séléctioné ou la racine'
+    uploadInSelected: 'Upload un nouveau fichier dans le dossier séléctioné ou la racine'
+    renameSelected: 'Renome le fichier ou dossier séléctioné'
+    removeFolder: 'Supprime le dossier séléctioné'
+    saveFile: "Sauve le fichier en cours d'édition"
+    removeFile: "Supprime le fichier en cours d'édition"

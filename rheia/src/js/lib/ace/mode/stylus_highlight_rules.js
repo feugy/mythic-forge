@@ -41,7 +41,7 @@ define(function(require, exports, module) {
 var oop = require("../lib/oop");
 var TextHighlightRules = require("./text_highlight_rules").TextHighlightRules;
 
-var YamlHighlightRules = function() {
+var StylusHighlightRules = function() {
 
     // regexp must not have capturing parentheses. Use (?:) instead.
     // regexps are ordered -> the first match is used

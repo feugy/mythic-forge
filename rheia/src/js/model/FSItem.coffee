@@ -97,6 +97,20 @@ define [
       changes.content = atob changes.content unless changes.isFolder or changes.content is null
       super className, changes
 
+    # **private**
+    # Enhanced to remove item under the removed one
+    #
+    # @param className [String] the deleted object className
+    # @param model [Object] deleted model.
+    _onRemove: (className, model) =>
+      return unless className is @_className
+      # removes also models under the removed one
+      if model.isFolder
+        subModels = @find (item) -> 0 is item.id.indexOf model.path  
+        console.dir subModels
+        @remove new @model(removed), silent:true for removed in subModels
+      super className, model
+
   # Modelisation of a single File System Item.
   class FSItem extends Base.Model
 

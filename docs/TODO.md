@@ -80,18 +80,21 @@
     - authoring perspective
         - Perspective
             - **[done]** file tab widget
-            - action bar (new file, new folder, upload)
+            - **[done]** create new file/folder
+            - upload in selected
+            - rename selected
+            - **[done]** delete selected
         - File Explorer
             - **[done]** items loading
             - **[done]** items navigation and selection
-            - update when item added or removed
+            - **[done]** update when item added or removed
             - contextual menu
         - File View
-            - choose name for new file
-            - action bar (save, rename, delete)
+            - **[done]** action bar (save, delete)
             - **[done]** editor widget
             - **[done]** loading/save content
             - **[done]** external modification/removal notification
+            - displays images
 
     - edition perspective
         - contextual menus in search and explorer

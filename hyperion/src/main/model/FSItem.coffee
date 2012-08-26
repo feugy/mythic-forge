@@ -96,7 +96,7 @@ class FSItem
     fs.stat @path, (err, stat) =>
       return callback "Cannot read item: #{err}" if err?
       # check that folder status do not change
-      return callback "Incompatible folder status (#{@isFolder} for #{path}" if @isFolder isnt stat.isDirectory()
+      return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
       
       if @isFolder
         # read folder's content
@@ -140,7 +140,7 @@ class FSItem
         isNew = true
 
       # check that folder status do not change
-      return callback "Incompatible folder status (#{@isFolder} for #{path}" if !isNew and @isFolder isnt stat.isDirectory()
+      return callback "Incompatible folder status (#{@isFolder}) for #{@path}" if !isNew and @isFolder isnt stat.isDirectory()
 
       if @isFolder 
         # Creates folder
@@ -152,7 +152,7 @@ class FSItem
             modelWatcher.change 'creation', 'FSItem', @
             callback null, @
         else
-          callback 'Cannot save existing folder #{@path}'
+          callback "Cannot save existing folder #{@path}"
 
       else
         saveFile = =>
@@ -190,12 +190,12 @@ class FSItem
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       return callback "Cannot read item stat: #{err}" if err?
-      return callback "Incompatible folder status (#{@isFolder} for #{path}" if @isFolder isnt stat.isDirectory()
+      return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
 
       if @isFolder 
         # removes folder and its content
         fsExtra.remove @path, (err) => 
-          return callback 'Error while removing folder #{@path}: #{err}' if err?
+          return callback "Error while removing folder #{@path}: #{err}" if err?
           logger.debug "folder #{@path} successfully removed"
           modelWatcher.change 'deletion', 'FSItem', @
           callback null, @

@@ -23,10 +23,13 @@ pathUtils = require 'path'
 utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 
-root = utils.confKey 'game.source'
+root = pathUtils.resolve pathUtils.normalize utils.confKey 'game.source'
 
 # enforce root folder existence at startup.
 utils.enforceFolderSync root, false, logger
+
+#Simple method to remove occurence of the root path from error messages
+purge = (err) -> err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), ''
 
 # The AuthoringService export feature relative to game client.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -39,7 +42,7 @@ class _AuthoringService
   # @option callback root [FSItem] the root fSItem folder, populated
   readRoot: (callback) =>
     new FSItem(root, true).read (err, rootFolder) =>
-      return callback "Failed to get root content: #{err}" if err?
+      return callback "Failed to get root content: #{purge err}" if err?
       # make root relative
       rootFolder.path = ''
       file.path = pathUtils.relative root, file.path for file in rootFolder.content
@@ -62,7 +65,7 @@ class _AuthoringService
     item.path = pathUtils.resolve root, item.path
     # saves it
     item.save (err, saved) =>
-      return callback err if err?
+      return callback purge err if err?
       # makes fs-item relative to root
       saved.path = pathUtils.relative root, saved.path
       callback null, saved
@@ -83,7 +86,7 @@ class _AuthoringService
     item.path = pathUtils.resolve root, item.path
     # removes it
     item.remove (err, removed) =>
-      return callback err if err?
+      return callback purge err if err?
       # makes fs-item relative to root
       removed.path = pathUtils.relative root, removed.path
       callback null, removed
@@ -105,7 +108,7 @@ class _AuthoringService
     item.path = pathUtils.resolve root, item.path
     # moves it, to an absolute new path
     item.move pathUtils.resolve(root, newPath), (err, moved) =>
-      return callback err if err?
+      return callback purge err if err?
       # makes fs-item relative to root
       moved.path = pathUtils.relative root, moved.path
       callback null, moved
@@ -127,7 +130,7 @@ class _AuthoringService
     item.path = pathUtils.resolve root, item.path
     # read its content
     item.read (err, read) =>
-      return callback err if err?
+      return callback purge err if err?
       # makes fs-item relative to root
       read.path = pathUtils.relative root, read.path
       # process also folder content

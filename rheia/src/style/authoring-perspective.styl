@@ -21,9 +21,14 @@
   
   > .left
     width 250px
+    display box
 
     .explorer
       iconSize = 18px
+      overflow auto
+      box-flex 1
+      // firefox fix: to allow overflow, must have an height, event unrelevant
+      height 1px
 
       .file
       h1
@@ -84,6 +89,16 @@
 
   > .right
 
+    .separator
+      display inline-block
+      height 25px
+      width 2px
+      margin 0 10px 0 0
+      border 1px solid borderColor
+      background hoverColor
+      border-radius 5px
+      box-shadow: 1px 1px 2px 1px hoverColor
+
     .ui-tabs .ui-tabs-panel
       overflow hidden
       padding 2px 0 0
@@ -107,3 +122,15 @@
         font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
         font-size 12px
         line-height 16px
+
+.name-choose-popup
+  
+  input.name
+    display block
+    width 350px
+    margin 0.5em 1em
+
+  .errors
+    text-align center
+    font-size fontSize*0.9
+    color errorColor

@@ -38,6 +38,7 @@ define
     no: 'Non'
     ok: 'Ok'
     cancel: 'Annuler'
+    create: 'Créer'
 
   validator:
     required: 'la valeur de "%s" est requise'

@@ -20,11 +20,12 @@
 
 define [
   'jquery'
+  'underscore'
   'backbone'
   'i18n!nls/common'
   'i18n!nls/authoring'
   'model/FSItem'
-], ($, Backbone, i18n, i18nAuthoring, FSItem) ->
+], ($, _, Backbone, i18n, i18nAuthoring, FSItem) ->
 
   i18n = $.extend true, i18n, i18nAuthoring
 
@@ -78,13 +79,16 @@ define [
       'click .folder.loaded > h1': '_onSelect'
       'click .file': '_onSelect'
 
-    # **private**
     # Current selected path
-    _selected: null
+    selected: null
 
     # **private**
     # Previously selected path
     _previousSelected: null
+
+    # **private**
+    # Loading flag to ignore fsItem addition
+    _loading: false
 
     # The view constructor.
     constructor:  ->
@@ -93,6 +97,8 @@ define [
       # bind to global events
       @bindTo FSItem.collection, 'reset', @_onReset
       @bindTo FSItem.collection, 'update', @_onUpdate
+      @bindTo FSItem.collection, 'add', @_onAdd
+      @bindTo FSItem.collection, 'remove', @_onRemove
 
     # The `render()` method is invoked by backbne to display view content at screen.
     # oInstanciate bar buttons.
@@ -118,12 +124,63 @@ define [
       @$el.append renderItem subItem for subItem in collection.models
 
     # **private**
+    # New item added handler: update the tree if this item should appear
+    #
+    # @param item [FSItem] added item
+    _onAdd: (item) =>
+      return if @_loading
+      # evaluate the parent
+      parentPath = item.get('path').substring 0, item.get('path').lastIndexOf conf.separator
+      if parentPath is ''
+        # under the root
+        parentNode = @$el
+        content = _.map(@$el.children(), (node) -> FSItem.collection.get $(node).data 'path').concat()
+
+      else
+        # under a folder
+        parent = FSItem.collection.get parentPath
+        return unless parent?
+        parentNode = @$el.find "div[data-path='#{parentPath.replace(/\\/g, '\\\\')}'] > .content"
+        content = parent.get('content').concat()
+
+      # evaluate insertion order
+      content.push item
+      content.sort comparator
+      idx = content.indexOf item
+
+      # appends the new node
+      render = $(renderItem item)
+      if idx is 0
+        parentNode.prepend render
+      else
+        parentNode.children().eq(idx).before render
+      render.css(x:-animShift).transition x:0, animDuration
+
+    # **private**
+    # Existing item removal handler: update the tree if this item is present appear
+    #
+    # @param item [FSItem] removed item
+    _onRemove: (item) =>
+      removed = @$el.find "div[data-path='#{item.get('path').replace(/\\/g, '\\\\')}']"
+      removed.transition 
+        x:-animShift, 
+        animDuration, 
+        =>
+          removed.remove()
+          # update selected state
+          if @selected is item.id
+            @_previousSelected = null
+            @selected = null
+            @trigger 'select', @selected, @_previousSelected
+
+    # **private**
     # Handler invoked when a new FSItem was updated
     # If folder, displayed its content inside explorer
     # 
     # @param item [FSItem] the updated FSItem
     _onUpdate: (item) =>
       return unless item.get 'isFolder'
+      @_loading = false
       # Get the existing folder inside explorer
       path = item.get 'path'
       parentNode = @$el.find "div[data-path='#{path.replace(/\\/g, '\\\\')}'] > .content"
@@ -153,14 +210,15 @@ define [
 
       # select new one unless it's same node
       unless path is @_previousSelected
-        @_selected = path
+        @selected = path
         node.addClass 'selected'
       else
-        @_selected = null
+        @selected = null
 
       # open or close folder if possible
       if node.hasClass 'folder'
         container = node.find '> .content'
+        # Only close when folder
         unless node.hasClass 'open'
           container.show().css(x:-animShift).transition x:0, animDuration
         else
@@ -168,7 +226,7 @@ define [
         node.toggleClass 'open'
 
       # trigger an event
-      @trigger 'select', @_selected, @_previousSelected
+      @trigger 'select', @selected, @_previousSelected
       
     # **private**
     # When clicking on a closed folder, load its content
@@ -178,6 +236,7 @@ define [
       node = $(event.target).closest 'div'
       @_onSelect event
       node.addClass 'loaded open'
+      @_loading = true
       # Load the folder's content
       FSItem.collection.fetch
         item: new FSItem

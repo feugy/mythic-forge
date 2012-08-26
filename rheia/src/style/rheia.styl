@@ -35,7 +35,7 @@ hoverColor = darken(#fff, 8%)
 inactiveColor = darken(#fff, 20%)
 focusColor = #75B9F0
 errorColor = lighten(orange, 20%)
-selectedColor = darken(#fff, 12%)
+selectedColor = darken(#EBF8FC, 10%)
 
 // CSS Reset 
 @import 'reset'
@@ -94,7 +94,7 @@ select
 // Icons
 multiIcon(valid invalid cancel warning question help success failure login logout)
 
-multiIcon(save remove open remove-selection upload unlink rename add, 1)
+multiIcon(save remove open remove-selection upload unlink rename add remove-folder, 1)
 
 multiIcon(new-folder new-file add-param add-property new-actor new-item new-event new-player field script, 2)
 
@@ -128,6 +128,7 @@ textarea.validation-error
   .ui-dialog-content 
     min-height 150px
     min-width 450px
+    line-height fontSize*1.5
 
     p
       margin-bottom 1em

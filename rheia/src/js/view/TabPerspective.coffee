@@ -114,6 +114,7 @@ define [
         @_views.splice idx, 1
         @_tabs?.remove idx
         @_actionBars?.remove idx
+        view.off 'change'
       else
         console.log "view #{view.getTitle()} cancels its closure"
 

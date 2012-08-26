@@ -51,6 +51,7 @@ configureRIA = (base, rootFolder, statics) ->
       baseUrl += ":#{staticPort}"
     # compute the client configuration
     conf = 
+      separator: path.sep
       basePath: "#{base}/"
       baseUrl: "#{baseUrl}#{base}"
       apiBaseUrl: "https://#{host}:#{utils.confKey 'server.apiPort'}"

@@ -64,7 +64,7 @@ define [
     constructor: (attributes, @name, @_node, @eventName = 'change', @_getValue = (node) -> return node.val()) ->
       for name, value of attributes
         @[name] = value
-      @_errors = []
+      @errors = []
       @_node.on @eventName, @validate if @eventName?
     
     # Triggers validation. Could be invoked manually or on node change.
@@ -72,10 +72,10 @@ define [
     #  @return array of generated erros, that may be empty if value is valid.
     validate: =>
       # does validation
-      @_errors = @_doValidation @_getValue @_node
+      @errors = @_doValidation @_getValue @_node
       # S'il y a une erreur, on remet la classe d'erreur
-      @_node.toggleClass @errorClass, @_errors.length isnt 0
-      return @_errors
+      @_node.toggleClass @errorClass, @errors.length isnt 0
+      @errors
 
     # Do not forget to invoke the dispose method to remove binding !
     dispose: =>

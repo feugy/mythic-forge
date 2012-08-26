@@ -111,7 +111,6 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      console.log @model.get 'content'
       @_editorWidget.setOption 'mode', getMode @model
       @_editorWidget.setOption 'text', @model.get 'content'
       # to update displayed icon
@@ -123,3 +122,17 @@ define [
     _onChange: =>
       @_canSave = @model.get('content') isnt @_editorWidget.options.text
       super()
+
+    # **private**
+    # Invoked when a model is removed from the server.
+    # Close the view if the removed object corresponds to the edited one.
+    #
+    # @param removed [Object] the removed model
+    _onRemoved: (removed) =>
+      # Automatically remove if a parent folder was removed
+      if removed.id isnt @model.id and 0 is @model.id.indexOf removed.id
+        @_removeInProgress = false;
+        @_isClosing = true
+        @trigger 'close'
+      # superclass behaviour
+      super removed
