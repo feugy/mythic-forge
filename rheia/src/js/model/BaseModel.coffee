@@ -109,10 +109,11 @@ define [
     #
     # @param className [String] the deleted object className
     # @param model [Object] deleted model.
-    _onRemove: (className, model) =>
+    # @param options [Object] remove event options
+    _onRemove: (className, model, options = {}) =>
       return unless className is @_className
       # removes the deleted item after enrich it to allow recognition. An event will be triggered
-      @remove new @model model 
+      @remove new @model(model), options
       # propagates changes on collection to global change event
       rheia.router.trigger 'modelChanged'
 

@@ -45,6 +45,10 @@ define [
     'yml': 'yaml'
     'stylus': 'stylus'
     'styl': 'stylus'
+    'png': 'img'
+    'jpg': 'img'
+    'jpeg': 'img'
+    'gif': 'img'
 
   # Returns the supported mode of a given file
   #
@@ -73,8 +77,16 @@ define [
     _nameAttribute: 'path'
 
     # **private**
+    # file mode
+    _mode: 'text'
+
+    # **private**
     # widget that allows content edition
     _editorWidget: null
+
+    # **private**
+    # File rendering in image mode
+    _image: null
 
     # The view constructor. The edited file system item must be a file, with its content poplated
     #
@@ -103,16 +115,28 @@ define [
       ).data 'advEditor'
       @$el.empty().append @_editorWidget.element
 
+      @_image = $('<img/>').appendTo @$el
+
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: => 
-      @model.set 'content', @_editorWidget.options.text
+      @model.set 'content', @_editorWidget.options.text unless @_mode is 'img'
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      @_editorWidget.setOption 'mode', getMode @model
-      @_editorWidget.setOption 'text', @model.get 'content'
+      @_mode = getMode @model
+      @$el.toggleClass 'image', @_mode is 'img'
+      if @_mode is 'img'
+        # hide editor and display an image instead
+        @_editorWidget.element.hide()
+        imageType = "image/#{@model.extension}"
+        @_image.attr 'src', "data:#{imageType};base64,#{btoa @model.get 'content'}"
+      else
+        @_editorWidget.element.show()
+        @_editorWidget.setOption 'mode', @_mode
+        @_editorWidget.setOption 'text', @model.get 'content'
+
       # to update displayed icon
       @_onChange()
 
@@ -120,19 +144,24 @@ define [
     # Change handler, wired to any changes from the rendering.
     # Detect text changes and triggers the change event.
     _onChange: =>
-      @_canSave = @model.get('content') isnt @_editorWidget.options.text
+      if @_mode is 'img'
+        @_canSave = false
+      else
+        @_canSave = @model.get('content') isnt @_editorWidget.options.text 
       super()
 
     # **private**
     # Invoked when a model is removed from the server.
     # Close the view if the removed object corresponds to the edited one.
     #
-    # @param removed [Object] the removed model
-    _onRemoved: (removed) =>
-      # Automatically remove if a parent folder was removed
-      if removed.id isnt @model.id and 0 is @model.id.indexOf removed.id
+    # @param removed [FSItem] the removed model
+    # @parma collection [FSItem.collection] the concerned collection
+    # @param options [Object] remove event options
+    _onRemoved: (removed, collection, options) =>
+      # Automatically remove without notification if a parent folder was removed, or if was moved
+      if (removed.id isnt @model.id and 0 is @model.id.indexOf removed.id) or (removed.id is @model.id and options?.move)
         @_removeInProgress = false;
         @_isClosing = true
-        @trigger 'close'
+        return @trigger 'close'
       # superclass behaviour
       super removed

@@ -109,6 +109,9 @@
         li a i.{icon}
           background-position unit(-25*idx, 'px') -125px
 
+    .file-upload
+      display none
+
   .view.file:not(.icon)
     position relative
     width 100%
@@ -122,6 +125,16 @@
         font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
         font-size 12px
         line-height 16px
+
+    > img 
+      display none
+
+  .view.file.image
+
+    > img
+      display block
+      margin 0 auto
+      max-width 100%
 
 .name-choose-popup
   

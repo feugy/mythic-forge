@@ -751,7 +751,7 @@ describe 'AdminService tests', ->
 
       # then the model do not exists anymore in DB
       FieldType.findById model._id, (err, obj) ->
-        assert.ok obj is null
+        assert.isNull obj
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -854,7 +854,7 @@ describe 'AdminService tests', ->
       # then the model is not readable with authoring service
       authoringService.read fsItem, (err, obj) ->
         assert.isNotNull err
-        assert.ok -1 isnt err.indexOf 'Cannot read item: Error: ENOENT'
+        assert.ok -1 isnt err.indexOf 'Unexisting item'
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 

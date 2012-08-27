@@ -72,19 +72,6 @@ class FSItem
     @path = pathUtils.normalize @path
     @content = @content.toString 'base64' if Buffer.isBuffer @content
 
-  # Allows to move and rename the current fs-item
-  # In case of folder move, sub-items are moved too
-  #
-  # @param newPath [String] the new item path
-  # @param callback [Function] invoked when move operation is finished
-  # @option callback err [String] an error message if an error occured. null otherwise
-  # @option callback item [FSItem] the concerned fsitem
-  move: (newPath, callback) ->
-    # use fsExtra.copy https://github.com/jprichardson/node-fs-extra
-    # read again the folder content if necessary
-    # trigger both deletion and creation events
-    callback 'not implemented yet'
-
   # Find fs-item content. If the searched fs-item is a folder, @content will contains
   # an array of FSItems, and if it's a file, @content will be a base64 encoded string
   #
@@ -94,6 +81,7 @@ class FSItem
   read: (callback) ->
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
+      return callback "Unexisting item #{@path} cannot be read" if err?.code is 'ENOENT'
       return callback "Cannot read item: #{err}" if err?
       # check that folder status do not change
       return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
@@ -140,7 +128,8 @@ class FSItem
         isNew = true
 
       # check that folder status do not change
-      return callback "Incompatible folder status (#{@isFolder}) for #{@path}" if !isNew and @isFolder isnt stat.isDirectory()
+      if !isNew and @isFolder isnt stat.isDirectory()
+        return callback "Cannot save #{if @isFolder then 'file' else 'folder'} #{@path} into #{if @isFolder then 'folder' else 'file'}"
 
       if @isFolder 
         # Creates folder
@@ -189,8 +178,8 @@ class FSItem
   remove: (callback) =>
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
-      return callback "Cannot read item stat: #{err}" if err?
-      return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
+      return callback "Unexisting item #{@path} cannot be removed" if err?.code is 'ENOENT'
+      @isFolder = stat.isDirectory()
 
       if @isFolder 
         # removes folder and its content
@@ -207,6 +196,49 @@ class FSItem
           logger.debug "file #{@path} successfully removed"
           modelWatcher.change 'deletion', 'FSItem', @
           callback null, @
+
+  # Allows to move and rename the current fs-item
+  # In case of folder move, sub-items are moved too
+  #
+  # @param newPath [String] the new item path
+  # @param callback [Function] invoked when move operation is finished
+  # @option callback err [String] an error message if an error occured. null otherwise
+  # @option callback item [FSItem] the concerned fsitem
+  move: (newPath, callback) =>
+    newPath = pathUtils.normalize newPath
+    # First, read current file statistics
+    fs.stat @path, (err, stat) =>
+      return callback "Unexisting item #{@path} cannot be moved" if err?.code is 'ENOENT'
+      return callback "Cannot read item stat: #{err}" if err?
+      # check that folder status do not change
+      if @isFolder isnt stat.isDirectory()
+        return callback "Cannot move #{if @isFolder then 'file' else 'folder'} #{@path} into #{if @isFolder then 'folder' else 'file'}"
+
+      # then checks that new path does not exists
+      fs.exists newPath, (exists) =>
+        return callback "Cannot move because new path #{newPath} already exists" if exists
+
+        # then creates the new parent path
+        parent = pathUtils.dirname newPath
+        fsExtra.mkdir parent, (err) =>
+          return callback "Error while creating new item #{@path}: #{err}" if err?
+
+          # then performs copy
+          fsExtra.copy @path, newPath, (err) =>
+            return callback "Cannot copy item #{@path} to #{newPath}: #{err}" if err?
+
+            # and eventually remove old value
+            fsExtra.remove @path, (err) => 
+              return callback "Error while removing olf item #{@path}: #{err}" if err?
+
+              logger.debug "item #{@path} successfully moved to #{newPath}"
+              # invoke watcher for deletion
+              modelWatcher.change 'deletion', 'FSItem', new FSItem @path, @isFolder
+
+              # and for creation
+              @path = newPath
+              modelWatcher.change 'creation', 'FSItem', @
+              callback null, @
 
   # Provide the equals() method to check correctly the equality between _ids.
   #

@@ -59,11 +59,11 @@
         - **[done]** (rule) search 'val' (as string/regexp) in category
         - **[done]** (turn-rule) search 'val' (as number) in rank
         - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
-    - Authoring service and FSItem
+    - **[done]** Authoring service and FSItem
         - **[done]** get FSItem
         - **[done]** save FSItem
         - **[done]** remove FSItem
-        - rename/move FSItem
+        - **[done]** rename/move FSItem
         - **[done]** service layer
         - **[done]** web layer
     - test images for field types and event types
@@ -78,23 +78,23 @@
     - **[done]** perspective loader
 
     - authoring perspective
-        - Perspective
+        - **[done]** Perspective
             - **[done]** file tab widget
             - **[done]** create new file/folder
-            - upload in selected
-            - rename selected
+            - **[done]** upload in selected
+            - **[done]** rename selected
             - **[done]** delete selected
         - File Explorer
             - **[done]** items loading
             - **[done]** items navigation and selection
             - **[done]** update when item added or removed
             - contextual menu
-        - File View
+        - **[done]** File View
             - **[done]** action bar (save, delete)
             - **[done]** editor widget
             - **[done]** loading/save content
             - **[done]** external modification/removal notification
-            - displays images
+            - **[done]** displays images
 
     - edition perspective
         - contextual menus in search and explorer

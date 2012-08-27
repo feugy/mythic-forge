@@ -139,7 +139,7 @@ define [
       else
         # under a folder
         parent = FSItem.collection.get parentPath
-        return unless parent?
+        return unless parent? and parent.get('content')?
         parentNode = @$el.find "div[data-path='#{parentPath.replace(/\\/g, '\\\\')}'] > .content"
         content = parent.get('content').concat()
 
@@ -150,8 +150,8 @@ define [
 
       # appends the new node
       render = $(renderItem item)
-      if idx is 0
-        parentNode.prepend render
+      if idx is parentNode.children().length
+        parentNode.append render
       else
         parentNode.children().eq(idx).before render
       render.css(x:-animShift).transition x:0, animDuration

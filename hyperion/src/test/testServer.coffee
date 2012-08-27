@@ -29,6 +29,7 @@ Executable = require '../main/model/Executable'
 FSItem = require '../main/model/FSItem'
 utils = require '../main/utils'
 request = require 'request'
+fsExtra = require 'fs-extra'
 testUtils = require './utils/testUtils'
 assert = require('chai').assert
 
@@ -60,53 +61,72 @@ describe 'server tests', ->
         assert.equal body, '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
         done()
 
-    it 'should file be created, read and removed', (done) ->
+    it 'should file be created, read, moved and removed', (done) ->
       # given a connected socket.io client
       socket = socketClient.connect "#{rootUrl}/admin"
 
       # given a file with binary content
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, imgData) ->
         throw new Error err if err?
-        file = 
-          path: path.join 'images', 'image1.png'
-          isFolder: false
-          content: imgData.toString('base64')
-        
-        # then the saved fsItem is returned
-        socket.once 'save-resp', (err, modelName, saved) ->
-          throw new Error err if err?
-          assert.equal modelName, 'FSItem'
-          assert.isNotNull saved
-          assert.isFalse saved.isFolder
-          assert.equal saved.path, file.path
-          assert.equal saved.content, file.content
-
-          # then the read fsItem is returned with valid content
-          socket.once 'read-resp', (err, read) ->
+        root = utils.confKey 'game.source'
+        # given a clean root
+        fsExtra.remove root, (err) ->
+          fsExtra.mkdir root, (err) ->
             throw new Error err if err?
-            assert.isNotNull read
-            assert.isFalse read.isFolder
-            assert.equal read.path, file.path
-            assert.equal read.content, imgData.toString('base64')
+            
+            file = 
+              path: path.join 'images', 'image1.png'
+              isFolder: false
+              content: imgData.toString('base64')
 
-            # then the fsItem was removed
-            socket.once 'remove-resp', (err, modelName, removed) ->
+            newPath = path.join 'images', 'image2.png'
+            
+            # then the saved fsItem is returned
+            socket.once 'save-resp', (err, modelName, saved) ->
               throw new Error err if err?
               assert.equal modelName, 'FSItem'
-              assert.isNotNull removed
-              assert.isFalse removed.isFolder
-              assert.equal removed.path, file.path
-              done()
+              assert.isNotNull saved
+              assert.isFalse saved.isFolder
+              assert.equal saved.path, file.path
+              assert.equal saved.content, file.content
 
-            # when removing it
-            socket.emit 'remove', 'FSItem', file
+              # then the read fsItem is returned with valid content
+              socket.once 'read-resp', (err, read) ->
+                throw new Error err if err?
+                assert.isNotNull read
+                assert.isFalse read.isFolder
+                assert.equal read.path, file.path
+                assert.equal read.content, imgData.toString('base64')
 
-          # when reading its content
-          file.content = null
-          socket.emit 'read', file
+                # then the moved fsItem is returned with valid content
+                socket.once 'move-resp', (err, moved) ->
+                  throw new Error err if err?
+                  assert.isNotNull moved
+                  assert.isFalse moved.isFolder
+                  assert.equal moved.path, newPath
+                  assert.isNull moved.content
 
-        # when saving a new file
-        socket.emit 'save', 'FSItem', file
+                  # then the fsItem was removed
+                  socket.once 'remove-resp', (err, modelName, removed) ->
+                    throw new Error err if err?
+                    assert.equal modelName, 'FSItem'
+                    assert.isNotNull removed
+                    assert.isFalse removed.isFolder
+                    assert.equal removed.path, newPath
+                    done()
+
+                  # when removing it
+                  socket.emit 'remove', 'FSItem', moved
+
+                # when moving it
+                socket.emit 'move', file, newPath
+
+              # when reading its content
+              file.content = null
+              socket.emit 'read', file
+
+            # when saving a new file
+            socket.emit 'save', 'FSItem', file
 
     describe 'given a map, a type and two characters', ->
 

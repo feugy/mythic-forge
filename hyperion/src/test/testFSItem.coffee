@@ -28,12 +28,14 @@ assert = require('chai').assert
 
 root = null
 awaited = false
+deletionAwaited = false
+creationAwaited = false
 
 # Simple code factorization on fs-items creation
 #
 # @param item [FSItem] saved item
 # @param isFolder [Boolean] awaited folder status
-# @param content [String|Buffer|Array] optionnal item content. true by default
+# @param content [String|Buffer|Array] optionnal item content. null by default
 # @param isNew [Boolean] optionnal distinguish creation from update. true by default
 # @param done [Function] test done function.
 assertFSItemSave = (item, isFolder, content, isNew, done) ->
@@ -96,6 +98,57 @@ assertFSItemRemove = (item, done) ->
       assert.ok !exists, "#{if item.isFolder then 'folder' else 'file'} still exists"
       assert.ok awaited, 'watcher wasn\'t invoked'
       done()
+
+# Simple code factorization on fs-items move and rename
+#
+# @param item [FSItem] originaly saved item
+# @param newPath [String] new path for this item
+# @param isFolder [Boolean] awaited folder status
+# @param content [String|Buffer|Array] optionnal item content. null by default
+# @param done [Function] test done function.
+assertFSItemMoved = (item, newPath, isFolder, content, done) ->
+  if 'function' is utils.type content
+    done = content
+    content = null
+
+  newPath = pathUtils.normalize newPath
+  oldPath = "#{item.path}"
+
+  # then a creation and a delection event were issued
+  watcher.on 'change', (operation, className, instance)->
+    assert.equal className, 'FSItem'
+    if operation is 'creation'
+      assert.isNotNull newPath.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
+      assert.equal instance.isFolder, isFolder
+      assert.equal instance.content, content unless isFolder
+      creationAwaited = true
+    else if operation is 'deletion'
+      assert.isNotNull oldPath.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
+      assert.equal instance.isFolder, isFolder
+      deletionAwaited = true
+
+  creationAwaited = false
+  deletionAwaited = false
+  # when moving it
+  item.move newPath, (err, result) ->
+
+    throw new Error "Can't move #{if isFolder then 'folder' else 'file'}: #{err}" if err?
+    assert.equal result.path, newPath
+    assert.equal result.isFolder, isFolder
+    assert.equal result.content, content unless isFolder
+
+    # then the old path does not exists anymore
+    fs.exists oldPath, (exists) ->
+      assert.isFalse exists, "old path #{oldPath} still exists"
+
+      # then it's on the file system
+      fs.stat newPath, (err, stats) ->
+        throw new Error "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
+        assert.equal stats.isDirectory(), isFolder
+        assert.ok deletionAwaited, 'deletion event not received'
+        assert.ok creationAwaited, 'creation event not received'
+        watcher.removeAllListeners 'change'
+        done()
 
 # Empties the root folder and re-creates it.
 cleanRoot = (done) ->
@@ -164,6 +217,12 @@ describe 'FSItem tests', ->
           assert.equal newContent.toString('base64'), content.toString('base64')
           done()
 
+    it 'should file be renamed', (done) ->
+      assertFSItemMoved file1, "#{root}/file.copy", false, file1.content, done
+     
+    it 'should file be moved into another folder', (done) ->
+      assertFSItemMoved file1, "#{root}/folder2/file.copy2", false, file1.content, done   
+
     it 'should file be removed', (done) ->
       assertFSItemRemove file1, done
 
@@ -200,5 +259,113 @@ describe 'FSItem tests', ->
           assert.ok new FSItem("#{folder1.path}/folder", true).equals(result.content[2]), 'subfolder not read'
           done()
 
+    it 'should folder be renamed', (done) ->
+      assertFSItemMoved folder1, "#{root}/folder2", true, done
+     
+    it 'should file be moved into another folder', (done) ->
+      assertFSItemMoved folder1, "#{root}/folder3/folder", true, done   
+
     it 'should folder be removed', (done) ->
       assertFSItemRemove folder1, done
+
+  describe 'given an existing files and a folders', ->
+
+    files = []
+    folders = []
+
+    before (done) ->
+      cleanRoot ->
+        fixtures = [
+          item: new FSItem("#{root}/file.txt", false)
+          content: files
+        ,
+          item: new FSItem("#{root}/file2.txt", false)
+          content: files
+        ,
+          item: new FSItem("#{root}/folder", true)
+          content: folders
+        ,
+          item: new FSItem("#{root}/folder/folder2", true)
+          content: folders
+        ]
+        async.forEach fixtures, (spec, next) ->
+          spec.item.save (err, result) ->
+            next err if err?
+            spec.content.push result
+            next()
+        , (err) ->
+          throw new Error err if err?
+          done()
+
+    it 'should file not be moved into folder', (done) ->
+      files[0].isFolder = true
+      files[0].move folders[0].path, (err, result) ->
+        files[0].isFolder = false
+        assert.ok -1 isnt err.indexOf('move file'), "unexpected error: #{err}"
+        done()
+
+    it 'should file not be moved into existing file', (done) ->
+      files[0].move files[1].path, (err, result) ->
+        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        done()
+
+    it 'should file not be moved into existing folder', (done) ->
+      files[0].move folders[0].path, (err, result) ->
+        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        done()
+
+    it 'should folder not be moved into file', (done) ->
+      folders[0].isFolder = false
+      folders[0].move files[0].path, (err, result) ->
+        folders[0].isFolder = true
+        assert.ok -1 isnt err.indexOf('move folder'), "unexpected error: #{err}"
+        done()
+
+    it 'should folder not be moved into existing folder', (done) ->
+      folders[0].move folders[1].path, (err, result) ->
+        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        done()
+
+    it 'should folder not be moved into existing file', (done) ->
+      folders[0].move files[0].path, (err, result) ->
+        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        done()
+
+    it 'should folder not be saved again', (done) ->
+      folders[0].save (err, result) ->
+        assert.ok -1 isnt err.indexOf('existing folder'), "unexpected error: #{err}"
+        done()
+
+    it 'should unexisting folder not be removed', (done) ->
+      new FSItem("#{root}/unknown", true).remove (err, result) ->
+        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        done()
+
+    it 'should unexisting file not be removed', (done) ->
+      new FSItem("#{root}/unknown", false).remove (err, result) ->
+        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        done()
+
+    it 'should unexisting folder not be read', (done) ->
+      new FSItem("#{root}/unknown", true).read (err, result) ->
+        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        done()
+
+    it 'should unexisting file not be read', (done) ->
+      new FSItem("#{root}/unknown", false).read (err, result) ->
+        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        done()
+
+    it 'should folder not be saved into file', (done) ->
+      folders[0].isFolder = false
+      folders[0].save (err, result) ->
+        folders[0].isFolder = true
+        assert.ok -1 isnt err.indexOf('save folder'), "unexpected error: #{err}"
+        done()
+
+    it 'should file not be saved into folder', (done) ->
+      files[0].isFolder = true
+      files[0].save (err, result) ->
+        files[0].isFolder = false
+        assert.ok -1 isnt err.indexOf('save file'), "unexpected error: #{err}"
+        done()

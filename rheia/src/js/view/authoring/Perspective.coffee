@@ -94,7 +94,7 @@ define [
       super()
       # update button bar on tab change, but after a slight delay to allow internal update when 
       # tab is removed
-      @_tabs.element.on 'tabsselect', => setTimeout (=> @_onFileChange()), 0
+      @_tabs.element.on 'tabsselect', => setTimeout (=> @_onUpdateFileBar()), 0
 
       # render the explorer on the left
       @$el.find('> .left').append @_explorer.render().$el
@@ -103,20 +103,25 @@ define [
       buttons = [
         icon: 'new-folder'
         tip: i18n.tips.newFolder
-        handler: => @_onNewItem true
+        handler: => @_chooseFileName true
         attribute: '_newFileButton'
       ,
         icon: 'new-file'
         tip: i18n.tips.newFile
-        handler: => @_onNewItem false
+        handler: => @_chooseFileName false
         attribute: '_newFolderButton'
       ,
         icon: 'upload'
         tip: i18n.tips.uploadInSelected
+        handler: => @$el.find('.file-upload > input').trigger 'click'
         attribute: '_uploadButton'
       ,
         icon: 'rename'
         tip: i18n.tips.renameSelected
+        handler: => 
+          selected = FSItem.collection.get @_explorer.selected
+          return unless selected?
+          @_chooseFileName selected.get('isFolder'), @_explorer.selected
         attribute: '_renameButton'
       ,
         icon: 'remove-folder'
@@ -141,6 +146,9 @@ define [
           text: false
           disabled: true
         ).attr('title', spec.tip).click(spec.handler).data 'button'
+
+      # bind file upload
+      @$el.find('.file-upload > input').on 'change', @_onFileChoosen
 
       # first selection
       @_onSelect null, null
@@ -167,19 +175,28 @@ define [
       new FileView id
 
     # **private**
-    # Creates a new FSItem with the given name into the selected fodler.
+    # Creates or move a FSItem with the given name into the selected fodler.
     #
     # @param name [String] name of the desired item
     # @param isFolder [Boolean] true to create a folder, false to create a file
-    _createItem: (name, isFolder) =>
+    # @param oldName [Sting] old name in case of a renaming
+    _createMoveItem: (name, isFolder, oldName=null) =>
       root = if @_explorer.selected? then "#{@_explorer.selected}#{conf.separator}" else ''
-      @_createInProgress = new FSItem path: "#{root}#{name}", isFolder: isFolder, content: null
+      newName = "#{root}#{name}"
+      if oldName?
+        parent = oldName.substring 0, oldName.lastIndexOf conf.separator
+        newName = "#{if parent isnt '' then "#{parent}#{conf.separator}" else ''}#{name}"
+
+      @_createInProgress = new FSItem path: (if oldName? then oldName else newName), isFolder: isFolder, content: null
       
       # check first of non-existence
-      return @_onServerError 'File already exists' if FSItem.collection.get(@_createInProgress.id)?
+      return @_onServerError 'File already exists' if FSItem.collection.get(newName)?
 
-      # otherwise, save it
-      @_createInProgress.save()
+      if oldName?
+        @_createInProgress.move(newName)
+      else
+        # otherwise, save it
+        @_createInProgress.save()
 
     # **private**
     # Callback invoked when an item has been created on server.
@@ -216,19 +233,22 @@ define [
       view = _.find @_views, (view) -> id is md5 view.getId()
       
       # bind changes to update tab
-      view.on 'change', @_onFileChange
+      view.on 'change', @_onUpdateFileBar
 
     # **private**
-    # Item creation handler: prompt for name, creates the FSItem, and opens it if it's a file
+    # Item creation/move handler: prompt for name, creates the FSItem and opens it if it's a file, or moves the FSItem
     #
     # @param isFolder [Boolean] distinguish the creation of a folder and a file
-    _onNewItem: (isFolder) =>
+    # @parma oldName [String] old name of the renamed item. Default to null
+    _chooseFileName: (isFolder, oldName = null) =>
       selected = @_explorer.selected
+      title = if oldName? then i18n.titles.renameFSItem else i18n.titles[if isFolder then 'newFolder' else 'newFile']
+      if oldName?
+        msg = i18n.msgs[if isFolder then 'renameFolder' else 'renameFile']
+      else
+        msg = _.sprintf i18n.msgs[if isFolder then 'newFolder' else 'newFile'], if selected? then selected else i18n.labels.rootFolder
       # displays the popup
-      popup = utils.popup(i18n.titles[if isFolder then 'newFolder' else 'newFile'],
-        _.sprintf(i18n.msgs[if isFolder then 'newFolder' else 'newFile'], if selected? then selected else i18n.labels.rootFolder),
-        'question',
-        [
+      popup = utils.popup(title, msg, 'question', [
           text: i18n.labels.create
           icon: 'valid'
           click: =>
@@ -236,8 +256,8 @@ define [
             validator.validate()
             return false unless validator.errors.length is 0
             validator.dispose()
-            # trim value and creates fsItem
-            @_createItem popup.find('input.name').val().trim(), isFolder
+            # trim value and creates/move fsItem
+            @_createMoveItem popup.find('input.name').val().trim(), isFolder, oldName
         ,
           text: i18n.labels.cancel
           icon: 'cancel'
@@ -247,15 +267,18 @@ define [
 
       # adds a text field and an error field above it
       input = $('<input type="text" class="name"/>').appendTo popup
+      input.val oldName.substring 1+oldName.lastIndexOf conf.separator if oldName?
       popup.append "<div class='errors'></div>"
 
+      # must contains LATIN-1 visible characters except / and \. Can also contain accentuated LATIN-1 supplement.
+      # http://fr.wikipedia.org/wiki/Table_des_caract%C3%A8res_Unicode_%280000-0FFF%29
+      newRegexp= /^[\u0020-\u002E\u0030-\u005B\u005D-\u007E\u00C0-\u00FF]+$/
+      renameRegexp= /^[\u0020-\u007E\u00C0-\u00FF]+$/
       # creates the validator
       validator = new validators.Regexp 
         required: true, 
         spacesAllowed: true, 
-        # must contains LATIN-1 visible characters except / and \. Can also contain accentuated LATIN-1 supplement.
-        # http://fr.wikipedia.org/wiki/Table_des_caract%C3%A8res_Unicode_%280000-0FFF%29
-        regexp: /^[\u0020-\u002E\u0030-\u005B\u005D-\u007E\u00C0-\u00FF]+$/
+        regexp: if oldName? then renameRegexp else newRegexp
       , i18n.labels.fsItemName, input, 'keyup' 
 
       # displays error on keyup. Binds after validator creation to validate first
@@ -285,7 +308,7 @@ define [
 
     # **private**
     # Current edited file change handler: updates the button bar consequently
-    _onFileChange: =>
+    _onUpdateFileBar: =>
       @_saveButton._setOption 'disabled', true
       @_removeButton._setOption 'disabled', true
       if @_tabs.options.selected isnt -1
@@ -315,7 +338,30 @@ define [
       # update button bar
       @_newFolderButton._setOption 'disabled', fileSelected
       @_newFileButton._setOption 'disabled', fileSelected
-      @_uploadButton._setOption 'disabled', true # fileSelected
-      @_renameButton._setOption 'disabled', true # selected is null
+      @_uploadButton._setOption 'disabled', fileSelected
+      @_renameButton._setOption 'disabled', selected is null
       @_removeFolderButton._setOption 'disabled', selectedItem is null or ! selectedItem.get 'isFolder'
-      @_onFileChange()
+      @_onUpdateFileBar()
+
+    # **private**
+    # Upload handler: once a file have been selected, upload it to server
+    _onFileChoosen: =>
+      # Retrieve uploaded file
+      file = @$el.find('.file-upload > input')[0].files[0]
+      path = "#{if @_explorer.selected? then "#{@_explorer.selected}#{conf.separator}" else ''}#{file.name}"
+
+      # Read its content
+      reader = new FileReader()
+      
+      reader.onload = (event) =>
+        # once read, create the FSItem.
+        @_createInProgress = new FSItem
+          path: path
+          isFolder: false
+          # Removes the descriptor and put in utf8 because save will translate it into base64
+          content: atob event.target.result.replace "data:#{file.type};base64,", ''
+        # and save it on server
+        @_createInProgress.save()
+
+      # read data from file as base64 string
+      reader.readAsDataURL file

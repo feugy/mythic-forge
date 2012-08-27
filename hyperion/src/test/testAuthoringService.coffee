@@ -133,6 +133,23 @@ describe 'AuthoringService tests', ->
             assert.equal readData.toString('base64'), data.toString('base64')
             done()
 
+    it 'should file content be moved', (done) -> 
+      # when reading the folder
+      oldPath = "#{file.path}"
+      service.move file, 'folder5/newFile', (err, moved) ->
+        throw new Error "Cannot move file: #{err}" if err?
+        # then new file is created and old one removed
+        assert.notEqual moved.path, oldPath
+        fs.exists pathUtils.join(root, moved.path), (exists) ->
+          assert.isTrue exists, "file #{file.path} wasn't moved"
+          # then content is correct
+          fs.readFile pathUtils.join(root, moved.path), (err, data) ->
+            assert.equal moved.content, data.toString('base64'),
+            fs.exists pathUtils.join(root, oldPath), (exists) ->
+              assert.isFalse exists, "file #{oldPath} wasn't removed"
+              file = moved
+              done()
+
     it 'should file be removed', (done) -> 
       # when removing the file
       service.remove file, (err, removed) ->
@@ -174,7 +191,21 @@ describe 'AuthoringService tests', ->
             break
           assert.isTrue found, "file #{file.path} was not read"
         done()
-    
+
+    it 'should folder content be moved', (done) -> 
+      # when reading the folder
+      oldPath = "#{folder.path}"
+      service.move folder, 'folder3/folder4', (err, moved) ->
+        throw new Error "Cannot move folder: #{err}" if err?
+        # then new folder is created and old one removed
+        assert.notEqual moved.path, oldPath
+        fs.exists pathUtils.join(root, moved.path), (exists) ->
+          assert.isTrue exists, "folder #{folder.path} wasn't moved"
+          fs.exists pathUtils.join(root, oldPath), (exists) ->
+            assert.isFalse exists, "folder #{oldPath} wasn't removed"
+            folder = moved
+            done()
+
     it 'should folder be removed', (done) -> 
       # when removing the folder
       service.remove folder, (err, removed) ->

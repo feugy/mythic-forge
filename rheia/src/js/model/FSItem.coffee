@@ -26,6 +26,10 @@ define [
   # Client cache of FSItems.
   class _FSItems extends Base.Collection
 
+    # Flag used to distinguish moves from removals
+    # Must be set to true when moving file.
+    moveInProgress: false
+
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'FSItem'
@@ -38,6 +42,9 @@ define [
       super model, options
       # bind consultation response
       sockets.admin.on 'read-resp', @_onRead
+      sockets.admin.on 'move-resp', (err) =>
+        return rheia.router.trigger 'serverError', err, method:"FSItem.sync", details:'move' if err? 
+        @moveInProgress = false
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -52,7 +59,7 @@ define [
       # Ask for the root content if no item specified
       return sockets.admin.emit 'list', 'FSItem' unless item?
       # Or read the item
-      return sockets.admin.emit 'read', item.toJSON()
+      return sockets.admin.emit 'read', item._serialize()
 
     # **private**
     # End of a FSItem content retrieval. For a folder, adds its content. For a file, triggers an update.
@@ -102,14 +109,27 @@ define [
     #
     # @param className [String] the deleted object className
     # @param model [Object] deleted model.
-    _onRemove: (className, model) =>
+    # @param options [Object] remove event options
+    _onRemove: (className, model, options = {}) =>
       return unless className is @_className
       # removes also models under the removed one
       if model.isFolder
         subModels = @find (item) -> 0 is item.id.indexOf model.path  
-        console.dir subModels
         @remove new @model(removed), silent:true for removed in subModels
-      super className, model
+
+      # at last, removes from its parent content
+      parent = model.path.substring 0, model.path.lastIndexOf conf.separator
+      if parent isnt ''
+        parent = @where path: parent
+        if parent.length is 1 and parent[0].get('content')?
+          # search within parent content, and remove at relevant index
+          for contained, i in parent[0].get('content') when contained.id is model.path
+            parent[0].get('content').splice i, 1
+            break
+
+      # add a special flag to distinguish removal from move
+      options.move= true if @moveInProgress
+      super className, model, options
 
   # Modelisation of a single File System Item.
   class FSItem extends Base.Model
@@ -134,7 +154,12 @@ define [
     constructor: (attributes) ->
       super attributes
       # update file extension
-      @extension = @get('path').substring @get('path').lastIndexOf('.')+1 unless @get 'isFolder'
+      @extension = @get('path').substring(@get('path').lastIndexOf('.')+1).toLowerCase() unless @get 'isFolder'
+
+    # Allows to move the current FSItem
+    move: (newPath) =>
+      FSItem.collection.moveInProgress = true
+      sockets.admin.emit 'move', @_serialize(), newPath
 
     # **private** 
     # Method used to serialize a model when saving and removing it
