@@ -56,6 +56,11 @@ define [
     constructor: (className) ->
       super tagName: 'div', className:"#{className} perspective"
 
+      @_views = []
+      @_tabs = null
+      @_actionBars = null
+      @_forceClose = false
+
       # bind to global events
       @bindTo rheia.router, 'open', @_onOpenElement
 

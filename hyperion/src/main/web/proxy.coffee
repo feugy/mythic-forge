@@ -28,7 +28,7 @@ utils = require '../utils'
 stylus = require 'stylus'
 
 # creates a single server to serve static files
-app = express.createServer()
+app = express()
 
 # Configure the proxy to serve a Rich Internet application on a given context
 #

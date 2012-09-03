@@ -77,7 +77,20 @@
 
     - **[done]** perspective loader
 
+    - moderation perspective
+        - Players
+            - player CRUD
+        - Search
+            - input query with help and validation
+            - display result and navigates
+
     - authoring perspective
+        - multiple file search & replace
+        - single file search & replace
+        - History
+            - display file's history
+            - display folder's removed files
+            - revert to file version
         - **[done]** Perspective
             - **[done]** file tab widget
             - **[done]** create new file/folder

@@ -21,6 +21,8 @@
 logger = require('../logger').getLogger 'web'
 express = require 'express'
 utils = require '../utils'
+http = require 'http'
+https = require 'https'
 fs = require 'fs'
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
@@ -34,6 +36,7 @@ watcher = require('../model/ModelWatcher').get()
 app = null
 certPath = utils.confKey 'ssl.certificate', null
 keyPath = utils.confKey 'ssl.key', null
+app = express()
 if certPath? and keyPath?
   caPath = utils.confKey 'ssl.ca', null
   logger.info "use SSL certificates: #{certPath}, #{keyPath} and #{if caPath? then caPath else 'no certificate chain'}"
@@ -42,13 +45,14 @@ if certPath? and keyPath?
     cert: fs.readFileSync(certPath).toString()
     key: fs.readFileSync(keyPath).toString()
   opt.ca = fs.readFileSync(caPath).toString() if caPath?
-  app = express.createServer opt
+  server = https.createServer opt, app
 else 
   # Creates a plain web server
-  app = express.createServer()
+  server = http.createServer app
 
 # Configure socket.io with it
-io = require('socket.io').listen app, {logger: logger}
+io = require('socket.io').listen server, {logger: logger}
+
 
 # `GET /konami`
 #
@@ -123,4 +127,4 @@ watcher.on 'change', (operation, className, instance) ->
   updateNS.emit operation, className, instance
 
 # Exports the application.
-module.exports = app
+module.exports = server
