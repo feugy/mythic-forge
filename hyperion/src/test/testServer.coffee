@@ -321,7 +321,7 @@ describe 'server tests', ->
 
       beforeEach (done) ->
         Player.collection.drop -> 
-          new Player({login:'Léo'}).save (err, saved) ->
+          new Player({email:'Léo'}).save (err, saved) ->
             throw new Error err if err?
             player = saved 
             done()
@@ -331,13 +331,13 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/player"
 
         # then the player is returned
-        socket.once 'getByLogin-resp', (err, account) ->
+        socket.once 'getByEmail-resp', (err, account) ->
           throw new Error err if err?
           assert.ok player.equals account
           done()
 
-        # when login with the existing account
-        socket.emit 'getByLogin', player.get 'login'
+        # when email with the existing account
+        socket.emit 'getByEmail', player.get 'email'
 
       it 'should new player register', (done) ->
         # given several connected socket.io clients
@@ -346,8 +346,8 @@ describe 'server tests', ->
         # then the player is created
         socket.once 'register-resp', (err, account) ->
           throw new Error err if err?
-          assert.equal account.login, 'Loïc'
-          assert.ok null is account.character
+          assert.equal account.email, 'Loïc'
+          assert.equal 0, account.characters.length
           done()
 
         # when creating a new account

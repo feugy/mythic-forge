@@ -7,10 +7,18 @@ logLevels:
 # Server's configuration
 server:
   host: localhost
-  staticPort: 80
-  apiPort: 443  
+  staticPort: 3080
+  apiPort: 3443  
   gameFolder: ./atlas/src
 
+# Authentication details
+authentication:
+  success: 'http://localhost:3443/rheia/authenticated?'
+  error: 'http://localhost:3443/rheia/authenticated?'  
+  google:
+    id: 750195776526-hkrs2b3a7ueltmu10108r6j9kcii1elo.apps.googleusercontent.com
+    secret: zXQImGPy5xrZeEp7qEdOFP0g
+    
 # SSL certificates. Do not specify them to use plain Http.
 
 # MongoDB connection

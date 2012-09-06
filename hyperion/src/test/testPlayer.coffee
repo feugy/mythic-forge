@@ -49,7 +49,7 @@ describe 'Player tests', ->
 
   it 'should player be created', (done) -> 
     # given a new Player
-    player = new Player {login:'Joe', character:item}
+    player = new Player {email:'Joe', characters:[item]}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
@@ -69,15 +69,16 @@ describe 'Player tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal docs[0].get('login'), 'Joe'
-        assert.ok item.equals docs[0].get('character')
+        assert.equal 'Joe', docs[0].get 'email'
+        assert.equal 1, docs[0].get('characters').length
+        assert.ok item.equals docs[0].get('characters')[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
   describe 'given a Player', ->
 
     beforeEach (done) ->
-      player = new Player {login:'Jack', character:item}
+      player = new Player {email:'Jack', characters:[item]}
       player.save -> done()
 
     it 'should player be removed', (done) ->
@@ -95,7 +96,7 @@ describe 'Player tests', ->
         # then it's not in mongo anymore
         Player.find {}, (err, docs) ->
           throw new Error "Can't find player: #{err}" if err?
-          assert.equal docs.length, 0
+          assert.equal 0, docs.length
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -105,11 +106,11 @@ describe 'Player tests', ->
         assert.equal className, 'Player'
         assert.equal operation, 'update'
         assert.ok player.equals instance
-        assert.ok null is instance.character
+        assert.equal 0, instance.characters.length
         awaited = true
 
       # when modifying and saving a player
-      player.set 'character', null
+      player.set 'characters', []
       awaited = false
       player.save ->
 
@@ -118,7 +119,7 @@ describe 'Player tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal docs[0].get('login'), 'Jack'
-          assert.ok null is docs[0].get 'character'
+          assert.equal 'Jack', docs[0].get 'email'
+          assert.equal 0, docs[0].get('characters').length
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()

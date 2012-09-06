@@ -193,3 +193,16 @@ module.exports =
       when 'text' then checkString()
       else err = "#{property.type} isn't a valid type"
     err
+
+  # Simple utility that generate a random token containing alphanumerical characters
+  # 
+  # @param length [Number] the generated token length
+  # @return a random token
+  generateToken: (length) ->
+    token = ''
+    while token.length < length
+      # random betwenn 48 (0) and 90 (Z)
+      rand = 48+Math.floor Math.random()*43
+      continue if rand >= 58 and rand <= 64 # ignore : ; < = > ? @
+      token += String.fromCharCode(rand).toLowerCase()
+    token

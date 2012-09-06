@@ -11,6 +11,14 @@ server:
   apiPort: 443  
   gameFolder: /home/damien/workspace/mythic-forge/atlas/src
 
+# Authentication details
+authentication:
+  success: '/login?'
+  error: '/login?'  
+  google:
+    id: 750195776526-mo5tvhku8nig3hdfcrqdmeu5t970ssvp.apps.googleusercontent.com
+    secret: _gYg5gAnVChSvilEzmyAUMHu
+    
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
   certificate: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.crt

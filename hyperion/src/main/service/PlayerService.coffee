@@ -20,6 +20,7 @@
 
 Player = require '../model/Player'
 Item = require '../model/Item'
+utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 
 # The PlayerService performs registration and authentication of players.
@@ -27,36 +28,67 @@ logger = require('../logger').getLogger 'service'
 #
 class _PlayerService
 
-  # Create a new player account. Check the login unicity before creation. 
+  # Create a new player account. Check the email unicity before creation. 
   #
-  # @param login [String] the player login
+  # @param email [String] the player email
   # @param callback [Function] callback executed when player was created. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the created player.
-  register: (login, callback) =>
-    logger.debug "Create new player with login: #{login}"
-    # check login unicity
-    @getByLogin login, (err, player) ->
-      return callback "Can't check login unicity: #{err}", null if err?
-      return callback "Login #{login} is already used", null if player?
-      new Player({login: login}).save (err, newPlayer) ->
+  register: (email, callback) =>
+    logger.debug "Create new player with email: #{email}"
+    # check email unicity
+    @getByEmail email, (err, player) ->
+      return callback "Can't check email unicity: #{err}", null if err?
+      return callback "Email #{email} is already used", null if player?
+      new Player({email: email}).save (err, newPlayer) ->
         callback err, newPlayer
 
-  # Retrieve a player by it's login, with its character resolved.
+  # Authenticate a Google account: if account does not exists, creates it, or returns the existing one
+  # Usable with passport-google-oauth.
   #
-  # @param login [String] the player login
+  # @param accessToken [String] OAuth2 access token
+  # @param refreshToken [String] OAuth2 refresh token
+  # @param profile [Object] Google profile details.
+  # @option profile emails [Array] array of user's e-mails
+  # @option profile name [Object] contains givenName (first name) and familyName (last name)
+  # @param callback [Function] callback executed when player was authenticated. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback token [String] the generated access token.
+  authenticatedFromGoogle: (accessToken, refreshToken, profile, callback) =>
+    email = profile.emails[0].value
+    return callback 'No email found in profile' unless email?
+
+    # check user existence
+    @getByEmail email, (err, player) =>
+      return callback "Failed to check player existence: #{err}" if err?
+      # Create or update account
+      unless player?
+        player = new Player
+          email: email
+          firstName: profile.name.givenName
+          lastName: profile.name.familyName
+      # update the saved token
+      player.set 'token', utils.generateToken 24
+      player.save (err, newPlayer) ->
+        return callback "Failed to update player: #{err}" if err?
+        callback null, newPlayer.get 'token'
+
+  # Retrieve a player by it's email, with its characters resolved.
+  #
+  # @param email [String] the player email
   # @param callback [Function] callback executed when player was retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
-  getByLogin: (login, callback) =>
-    logger.debug "consult player by login: #{login}"
-    Player.findOne {login: login}, (err, player) =>
+  getByEmail: (email, callback) =>
+    logger.debug "consult player by email: #{email}"
+    Player.findOne {email: email}, (err, player) =>
       return callback err, null if err?
-      if player?.get('character')?
+      if player? and player.get('characters').length isnt 0
         logger.debug 'resolves its character'
         # resolve the character
-        player.get('character').resolve (err) =>
+        Item.multiResolve player.get('characters'), (err, instances) =>
           return callback err, null if err?
+          player.set 'characters', instances
           callback null, player
       else 
         callback null, player

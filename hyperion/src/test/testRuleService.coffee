@@ -70,7 +70,7 @@ describe 'RuleService tests', ->
         throw new Error err if err?
         script = saved
         Player.collection.drop ->
-          new Player({login: 'Loïc'}).save (err, saved) ->
+          new Player({email: 'Loïc'}).save (err, saved) ->
             throw new Error err if err?
             player = saved
             done()

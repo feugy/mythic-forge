@@ -49,38 +49,39 @@ describe 'PlayerService tests', ->
             done()
 
   it 'should register creates an account', (done) ->
-    # when registering an account with login Jack
+    # when registering an account with email Jack
     service.register 'Jack', (err, player) ->
       throw new Error "Can't register: #{err}" if err?
       # then a player is returned
-      assert.equal 'Jack', player.get 'login'
-      assert.ok null is player.get 'character'
+      assert.equal 'Jack', player.get 'email'
+      assert.equal 0, player.get('characters').length
       done()
 
   describe 'given an existing player', ->
 
     beforeEach (done) ->
-      new Player({login: 'Joe', character: item2}).save (err, saved) ->
+      new Player({email: 'Joe', characters: [item2]}).save (err, saved) ->
         throw new Error err if err?
         player = saved
         done()
         
-    it 'should register failed when reusing login', (done) ->
-      # when registering with used login
-      service.register player.get('login'), (err, account) ->
+    it 'should register failed when reusing email', (done) ->
+      # when registering with used email
+      service.register player.get('email'), (err, account) ->
         # then an error is triggered
-        assert.equal "Login #{player.get 'login'} is already used", err
+        assert.equal "Email #{player.get 'email'} is already used", err
         assert.ok null is account
         done()
         
-    it 'should getByLogin returned player', (done) ->
-      # when retrieving the player by login
-      service.getByLogin player.get('login'), (err, account) ->
-        throw new Error "Can't get by login: #{err}" if err?
+    it 'should getByEmail returned player', (done) ->
+      # when retrieving the player by email
+      service.getByEmail player.get('email'), (err, account) ->
+        throw new Error "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.ok player.equals account
+        assert.equal 1, account.get('characters').length 
         # then the character was retrieved
-        assert.ok item2.equals account.get 'character'
+        assert.ok item2.equals account.get('characters')[0]
         # then the character linked has been resolved
-        assert.ok item1.equals account.get('character').get('friends')[0]
+        assert.ok item1.equals account.get('characters')[0].get('friends')[0]
         done()

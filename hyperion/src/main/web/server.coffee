@@ -24,6 +24,8 @@ utils = require '../utils'
 http = require 'http'
 https = require 'https'
 fs = require 'fs'
+passport = require 'passport'
+GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
 adminService = require('../service/AdminService').get()
@@ -36,7 +38,8 @@ watcher = require('../model/ModelWatcher').get()
 app = null
 certPath = utils.confKey 'ssl.certificate', null
 keyPath = utils.confKey 'ssl.key', null
-app = express()
+app = express() 
+app.use passport.initialize()
 if certPath? and keyPath?
   caPath = utils.confKey 'ssl.ca', null
   logger.info "use SSL certificates: #{certPath}, #{keyPath} and #{if caPath? then caPath else 'no certificate chain'}"
@@ -52,7 +55,6 @@ else
 
 # Configure socket.io with it
 io = require('socket.io').listen server, {logger: logger}
-
 
 # `GET /konami`
 #
@@ -125,6 +127,38 @@ updateNS = io.of('/updates')
 watcher.on 'change', (operation, className, instance) ->
   logger.debug "broadcast of #{operation} on #{instance._id}"
   updateNS.emit operation, className, instance
+
+# Zuthentication: 
+# Configure a passport strategy to use Google's Oauth2 mechanism.
+# Browser will be redirected to success Url with a `token` parameter in case of success 
+# Browser will be redirected to success Url with a `err` parameter in case of failure
+successUrl = utils.confKey 'authentication.success'
+errorUrl = utils.confKey 'authentication.error'
+
+passport.use new GoogleStrategy
+    clientID: utils.confKey 'authentication.google.id'
+    clientSecret: utils.confKey 'authentication.google.secret'
+    callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.apiPort'}/auth/google/callback"
+  , playerService.authenticatedFromGoogle
+ 
+# `GET /auth/google`
+#
+# The authentication API with google. Will redirect browser to google authentication page.
+# Once authenticated, browser is redirected on mythic-forge
+app.get '/auth/google', passport.authenticate 'google', 
+  session: false
+  scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
+
+# `GET /auth/google/google`
+#
+# The authentication callback used by Google. Redirect the browser with the connexion token to configured url.
+# The connexion token is needed to establish the soket.io handshake.
+app.get '/auth/google/callback', (req, res, next) ->
+  passport.authenticate('google', (err, token) ->
+    # authentication failed
+    return res.redirect "#{errorUrl}error=#{err}" if err?
+    res.redirect "#{successUrl}token=#{token}"
+  )(req, res, next)
 
 # Exports the application.
 module.exports = server

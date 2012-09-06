@@ -26,17 +26,25 @@ logger = require('../logger').getLogger 'model'
 
 # Define the schema for players
 PlayerSchema = new mongoose.Schema
-  # no password for now.
-  login: 
+  # email as login
+  email: 
     type: String 
     required: true
 
   lastConnection: Date
-  
-  # link to the character.
-  character:
-    type: {}
-    default: -> null # use a function to force instance variable
+
+  # player informations
+  firstName: String
+  lastName: String
+
+  # token used during authentication
+  token: String
+
+  # link to characters.
+  characters:
+    type: []
+    default: -> [] # use a function to force instance variable
+, strict: true
 
 
 # Override the equals() method defined in Document, to check correctly the equality between _ids, 
@@ -61,12 +69,12 @@ PlayerSchema.pre 'save', (next) ->
   # stores the isNew status.
   wasNew[@_id] = @isNew
   modifiedPaths[@_id] = @modifiedPaths.concat()
-  # replace character with its id, for storing in Mongo, without using setters.
-  saveCharacter = @character
-  @_doc.character = saveCharacter?._id
+  # replace characters with their id, for storing in Mongo, without using setters.
+  saveCharacters = @characters
+  @_doc.characters[i] = character._id for character, i in saveCharacters
   next()
   # restore save to allow reference reuse.
-  @_doc.character = saveCharacter
+  @_doc.characters = saveCharacters
 
 
 # pre-init middleware: retrieve the character corresponding to the stored id.
@@ -74,13 +82,13 @@ PlayerSchema.pre 'save', (next) ->
 # @param item [Item] the initialized item.
 # @param next [Function] function that must be called to proceed with other middleware.
 PlayerSchema.pre 'init', (next, player) ->
-  return next() unless player.character? 
+  return next() if player.characters.length is 0 
   # loads the character from database
-  Item.findOne {_id: player.character}, (err, character) ->
+  Item.find {_id: {$in: player.characters}}, (err, characters) ->
     return next(new Error "Unable to init item #{player._id}. Error while resolving its character: #{err}") if err?
-    return next(new Error "Unable to init item #{player._id} because there is no item with id #{player.character}") unless character?    
+    return next(new Error "Unable to init item #{player._id} because there is no item with id #{player.character}") unless characters.length is player.characters.length
     # Do the replacement.
-    player.character = character
+    player.characters = characters
     next()
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications

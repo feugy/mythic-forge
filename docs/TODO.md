@@ -66,6 +66,14 @@
         - **[done]** rename/move FSItem
         - **[done]** service layer
         - **[done]** web layer
+    - Security
+        - **[done]** register users from Google
+        - register users from Facebook
+        - register user manually
+        - disable security for tests
+        - enforce user existence and rights at socket.io handshake
+        - manual user logout 
+        - automatic user logout
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items
@@ -76,6 +84,10 @@
         - **[done]** rule with category appears in turnRules in search results
 
     - **[done]** perspective loader
+
+    - login page
+
+    - logout button
 
     - moderation perspective
         - Players
