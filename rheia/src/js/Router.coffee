@@ -21,7 +21,7 @@
 # configure requireJs
 requirejs.config  
   paths:
-    'backbone': 'lib/backbone-0.9.2'
+    'backbone': 'lib/backbone-0.9.2-min'
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
@@ -31,7 +31,7 @@ requirejs.config
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
-    'socket.io': 'lib/socket.io-0.9.10'
+    'socket.io': 'lib/socket.io-0.9.10-min'
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.3.3-min'
     'queryparser': 'lib/queryparser-1.0.0-min'
@@ -80,10 +80,8 @@ define [
   'underscore'
   'jquery' 
   'backbone'
-  'view/Layout'
+  'model/sockets'
   'view/Login'
-  #'service/ImagesService'
-  #'service/SearchService'
   'i18n!nls/common'
   # unwired dependencies
   'utils/extensions'
@@ -95,17 +93,9 @@ define [
   'mousewheel'
   'md5'
   'html5slider'
-  ], (_, $, Backbone, LayoutView, LoginView, #ImagesService, SearchService,
-      i18n) ->
+  ], (_, $, Backbone, sockets, LoginView, i18n) ->
 
   class Router extends Backbone.Router
-
-    routes:
-      # Define some URL routes
-      'login': '_onShowLogin'
-      'edition': '_onEdition'
-      'authoring': '_onAuthoring'
-      ':route': '_onNotFound'
 
     # Object constructor.
     #
@@ -118,12 +108,15 @@ define [
       # global router instance
       rheia.router = @
 
-      ### instanciates singletons.
-      rheia.imagesService = new ImagesService()
-      rheia.searchService = new SearchService()
-      rheia.layoutView = new LayoutView()
-      # display layout
-      $('body').empty().append rheia.layoutView.render().$el###
+      # Define some URL routes (order is significant: evaluated from last to first)
+      @route '*route', '_onNotFound'
+      @route 'login', 'login', =>
+        $('body').empty().append new LoginView().render().$el
+      @route 'login?token=:token', '_onLoggedIn'
+      @route 'edition', 'edition', =>
+        @_showPerspective 'editionPerspective', 'view/edition/Perspective'
+      @route 'authoring', 'authoring', =>
+        @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
 
       Backbone.history.start
         pushState: true
@@ -142,9 +135,10 @@ define [
 
       # run current route
       $('body').empty()
-      debugger
       current = window.location.pathname.replace conf.basePath, ''
       current = if current.length is 0 then 'login' else current
+      # we must reset Backone.history internal state to re-run current route.
+      Backbone.history.fragment = null
       @navigate current, trigger: true
 
     # **private**
@@ -160,20 +154,30 @@ define [
         rheia.layoutView.show rheia[name].render().$el
 
     # **private**
-    # Displays the login view
-    _onShowLogin: =>
-      view = new LoginView()
-      $('body').empty().append view.render().$el
+    # Invoked when coming-back from an authentication provider, with a valid token value.
+    # Wired to server with socket.io
+    #
+    # @param token [String] valid autorization token
+    _onLoggedIn: (token) =>
+      # Connects token
+      sockets.connect token, (err) =>
+        return @_onLoginError err if err?
+        # Now require services.
+        require [
+          'service/ImagesService'
+          'service/SearchService' 
+          'view/Layout'
+        ], (ImagesService, SearchService, LayoutView) =>
+          # instanciates singletons.
+          rheia.imagesService = new ImagesService()
+          rheia.searchService = new SearchService()
+          rheia.layoutView = new LayoutView()
 
-    # **private**
-    # Displays the edition perspective
-    _onEdition: =>
-      @_showPerspective 'editionPerspective', 'view/edition/Perspective'
+          # display layout
+          $('body').empty().append rheia.layoutView.render().$el
 
-    # **private**
-    # Displays the game authoring perspective
-    _onAuthoring: =>
-      @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
+          # run first perspective
+          @navigate 'edition', trigger:true
 
     # **private**
     # Invoked when a route that doesn't exists has been run.

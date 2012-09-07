@@ -99,7 +99,7 @@ configureRIA = (base, rootFolder, statics) ->
         return next();
     pathname = url.parse(req.url).pathname.slice base.length+1
     # necessary to allow resolution of relative path on client side. Urls must ends with /
-    return res.redirect "#{base}/" if pathname.indexOf('.html') is -1 and pathname isnt ''
+    pathname = if pathname.indexOf('.html') is -1 then 'index.html' else pathname
     res.header 'Content-Type', 'text/html; charset=UTF-8'
     fs.createReadStream(path.join(rootFolder, pathname || 'index.html')).on('error', () =>
       res.send 404

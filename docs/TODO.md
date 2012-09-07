@@ -72,6 +72,7 @@
         - register user manually
         - **[done]** enforce user existence and rights at socket.io handshake
         - **[done]** disable security for tests
+        - re-authent user after disconnection
         - manual user logout 
         - automatic user logout
     - test images for field types and event types
@@ -85,7 +86,7 @@
 
     - **[done]** perspective loader
 
-    - login page
+    - **[done]** login page
 
     - logout button
 
