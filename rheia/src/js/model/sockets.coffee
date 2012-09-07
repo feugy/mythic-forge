@@ -20,19 +20,34 @@
 
 define [
   'socket.io'
-], (io) ->
+  'async'
+], (io, async) ->
 
-  {
-    # multiplexed socket for game methods RPC
-    game: io.connect "#{conf.apiBaseUrl}/game", {secure: true}
+  # different namespaces that ca be used to communicate qith server
+  namespaces =
+    game: null
+    player: null
+    admin: null
+    updates: null
 
-    # multiplexed socket for registration methods RPC
-    player: io.connect "#{conf.apiBaseUrl}/player", {secure: true}
+    # the connect function will try to connect with server. 
+    # 
+    # @param token [String] the autorization token, obtained during authentication
+    # @param callback [Function] invoked when all namespaces have been connected, with arguments:
+    # @option callback err [String] the error detailed case, or null if no error occured
+    connect: (token, callback) ->
+      socket = io.connect(conf.apiBaseUrl, {secure: true, query:"token=#{token}"}).socket
+      socket.on 'error', callback
 
-    # multiplexed socket for admin methods RPC
-    admin: io.connect "#{conf.apiBaseUrl}/admin", {secure: true}
+      names = Object.keys namespaces
+      names.splice names.indexOf('connect'), 1
 
-    # broadcast socket for database updates
-    updates: io.connect "#{conf.apiBaseUrl}/updates", {secure: true}
-  }
+      async.forEach names, (name, next) ->
+        namespaces[name] = socket.of "/#{name}"
+        namespaces[name].on 'connect', next
+        namespaces[name].on 'connect_failed', next
+      , (err) ->
+        callback err
+
+  namespaces
   

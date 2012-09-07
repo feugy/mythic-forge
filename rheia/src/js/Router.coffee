@@ -31,7 +31,7 @@ requirejs.config
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
-    'socket.io': 'lib/socket.io-0.9.6-min'
+    'socket.io': 'lib/socket.io-0.9.10'
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.3.3-min'
     'queryparser': 'lib/queryparser-1.0.0-min'
@@ -81,8 +81,9 @@ define [
   'jquery' 
   'backbone'
   'view/Layout'
-  'service/ImagesService'
-  'service/SearchService'
+  'view/Login'
+  #'service/ImagesService'
+  #'service/SearchService'
   'i18n!nls/common'
   # unwired dependencies
   'utils/extensions'
@@ -94,14 +95,17 @@ define [
   'mousewheel'
   'md5'
   'html5slider'
-  ], (_, $, Backbone, LayoutView, ImagesService, SearchService, i18n) ->
+  ], (_, $, Backbone, LayoutView, LoginView, #ImagesService, SearchService,
+      i18n) ->
 
   class Router extends Backbone.Router
 
     routes:
       # Define some URL routes
+      'login': '_onShowLogin'
       'edition': '_onEdition'
       'authoring': '_onAuthoring'
+      ':route': '_onNotFound'
 
     # Object constructor.
     #
@@ -114,10 +118,12 @@ define [
       # global router instance
       rheia.router = @
 
-      # instanciates singletons.
+      ### instanciates singletons.
       rheia.imagesService = new ImagesService()
       rheia.searchService = new SearchService()
       rheia.layoutView = new LayoutView()
+      # display layout
+      $('body').empty().append rheia.layoutView.render().$el###
 
       Backbone.history.start
         pushState: true
@@ -128,18 +134,18 @@ define [
         console.error "server error: #{if typeof err is 'object' then err.message else err}"
         console.dir details
       
-
       # route link special behaviour
       $('body').on 'click', 'a[data-route]', (event) =>
         event.preventDefault()
         route = $(event.target).closest('a').data 'route'
         @navigate route, trigger: true
 
-      # display layout
-      $('body').empty().append rheia.layoutView.render().$el
-
-      # TODO 
-      @navigate 'authoring', trigger: true
+      # run current route
+      $('body').empty()
+      debugger
+      current = window.location.pathname.replace conf.basePath, ''
+      current = if current.length is 0 then 'login' else current
+      @navigate current, trigger: true
 
     # **private**
     # Show a perspective inside the wrapper
@@ -154,6 +160,12 @@ define [
         rheia.layoutView.show rheia[name].render().$el
 
     # **private**
+    # Displays the login view
+    _onShowLogin: =>
+      view = new LoginView()
+      $('body').empty().append view.render().$el
+
+    # **private**
     # Displays the edition perspective
     _onEdition: =>
       @_showPerspective 'editionPerspective', 'view/edition/Perspective'
@@ -162,5 +174,13 @@ define [
     # Displays the game authoring perspective
     _onAuthoring: =>
       @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
+
+    # **private**
+    # Invoked when a route that doesn't exists has been run.
+    # 
+    # @param route [String] the unknown route
+    _onNotFound: (route) =>
+      console.error "Unknown route #{route}"
+      @navigate 'login', trigger: true
 
   new Router()

@@ -13,8 +13,8 @@ server:
 
 # Authentication details
 authentication:
-  success: '/login?'
-  error: '/login?'  
+  success: 'http://localhost:8080/rheia/login?'
+  error: 'http://localhost:8080/rheia/login?'  
   google:
     id: 750195776526.apps.googleusercontent.com
     secret: 1NNie9bIZGeU8d0ojrv_HpeD

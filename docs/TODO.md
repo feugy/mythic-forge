@@ -70,8 +70,8 @@
         - **[done]** register users from Google
         - register users from Facebook
         - register user manually
-        - disable security for tests
-        - enforce user existence and rights at socket.io handshake
+        - **[done]** enforce user existence and rights at socket.io handshake
+        - **[done]** disable security for tests
         - manual user logout 
         - automatic user logout
     - test images for field types and event types

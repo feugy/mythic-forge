@@ -73,7 +73,7 @@ class _PlayerService
         return callback "Failed to update player: #{err}" if err?
         callback null, newPlayer.get 'token'
 
-  # Retrieve a player by it's email, with its characters resolved.
+  # Retrieve a player by its email, with its characters resolved.
   #
   # @param email [String] the player email
   # @param callback [Function] callback executed when player was retrieved. Called with parameters:
@@ -92,6 +92,25 @@ class _PlayerService
           callback null, player
       else 
         callback null, player
+
+
+  # Retrieve a player by its token. 
+  # If a player is found, its token is reseted to null to avoid reusing it.
+  #
+  # @param token [String] the concerned token
+  # @param callback [Function] callback executed when player was retrieved. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback player [Player] the corresponding player. May be null.
+  getByToken: (token, callback) =>
+    Player.findOne {token: token}, (err, player) =>
+      return callback err, null if err?
+      # no player found
+      return callback null, null unless player?
+      # set token to null to avoid reusing it
+      player.set 'token', null
+      player.save (err, saved) ->
+        return callback "Failed to reset player's token: #{err}" if err?
+        callback null, saved
 
 _instance = undefined
 class PlayerService

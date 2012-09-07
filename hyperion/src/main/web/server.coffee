@@ -128,7 +128,7 @@ watcher.on 'change', (operation, className, instance) ->
   logger.debug "broadcast of #{operation} on #{instance._id}"
   updateNS.emit operation, className, instance
 
-# Zuthentication: 
+# Authentication: 
 # Configure a passport strategy to use Google's Oauth2 mechanism.
 # Browser will be redirected to success Url with a `token` parameter in case of success 
 # Browser will be redirected to success Url with a `err` parameter in case of failure
@@ -159,6 +159,24 @@ app.get '/auth/google/callback', (req, res, next) ->
     return res.redirect "#{errorUrl}error=#{err}" if err?
     res.redirect "#{successUrl}token=#{token}"
   )(req, res, next)
+
+# Authorization (disabled for tests):
+# Once authenticated, a user has been returned a authorization token.
+# this token is used to allow to connect with socket.io. 
+# **TODO** For administraction namespaces, the user rights are to be checked also.
+unless process.env.NODE_ENV is 'test'
+
+  io.configure -> io.set 'authorization', (handshakeData, callback) ->
+    # check if a token has been sent
+    token = handshakeData.query.token
+    return callback 'No token provided' if 'string' isnt utils.type(token) or token.length is 0
+
+    # then identifies player with this token
+    playerService.getByToken token, (err, player) ->
+      return callback 'Failed to check token existence' if err?
+      # if player exists, authorization awarded !
+      logger.info "Player #{player.email} connected with token #{token}"
+      callback null, player?
 
 # Exports the application.
 module.exports = server

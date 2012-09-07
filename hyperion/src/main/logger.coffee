@@ -30,7 +30,7 @@ levels =
 colors =
   debug: 'grey'
   info: 'green'
-  warn: 'orange'
+  warn: 'yellow'
   error: 'red'
 
 loggers = {}

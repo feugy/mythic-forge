@@ -139,6 +139,7 @@ body
   height 100%
 
 .layout 
+.login
   display box
   box-orient vertical
   overflow hidden
@@ -265,6 +266,74 @@ body
       li a
         padding: 0.2em 0.5em
         typeIcons '.icon', 25, 0
+
+// Login styles
+.login
+  background-image url('images/myth-logo-text.png')
+  background-position 50% 20%
+  background-repeat no-repeat
+  background-size auto 150px
+
+  .container
+    box-orient vertical
+    box-pack center
+    box-align center
+
+  .content
+    display inline-block
+    box-flex 0
+    border-radius 10px
+    border 1px solid borderColor
+    box-shadow 0 10px 15px shadowColor
+    background-color rgba(white, 0.85)
+    padding 30px 40px
+    text-align center
+
+    h1
+      border-bottom 1px solid borderColor
+      margin-bottom 20px
+      padding-bottom 10px
+
+    h1
+    .separator
+      font-size fontSize*1.2
+      font-weight bold
+
+    .separator
+      margin 20px 0
+
+    form
+      width 400px
+      padding 0 1em
+
+      fieldset 
+        padding 2px 0
+
+        > *
+          width 50%
+          box-sizing border-box
+          display inline-block
+
+      label
+        padding-right 10px
+        text-align right
+
+    .connect
+      display inline-block
+      border-radius 8px
+      text-decoration none
+      font-weight bold
+      padding 0.7em 3em
+      color white
+      margin 0 1em
+
+    .connect.google
+      background-image url('images/google.png')
+      background-position 12% center
+      background-repeat no-repeat
+      background-size auto 65%
+      background-color #4F80B7
+
 
 // Overridable imports
 @import 'edition-perspective'

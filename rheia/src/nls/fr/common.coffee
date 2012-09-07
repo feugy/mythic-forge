@@ -32,6 +32,7 @@ define
       rules: 'Règles'
       turnRules: 'Règles de tour'
       fields: 'Terrains'
+    login: 'Rheia - Connexion'
       
   labels:
     yes: 'Oui'
@@ -39,6 +40,14 @@ define
     ok: 'Ok'
     cancel: 'Annuler'
     create: 'Créer'
+    enterLogin: 'Identifiant : '
+    enterPassword: 'Mot de passe : '
+    connectWith: 'Connectez vous avec :'
+    orConnect: 'ou'
+
+  buttons:
+    login: 'Entrer'
+    google: 'Google'
 
   validator:
     required: 'la valeur de "%s" est requise'
