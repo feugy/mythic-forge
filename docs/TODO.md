@@ -72,9 +72,11 @@
         - register user manually
         - **[done]** enforce user existence and rights at socket.io handshake
         - **[done]** disable security for tests
-        - re-authent user after disconnection
+        - **[done]** re-authent user after disconnection
         - manual user logout 
-        - automatic user logout
+        - **[done]** session expiration
+        - restrict rheia access to administrators only
+        - 
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items

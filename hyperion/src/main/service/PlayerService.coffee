@@ -23,6 +23,8 @@ Item = require '../model/Item'
 utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 
+expiration = utils.confKey 'authentication.tokenLifeTime'
+
 # The PlayerService performs registration and authentication of players.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 #
@@ -67,8 +69,9 @@ class _PlayerService
           email: email
           firstName: profile.name.givenName
           lastName: profile.name.familyName
-      # update the saved token
+      # update the saved token and last connection date
       player.set 'token', utils.generateToken 24
+      player.set 'lastConnection', new Date().getTime()
       player.save (err, newPlayer) ->
         return callback "Failed to update player: #{err}" if err?
         callback null, newPlayer.get 'token'
@@ -106,11 +109,20 @@ class _PlayerService
       return callback err, null if err?
       # no player found
       return callback null, null unless player?
-      # set token to null to avoid reusing it
-      player.set 'token', null
-      player.save (err, saved) ->
-        return callback "Failed to reset player's token: #{err}" if err?
-        callback null, saved
+
+      # check expiration date
+      if player.get('lastConnection')+expiration*1000 < new Date().getTime()
+        # expired token: set it to null
+        player.set 'token', null
+        player.save (err, saved) =>
+          return callback "Failed to reset player's expired token: #{err}" if err?
+          callback "Expired token"
+      else
+        # change token for security reason
+        player.set 'token', utils.generateToken 24
+        player.save (err, saved) =>
+          return callback "Failed to change player's token: #{err}" if err?
+          callback null, saved
 
 _instance = undefined
 class PlayerService

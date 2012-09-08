@@ -42,6 +42,7 @@ describe 'Authentication tests', ->
   describe 'given a started server', ->
 
     token = null
+    lastConnection = null
 
     it 'should Google user be enrolled', (done) ->
       this.timeout 5000
@@ -101,6 +102,8 @@ describe 'Authentication tests', ->
                 assert.equal saved.firstName, 'John'
                 assert.equal saved.lastName, 'Doe'
                 assert.equal saved.token, token
+                assert.isNotNull saved.lastConnection
+                lastConnection = saved.lastConnection
                 done()     
 
     it 'should existing logged-in Google user be immediately authenticated', (done) ->
@@ -118,6 +121,8 @@ describe 'Authentication tests', ->
         Player.findOne {email:googleEmail}, (err, saved) ->
           throw new Error "Failed to find created account in db: #{err}" if err?
           assert.equal saved.token, token2
+          assert.isNotNull saved.lastConnection
+          assert.notEqual lastConnection, saved.lastConnection
           done()    
 
     it 'should existing Google user be authenticated after log-in', (done) ->
@@ -169,4 +174,6 @@ describe 'Authentication tests', ->
               Player.findOne {email:googleEmail}, (err, saved) ->
                 throw new Error "Failed to find created account in db: #{err}" if err?
                 assert.equal saved.token, token2
+                assert.isNotNull saved.lastConnection
+                assert.notEqual lastConnection, saved.lastConnection
                 done()      

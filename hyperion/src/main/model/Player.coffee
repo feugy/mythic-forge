@@ -31,7 +31,8 @@ PlayerSchema = new mongoose.Schema
     type: String 
     required: true
 
-  lastConnection: Date
+  # last Connection date (timestamp), used to compute token validity
+  lastConnection: Number
 
   # player informations
   firstName: String

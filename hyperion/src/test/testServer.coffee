@@ -317,42 +317,6 @@ describe 'server tests', ->
           # when resolving rules for john on jack
           socket.emit 'resolveRules', john._id, jack._id
 
-    describe 'given a player', ->
-
-      beforeEach (done) ->
-        Player.collection.drop -> 
-          new Player({email:'Léo'}).save (err, saved) ->
-            throw new Error err if err?
-            player = saved 
-            done()
-
-      it 'should player log-in', (done) ->
-        # given several connected socket.io clients
-        socket = socketClient.connect "#{rootUrl}/player"
-
-        # then the player is returned
-        socket.once 'getByEmail-resp', (err, account) ->
-          throw new Error err if err?
-          assert.ok player.equals account
-          done()
-
-        # when email with the existing account
-        socket.emit 'getByEmail', player.get 'email'
-
-      it 'should new player register', (done) ->
-        # given several connected socket.io clients
-        socket = socketClient.connect "#{rootUrl}/player"
-
-        # then the player is created
-        socket.once 'register-resp', (err, account) ->
-          throw new Error err if err?
-          assert.equal account.email, 'Loïc'
-          assert.equal 0, account.characters.length
-          done()
-
-        # when creating a new account
-        socket.emit 'register', 'Loïc'
-
     describe 'given a type', ->
 
       before (done) ->

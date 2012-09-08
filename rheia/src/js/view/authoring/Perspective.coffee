@@ -215,7 +215,7 @@ define [
       return unless @_createInProgress?
       title = i18n.titles[if @_createInProgress.isFolder then 'newFolder' else 'newFile']
       utils.popup title, _.sprintf(i18n.msgs.fsItemCreationFailed, @_createInProgress.get('path'), err), 'warning', [
-        text: i18n.labels.ok
+        text: i18n.buttons.ok
         icon: 'valid'
       ]
       @_createInProgress = null
@@ -259,7 +259,7 @@ define [
             # trim value and creates/move fsItem
             @_createMoveItem popup.find('input.name').val().trim(), isFolder, oldName
         ,
-          text: i18n.labels.cancel
+          text: i18n.buttons.cancel
           icon: 'cancel'
           click: => validator.dispose()
         ],
@@ -298,10 +298,10 @@ define [
       utils.popup i18n.titles.removeConfirm, 
         _.sprintf(i18n.msgs.removeFolderConfirm, removed.get 'path'), 
         'question', [
-          text: i18n.labels.no
+          text: i18n.buttons.no
           icon: 'invalid'
         ,
-          text: i18n.labels.yes
+          text: i18n.buttons.yes
           icon: 'valid'
           click: => removed.destroy()
         ]

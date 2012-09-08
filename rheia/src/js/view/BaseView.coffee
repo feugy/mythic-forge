@@ -131,21 +131,21 @@ define [
       # allow if we are closing, or if no change found
       return true if @_isClosing or !@canSave()
       utils.popup i18n.titles.closeConfirm, _.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute)), 'question', [
-        text: i18n.labels.yes
+        text: i18n.buttons.yes
         icon: 'valid'
         click: =>
           # save
           @_isClosing = true
           @saveModel()
       ,
-        text: i18n.labels.no
+        text: i18n.buttons.no
         icon: 'invalid'
         click: =>
           # just close view
           @_isClosing = true
           @trigger 'close'
       ,
-        text: i18n.labels.cancel
+        text: i18n.buttons.cancel
         icon: 'cancel'
       ], 2
       # stop closure
@@ -174,10 +174,10 @@ define [
       event?.preventDefault()
       return unless @canRemove()
       utils.popup i18n.titles.removeConfirm, _.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute)), 'question', [
-        text: i18n.labels.no
+        text: i18n.buttons.no
         icon: 'invalid'
       ,
-        text: i18n.labels.yes
+        text: i18n.buttons.yes
         icon: 'valid'
         click: =>
           # destroy model
@@ -236,7 +236,7 @@ define [
       utils.popup i18n.titles.external, 
         _.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute)), 
         'warning', 
-        [text: i18n.labels.ok],
+        [text: i18n.buttons.ok],
         0,
         "externalRemove-#{md5 @getId()}"
 
@@ -247,7 +247,7 @@ define [
       utils.popup i18n.titles.external, 
         _.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute)), 
         'warning',
-        [text: i18n.labels.ok], 
+        [text: i18n.buttons.ok], 
         0,
         "externalChange-#{md5 @getId()}"
 
@@ -259,7 +259,7 @@ define [
       return if $("#serverError-#{@getId()}").length > 0
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
-      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute)), 'cancel', [text: i18n.labels.ok]
+      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute)), 'cancel', [text: i18n.buttons.ok]
 
     # **private**
     # Change handler, wired to any changes from the rendering.

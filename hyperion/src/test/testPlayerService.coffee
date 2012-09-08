@@ -20,6 +20,7 @@
 Player = require '../main/model/Player'
 Item = require '../main/model/Item'
 ItemType = require '../main/model/ItemType'
+utils = require '../main/utils'
 service = require('../main/service/PlayerService').get()
 assert = require('chai').assert
      
@@ -59,8 +60,18 @@ describe 'PlayerService tests', ->
 
   describe 'given an existing player', ->
 
+    token = utils.generateToken 24
+    date = new Date().getTime()
+    expiration = utils.confKey 'authentication.tokenLifeTime'
+    expiredDate = new Date().getTime() - (expiration + 1)*1000
+
     beforeEach (done) ->
-      new Player({email: 'Joe', characters: [item2]}).save (err, saved) ->
+      new Player(
+        email: 'Joe', 
+        characters: [item2]
+        token: token
+        lastConnection: date
+      ).save (err, saved) ->
         throw new Error err if err?
         player = saved
         done()
@@ -78,10 +89,43 @@ describe 'PlayerService tests', ->
       service.getByEmail player.get('email'), (err, account) ->
         throw new Error "Can't get by email: #{err}" if err?
         # then the player was retrieved
+        assert.isNotNull account
         assert.ok player.equals account
         assert.equal 1, account.get('characters').length 
         # then the character was retrieved
         assert.ok item2.equals account.get('characters')[0]
         # then the character linked has been resolved
         assert.ok item1.equals account.get('characters')[0].get('friends')[0]
+        done()   
+
+    it 'should getByToken returned player', (done) ->
+      # when retrieving the player by token
+      service.getByToken token, (err, account) ->
+        throw new Error "Can't get by token: #{err}" if err?
+        # then the player was retrieved
+        assert.isNotNull account
+        assert.ok player.equals account
+        # then token changed
+        assert.notEqual token, account.get 'token'
+        assert.equal date, account.get 'lastConnection'
+        token = account.get 'token'
         done()
+
+    it 'should getByToken not returned expired player', (done) ->
+      # given a expired token
+      player.set 'token', token
+      player.set 'lastConnection', expiredDate
+      player.save (err, saved) ->
+        throw new Error err if err?
+        player = saved
+
+        # when retrieving the player by token
+        service.getByToken token, (err, account) ->
+          # then an error is send
+          assert.isNotNull err
+          assert.equal 'Expired token', err
+          # then token was removed in database
+          Player.findOne {email:player.get 'email'}, (err, saved) ->
+            throw new Error err if err?
+            assert.isNull saved.token
+            done()    

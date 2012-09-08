@@ -83,6 +83,7 @@ define [
   'model/sockets'
   'view/Login'
   'i18n!nls/common'
+  'utils/utilities'
   # unwired dependencies
   'utils/extensions'
   'jquery-ui' 
@@ -93,7 +94,7 @@ define [
   'mousewheel'
   'md5'
   'html5slider'
-  ], (_, $, Backbone, sockets, LoginView, i18n) ->
+  ], (_, $, Backbone, sockets, LoginView, i18n, utils) ->
 
   class Router extends Backbone.Router
 
@@ -118,10 +119,6 @@ define [
       @route 'authoring', 'authoring', =>
         @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
 
-      Backbone.history.start
-        pushState: true
-        root: conf.basePath
-
       # general error handler
       @on 'serverError', (err, details) ->
         console.error "server error: #{if typeof err is 'object' then err.message else err}"
@@ -135,15 +132,29 @@ define [
 
       # run current route
       $('body').empty()
-      current = window.location.pathname.replace conf.basePath, ''
-      current = if current.length is 0 then 'login' else current
-      # we must reset Backone.history internal state to re-run current route.
-      Backbone.history.fragment = null
-      @navigate current, trigger: true
+
+      @on 'connected', (player) =>
+        console.dir player
+
+      Backbone.history.start
+        pushState: true
+        root: conf.basePath
 
     # **private**
-    # Show a perspective inside the wrapper
+    # Show a perspective inside the wrapper. First check the connected status.
+    #
+    # @param name [String] Name of the perspective, used to store it inside the rheia global object
+    # @param path [String] require-js path used to require perspective's files
     _showPerspective: (name, path) =>
+      # check if we are connected
+      if sockets.game is null
+        token = localStorage.getItem 'token'
+        return @navigate 'login', trigger:true unless token?
+        return @_onLoggedIn token
+
+      # update last perspective visited
+      localStorage.setItem 'lastPerspective', window.location.pathname.replace conf.basePath, ''
+
       rheia.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists
       return rheia.layoutView.show rheia[name].$el if name of rheia
@@ -161,13 +172,15 @@ define [
     _onLoggedIn: (token) =>
       # Connects token
       sockets.connect token, (err) =>
-        return @_onLoginError err if err?
+        return @_onLoginError err.replace('handshake ', '').replace('error ', '') if err?
+
         # Now require services.
         require [
           'service/ImagesService'
           'service/SearchService' 
+          'model/Player'
           'view/Layout'
-        ], (ImagesService, SearchService, LayoutView) =>
+        ], (ImagesService, SearchService, Player, LayoutView) =>
           # instanciates singletons.
           rheia.imagesService = new ImagesService()
           rheia.searchService = new SearchService()
@@ -176,8 +189,29 @@ define [
           # display layout
           $('body').empty().append rheia.layoutView.render().$el
 
-          # run first perspective
-          @navigate 'edition', trigger:true
+          # run current or last-saved perspective
+          current = window.location.pathname.replace conf.basePath, ''
+          current = localStorage.getItem 'lastPerspective' if current is 'login'
+          current = 'edition' unless current?
+          # reset Backbone.history internal state to allow re-running current route
+          Backbone.history.fragment = null
+          @navigate current, trigger:true
+
+    # **private**
+    # Invoked when the login mecanism failed. Display details to user and go back to login
+    # 
+    # @param err [String] error details
+    _onLoginError: (err) =>
+      switch err 
+        when 'unauthorized' then msg = i18n.msgs.wrongCredentials 
+        when 'Expired token' then msg = i18n.msgs.expiredToken 
+        else msg = err
+      utils.popup i18n.titles.loginError, msg, 'warning', [
+        text: i18n.buttons.ok, 
+        icon:'valid'
+        click: => 
+          @navigate 'login', trigger:true
+      ]
 
     # **private**
     # Invoked when a route that doesn't exists has been run.

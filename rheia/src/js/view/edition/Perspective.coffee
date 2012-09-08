@@ -69,7 +69,7 @@ define [
         if err?
           # displays an error
           @_searchWidget.setOption 'results', []
-          return utils.popup i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [text: i18n.labels.ok]
+          return utils.popup i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [text: i18n.buttons.ok]
         @_searchWidget.setOption 'results', results
 
     # The `render()` method is invoked by backbone to display view content at screen.

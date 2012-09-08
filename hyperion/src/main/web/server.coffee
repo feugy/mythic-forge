@@ -90,19 +90,10 @@ exposeMethods = (service, socket, except = []) ->
 
 # socket.io `game` namespace 
 #
-# configure the differents message allowed
-# 'game' namespace is associated to GameService
+# 'game' namespace exposes all method of GameService, plus a special 'currentPlayer' method.
 # @see {GameService}
 io.of('/game').on 'connection', (socket) ->
   exposeMethods gameService, socket
-
-# socket.io `player` namespace 
-#
-# configure the differents message allowed
-# 'player' namespace is associated to PlayerService
-# @see {PlayerService}
-io.of('/player').on 'connection', (socket) ->
-  exposeMethods playerService, socket
 
 # socket.io `admin` namespace 
 #
@@ -173,10 +164,24 @@ unless process.env.NODE_ENV is 'test'
 
     # then identifies player with this token
     playerService.getByToken token, (err, player) ->
-      return callback 'Failed to check token existence' if err?
+      return callback err if err?
       # if player exists, authorization awarded !
-      logger.info "Player #{player.email} connected with token #{token}"
+      if player?
+        logger.info "Player #{player.get 'email'} connected with token #{token}"
+        # this will allow to store connected player into the socket details
+        handshakeData.playerEmail = player.get 'email'
       callback null, player?
+
+  # When a client connects, returns it immediately its token
+  io.on 'connection', (socket) ->
+    # retrieve the player email set during autorization phase, and stores it.
+    socket.set 'email', socket.manager.handshaken[socket.id]?.playerEmail
+
+    # special message to get connected player
+    socket.on 'getConnected', (callback) ->
+      socket.get 'email', (err, value) ->
+        return callback err if err?
+        playerService.getByEmail value, callback
 
 # Exports the application.
 module.exports = server

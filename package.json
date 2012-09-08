@@ -14,7 +14,7 @@
     "mongodb": "1.0.0",
     "async": "0.1.18",
     "winston": "0.5.11",
-    "socket.io": "0.9.6",
+    "socket.io": "https://github.com/feugy/socket.io/tarball/master",
     "express": "3.0.0rc4",
     "js-yaml": "0.3.7",
     "fs-extra": "0.1.3",

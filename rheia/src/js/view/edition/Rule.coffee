@@ -156,7 +156,7 @@ define [
     # Refresh category displayal when the model's content changed.
     _onCategoryChange: =>
       category = @model.get 'category'
-      @$el.find('.category').html if category then category else i18n.labels.noRuleCategory
+      @$el.find('.category').html if category then category else i18n.buttons.noRuleCategory
 
     # **private**
     # Refresh active displayal when the model's content changed.

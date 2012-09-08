@@ -15,7 +15,9 @@ server:
 authentication:
   success: 'http://localhost:8080/rheia/login?'
   error: 'http://localhost:8080/rheia/login?'  
+  tokenLifeTime: 900 # number of seconds during wich tokens are valid
   google:
+    # Key usable on localhost domain with SSL
     id: 750195776526.apps.googleusercontent.com
     secret: 1NNie9bIZGeU8d0ojrv_HpeD
 

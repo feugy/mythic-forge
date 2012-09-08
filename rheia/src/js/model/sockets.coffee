@@ -26,7 +26,6 @@ define [
   # different namespaces that ca be used to communicate qith server
   namespaces =
     game: null
-    player: null
     admin: null
     updates: null
 
@@ -36,8 +35,11 @@ define [
     # @param callback [Function] invoked when all namespaces have been connected, with arguments:
     # @option callback err [String] the error detailed case, or null if no error occured
     connect: (token, callback) ->
-      socket = io.connect(conf.apiBaseUrl, {secure: true, query:"token=#{token}"}).socket
+      socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
       socket.on 'error', callback
+      socket.emit 'getConnected', (err, player) =>
+        # stores the token to allow re-connection
+        localStorage.setItem 'token', player.token
 
       names = Object.keys namespaces
       names.splice names.indexOf('connect'), 1
@@ -50,4 +52,3 @@ define [
         callback err
 
   namespaces
-  

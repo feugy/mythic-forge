@@ -20,6 +20,7 @@
 define
   titles:
     serverError: 'Erreur server'
+    loginError: 'Erreur de connexion'
     editionPerspective: 'Edition du monde'
     authoringPerspective: 'Client de jeu'
     removeConfirm: 'Suppression'
@@ -35,10 +36,6 @@ define
     login: 'Rheia - Connexion'
       
   labels:
-    yes: 'Oui'
-    no: 'Non'
-    ok: 'Ok'
-    cancel: 'Annuler'
     create: 'Créer'
     enterLogin: 'Identifiant : '
     enterPassword: 'Mot de passe : '
@@ -48,6 +45,10 @@ define
   buttons:
     login: 'Entrer'
     google: 'Google'
+    yes: 'Oui'
+    no: 'Non'
+    ok: 'Ok'
+    cancel: 'Annuler'
 
   validator:
     required: 'la valeur de "%s" est requise'
@@ -63,3 +64,5 @@ define
     searchFailed: 'La recherche à échouée :<br/><br/>%s'
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2012 Damien Feugas'
+    wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer</p>'
+    expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter</p>'

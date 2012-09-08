@@ -267,7 +267,7 @@ define [
             $(this).find('.images-container > *').unbind()
             $(this).remove()
           buttons: [
-            text: i18n.labels.ok,
+            text: i18n.buttons.ok,
             icons:
               primary: 'valid small'
             click: (event) =>
