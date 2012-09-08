@@ -23,7 +23,6 @@ ItemType = require '../main/model/ItemType'
 watcher = require('../main/model/ModelWatcher').get()
 assert = require('chai').assert
 
-
 player = null
 item = null
 type = null
@@ -74,7 +73,7 @@ describe 'Player tests', ->
         # then it's values were saved
         assert.equal 'Joe', docs[0].get 'email'
         assert.isNotNull docs[0].get 'password'
-        # TODO md5
+        assert.isTrue player.checkPassword 'toto'
         assert.equal 1, docs[0].get('characters').length
         assert.ok item.equals docs[0].get('characters')[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
@@ -112,7 +111,24 @@ describe 'Player tests', ->
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
-    #TODO it 'should player password be updated'
+    it 'should player password be updated', (done) ->
+      # then a modification event was issued
+      watcher.once 'change', (operation, className, instance)->
+        assert.equal className, 'Player'
+        assert.equal operation, 'update'
+        assert.ok player.equals instance
+        awaited = true
+
+      # when modifying password and saving a player
+      player.set 'password', 'titi'
+      awaited = false
+      player.save (err, saved) ->
+        throw new Error "Can't update player password: #{err}" if err?
+        # then password was modified
+        assert.ok player.equals saved
+        assert.isTrue player.checkPassword 'titi'
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
 
     it 'should player be updated', (done) ->
       # then a modification event was issued

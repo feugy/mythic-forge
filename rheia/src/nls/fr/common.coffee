@@ -66,4 +66,5 @@ define
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2012 Damien Feugas'
     wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer</p>'
+    insufficientRights: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, il va falloir trimer un peu !</p>"
     expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter</p>'

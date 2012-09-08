@@ -60,7 +60,21 @@ describe 'PlayerService tests', ->
       assert.equal 0, player.get('characters').length
       done()
 
-  # TODO it 'should password be mandatory during registration'
+  it 'should password be mandatory during registration', (done) ->
+    # when registering an account without password
+    service.register 'Jack', '', (err, player) ->
+      # then an error is returned
+      assert.isNotNull err
+      assert.equal 'Password is mandatory', err, "unexpected error: #{err}"
+      done()
+
+  it 'should email be mandatory during registration', (done) ->
+    # when registering an account without email
+    service.register '', 'toto', (err, player) ->
+      # then an error is returned
+      assert.isNotNull err
+      assert.equal 'Email is mandatory', err, "unexpected error: #{err}"
+      done()
 
   describe 'given an existing player', ->
 
@@ -88,8 +102,22 @@ describe 'PlayerService tests', ->
         assert.equal "Email #{player.get 'email'} is already used", err
         assert.ok null is account
         done()
-        
-    it 'should getByEmail returned player', (done) ->
+         
+    it 'should getByEmail returned player without character resolved', (done) ->
+      # when retrieving the player by email
+      service.getByEmail player.get('email'), false, (err, account) ->
+        throw new Error "Can't get by email: #{err}" if err?
+        # then the player was retrieved
+        assert.isNotNull account
+        assert.ok player.equals account
+        assert.equal 1, account.get('characters').length 
+        # then the character was retrieved
+        assert.ok item2.equals account.get('characters')[0]
+        # then the character linked has not been resolved
+        assert.equal item1.id, account.get('characters')[0].get('friends')[0]
+        done()  
+       
+    it 'should getByEmail returned player with character resolved', (done) ->
       # when retrieving the player by email
       service.getByEmail player.get('email'), (err, account) ->
         throw new Error "Can't get by email: #{err}" if err?

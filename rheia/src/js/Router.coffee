@@ -203,9 +203,11 @@ define [
     # 
     # @param err [String] error details
     _onLoginError: (err) =>
+      console.log err
       err = decodeURIComponent err
       switch err 
-        when 'unauthorized', 'Wrong credentials', 'Missing credentials' then msg = i18n.msgs.wrongCredentials 
+        when 'Wrong credentials', 'Missing credentials' then msg = i18n.msgs.wrongCredentials 
+        when 'unauthorized' then msg = i18n.msgs.insufficientRights
         when 'Expired token' then msg = i18n.msgs.expiredToken 
         else msg = err
       utils.popup i18n.titles.loginError, msg, 'warning', [

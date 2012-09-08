@@ -75,8 +75,8 @@
         - **[done]** re-authent user after disconnection
         - **[done]** manual user logout 
         - **[done]** session expiration
-        - restrict rheia access to administrators only
-        - test password management of manually registered players
+        - **[done]** restrict rheia access to administrators only
+        - **[done]** test password management of manually registered players
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items

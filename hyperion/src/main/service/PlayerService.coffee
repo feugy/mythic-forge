@@ -48,6 +48,8 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the created player.
   register: (email, password, callback) =>
+    return callback 'Email is mandatory' unless email
+    return callback 'Password is mandatory' unless password
     logger.info "Register new player with email: #{email}"
     # check email unicity
     @getByEmail email, (err, player) ->
@@ -120,14 +122,18 @@ class _PlayerService
   # Retrieve a player by its email, with its characters resolved.
   #
   # @param email [String] the player email
+  # @param resolve [Boolean] true to resolve character, false otherwise. True by default
   # @param callback [Function] callback executed when player was retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
-  getByEmail: (email, callback) =>
+  getByEmail: (email, resolve, callback) =>
+    if 'function' is utils.type resolve
+      callback = resolve
+      resolve = true
     logger.debug "consult player by email: #{email}"
     Player.findOne {email: email}, (err, player) =>
       return callback err, null if err?
-      if player? and player.get('characters').length isnt 0
+      if player? and player.get('characters').length isnt 0 and resolve
         logger.debug 'resolves its character'
         # resolve the character
         Item.multiResolve player.get('characters'), (err, instances) =>

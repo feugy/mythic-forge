@@ -93,6 +93,19 @@ exposeMethods = (service, socket, except = []) ->
           logger.debug "processing #{method} message with arguments #{originalArgs}"
           service[method].apply service, args
 
+# Authorization method for namespaces.
+# Get the connected player email from handshake data and allow only if player has administration right
+#
+# @param handshakeData [Object] handshake data. Contains:
+# @option handshakeData playerEmail [String] the connected player's email
+# @param callback [Function] authorization callback, invoked with two parameters:
+# @option callback err [String] an error message, or null if no error occured
+# @option callback allowed [Boolean] true to allow access
+checkAdmin = (handshakeData, callback) ->
+  playerService.getByEmail handshakeData?.playerEmail, false, (err, player) ->
+    return callback "Failed to consult connected player: #{err}" if err?
+    callback null, player?.get 'isAdmin'
+    
 # socket.io `game` namespace 
 #
 # 'game' namespace exposes all method of GameService, plus a special 'currentPlayer' method.
@@ -105,7 +118,7 @@ io.of('/game').on 'connection', (socket) ->
 # configure the differents message allowed
 # 'admin' namespace is associated to AdminService, ImageService, AuthoringService and SearchService
 # @see {AdminService}
-io.of('/admin').on 'connection', (socket) ->
+io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
   exposeMethods adminService, socket
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
@@ -131,7 +144,6 @@ watcher.on 'change', (operation, className, instance) ->
 # Browser will be redirected to success Url with a `err` parameter in case of failure
 successUrl = utils.confKey 'authentication.success'
 errorUrl = utils.confKey 'authentication.error'
-
  
 # `GET /auth/google`
 #
@@ -177,7 +189,7 @@ passport.use new LocalStrategy playerService.authenticate
 # Authorization (disabled for tests):
 # Once authenticated, a user has been returned a authorization token.
 # this token is used to allow to connect with socket.io. 
-# **TODO** For administraction namespaces, the user rights are to be checked also.
+# For administraction namespaces, the user rights are to be checked also.
 unless process.env.NODE_ENV is 'test'
 
   io.configure -> io.set 'authorization', (handshakeData, callback) ->
@@ -204,7 +216,7 @@ unless process.env.NODE_ENV is 'test'
     socket.on 'getConnected', (callback) ->
       socket.get 'email', (err, value) ->
         return callback err if err?
-        playerService.getByEmail value, callback
+        playerService.getByEmail value, false, callback
 
     # message to manually logout the connected player
     socket.on 'logout', ->
