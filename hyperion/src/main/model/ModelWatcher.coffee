@@ -50,23 +50,32 @@ class _ModelWatcher extends EventEmitter
       parameter[key] = value for own key,value of instance._doc
     else 
       parameter = _.clone instance
+
     # do not embed the linked map and type for items and fields
     parameter.type = parameter.type?._id if className is 'Item'
+
     unless modified and 'map' in modified
       # but send the map if it changed
       parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
+
     if operation is 'update'
       if className isnt 'Executable' and className isnt 'FSItem'
         # for update, only emit modified datas
         parameter = 
           _id: instance._id
         parameter[path] = instance.get path for path in modified
+
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
 
     # Specific case of FSItem that must be relative to gameClient root
     parameter.path = pathUtils.relative gameClientRoot, parameter.path if className is 'FSItem'
 
+    # Do not propagate password nor tokens of Players
+    if className is 'Player'
+      delete parameter.password
+      delete parameter.token 
+      
     logger.debug "change propagation: #{operation} of instance #{parameter._id}"
     @emit 'change', operation, className, parameter
 

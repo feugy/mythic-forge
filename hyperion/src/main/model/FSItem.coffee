@@ -18,6 +18,7 @@
 ###
 'use strict'
 
+_ = require 'underscore'
 fs = require 'fs'
 pathUtils = require 'path'
 fsExtra = require 'fs-extra'
@@ -103,6 +104,7 @@ class FSItem
             if err?
               @content = null
               return callback "Cannot construct folder content: #{err}" if err?
+            @content = _.sortBy @content, 'path' # sort to get always consistent results
             callback null, @
 
       else

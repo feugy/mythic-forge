@@ -26,6 +26,7 @@ https = require 'https'
 fs = require 'fs'
 passport = require 'passport'
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
+LocalStrategy = require('passport-local').Strategy
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
 adminService = require('../service/AdminService').get()
@@ -39,7 +40,11 @@ app = null
 certPath = utils.confKey 'ssl.certificate', null
 keyPath = utils.confKey 'ssl.key', null
 app = express() 
+
+app.use express.bodyParser()
+app.use express.methodOverride()
 app.use passport.initialize()
+
 if certPath? and keyPath?
   caPath = utils.confKey 'ssl.ca', null
   logger.info "use SSL certificates: #{certPath}, #{keyPath} and #{if caPath? then caPath else 'no certificate chain'}"
@@ -121,24 +126,26 @@ watcher.on 'change', (operation, className, instance) ->
 
 # Authentication: 
 # Configure a passport strategy to use Google's Oauth2 mechanism.
+# Configure also a strategy for manually created accounts.
 # Browser will be redirected to success Url with a `token` parameter in case of success 
 # Browser will be redirected to success Url with a `err` parameter in case of failure
 successUrl = utils.confKey 'authentication.success'
 errorUrl = utils.confKey 'authentication.error'
+
+ 
+# `GET /auth/google`
+#
+# The authentication API with google. Will redirect browser to google authentication page.
+# Once authenticated, browser is redirected with autorization token in url parameter
+app.get '/auth/google', passport.authenticate 'google', 
+  session: false
+  scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 
 passport.use new GoogleStrategy
     clientID: utils.confKey 'authentication.google.id'
     clientSecret: utils.confKey 'authentication.google.secret'
     callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.apiPort'}/auth/google/callback"
   , playerService.authenticatedFromGoogle
- 
-# `GET /auth/google`
-#
-# The authentication API with google. Will redirect browser to google authentication page.
-# Once authenticated, browser is redirected on mythic-forge
-app.get '/auth/google', passport.authenticate 'google', 
-  session: false
-  scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 
 # `GET /auth/google/google`
 #
@@ -149,7 +156,23 @@ app.get '/auth/google/callback', (req, res, next) ->
     # authentication failed
     return res.redirect "#{errorUrl}error=#{err}" if err?
     res.redirect "#{successUrl}token=#{token}"
-  )(req, res, next)
+  ) req, res, next
+
+ 
+# `POST /auth/login`
+#
+# The authentication API for manually created accounts. 
+# It needs `username` and `password` form parameters
+# Once authenticated, browser is redirected with autorization token in url parameter
+app.post '/auth/login', (req, res, next) ->
+  passport.authenticate('local', (err, token, details) ->
+    # authentication failed
+    return res.redirect "#{errorUrl}error=#{err}" if err?
+    return res.redirect "#{errorUrl}error=#{details.message}" if token is false
+    res.redirect "#{successUrl}token=#{token}"
+  ) req, res, next
+
+passport.use new LocalStrategy playerService.authenticate
 
 # Authorization (disabled for tests):
 # Once authenticated, a user has been returned a authorization token.

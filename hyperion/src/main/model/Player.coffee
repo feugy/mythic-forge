@@ -18,7 +18,9 @@
 ###
 'use strict'
 
+_ = require 'underscore'
 mongoose = require 'mongoose'
+encryptor = require 'password-hash'
 conn = require './connection'
 Item = require './Item'
 modelWatcher = require('./ModelWatcher').get()
@@ -31,12 +33,27 @@ PlayerSchema = new mongoose.Schema
     type: String 
     required: true
 
+  # provider: Google, Facebook or null for manual accounts.
+  provider: 
+    type: String
+    default: null
+
+  # password, only used for manually provided accounts
+  password: 
+    type: String
+    default: null
+
   # last Connection date (timestamp), used to compute token validity
   lastConnection: Number
 
   # player informations
   firstName: String
   lastName: String
+
+  # administrator status, to allow access to rheia
+  isAdmin: 
+    type: Boolean
+    default: false
 
   # token used during authentication
   token: String
@@ -56,6 +73,13 @@ PlayerSchema = new mongoose.Schema
 PlayerSchema.methods.equals = (object) ->
   @_id.equals object?._id
 
+# Simple utility method the test a clear password against the hashed stored one.
+# 
+# @param clearPassword [String] the clear tested value
+# @return true if passwords matched, false otherwise
+PlayerSchema.methods.checkPassword = (clearPassword) ->
+  encryptor.verify clearPassword, @password
+
 # We use the post-save middleware to propagate creation and saves.
 # But within this function, all instances have lost their "isNew" status
 # thus we store that status from the pre-save middleware, to use it in the post-save
@@ -63,10 +87,17 @@ PlayerSchema.methods.equals = (object) ->
 wasNew = {}
 modifiedPaths = {}
 
-# pre-save middleware: store modified paths to allow their propagation
+# pre-save middleware: store modified paths to allow their propagation. 
+# for manually provided accounts, check password existence
 #
 # @param next [Function] function that must be called to proceed with other middleware.
 PlayerSchema.pre 'save', (next) ->
+  return next new Error "Cannot save manually provided account without password" if @provider is null and !@password
+
+  # If clear password provided, encrypt it before storing it.
+  if @password?
+    @password = encryptor.generate @password unless encryptor.isHashed @password
+
   # stores the isNew status.
   wasNew[@_id] = @isNew
   modifiedPaths[@_id] = @modifiedPaths.concat()
@@ -94,7 +125,7 @@ PlayerSchema.pre 'init', (next, player) ->
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications
 PlayerSchema.post 'save', () ->
-  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Player', this, modifiedPaths[@_id]
+  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Player', this, modifiedPaths[@_id] or {}
 
 # post-remove middleware: now that the instace was properly removed, propagate the removal.
 PlayerSchema.post 'remove', () ->

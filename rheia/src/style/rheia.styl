@@ -139,7 +139,7 @@ body
   height 100%
 
 .layout 
-.login
+.login-view
   display box
   box-orient vertical
   overflow hidden
@@ -268,7 +268,7 @@ body
         typeIcons '.icon', 25, 0
 
 // Login styles
-.login
+.login-view
   background-image url('images/myth-logo-text.png')
   background-position 50% 20%
   background-repeat no-repeat
@@ -305,6 +305,12 @@ body
     form
       width 400px
       padding 0 1em
+
+      input[type=submit]
+        display none
+
+      a.login
+        margin-top 1em
 
       fieldset 
         padding 2px 0

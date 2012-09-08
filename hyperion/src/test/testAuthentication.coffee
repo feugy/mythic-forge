@@ -176,4 +176,97 @@ describe 'Authentication tests', ->
                 assert.equal saved.token, token2
                 assert.isNotNull saved.lastConnection
                 assert.notEqual lastConnection, saved.lastConnection
-                done()      
+                done()
+
+    describe 'given a manually created player', ->
+
+      player = null
+      clearPassword = 'dams'
+
+      before (done) ->
+        new Player(
+          email: 'dams@test.com'
+          password: clearPassword
+        ).save (err, saved) -> 
+          throw new Error err if err?
+          player = saved
+          done()
+
+      it 'should user be authenticated', (done) ->
+
+        # when sending a correct authentication form
+        request 
+          uri: "#{rootUrl}/auth/login"
+          method: 'POST'
+          followAllRedirects: true
+          form:
+            username: player.get 'email'
+            password: clearPassword
+        , (err, res, body) ->
+          throw new Error err if err?
+          # then the success page is displayed
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          query = parseUrl(res.request.uri.href).query
+          assert.ok -1 is query.indexOf('error='), "Unexpected server error: #{query}"
+          token = query.replace 'token=', ''
+          assert.isNotNull token
+          # then account has been populated with new token
+          Player.findOne {email:player.get 'email'}, (err, saved) ->
+            throw new Error "Failed to find created account in db: #{err}" if err?
+            assert.equal saved.token, token
+            assert.isNotNull saved.lastConnection
+            lastConnection = saved.lastConnection
+            done()   
+
+      it 'should user not be authenticated with wrong password', (done) ->
+
+        # when sending a wrong password authentication form
+        request 
+          uri: "#{rootUrl}/auth/login"
+          method: 'POST'
+          followAllRedirects: true
+          form:
+            username: player.get 'email'
+            password: 'toto'
+        , (err, res, body) ->
+          throw new Error err if err?
+          # then the success page is displayed
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          query = parseUrl(res.request.uri.href).query
+          assert.ok -1 isnt query.indexOf('Wrong%20credentials'), "unexpected error #{query}"
+          done()   
+
+      it 'should unknown user not be authenticated', (done) ->
+
+        # when sending an unknown account authentication form
+        request 
+          uri: "#{rootUrl}/auth/login"
+          method: 'POST'
+          followAllRedirects: true
+          form:
+            username: 'toto'
+            password: 'titi'
+        , (err, res, body) ->
+          throw new Error err if err?
+          # then the success page is displayed
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          query = parseUrl(res.request.uri.href).query
+          assert.ok -1 isnt query.indexOf('Wrong%20credentials'), "unexpected error #{query}"
+          done()   
+
+      it 'should user not be authenticated without password', (done) ->
+
+        # when sending a wrong password authentication form
+        request 
+          uri: "#{rootUrl}/auth/login"
+          method: 'POST'
+          followAllRedirects: true
+          form:
+            username: player.get 'email'
+        , (err, res, body) ->
+          throw new Error err if err?
+          # then the success page is displayed
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          query = parseUrl(res.request.uri.href).query
+          assert.ok -1 isnt query.indexOf('Missing%20credentials'), "unexpected error #{query}"
+          done()  

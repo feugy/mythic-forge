@@ -69,13 +69,14 @@
     - Security
         - **[done]** register users from Google
         - register users from Facebook
-        - register user manually
+        - **[done]** register user manually
         - **[done]** enforce user existence and rights at socket.io handshake
         - **[done]** disable security for tests
         - **[done]** re-authent user after disconnection
         - **[done]** manual user logout 
         - **[done]** session expiration
         - restrict rheia access to administrators only
+        - test password management of manually registered players
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items
@@ -86,10 +87,8 @@
         - **[done]** rule with category appears in turnRules in search results
 
     - **[done]** perspective loader
-
     - **[done]** login page
-
-    - logout button
+    - **[done]** logout button
 
     - moderation perspective
         - Players

@@ -30,20 +30,56 @@ expiration = utils.confKey 'authentication.tokenLifeTime'
 #
 class _PlayerService
 
+  # Service constructor.
+  # Ensure admin account existence.
+  constructor: ->
+    Player.findOne {email:'admin'}, (err, result) =>
+      throw "Unable to check admin account existence: #{err}" if err?
+      return logger.info '"admin" account already exists' if result?
+      new Player(email:'admin', password: 'admin', isAdmin:true).save (err) =>
+        throw "Unable to create admin account: #{err}" if err?
+        logger.warn '"admin" account has been created with password "admin". Please change it immediately'
+
   # Create a new player account. Check the email unicity before creation. 
   #
   # @param email [String] the player email
+  # @param password [String] the player password.
   # @param callback [Function] callback executed when player was created. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the created player.
-  register: (email, callback) =>
-    logger.debug "Create new player with email: #{email}"
+  register: (email, password, callback) =>
+    logger.info "Register new player with email: #{email}"
     # check email unicity
     @getByEmail email, (err, player) ->
       return callback "Can't check email unicity: #{err}", null if err?
       return callback "Email #{email} is already used", null if player?
-      new Player({email: email}).save (err, newPlayer) ->
+      new Player({email: email, password:password}).save (err, newPlayer) ->
+        logger.info "New player (#{newPlayer.id}) registered with email: #{email}"
         callback err, newPlayer
+
+  # Authenticate a manually created account. 
+  # Usable with passport-local
+  #
+  # @param email [String] User email
+  # @param password [String] clear password value
+  # @param callback [Function] callback executed when player was authenticated. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured. Will became Http error message
+  # @option callback token [String] the generated access token, or false if authentication refused
+  # @option callback details [Object] an error detailed object containing attributes `type` and `message`
+  authenticate: (email, password, callback) =>
+    logger.debug "Authenticate player with email: #{email}"
+    # check user existence
+    @getByEmail email, (err, player) =>
+      return callback "Failed to check player existence: #{err}" if err?
+      # check player existence and password correctness
+      return callback null, false, {type:'error', message:'Wrong credentials'} if player is null or !player.checkPassword password
+      # update the saved token and last connection date
+      player.set 'token', utils.generateToken 24
+      player.set 'lastConnection', new Date().getTime()
+      player.save (err, newPlayer) ->
+        return callback "Failed to update player: #{err}" if err?
+        logger.info "Player (#{newPlayer.id}) authenticated with email: #{email}"
+        callback null, newPlayer.get 'token'
 
   # Authenticate a Google account: if account does not exists, creates it, or returns the existing one
   # Usable with passport-google-oauth.
@@ -59,21 +95,26 @@ class _PlayerService
   authenticatedFromGoogle: (accessToken, refreshToken, profile, callback) =>
     email = profile.emails[0].value
     return callback 'No email found in profile' unless email?
-
+    logger.debug "Authenticate Google player with email: #{email}"
+    
     # check user existence
     @getByEmail email, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
       # Create or update account
       unless player?
+        logger.info "Register Google player with email: #{email}"
         player = new Player
           email: email
+          provider: 'Google'
           firstName: profile.name.givenName
           lastName: profile.name.familyName
+
       # update the saved token and last connection date
       player.set 'token', utils.generateToken 24
       player.set 'lastConnection', new Date().getTime()
       player.save (err, newPlayer) ->
         return callback "Failed to update player: #{err}" if err?
+        logger.info "Google player (#{newPlayer.id}) authenticated with email: #{email}"
         callback null, newPlayer.get 'token'
 
   # Retrieve a player by its email, with its characters resolved.

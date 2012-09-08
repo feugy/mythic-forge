@@ -37,12 +37,23 @@ define [
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
     constructor: (id, className) ->
-      super tagName: 'div', className:'login'
+      super tagName: 'div', className:'login-view'
 
     # the render method, which use the specified template
     render: =>
       super()
+      # wire connection buttons and form
       @$el.find('.google').attr 'href', "#{conf.apiBaseUrl}/auth/google"
+      @$el.find('form').attr 'action', "#{conf.apiBaseUrl}/auth/login"
+      @$el.find('.login').button(
+        text: true
+        label: i18n.buttons.login
+        icons:
+          primary: 'ui-icon small login'
+      ).click (event) => 
+        event?.preventDefault()
+        @$el.find('form').submit()
+      
       # for chaining purposes
       @
 

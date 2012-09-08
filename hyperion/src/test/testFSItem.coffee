@@ -248,6 +248,7 @@ describe 'FSItem tests', ->
       async.forEach content, (item, next) ->
         item.save next
       , ->
+        content.sort (a, b) -> a.path - b.path
         # when reading file content
         folder1.read (err, result) ->
           throw new Error "Can't read folder content: #{err}" if err?
@@ -255,7 +256,7 @@ describe 'FSItem tests', ->
           assert.isNotNull result.content
           assert.equal 3, result.content.length
           assert.ok content[0].equals(result.content[0]), 'first file not read'
-          assert.ok content[1].equals(result.content[1]), 'seconf file not read'
+          assert.ok content[1].equals(result.content[1]), 'second file not read'
           assert.ok new FSItem("#{folder1.path}/folder", true).equals(result.content[2]), 'subfolder not read'
           done()
 

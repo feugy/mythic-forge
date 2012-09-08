@@ -113,6 +113,7 @@ define [
       @route '*route', '_onNotFound'
       @route 'login', 'login', =>
         $('body').empty().append new LoginView().render().$el
+      @route 'login?error=:err', '_onLoginError'
       @route 'login?token=:token', '_onLoggedIn'
       @route 'edition', 'edition', =>
         @_showPerspective 'editionPerspective', 'view/edition/Perspective'
@@ -202,8 +203,9 @@ define [
     # 
     # @param err [String] error details
     _onLoginError: (err) =>
+      err = decodeURIComponent err
       switch err 
-        when 'unauthorized' then msg = i18n.msgs.wrongCredentials 
+        when 'unauthorized', 'Wrong credentials', 'Missing credentials' then msg = i18n.msgs.wrongCredentials 
         when 'Expired token' then msg = i18n.msgs.expiredToken 
         else msg = err
       utils.popup i18n.titles.loginError, msg, 'warning', [

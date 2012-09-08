@@ -49,13 +49,16 @@ describe 'Player tests', ->
 
   it 'should player be created', (done) -> 
     # given a new Player
-    player = new Player {email:'Joe', characters:[item]}
+    player = new Player {email:'Joe', characters:[item], password:'toto'}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'Player'
       assert.equal operation, 'creation'
       assert.ok player.equals instance
+      # then no password nor token propagated
+      assert.isUndefined instance.password
+      assert.isUndefined instance.token
       awaited = true
 
     # when saving it
@@ -70,6 +73,8 @@ describe 'Player tests', ->
         assert.equal docs.length, 1
         # then it's values were saved
         assert.equal 'Joe', docs[0].get 'email'
+        assert.isNotNull docs[0].get 'password'
+        # TODO md5
         assert.equal 1, docs[0].get('characters').length
         assert.ok item.equals docs[0].get('characters')[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
@@ -77,9 +82,16 @@ describe 'Player tests', ->
 
   describe 'given a Player', ->
 
+    clearPassword = 'toto'
+
     beforeEach (done) ->
-      player = new Player {email:'Jack', characters:[item]}
+      player = new Player {email:'Jack', characters:[item], password:clearPassword}
       player.save -> done()
+
+    it 'should player password be checked', (done) ->
+      assert.isFalse player.checkPassword('titi'), 'incorrect password must not pass'
+      assert.isTrue player.checkPassword(clearPassword), 'correct password must pass'
+      done()
 
     it 'should player be removed', (done) ->
       # then a removal event was issued
@@ -99,6 +111,8 @@ describe 'Player tests', ->
           assert.equal 0, docs.length
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
+
+    #TODO it 'should player password be updated'
 
     it 'should player be updated', (done) ->
       # then a modification event was issued

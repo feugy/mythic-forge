@@ -51,12 +51,16 @@ describe 'PlayerService tests', ->
 
   it 'should register creates an account', (done) ->
     # when registering an account with email Jack
-    service.register 'Jack', (err, player) ->
+    service.register 'Jack', 'toto', (err, player) ->
       throw new Error "Can't register: #{err}" if err?
       # then a player is returned
       assert.equal 'Jack', player.get 'email'
+      assert.isNotNull player.get 'password'
+      assert.notEqual 'toto', player.get 'password'
       assert.equal 0, player.get('characters').length
       done()
+
+  # TODO it 'should password be mandatory during registration'
 
   describe 'given an existing player', ->
 
@@ -71,6 +75,7 @@ describe 'PlayerService tests', ->
         characters: [item2]
         token: token
         lastConnection: date
+        password: 'toto'
       ).save (err, saved) ->
         throw new Error err if err?
         player = saved
@@ -78,7 +83,7 @@ describe 'PlayerService tests', ->
         
     it 'should register failed when reusing email', (done) ->
       # when registering with used email
-      service.register player.get('email'), (err, account) ->
+      service.register player.get('email'), 'toto', (err, account) ->
         # then an error is triggered
         assert.equal "Email #{player.get 'email'} is already used", err
         assert.ok null is account
