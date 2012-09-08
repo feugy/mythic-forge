@@ -73,10 +73,9 @@
         - **[done]** enforce user existence and rights at socket.io handshake
         - **[done]** disable security for tests
         - **[done]** re-authent user after disconnection
-        - manual user logout 
+        - **[done]** manual user logout 
         - **[done]** session expiration
         - restrict rheia access to administrators only
-        - 
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items

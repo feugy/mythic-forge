@@ -177,11 +177,18 @@ unless process.env.NODE_ENV is 'test'
     # retrieve the player email set during autorization phase, and stores it.
     socket.set 'email', socket.manager.handshaken[socket.id]?.playerEmail
 
-    # special message to get connected player
+    # message to get connected player
     socket.on 'getConnected', (callback) ->
       socket.get 'email', (err, value) ->
         return callback err if err?
         playerService.getByEmail value, callback
+
+    # message to manually logout the connected player
+    socket.on 'logout', ->
+      socket.get 'email', (err, value) ->
+        return callback err if err?
+        socket.disconnect()
+        playerService.disconnect value, ->
 
 # Exports the application.
 module.exports = server

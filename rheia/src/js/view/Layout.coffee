@@ -51,6 +51,15 @@ define [
           icons:
             primary: "ui-icon #{$(this).attr('class')}"
 
+      @$el.find('a.logout').button(
+        label: i18n.buttons.logout
+        text: true
+        icons:
+          primary: "ui-icon small logout"
+      ).click (event) =>
+        event?.preventDefault()
+        rheia.router.trigger 'logout'
+
       # for chaining purposes
       @
 
@@ -83,6 +92,4 @@ define [
     # @param history [Backbone.History] the history manager
     # @param handler [String] the ran handler
     _onRoute: (history, handler) =>
-      for route, callback of history.routes when callback is handler
-        @$el.find('header a').removeClass('active').filter("[data-route='/#{route}']").addClass 'active'
-        break
+      @$el.find('header a').removeClass('active').filter("[data-route='/#{handler}']").addClass 'active'

@@ -23,6 +23,7 @@ define [
   'async'
 ], (io, async) ->
 
+
   # different namespaces that ca be used to communicate qith server
   namespaces =
     game: null
@@ -37,9 +38,17 @@ define [
     connect: (token, callback) ->
       socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
       socket.on 'error', callback
+
+      # On connection, retrieve current connected player immediately
       socket.emit 'getConnected', (err, player) =>
         # stores the token to allow re-connection
         localStorage.setItem 'token', player.token
+
+      # wire logout facilities
+      rheia.router.on 'logout', => 
+        localStorage.removeItem 'token'
+        socket.emit 'logout'
+        rheia.router.navigate 'login', trigger: true
 
       names = Object.keys namespaces
       names.splice names.indexOf('connect'), 1

@@ -96,7 +96,6 @@ class _PlayerService
       else 
         callback null, player
 
-
   # Retrieve a player by its token. 
   # If a player is found, its token is reseted to null to avoid reusing it.
   #
@@ -123,6 +122,22 @@ class _PlayerService
         player.save (err, saved) =>
           return callback "Failed to change player's token: #{err}" if err?
           callback null, saved
+
+  # Disconnect a player by its email. Token will be set to null.
+  #
+  # @param token [String] the concerned token
+  # @param callback [Function] callback executed when player was disconnected. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback player [Player] the disconnected player.
+  disconnect: (email, callback) =>
+    Player.findOne {email: email}, (err, player) =>
+      return callback err if err?
+      return callback "No player with email #{email} found" unless player?
+      # set token to null
+      player.set 'token', null
+      player.save (err, saved) =>
+        return callback "Failed to reset player's token: #{err}" if err?
+        callback null, saved
 
 _instance = undefined
 class PlayerService

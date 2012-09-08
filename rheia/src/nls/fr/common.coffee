@@ -49,6 +49,7 @@ define
     no: 'Non'
     ok: 'Ok'
     cancel: 'Annuler'
+    logout: 'Sortir'
 
   validator:
     required: 'la valeur de "%s" est requise'
