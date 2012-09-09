@@ -26,8 +26,6 @@ assert = require('chai').assert
 
 port = utils.confKey 'server.apiPort'
 rootUrl = "http://localhost:#{port}"
-googleEmail = "mythic.forge.test@gmail.com"
-googlePassword = "toto1818"
 
 describe 'Authentication tests', ->
 
@@ -44,52 +42,41 @@ describe 'Authentication tests', ->
     token = null
     lastConnection = null
 
-    it 'should Google user be enrolled', (done) ->
-      this.timeout 5000
+    describe 'given a Twitter account', ->
 
-      # when requesting the google authentication page
-      request "#{rootUrl}/auth/google", (err, res, body) ->
-        throw new Error err if err?
-        # then the google authentication page is displayed
-        assert.equal 'accounts.google.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-        assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
-        assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
+      twitterUser = "MythicForgeTest"
+      twitterPassword = "toto1818"
 
-        # forge form to log-in
-        form = 
-          Email: googleEmail
-          GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
-          Passwd: googlePassword
-          checkConnection: 'youtube:248:1'
-          checkedDomains: 'youtube'
-          continue: body.match(/id\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
-          pstMsg: 1
-          scc: 1
-          service: 'lso'
+      it 'should Twitter user be enrolled', (done) ->
+        this.timeout 7000
 
-        # when registering with test account
-        request 
-          uri: 'https://accounts.google.com/ServiceLoginAuth'
-          method: 'POST'
-          form: form
-        , (err, res, body) ->
+        # when requesting the twitter authentication page
+        request "#{rootUrl}/auth/twitter", (err, res, body) ->
           throw new Error err if err?
+          # then the twitter authentication page is displayed
+          assert.equal 'api.twitter.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          assert.ok -1 != body.indexOf('id="username_or_email"'), 'No email found in response'
+          assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
 
-          # manually follw redirection
-          redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
-          request redirect, (err, res, body) ->
+          # forge form to log-in
+          form = 
+            'session[username_or_email]': twitterUser
+            'session[password]': twitterPassword
+            authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+            oauth_token: body.match(/name\s*=\s*"oauth_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+            forge_login: 1
+
+          # when registering with test account
+          request 
+            uri: 'https://api.twitter.com/oauth/authenticate'
+            method: 'POST'
+            form: form
+          , (err, res, body) ->
             throw new Error err if err?
 
-            # accepts to give access to account informations
-            request 
-              uri: body.match(/<form action="([^"]*)"/)[1].replace(/&amp;/g, '&')
-              method: 'POST'
-              followAllRedirects: true
-              form: 
-                state_wrapper: body.match(/name\s*=\s*"state_wrapper"\s+value\s*=\s*"([^"]*)"/)[1]
-                submit_access: true
-
-            , (err, res, body) ->
+            # manually follw redirection
+            redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
+            request redirect, (err, res, body) ->
               throw new Error err if err?
 
               # then the success page is displayed
@@ -97,40 +84,99 @@ describe 'Authentication tests', ->
               token = parseUrl(res.request.uri.href).query.replace 'token=', ''
               assert.isNotNull token
               # then account has been created and populated
-              Player.findOne {email:googleEmail}, (err, saved) ->
+              Player.findOne {email:twitterUser}, (err, saved) ->
                 throw new Error "Failed to find created account in db: #{err}" if err?
-                assert.equal saved.firstName, 'John'
-                assert.equal saved.lastName, 'Doe'
+                assert.equal saved.firstName, 'Bauer'
+                assert.equal saved.lastName, 'Jack'
                 assert.equal saved.token, token
                 assert.isNotNull saved.lastConnection
                 lastConnection = saved.lastConnection
-                done()     
+                done()   
 
-    it 'should existing logged-in Google user be immediately authenticated', (done) ->
+      it 'should existing logged-in Twitter user be immediately authenticated', (done) ->
+        this.timeout 5000
 
-      # when requesting the google authentication page while a google user is already logged-in
-      request "#{rootUrl}/auth/google", (err, res, body) ->
-        throw new Error err if err?
-        # then the success page is displayed
-        assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-        token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-        assert.isNotNull token2
-        assert.notEqual token2, token
-        token = token2
-        # then account has been updated with new token
-        Player.findOne {email:googleEmail}, (err, saved) ->
-          throw new Error "Failed to find created account in db: #{err}" if err?
-          assert.equal saved.token, token2
-          assert.isNotNull saved.lastConnection
-          assert.notEqual lastConnection, saved.lastConnection
-          done()    
+        # when requesting the twitter authentication page while a twitter user is already logged-in
+        request "#{rootUrl}/auth/twitter", (err, res, body) ->
+          throw new Error err if err?
 
-    it 'should existing Google user be authenticated after log-in', (done) ->
-      this.timeout 5000
+          # then the success page is displayed
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+          assert.isNotNull token2
+          assert.notEqual token2, token
+          token = token2
+          # then account has been updated with new token
+          Player.findOne {email:twitterUser}, (err, saved) ->
+            throw new Error "Failed to find created account in db: #{err}" if err?
+            assert.equal saved.token, token2
+            assert.isNotNull saved.lastConnection
+            assert.notEqual lastConnection, saved.lastConnection
+            done()    
 
-      # given an existing but not logged in Google account
-      request "https://code.google.com/apis/console/logout", (err, res, body) ->
-        throw new Error err if err?
+      it 'should existing Twitter user be authenticated after log-in', (done) ->
+        this.timeout 15000
+
+        # given an existing but not logged in Twitter account
+        request 'http://twitter.com/logout', (err, res, body) ->
+          throw new Error err if err?
+
+          request 
+            uri: 'https://twitter.com/logout'
+            method: 'POST'
+            form:
+              authenticity_token: body.match(/value\s*=\s*"([^"]*)"\s+name\s*=\s*"authenticity_token"/)[1]
+          , (err, res, body) ->
+            throw new Error err if err?
+
+            # when requesting the twitter authentication page
+            request "#{rootUrl}/auth/twitter", (err, res, body) ->
+              throw new Error err if err?
+              # then the twitter authentication page is displayed
+              assert.equal 'api.twitter.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+              assert.ok -1 != body.indexOf('id="username_or_email"'), 'No email found in response'
+              assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+
+              # forge form to log-in
+              form = 
+                'session[username_or_email]': twitterUser
+                'session[password]': twitterPassword
+                authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+                oauth_token: body.match(/name\s*=\s*"oauth_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+                forge_login: 1
+
+              # when registering with test account
+              request 
+                uri: 'https://api.twitter.com/oauth/authenticate'
+                method: 'POST'
+                form: form
+              , (err, res, body) ->
+                throw new Error err if err?
+
+                # manually follw redirection
+                redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
+                request redirect, (err, res, body) ->
+                  throw new Error err if err?
+
+                  # then the success page is displayed
+                  assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+                  token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                  assert.isNotNull token2
+                  assert.notEqual token2, token
+                  # then account has been updated with new token
+                  Player.findOne {email:twitterUser}, (err, saved) ->
+                    throw new Error "Failed to find created account in db: #{err}" if err?
+                    assert.equal saved.token, token2
+                    assert.isNotNull saved.lastConnection
+                    assert.notEqual lastConnection, saved.lastConnection
+                    done()
+    describe 'given a Google account', ->
+
+      googleUser = "mythic.forge.test@gmail.com"
+      googlePassword = "toto1818"
+
+      it 'should Google user be enrolled', (done) ->
+        this.timeout 7000
 
         # when requesting the google authentication page
         request "#{rootUrl}/auth/google", (err, res, body) ->
@@ -142,7 +188,7 @@ describe 'Authentication tests', ->
 
           # forge form to log-in
           form = 
-            Email: googleEmail
+            Email: googleUser
             GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
             Passwd: googlePassword
             checkConnection: 'youtube:248:1'
@@ -165,18 +211,103 @@ describe 'Authentication tests', ->
             request redirect, (err, res, body) ->
               throw new Error err if err?
 
-              # then the success page is displayed
-              assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-              token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-              assert.isNotNull token2
-              assert.notEqual token2, token
-              # then account has been updated with new token
-              Player.findOne {email:googleEmail}, (err, saved) ->
-                throw new Error "Failed to find created account in db: #{err}" if err?
-                assert.equal saved.token, token2
-                assert.isNotNull saved.lastConnection
-                assert.notEqual lastConnection, saved.lastConnection
-                done()
+              # accepts to give access to account informations
+              request 
+                uri: body.match(/<form action="([^"]*)"/)[1].replace(/&amp;/g, '&')
+                method: 'POST'
+                followAllRedirects: true
+                form: 
+                  state_wrapper: body.match(/name\s*=\s*"state_wrapper"\s+value\s*=\s*"([^"]*)"/)[1]
+                  submit_access: true
+
+              , (err, res, body) ->
+                throw new Error err if err?
+
+                # then the success page is displayed
+                assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+                token = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                assert.isNotNull token
+                # then account has been created and populated
+                Player.findOne {email:googleUser}, (err, saved) ->
+                  throw new Error "Failed to find created account in db: #{err}" if err?
+                  assert.equal saved.firstName, 'John'
+                  assert.equal saved.lastName, 'Doe'
+                  assert.equal saved.token, token
+                  assert.isNotNull saved.lastConnection
+                  lastConnection = saved.lastConnection
+                  done()     
+
+      it 'should existing logged-in Google user be immediately authenticated', (done) ->
+
+        # when requesting the google authentication page while a google user is already logged-in
+        request "#{rootUrl}/auth/google", (err, res, body) ->
+          throw new Error err if err?
+          # then the success page is displayed
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+          assert.isNotNull token2
+          assert.notEqual token2, token
+          token = token2
+          # then account has been updated with new token
+          Player.findOne {email:googleUser}, (err, saved) ->
+            throw new Error "Failed to find created account in db: #{err}" if err?
+            assert.equal saved.token, token2
+            assert.isNotNull saved.lastConnection
+            assert.notEqual lastConnection, saved.lastConnection
+            done()    
+
+      it 'should existing Google user be authenticated after log-in', (done) ->
+        this.timeout 7000
+
+        # given an existing but not logged in Google account
+        request "https://code.google.com/apis/console/logout", (err, res, body) ->
+          throw new Error err if err?
+
+          # when requesting the google authentication page
+          request "#{rootUrl}/auth/google", (err, res, body) ->
+            throw new Error err if err?
+            # then the google authentication page is displayed
+            assert.equal 'accounts.google.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+            assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
+            assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
+
+            # forge form to log-in
+            form = 
+              Email: googleUser
+              GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
+              Passwd: googlePassword
+              checkConnection: 'youtube:248:1'
+              checkedDomains: 'youtube'
+              continue: body.match(/id\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
+              pstMsg: 1
+              scc: 1
+              service: 'lso'
+
+            # when registering with test account
+            request 
+              uri: 'https://accounts.google.com/ServiceLoginAuth'
+              method: 'POST'
+              form: form
+            , (err, res, body) ->
+              throw new Error err if err?
+
+              # manually follw redirection
+              redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
+              request redirect, (err, res, body) ->
+                throw new Error err if err?
+
+                # then the success page is displayed
+                assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+                token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                assert.isNotNull token2
+                assert.notEqual token2, token
+                # then account has been updated with new token
+                Player.findOne {email:googleUser}, (err, saved) ->
+                  throw new Error "Failed to find created account in db: #{err}" if err?
+                  assert.equal saved.token, token2
+                  assert.isNotNull saved.lastConnection
+                  assert.notEqual lastConnection, saved.lastConnection
+                  done()
 
     describe 'given a manually created player', ->
 

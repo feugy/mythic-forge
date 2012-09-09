@@ -119,6 +119,42 @@ class _PlayerService
         logger.info "Google player (#{newPlayer.id}) authenticated with email: #{email}"
         callback null, newPlayer.get 'token'
 
+  # Authenticate a Twitter account: if account does not exists, creates it, or returns the existing one
+  # Usable with passport-twitter.
+  #
+  # @param accessToken [String] OAuth2 access token
+  # @param refreshToken [String] OAuth2 refresh token
+  # @param profile [Object] Google profile details.
+  # @option profile emails [Array] array of user's e-mails
+  # @option profile name [Object] contains givenName (first name) and familyName (last name)
+  # @param callback [Function] callback executed when player was authenticated. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback token [String] the generated access token.
+  authenticatedFromTwitter: (accessToken, refreshToken, profile, callback) =>
+    email = profile.username
+    return callback 'No email found in profile' unless email?
+    logger.debug "Authenticate Twitter player with email: #{email}"
+    
+    # check user existence
+    @getByEmail email, (err, player) =>
+      return callback "Failed to check player existence: #{err}" if err?
+      # Create or update account
+      unless player?
+        logger.info "Register Twitter player with email: #{email}"
+        player = new Player
+          email: email
+          provider: 'Twitter'
+          firstName: profile.displayName.split(' ')[1] or ''
+          lastName: profile.displayName.split(' ')[0] or ''
+
+      # update the saved token and last connection date
+      player.set 'token', utils.generateToken 24
+      player.set 'lastConnection', new Date().getTime()
+      player.save (err, newPlayer) ->
+        return callback "Failed to update player: #{err}" if err?
+        logger.info "Twitter player (#{newPlayer.id}) authenticated with email: #{email}"
+        callback null, newPlayer.get 'token'
+
   # Retrieve a player by its email, with its characters resolved.
   #
   # @param email [String] the player email

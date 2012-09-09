@@ -45,6 +45,7 @@ define
   buttons:
     login: 'Entrer'
     google: 'Google'
+    twitter: 'Twitter'
     yes: 'Oui'
     no: 'Non'
     ok: 'Ok'

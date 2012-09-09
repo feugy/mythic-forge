@@ -128,7 +128,6 @@ icon(size, margin = 0)
   vertical-align -0.5em
   margin margin
 
-
 // Add to a specified selector a "type" icon background
 //
 // @param selector [String] the concerned selector
@@ -181,3 +180,38 @@ multiIcon(names, row = 0)
     .ui-icon.{name}.x-big
       icon 75
       background-position unit(-75*i, 'px') unit(-75*row, 'px')
+
+// Style for connect buttons: images/login.png. 3 states supported: normal, hover and active
+//
+// @param selector [String] selector on which apply connect button styles
+// @param line [Number] line in the image. (75px height, divided by 3)
+connect-button(selector, line)
+  // normal: from 0 to -25
+  {selector}
+    display inline-block
+    box-sizing border-box
+    height 25px
+    padding-left 35px
+    background-image url('images/login.png')
+    background-position 0px unit(-75*line, 'px')
+    line-height 25px
+
+  {selector}:after
+    content ''
+    float right
+    background-image url('images/login.png')
+    background-position right unit(-75*line, 'px')
+    height 25px
+    width 15px
+
+  // hover: from -25 to -50
+  {selector}:hover
+    background-position 0px unit((-75*line)-25, 'px')
+  {selector}:hover:after
+    background-position right unit((-75*line)-25, 'px')
+
+  // active: from -50 to -75
+  {selector}:active
+    background-position 0px unit((-75*line)-50, 'px')
+  {selector}:active:after
+    background-position right unit((-75*line)-50, 'px')

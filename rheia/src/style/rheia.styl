@@ -325,38 +325,15 @@ body
         text-align right
 
     .connect
-      display inline-block
-      box-sizing border-box
-      height 25px
       margin 0 1em
-      padding-left 35px
-      background-image url('images/login.png')
-      line-height 25px
       font-weight bold
       text-decoration none
 
-    .connect:after
-      content ''
-      float right
-      background-image url('images/login.png')
-      background-position right top
-      height 25px
-      width 15px
-
-    .connect.google
-      background-position 0px 0px
-
-    .connect.google:hover
-      background-position 0px -25px
-
-    .connect.google:hover:after
-      background-position right -25px
-
-    .connect.google:active
-      background-position 0px -50px
-
-    .connect.google:active:after
-      background-position right -50px
+    .connect.twitter
+      color white
+        
+    connect-button '.connect.google', 0
+    connect-button '.connect.twitter', 2
 
 // Overridable imports
 @import 'edition-perspective'

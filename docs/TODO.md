@@ -68,6 +68,7 @@
         - **[done]** web layer
     - Security
         - **[done]** register users from Google
+        - **[done]** register users from Twitter
         - register users from Facebook
         - **[done]** register user manually
         - **[done]** enforce user existence and rights at socket.io handshake

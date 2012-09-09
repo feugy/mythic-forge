@@ -16,10 +16,13 @@ authentication:
   success: 'http://localhost:8080/rheia/login?'
   error: 'http://localhost:8080/rheia/login?'  
   tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  # Key usable on localhost domain with SSL
   google:
-    # Key usable on localhost domain with SSL
     id: 750195776526.apps.googleusercontent.com
     secret: 1NNie9bIZGeU8d0ojrv_HpeD
+  twitter:
+    id: DMpozBM7Vt90TLxwMGA
+    secret: D8RgRXt9yV32nOxEQjo6NjhanbzpgGKmh6Ap9HHUN4
 
 # SSL certificates. Do not specify them to use plain Http.
 ssl:

@@ -44,6 +44,7 @@ define [
       super()
       # wire connection buttons and form
       @$el.find('.google').attr 'href', "#{conf.apiBaseUrl}/auth/google"
+      @$el.find('.twitter').attr 'href', "#{conf.apiBaseUrl}/auth/twitter"
       @$el.find('form').attr 'action', "#{conf.apiBaseUrl}/auth/login"
       @$el.find('.login').button(
         text: true

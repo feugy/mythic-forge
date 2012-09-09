@@ -26,6 +26,7 @@ https = require 'https'
 fs = require 'fs'
 passport = require 'passport'
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
+TwitterStrategy = require('passport-twitter').Strategy
 LocalStrategy = require('passport-local').Strategy
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
@@ -41,9 +42,14 @@ certPath = utils.confKey 'ssl.certificate', null
 keyPath = utils.confKey 'ssl.key', null
 app = express() 
 
+noSecurity = process.env.NODE_ENV is 'test'
+
+app.use express.cookieParser()
 app.use express.bodyParser()
 app.use express.methodOverride()
+app.use express.session secret: 'mythic-forge' # mandatory for OAuth providers
 app.use passport.initialize()
+app.use passport.session()
 
 if certPath? and keyPath?
   caPath = utils.confKey 'ssl.ca', null
@@ -102,10 +108,62 @@ exposeMethods = (service, socket, except = []) ->
 # @option callback err [String] an error message, or null if no error occured
 # @option callback allowed [Boolean] true to allow access
 checkAdmin = (handshakeData, callback) ->
+  # always give access for tests
+  return callback null, true if noSecurity
+  # check connected user rights
   playerService.getByEmail handshakeData?.playerEmail, false, (err, player) ->
     return callback "Failed to consult connected player: #{err}" if err?
     callback null, player?.get 'isAdmin'
-    
+
+# Creates routes to allow authentication from an OAuth/OAuth2 provider:
+#
+# `GET /auth/#{provider}`
+#
+# The authentication API. Will redirect browser to provider's authentication page.
+# Once authenticated, prodiver will redirect browser to callback utel
+#
+# `GET /auth/#{provider}/google`
+#
+# The authentication callback used by provider. Redirect the browser with the connexion token to configured url.
+# The connexion token is needed to establish the soket.io handshake.
+#
+# @param provider [String] the provider name, lower case, used in url and as strategy name.
+# @param strategy [Passport.Strategy] the strategy class involved
+# @param verify [Function] Function used to enroll users from provider's response.
+# @param scopes [Array] OAuth2 scopes sent to provider. Null for OAuth providers
+registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
+
+  if scopes isnt null
+    # OAuth2 provider
+    passport.use  new strategy
+      clientID: utils.confKey "authentication.#{provider}.id"
+      clientSecret: utils.confKey "authentication.#{provider}.secret"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
+    , verify
+
+    args = session: false, scope: scopes
+
+  else
+    # OAuth provider
+    passport.use new TwitterStrategy
+      consumerKey: utils.confKey "authentication.#{provider}.id"
+      consumerSecret: utils.confKey "authentication.#{provider}.secret"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
+    , verify
+
+    args = {}
+
+  app.get "/auth/#{provider}", passport.authenticate provider, args
+
+  app.get "/auth/#{provider}/callback", (req, res, next) ->
+    passport.authenticate(provider, (err, token) ->
+      # authentication failed
+      return res.redirect "#{errorUrl}error=#{err}" if err?
+      res.redirect "#{successUrl}token=#{token}"
+      # remove session created during authentication
+      req.session.destroy()
+    ) req, res, next
+
 # socket.io `game` namespace 
 #
 # 'game' namespace exposes all method of GameService, plus a special 'currentPlayer' method.
@@ -138,39 +196,15 @@ watcher.on 'change', (operation, className, instance) ->
   updateNS.emit operation, className, instance
 
 # Authentication: 
-# Configure a passport strategy to use Google's Oauth2 mechanism.
+# Configure a passport strategy to use Google and Twitter Oauth2 mechanism.
 # Configure also a strategy for manually created accounts.
 # Browser will be redirected to success Url with a `token` parameter in case of success 
 # Browser will be redirected to success Url with a `err` parameter in case of failure
 successUrl = utils.confKey 'authentication.success'
 errorUrl = utils.confKey 'authentication.error'
- 
-# `GET /auth/google`
-#
-# The authentication API with google. Will redirect browser to google authentication page.
-# Once authenticated, browser is redirected with autorization token in url parameter
-app.get '/auth/google', passport.authenticate 'google', 
-  session: false
-  scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 
-passport.use new GoogleStrategy
-    clientID: utils.confKey 'authentication.google.id'
-    clientSecret: utils.confKey 'authentication.google.secret'
-    callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.apiPort'}/auth/google/callback"
-  , playerService.authenticatedFromGoogle
+passport.use new LocalStrategy playerService.authenticate
 
-# `GET /auth/google/google`
-#
-# The authentication callback used by Google. Redirect the browser with the connexion token to configured url.
-# The connexion token is needed to establish the soket.io handshake.
-app.get '/auth/google/callback', (req, res, next) ->
-  passport.authenticate('google', (err, token) ->
-    # authentication failed
-    return res.redirect "#{errorUrl}error=#{err}" if err?
-    res.redirect "#{successUrl}token=#{token}"
-  ) req, res, next
-
- 
 # `POST /auth/login`
 #
 # The authentication API for manually created accounts. 
@@ -184,13 +218,14 @@ app.post '/auth/login', (req, res, next) ->
     res.redirect "#{successUrl}token=#{token}"
   ) req, res, next
 
-passport.use new LocalStrategy playerService.authenticate
-
+registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
+registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
+ 
 # Authorization (disabled for tests):
 # Once authenticated, a user has been returned a authorization token.
 # this token is used to allow to connect with socket.io. 
 # For administraction namespaces, the user rights are to be checked also.
-unless process.env.NODE_ENV is 'test'
+unless noSecurity
 
   io.configure -> io.set 'authorization', (handshakeData, callback) ->
     # check if a token has been sent
