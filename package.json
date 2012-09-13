@@ -17,9 +17,10 @@
     "socket.io": "https://github.com/feugy/socket.io/tarball/master",
     "express": "3.0.0rc4",
     "js-yaml": "0.3.7",
-    "fs-extra": "0.1.3",
+    "fs-extra": "https://github.com/feugy/node-fs-extra/tarball/master",
     "stylus": "0.27.2",
     "requirejs": "2.0.6",
+    "gift": "0.0.5",
     "passport": "0.1.12",
     "passport-google-oauth": "0.1.4",
     "passport-facebook": "0.1.4",
@@ -35,7 +36,7 @@
     "zombie": "1.4.1"
   },
   "scripts": {
-    "test": "(set NODE_ENV=test) & mocha --reporter spec hyperion/lib/test/testAuthoringService.js",
+    "test": "(set NODE_ENV=test) & mocha --reporter spec hyperion/lib/test",
     "postinstall": "coffee --bare --compile --output hyperion/lib hyperion/src"
   },
   "bin": {

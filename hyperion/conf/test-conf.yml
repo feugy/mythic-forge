@@ -37,9 +37,9 @@ executable:
 
 # Game client
 game:
-  dev: ./hyperion/lib/game-test/client
-  optimized: ./hyperion/lib/game-test/optimized
-  production: ./hyperion/lib/game-test/final
+  dev: ../test/client
+  optimized: ../test/optimized
+  production: ../test/final
 
 # Turns execution settings. Frequency in seconds
 turn:

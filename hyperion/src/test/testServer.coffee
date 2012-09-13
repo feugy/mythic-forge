@@ -17,8 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-fs = require 'fs'
-path = require 'path'
+pathUtils = require 'path'
 server = require '../main/web/server'
 socketClient = require 'socket.io-client'
 Item = require '../main/model/Item'
@@ -29,8 +28,9 @@ Executable = require '../main/model/Executable'
 FSItem = require '../main/model/FSItem'
 utils = require '../main/utils'
 request = require 'request'
-fsExtra = require 'fs-extra'
+fs = require 'fs-extra'
 testUtils = require './utils/testUtils'
+authoringService = require('../main/service/AuthoringService').get()
 assert = require('chai').assert
 
 port = 9090
@@ -70,16 +70,17 @@ describe 'server tests', ->
         throw new Error err if err?
         root = utils.confKey 'game.dev'
         # given a clean root
-        fsExtra.remove root, (err) ->
-          fsExtra.mkdir root, (err) ->
+        fs.remove pathUtils.dirname(root), (err) ->
+          throw new Error err if err?
+          authoringService.init (err) ->
             throw new Error err if err?
             
             file = 
-              path: path.join 'images', 'image1.png'
+              path: pathUtils.join 'images', 'image1.png'
               isFolder: false
               content: imgData.toString('base64')
 
-            newPath = path.join 'images', 'image2.png'
+            newPath = pathUtils.join 'images', 'image2.png'
             
             # then the saved fsItem is returned
             socket.once 'save-resp', (err, modelName, saved) ->
@@ -355,7 +356,7 @@ describe 'server tests', ->
             # then the description image is updated in model
             assert.equal saved.descImage, "#{character._id}-type.png"
             # then the file exists and is equal to the original file
-            file = path.join utils.confKey('images.store'), saved.descImage
+            file = pathUtils.join utils.confKey('images.store'), saved.descImage
             assert.ok fs.existsSync file
             assert.equal fs.readFileSync(file).toString(), data.toString()
 
@@ -391,7 +392,7 @@ describe 'server tests', ->
             assert.equal saved.images[0].width, 0
             assert.equal saved.images[0].height, 0
             # then the file exists and is equal to the original file
-            file = path.join utils.confKey('images.store'), saved.images[0].file
+            file = pathUtils.join utils.confKey('images.store'), saved.images[0].file
             assert.ok fs.existsSync file
             assert.equal fs.readFileSync(file).toString(), data.toString()
 

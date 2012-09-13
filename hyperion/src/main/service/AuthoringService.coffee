@@ -24,18 +24,21 @@ pathUtils = require 'path'
 coffee = require 'coffee-script'
 stylus = require 'stylus'
 fs = require 'fs-extra'
+git = require 'gift'
 async = require 'async'
 requirejs = require 'requirejs'
+child = require 'child_process'
+EventEmitter = require('events').EventEmitter
 utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 
-root = pathUtils.resolve pathUtils.normalize utils.confKey 'game.dev'
-
-# enforce root folder existence at startup.
-utils.enforceFolderSync root, false, logger
+repo = null
+root = null
 
 #Simple method to remove occurence of the root path from error messages
-purge = (err) -> err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), ''
+purge = (err) -> 
+  err = err.message if utils.isA err, Error
+  err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), '' if 'string'
 
 # Tries to compile stylus sheet, and to creates its compiled css equivalent.
 # Source file is removed
@@ -214,7 +217,40 @@ makeCacheable = (folder, main, callback) ->
 
 # The AuthoringService export feature relative to game client.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
-class _AuthoringService
+class _AuthoringService extends EventEmitter
+
+  # Service constructor. Invoke init()
+  # Triggers 'initialized' event on singleton instance when ready.
+  constructor: ->
+    @init (err) =>
+      throw new Error "Failed to init: #{err}" if err?
+      @emit 'initialized'
+
+  # Initialize folders and git repository.
+  # 
+  # @param callback [Function] initialization end callback.
+  # @option callback err [Sting] error message. Null if no error occured.
+  init: (callback) =>
+    root = pathUtils.resolve pathUtils.normalize utils.confKey 'game.dev'
+    # enforce folders existence at startup.
+    utils.enforceFolderSync root, false, logger
+    repository = pathUtils.dirname root
+
+    finished = =>
+      # creates also the git repository
+      logger.info "git repository initialized !"
+      repo = git repository
+      callback null
+
+    # Performs a 'git init' if git repository do not exists
+    unless fs.existsSync pathUtils.join repository, '.git'
+      logger.info "initialize git repository at #{repository}..."
+      child.exec "git init #{repository}", (err, stdout, stderr) ->
+        return callback err if err?
+        finished()
+    else
+      logger.info "using existing git repository..."
+      finished()
 
   # Retrieves the root FSItem, populated with its content.
   #
@@ -245,11 +281,33 @@ class _AuthoringService
     # make relative path absolute
     item.path = pathUtils.resolve root, item.path
     # saves it
-    item.save (err, saved) =>
+    item.save (err, saved, isNew) =>
       return callback purge err if err?
-      # makes fs-item relative to root
-      saved.path = pathUtils.relative root, saved.path
-      callback null, saved
+
+      # do not commit folders
+      if saved.isFolder
+        # makes fs-item relative to root
+        saved.path = pathUtils.relative root, saved.path
+        return callback null, saved
+
+      # but do it for files
+      commit = =>
+        # now commit it on git
+        repo.commit 'TODO', {all:true}, (err, stdout) =>
+          return callback "Failed to commit: #{err}" if err?
+          logger.debug "#{saved.path} commited"
+          # makes fs-item relative to root
+          saved.path = pathUtils.relative root, saved.path
+          callback null, saved
+
+      if isNew
+        # first add it to git
+        repo.add saved.path, (err, stdout) =>
+          return callback "Failed to add to version control: #{purge err}" if err?
+          logger.debug "#{saved.path} added to version control"
+          commit()
+      else 
+        commit()
 
   # Removes a given FSItem, with all its content.
   # Only one deletion event will be triggered.
@@ -384,6 +442,7 @@ class _AuthoringService
 # Singleton instance
 _instance = undefined
 class AuthoringService
+
   @get: ->
     _instance ?= new _AuthoringService()
 

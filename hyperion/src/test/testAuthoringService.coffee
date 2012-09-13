@@ -18,24 +18,21 @@
 ###
 
 async = require 'async'
-fs = require 'fs'
 pathUtils = require 'path'
-fsExtra = require 'fs-extra'
+fs = require 'fs-extra'
 FSItem = require '../main/model/FSItem'
 utils = require '../main/utils'
-assert = require('chai').assert
 service = require('../main/service/AuthoringService').get()
+assert = require('chai').assert
 
 root = utils.confKey 'game.dev'
 
 describe 'AuthoringService tests', -> 
 
   before (done) ->
-    # given a clean game source
-    fsExtra.remove root, ->
-      fsExtra.mkdir root, (err) ->
-        throw new Error err if err?
-        done()
+    fs.remove root, (err) ->
+      throw new Error err if err?
+      service.init done
 
   it 'should file be created', (done) -> 
     # given a new file
@@ -69,11 +66,11 @@ describe 'AuthoringService tests', ->
     ]
     before (done) ->
       # given a clean game source
-      fsExtra.remove root, ->
+      fs.remove root, ->
         # and some file in it
         async.forEach ['file1.txt', 'file2.txt', 'folder/file3.txt', 'folder/file4.txt'], (file, next) ->
           file = pathUtils.join root, file
-          fsExtra.mkdir pathUtils.dirname(file), (err) ->
+          fs.mkdir pathUtils.dirname(file), (err) ->
             return next err if err?
             fs.writeFile file, '', next
         , done
@@ -169,7 +166,7 @@ describe 'AuthoringService tests', ->
       service.save folder, (err, saved) ->
         throw new Error err if err?
         folder = saved
-        async.forEach ['file1.txt', 'file2.txt'], (file, next) ->
+        async.forEachSeries ['file1.txt', 'file2.txt'], (file, next) ->
           item = new FSItem pathUtils.join(folder.path, file), false
           files.push item
           service.save item, next

@@ -31,7 +31,8 @@ service = require('../main/service/AdminService').get()
 watcher = require('../main/model/ModelWatcher').get()
 testUtils = require './utils/testUtils'
 utils = require '../main/utils'
-fsExtra = require 'fs-extra'
+pathUtils = require 'path'
+fs = require 'fs-extra'
 assert = require('chai').assert
      
 itemTypes = []
@@ -42,6 +43,22 @@ maps = []
 fields = []
 fsItem = null
 gameClientRoot = utils.confKey 'game.dev'
+
+# CLean FSItem root and reinit authoring service
+initializedFSRoot = (callback) ->
+  fs.remove pathUtils.dirname(gameClientRoot), (err) -> 
+    return callback err if err?
+    authoringService.init (err) ->
+      return callback err if err?
+      # creates a single fsItem
+      authoringService.save 
+        path: 'folder/test.txt'
+        isFolder: false
+        content: new Buffer('Hi !').toString 'base64'
+      , (err, result) ->
+        return callback err if err?
+        fsItem = result
+        callback()
 
 describe 'AdminService tests', -> 
 
@@ -57,36 +74,27 @@ describe 'AdminService tests', ->
           FieldType.collection.drop -> Field.collection.drop ->
             EventType.collection.drop -> Event.collection.drop ->
               Map.collection.drop ->
-                fsExtra.remove gameClientRoot, -> fsExtra.mkdir gameClientRoot, ->
-                  # creates a single fsItem
-                  authoringService.save 
-                    path: 'folder/test.txt'
-                    isFolder: false
-                    content: new Buffer('Hi !').toString 'base64'
-                  , (err, result) ->
+                # creates fixtures
+                created = [
+                  {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                  {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
+                  {clazz: EventType, args: {name: 'type 5', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
+                  {clazz: EventType, args: {name: 'type 6', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
+                  {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
+                  {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
+                  {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
+                  {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
+                  {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
+                  {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
+                ]
+                create = (def) ->
+                  return done() unless def?
+                  new def.clazz(def.args).save (err, saved) ->
                     throw new Error err if err?
-                    fsItem = result
-                    # creates fixtures
-                    created = [
-                      {clazz: ItemType, args: {name: 'type 1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-                      {clazz: ItemType, args: {name: 'type 2', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
-                      {clazz: EventType, args: {name: 'type 5', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
-                      {clazz: EventType, args: {name: 'type 6', properties:{content:{type:'string', def:'hello'}}}, store: eventTypes}
-                      {clazz: FieldType, args: {name: 'type 3'}, store: fieldTypes}
-                      {clazz: FieldType, args: {name: 'type 4'}, store: fieldTypes}
-                      {clazz: Executable, args: {_id: 'rule 1', content:'# hello'}, store: executables}
-                      {clazz: Executable, args: {_id: 'rule 2', content:'# world'}, store: executables}
-                      {clazz: Map, args: {name: 'map 1', kind:'square'}, store: maps}
-                      {clazz: Map, args: {name: 'map 2', kind:'diamond'}, store: maps}
-                    ]
-                    create = (def) ->
-                      return done() unless def?
-                      new def.clazz(def.args).save (err, saved) ->
-                        throw new Error err if err?
-                        def.store.push saved
-                        create created.pop()
-
+                    def.store.push saved
                     create created.pop()
+
+                create created.pop()
 
   it 'should list fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -153,18 +161,23 @@ describe 'AdminService tests', ->
       done()
 
   it 'should list returns fsItems in root', (done) ->
-    authoringService.readRoot (err, expected) ->
+    # given a clean empty folder root
+    initializedFSRoot (err)->
       throw new Error err if err?
+      
+      # when reading the root
+      authoringService.readRoot (err, expected) ->
+        throw new Error err if err?
 
-      # when listing all fs items
-      service.list 'FSItem', (err, modelName, list) ->
-        throw new Error "Can't list root FSItems: #{err}" if err?
-        # then the authoring service result were returned
-        assert.equal modelName, 'FSItem'
-        assert.equal list.length, expected.content.length
-        for item, i in expected.content
-          assert.ok item.equals list[i]
-        done()
+        # when listing all fs items
+        service.list 'FSItem', (err, modelName, list) ->
+          throw new Error "Can't list root FSItems: #{err}" if err?
+          # then the authoring service result were returned
+          assert.equal modelName, 'FSItem'
+          assert.equal list.length, expected.content.length
+          for item, i in expected.content
+            assert.ok item.equals list[i]
+          done()
 
   it 'should save fails on unallowed model', (done) ->
     unknownModelName = 'toto'

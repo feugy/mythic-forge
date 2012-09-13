@@ -118,9 +118,10 @@ class FSItem
   # Folder status cannot be changed.
   # Folder cannot be saved once created
   # 
-  # @param callback [Function] called when the save is finished, with two arguments:
-  #   @param err [String] error string. Null if save succeeded
-  #   @param item [FSItem] the saved item
+  # @param callback [Function] called when the save is finished, with three arguments:
+  # @option callback err [String] error string. Null if save succeeded
+  # @option callback item [FSItem] the saved item
+  # @option callback isNew [Boolean] true if the item did not exists before
   save: (callback) =>
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
@@ -141,7 +142,7 @@ class FSItem
             logger.debug "folder #{@path} successfully created"
             # invoke watcher
             modelWatcher.change 'creation', 'FSItem', @
-            callback null, @
+            callback null, @, true
         else
           callback "Cannot save existing folder #{@path}"
 
@@ -161,7 +162,7 @@ class FSItem
               return callback "Error while saving file #{@path}: #{err}" if err?
               logger.debug "file #{@path} successfully saved"
               modelWatcher.change (if isNew then 'creation' else 'update'), 'FSItem', @, ['content']
-              callback null, @
+              callback null, @, isNew
           catch exc
             callback "Bad file content for file #{@path}: #{exc}"
 

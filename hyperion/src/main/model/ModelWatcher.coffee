@@ -66,7 +66,7 @@ class _ModelWatcher extends EventEmitter
         parameter[path] = instance.get path for path in modified
 
     else if operation isnt 'creation' and operation isnt 'deletion'
-      throw new Error "Unknown operation #{operation} on instance #{parameter._id}"
+      throw new Error "Unknown operation #{operation} on instance #{parameter._id or parameter.path}}"
 
     # Specific case of FSItem that must be relative to gameClient root
     parameter.path = pathUtils.relative gameClientRoot, parameter.path if className is 'FSItem'
@@ -76,7 +76,7 @@ class _ModelWatcher extends EventEmitter
       delete parameter.password
       delete parameter.token 
       
-    logger.debug "change propagation: #{operation} of instance #{parameter._id}"
+    logger.debug "change propagation: #{operation} of instance #{parameter._id or parameter.path}"
     @emit 'change', operation, className, parameter
 
 class ModelWatcher
