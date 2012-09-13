@@ -59,13 +59,24 @@
         - **[done]** (rule) search 'val' (as string/regexp) in category
         - **[done]** (turn-rule) search 'val' (as number) in rank
         - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
-    - **[done]** Authoring service and FSItem
+    - Authoring service and FSItem
         - **[done]** get FSItem
         - **[done]** save FSItem
         - **[done]** remove FSItem
         - **[done]** rename/move FSItem
         - **[done]** service layer
         - **[done]** web layer
+        - commit FSItem on save
+        - get FSItem history
+        - get FSItem version
+    - Authoring Service and game deployment
+        - **[done]** compile stylus, coffee and optimize js and css
+        - **[done]** move to production path and create unic url for resources
+        - compact git history and create version
+        - revert to previous version
+        - list existing versions and current
+        - allow/block non-administrator login
+        - **[done]** serve production version with cache and gzip
     - Security
         - **[done]** register users from Google
         - **[done]** register users from Twitter
@@ -78,6 +89,7 @@
         - **[done]** session expiration
         - **[done]** restrict rheia access to administrators only
         - **[done]** test password management of manually registered players
+
     - test images for field types and event types
     - bugs
         - **[done]** remove item type property does not update existing items
@@ -86,18 +98,15 @@
     - bugs
         - **[done]** spaces inside tab names 
         - **[done]** rule with category appears in turnRules in search results
-
     - **[done]** perspective loader
     - **[done]** login page
     - **[done]** logout button
-
     - moderation perspective
         - Players
             - player CRUD
         - Search
             - input query with help and validation
             - display result and navigates
-
     - authoring perspective
         - multiple file search & replace
         - single file search & replace
@@ -122,7 +131,6 @@
             - **[done]** loading/save content
             - **[done]** external modification/removal notification
             - **[done]** displays images
-
     - edition perspective
         - contextual menus in search and explorer
         - Maps
@@ -171,3 +179,4 @@
     - hexagonal maps
     - event-kind properties
     - date-kind properties
+    - connect with Google, Twitter

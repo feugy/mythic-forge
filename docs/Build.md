@@ -11,6 +11,15 @@ This is the configuration I set up to work properly.
   2. OnSaveBuild
   3. CoffeeScript
 
+# Install node-gyp
+
+Some dependencies (especially Zombie, the headless browser) need a platforme-dependent build.
+Node-gyp is intended to build them.
+Please follow [instruction](https://github.com/TooTallNate/node-gyp)
+
+For windows users, you'll need to install Python 2.7.3, and a free version of Microsoft Visual Studio Express (2010 for example)
+
+
 # Node global utilities
 
 Obviously, node is required and must be installed on your system.
@@ -18,6 +27,7 @@ Once done, install the following package globally (means executable are availabl
 
   npm install -g coffee-script
   npm install -g mocha
+  npm install -g node-gyp
 
 # MongoDB
 

@@ -1,0 +1,34 @@
+'use strict'
+
+window.rheia = {}
+
+define [
+  'underscore'
+  'jquery' 
+  'backbone'
+  'i18n!nls/common'
+  'utils/utilities'
+  'text!tpl/login.html'
+  'utils/extensions'
+  'jquery-ui' 
+  ], (_, $, Backbone, i18n, utils, template) ->
+
+  class Router extends Backbone.Router
+
+    constructor: ->
+
+      super()
+      rheia.router = @
+
+      @route '*route', '_showTemplate'
+
+      $('body').empty()
+
+      Backbone.history.start
+        pushState: true
+        root: conf.basePath
+
+    _showTemplate: =>
+      $('body').empty().append(template).find('h1').html i18n.titles.editionPerspective
+
+  new Router()

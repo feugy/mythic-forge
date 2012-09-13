@@ -134,9 +134,6 @@ define [
       # run current route
       $('body').empty()
 
-      @on 'connected', (player) =>
-        console.dir player
-
       Backbone.history.start
         pushState: true
         root: conf.basePath
@@ -179,9 +176,8 @@ define [
         require [
           'service/ImagesService'
           'service/SearchService' 
-          'model/Player'
           'view/Layout'
-        ], (ImagesService, SearchService, Player, LayoutView) =>
+        ], (ImagesService, SearchService, LayoutView) =>
           # instanciates singletons.
           rheia.imagesService = new ImagesService()
           rheia.searchService = new SearchService()

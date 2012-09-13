@@ -68,7 +68,7 @@ describe 'server tests', ->
       # given a file with binary content
       fs.readFile './hyperion/src/test/fixtures/image1.png', (err, imgData) ->
         throw new Error err if err?
-        root = utils.confKey 'game.source'
+        root = utils.confKey 'game.dev'
         # given a clean root
         fsExtra.remove root, (err) ->
           fsExtra.mkdir root, (err) ->

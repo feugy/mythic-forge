@@ -41,7 +41,7 @@ executables = []
 maps = []
 fields = []
 fsItem = null
-gameClientRoot = utils.confKey 'game.source'
+gameClientRoot = utils.confKey 'game.dev'
 
 describe 'AdminService tests', -> 
 

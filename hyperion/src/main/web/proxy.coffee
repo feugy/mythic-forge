@@ -23,6 +23,7 @@ express = require 'express'
 path = require 'path'
 url = require 'url'
 fs = require 'fs'
+http = require 'http'
 coffee = require 'coffee-script'
 utils = require '../utils'
 stylus = require 'stylus'
@@ -30,18 +31,10 @@ stylus = require 'stylus'
 # creates a single server to serve static files
 app = express()
 
-# Configure the proxy to serve a Rich Internet application on a given context
-#
+# Register a specific route to return configuration file
+# 
 # @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
-# Must not be a subpart of another RIA
-# @param rootFolder [String] path to the local folder that contains the RIA files.
-# @param statics [Array<String>] Array of path relative to `rootFolder` that will be statically served
-# @param compiledPath [String] A path under which js files will be the compilation result of coffee files
-configureRIA = (base, rootFolder, statics) ->
-  # serve static files
-  app.use "#{base}/#{stat}", express.static path.join rootFolder, stat for stat in statics
-
-  # Specific configuration file.
+registerConf = (base) ->
   app.get "#{base}/conf.js", (req, res, next) ->
     staticPort = utils.confKey 'server.staticPort'
     host = utils.confKey 'server.host'
@@ -59,6 +52,19 @@ configureRIA = (base, rootFolder, statics) ->
 
     res.header 'Content-Type', 'application/javascript; charset=UTF-8'
     res.send "window.conf = #{JSON.stringify conf}"
+
+# Configure the proxy to serve a Rich Internet application on a given context
+#
+# @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
+# Must not be a subpart of another RIA
+# @param rootFolder [String] path to the local folder that contains the RIA files.
+# @param statics [Array<String>] Array of path relative to `rootFolder` that will be statically served
+# @param compiledPath [String] A path under which js files will be the compilation result of coffee files
+configureRIA = (base, rootFolder, statics) ->
+  # serve static files
+  app.use "#{base}/#{stat}", express.static path.join rootFolder, stat for stat in statics
+
+  registerConf base
 
   # on-the-fly coffee-script compilation. Must be after static configuration to avoid compiling js external libraries
   app.get new RegExp("^#{base}/(.*)\.js$") , (req, res, next) ->
@@ -97,6 +103,10 @@ configureRIA = (base, rootFolder, statics) ->
     for stat in statics
       if 0 is req.url.indexOf "#{base}/#{stat}"
         return next();
+
+    # redirects with trailing slash to avoid relative path errors from browser
+    return res.redirect "#{base}/" if req.url is "#{base}"
+
     pathname = url.parse(req.url).pathname.slice base.length+1
     # necessary to allow resolution of relative path on client side. Urls must ends with /
     pathname = if pathname.indexOf('.html') is -1 then 'index.html' else pathname
@@ -107,11 +117,35 @@ configureRIA = (base, rootFolder, statics) ->
 
 
 # serve commun static assets
-app.use "/images", express.static utils.confKey 'images.store'
+app.use express.compress level:9
+app.use '/images', express.static utils.confKey 'images.store'
+
+# Specific game configuration file.
+registerConf '/game'
+
+# Configure specific RIA for production client: statically served
+gameMiddleware = express.static utils.confKey 'game.production'
+app.get /^\/game(\/.*)?$/, (req, res, next) ->
+  # we need to redirect /game to /game/ to avoid relative path errors from browser
+  return res.redirect '/game/' if req.url is '/game'
+
+  # manage push-state requests: serve index.html unless requesting an extension
+  req.url = '/game/' unless /^\/game(.*)\.\w*$/.test req.url
+
+  # manage cache headers: no cache for root file, always cache for other
+  if /^\/game\/([^\/]*)?$/.test req.url
+    res.setHeader 'Cache-Control', 'no-store, no-cache'
+    res.setHeader 'Expires', 'now' # will be interpreted as past date
+  else
+    res.setHeader 'Cache-Control', "public, max-age=2592000, must-revalidate"
+
+  # serve static files
+  req.url = req.url.replace /^\/game/, ''
+  gameMiddleware req, res, next
 
 # configure a game RIA and the administration RIA 
-configureRIA '/game', utils.confKey('server.gameFolder'), ['js', 'assets', 'style']
+configureRIA '/gamedev', utils.confKey('game.dev'), []
 configureRIA '/rheia', './rheia/src', ['js', 'style']
 
 # Exports the application.
-module.exports = app
+module.exports = http.createServer app

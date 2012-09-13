@@ -26,7 +26,7 @@ utils = require '../main/utils'
 assert = require('chai').assert
 service = require('../main/service/AuthoringService').get()
 
-root = utils.confKey 'game.source'
+root = utils.confKey 'game.dev'
 
 describe 'AuthoringService tests', -> 
 
