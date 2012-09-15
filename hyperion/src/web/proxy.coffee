@@ -145,7 +145,7 @@ app.get /^\/game(\/.*)?$/, (req, res, next) ->
 
 # configure a game RIA and the administration RIA 
 configureRIA '/gamedev', utils.confKey('game.dev'), []
-configureRIA '/rheia', './rheia/src', ['js', 'style']
+configureRIA '/rheia', './rheia', ['js', 'style', 'templates', 'nls']
 
 # Exports the application.
 module.exports = http.createServer app
