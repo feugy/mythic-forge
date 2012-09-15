@@ -78,26 +78,35 @@ app.get '/konami', (req, res) ->
 #
 # @param service [Object] the service instance which is exposed.
 # @param socket [Object] the socket namespace that will expose service methods.
-# @param except [Array] optionnal array of ignored method. dafault to empty array
-exposeMethods = (service, socket, except = []) ->
-  # exposes all methods
-  for method of service.__proto__ 
-    unless method in except
-      do(method) ->
-        socket.on method, ->
-          # add return callback to incoming arguments
-          originalArgs = Array.prototype.slice.call arguments
-          args = originalArgs.concat()
-          args.push ->
-            logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
-            # returns the callback arguments
-            returnArgs = Array.prototype.slice.call arguments
-            returnArgs.splice 0, 0, "#{method}-resp"
-            socket.emit.apply socket, returnArgs
+# @param connected [Array] optionnal array of method that needs connected email before callback parameter. default to empty array
+# @param except [Array] optionnal array of ignored method. default to empty array
+exposeMethods = (service, socket, connected = [], except = []) ->
+  # Get the connected player email, unless noSecurity specified. In this case, admin is always connected.
+  socket.get 'email', (err, email) ->
+    email = 'admin' if noSecurity
 
-          # invoke the service layer with arguments 
-          logger.debug "processing #{method} message with arguments #{originalArgs}"
-          service[method].apply service, args
+    # exposes all methods
+    for method of service.__proto__ 
+      unless method in except
+        do(method) ->
+          socket.on method, ->
+            originalArgs = Array.prototype.slice.call arguments
+            args = originalArgs.concat()
+            
+            # add connected email for those who need it.
+            args.push email if method in connected
+
+            # add return callback to incoming arguments
+            args.push ->
+              logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
+              # returns the callback arguments
+              returnArgs = Array.prototype.slice.call arguments
+              returnArgs.splice 0, 0, "#{method}-resp"
+              socket.emit.apply socket, returnArgs
+
+            # invoke the service layer with arguments 
+            logger.debug "processing #{method} message with arguments #{originalArgs}"
+            service[method].apply service, args
 
 # Authorization method for namespaces.
 # Get the connected player email from handshake data and allow only if player has administration right
@@ -176,11 +185,11 @@ io.of('/game').on 'connection', (socket) ->
 # configure the differents message allowed
 # 'admin' namespace is associated to AdminService, ImageService, AuthoringService and SearchService
 # @see {AdminService}
-io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
-  exposeMethods adminService, socket
+io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->    
+  exposeMethods adminService, socket, ['save', 'remove']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
-  exposeMethods authoringService, socket, ['readRoot', 'save', 'remove']
+  exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
 
 # socket.io `updates` namespace 
 #

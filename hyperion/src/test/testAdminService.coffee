@@ -55,7 +55,7 @@ initializedFSRoot = (callback) ->
         path: 'folder/test.txt'
         isFolder: false
         content: new Buffer('Hi !').toString 'base64'
-      , (err, result) ->
+      , 'admin', (err, result) ->
         return callback err if err?
         fsItem = result
         callback()
@@ -182,7 +182,7 @@ describe 'AdminService tests', ->
   it 'should save fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when saving unallowed model
-    service.save unknownModelName, {name:'type 3'}, (err, modelName, model) ->
+    service.save unknownModelName, {name:'type 3'}, 'admin', (err, modelName, model) ->
       # then an error occured
       assert.equal err, "The #{unknownModelName} model can't be saved"
       assert.equal modelName, unknownModelName
@@ -201,7 +201,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving new item type
-    service.save 'ItemType', values, (err, modelName, model) ->
+    service.save 'ItemType', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save itemType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -229,7 +229,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving new event type
-    service.save 'EventType', values, (err, modelName, model) ->
+    service.save 'EventType', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save eventType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -257,7 +257,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving new field type
-    service.save 'FieldType', values, (err, modelName, model) ->
+    service.save 'FieldType', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save fieldType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -284,7 +284,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving new executable
-    service.save 'Executable', values, (err, modelName, model) ->
+    service.save 'Executable', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save executable: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -312,7 +312,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving new map
-    service.save 'Map', values, (err, modelName, model) ->
+    service.save 'Map', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save map: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -342,7 +342,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving new fsitem
-    service.save 'FSItem', values, (err, modelName, model) ->
+    service.save 'FSItem', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save fsitem: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -379,7 +379,7 @@ describe 'AdminService tests', ->
         awaited = true
 
       # when saving existing item type
-      service.save 'ItemType', values, (err, modelName, model) ->
+      service.save 'ItemType', values, 'admin', (err, modelName, model) ->
         throw new Error "Can't save itemType: #{err}" if err?
         # then the created values are returned
         assert.ok itemTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
@@ -429,7 +429,7 @@ describe 'AdminService tests', ->
         awaited = true
 
       # when saving existing event type
-      service.save 'EventType', values, (err, modelName, model) ->
+      service.save 'EventType', values, 'admin', (err, modelName, model) ->
         throw new Error "Can't save eventType: #{err}" if err?
         # then the created values are returned
         assert.ok eventTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
@@ -471,7 +471,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving existing field type
-    service.save 'FieldType', values, (err, modelName, model) ->
+    service.save 'FieldType', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save fieldType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -493,7 +493,7 @@ describe 'AdminService tests', ->
 
   it 'should save fails to update existing executable', (done) ->
     # when saving existing executable
-    service.save 'Executable', executables[1], (err, modelName, model) ->
+    service.save 'Executable', executables[1], 'admin', (err, modelName, model) ->
       assert.ok err?
       assert.equal err, "Id #{executables[1]._id} already used"
       done()
@@ -513,7 +513,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving existing map
-    service.save 'Map', values, (err, modelName, model) ->
+    service.save 'Map', values, 'admin', (err, modelName, model) ->
       throw new Error "Can't save map: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -548,7 +548,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when saving existing fsitem
-    service.save 'FSItem', fsItem, (err, modelName, model) ->
+    service.save 'FSItem', fsItem, 'admin', (err, modelName, model) ->
       throw new Error "Can't save fsitem: #{err}" if err?
       # then the created values are returned
       assert.ok model?
@@ -579,7 +579,7 @@ describe 'AdminService tests', ->
       saved.push instance
 
     # when saving two new fields
-    service.save 'Field', toBeSaved.concat(), (err, modelName, returned) ->
+    service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
       throw new Error "Can't save fields: #{err}" if err?
       # then the created values are returned
       assert.equal returned?.length, 2, 'unexpected returned fields'
@@ -606,7 +606,7 @@ describe 'AdminService tests', ->
 
   it 'should save fails on non fields array parameter', (done) ->
     # when saving field without array
-    service.save 'Field', {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}, (err, modelName, returned) ->
+    service.save 'Field', {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}, 'admin', (err, modelName, returned) ->
       # then nothing was saved
       assert.isNotNull err
       assert.equal 'Fields must be saved within an array', err
@@ -633,7 +633,7 @@ describe 'AdminService tests', ->
         saved.push instance
 
       # when saving two new fields
-      service.save 'Field', toBeSaved.concat(), (err, modelName, returned) ->
+      service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
         # then an error was returned
         assert.equal 'Fields cannot be updated', err
         # then the created values are returned
@@ -653,7 +653,7 @@ describe 'AdminService tests', ->
 
   it 'should save do nothing on empty fields array', (done) ->
     # when saving field with empty array
-    service.save 'Field', [], (err, modelName, returned) ->
+    service.save 'Field', [], 'admin', (err, modelName, returned) ->
       # then nothing was saved
       throw new Error "Unexpected error while saving fields: #{err}" if err?
       assert.equal modelName, 'Field'
@@ -663,7 +663,7 @@ describe 'AdminService tests', ->
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when removing unallowed model
-    service.remove unknownModelName, {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+    service.remove unknownModelName, {_id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
       assert.ok err?
       assert.equal err, "The #{unknownModelName} model can't be removed"
@@ -672,7 +672,7 @@ describe 'AdminService tests', ->
 
   it 'should remove fails on unknown item type', (done) ->
     # when removing unknown item type
-    service.remove 'ItemType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+    service.remove 'ItemType', {_id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
       assert.ok err?
       assert.ok 0 is err.indexOf "Unexisting ItemType"
@@ -680,7 +680,7 @@ describe 'AdminService tests', ->
 
   it 'should remove fails on unknown event type', (done) ->
     # when removing unknown event type
-    service.remove 'EventType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+    service.remove 'EventType', {_id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
       assert.ok err?
       assert.ok 0 is err.indexOf "Unexisting EventType"
@@ -688,7 +688,7 @@ describe 'AdminService tests', ->
 
   it 'should remove fails on unknown field type', (done) ->
     # when removing unknown field type
-    service.remove 'FieldType', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+    service.remove 'FieldType', {_id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
       assert.ok err?
       assert.ok 0 is err.indexOf "Unexisting FieldType"
@@ -696,7 +696,7 @@ describe 'AdminService tests', ->
 
   it 'should remove fails on unknown executable', (done) ->
     # when removing unknown item type
-    service.remove 'Executable', {_id:'4feab529ac7805980e000017'}, (err, modelName, model) ->
+    service.remove 'Executable', {_id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
       assert.ok err?
       assert.ok 0 is err.indexOf "Unexisting Executable"
@@ -712,7 +712,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when removing existing item type
-    service.remove 'ItemType', itemTypes[1], (err, modelName, model) ->
+    service.remove 'ItemType', itemTypes[1], 'admin', (err, modelName, model) ->
       throw new Error "Can't remove itemType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
@@ -734,7 +734,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when removing existing item type
-    service.remove 'EventType', eventTypes[1], (err, modelName, model) ->
+    service.remove 'EventType', eventTypes[1], 'admin', (err, modelName, model) ->
       throw new Error "Can't remove eventType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
@@ -756,7 +756,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when removing existing field type
-    service.remove 'FieldType', fieldTypes[1], (err, modelName, model) ->
+    service.remove 'FieldType', fieldTypes[1], 'admin', (err, modelName, model) ->
       throw new Error "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
@@ -778,7 +778,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when removing existing executable
-    service.remove 'Executable', executables[1], (err, modelName, model) ->
+    service.remove 'Executable', executables[1], 'admin', (err, modelName, model) ->
       throw new Error "Can't remove executable: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
@@ -800,7 +800,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when removing existing map
-    service.remove 'Map', maps[1], (err, modelName, model) ->
+    service.remove 'Map', maps[1], 'admin', (err, modelName, model) ->
       throw new Error "Can't remove map: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
@@ -827,7 +827,7 @@ describe 'AdminService tests', ->
           removed.push instance
 
         # when removing two existing fields
-        service.remove 'Field', [field1, field2], (err, modelName, returned) ->
+        service.remove 'Field', [field1, field2], 'admin', (err, modelName, returned) ->
           throw new Error "Can't remove fields: #{err}" if err?
           # then the created values are returned
           assert.equal returned?.length, 2, 'unexpected returned fields'
@@ -858,7 +858,7 @@ describe 'AdminService tests', ->
       awaited = true
 
     # when removing existing fsItem
-    service.remove 'FSItem', fsItem, (err, modelName, model) ->
+    service.remove 'FSItem', fsItem, 'admin', (err, modelName, model) ->
       throw new Error "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
@@ -873,7 +873,7 @@ describe 'AdminService tests', ->
 
   it 'should remove fails on non array parameter', (done) ->
     # when removing field without array
-    service.remove 'Field', {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}, (err, modelName, returned) ->
+    service.remove 'Field', {mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}, 'admin', (err, modelName, returned) ->
       # then nothing was removed
       assert.isNotNull err
       assert.equal 'Fields must be removed within an array', err
@@ -896,7 +896,7 @@ describe 'AdminService tests', ->
 
       # when removing an existing and a new fields
       unexisting = {_id: fieldTypes[0]._id, mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}
-      service.remove 'Field', [unexisting, field], (err, modelName, returned) ->
+      service.remove 'Field', [unexisting, field], 'admin', (err, modelName, returned) ->
         # then an error occured
         assert.isNotNull err
         assert.equal "Unexisting field with id #{unexisting._id}", err
@@ -916,7 +916,7 @@ describe 'AdminService tests', ->
 
   it 'should remove do nothing on empty array', (done) ->
     # when removing field with empty array
-    service.remove 'Field', [], (err, modelName, returned) ->
+    service.remove 'Field', [], 'admin', (err, modelName, returned) ->
       # then nothing was saved
       throw new Error "Unexpected error while saving fields: #{err}" if err?
       assert.equal modelName, 'Field'

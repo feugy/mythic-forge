@@ -19,7 +19,6 @@ Please follow [instruction](https://github.com/TooTallNate/node-gyp)
 
 For windows users, you'll need to install Python 2.7.3, and a free version of Microsoft Visual Studio Express (2010 for example)
 
-
 # Node global utilities
 
 Obviously, node is required and must be installed on your system.
@@ -50,11 +49,11 @@ The project layout is the following:
 Create a customize build system with the following configuration:
 
     {
-      "cmd": ["coffee", "--bare", "--compile", "--output", "hyperion/lib", "hyperion/src"],
+      "cmd": ["coffee", "--bare", "--output", "hyperion/lib", "--compile", "hyperion/src"],
       "working_dir": "$project_path/$project_base_name",
       
       "windows": {
-          "cmd": ["coffee.cmd", "--bare", "--compile", "--output", "hyperion/lib", "hyperion/src"],
+          "cmd": ["coffee.cmd", "--bare", "--output", "hyperion/lib", "--compile", "hyperion/src"],
           "encoding": "cp1252"
         }
     }
@@ -62,6 +61,17 @@ Create a customize build system with the following configuration:
 Associate your project with it, and hit one time `Ctrl+B`: the src files will be compiled into the lib folder.
 If you edit the `Preferences > Package Settings > SublimeOnSaveBuild ` user settings, you'll be able to launch build on 
 `.coffee` file save.
+
+# Running tests
+
+Simply enter at the project root:
+  
+    npm test
+
+But if you want to run only a single test class, do not forget to set NODE_ENV environment variable to 'test'
+
+    set NODE_ENV=test
+    mocha -R spec --compilers coffee:coffee-script hyperion/test/testPlayer.coffee
 
 # NodeJS debugging.
 

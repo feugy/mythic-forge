@@ -26,7 +26,7 @@ Map = require '../model/Map'
 Field = require '../model/Field'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
-AuthoringService = require('./AuthoringService').get()
+authoringService = require('./AuthoringService').get()
 
 supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
 listSupported = supported[1..]
@@ -53,18 +53,19 @@ class _AdminService
       when 'EventType' then EventType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
       when 'Map' then Map.find (err, result) -> callback err, modelName, result
-      when 'FSItem' then AuthoringService.readRoot (err, root) -> callback err, modelName, root.content unless err?
+      when 'FSItem' then authoringService.readRoot (err, root) -> callback err, modelName, root.content unless err?
 
   # Saves an instance of any model.
   #
   # @param modelName [String] class name of the saved model
   # @param values [Object] saved values, used as argument of the model constructor. Array of saved values
   # for fields.
+  # @param email [String] email of the connected player, needed for FSItem methods
   # @param callback [Function] end callback, invoked with three arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
-  save: (modelName, values, callback) =>
+  save: (modelName, values, email, callback) =>
     return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
     
     _save = (model) ->
@@ -103,7 +104,7 @@ class _AdminService
           return _save model
 
       when 'FSItem'
-        return AuthoringService.save values, (err, saved) -> callback err, modelName, saved
+        return authoringService.save values, email, (err, saved) -> callback err, modelName, saved
 
     # do not directly save Mongoose models
     if 'toObject' of values and values.toObject instanceof Function
@@ -175,11 +176,12 @@ class _AdminService
   # @param modelName [String] class name of the saved model
   # @param values [Object] removed values, used as argument of the model constructor. Array of removed values
   # for fields.
+  # @param email [String] email of the connected player, needed for FSItem method
   # @param callback [Function] end callback, invoked with three arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
-  remove: (modelName, values, callback) =>
+  remove: (modelName, values, email, callback) =>
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
     unless 'Field' is modelName or 'FSItem' is modelName or '_id' of values
       return callback "Cannot remove #{modelName} because no '_id' specified", modelName 
@@ -209,7 +211,7 @@ class _AdminService
         return unqueue null
 
       when 'FSItem'
-        return AuthoringService.remove values, (err, removed) -> callback err, modelName, removed
+        return authoringService.remove values, email, (err, removed) -> callback err, modelName, removed
 
     # get existing values
     modelClass.findCached values._id, (err, model) ->

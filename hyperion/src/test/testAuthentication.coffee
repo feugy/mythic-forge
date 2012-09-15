@@ -30,12 +30,14 @@ rootUrl = "http://localhost:#{port}"
 describe 'Authentication tests', ->
 
   before (done) ->
-    Player.collection.drop ->
+    Player.collection.drop (err)->
+      return done err if err?
       server.listen port, 'localhost', done
 
+  # Restore admin player for further tests
   after (done) ->
     server.close()
-    done()
+    new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
   describe 'given a started server', ->
 

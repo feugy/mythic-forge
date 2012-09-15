@@ -21,7 +21,6 @@ pathUtils = require 'path'
 server = require '../main/web/server'
 socketClient = require 'socket.io-client'
 Item = require '../main/model/Item'
-Player = require '../main/model/Player'
 Map = require '../main/model/Map'
 ItemType = require '../main/model/ItemType'
 Executable = require '../main/model/Executable'
@@ -40,7 +39,6 @@ jack = null
 john = null
 script = null
 map = null
-player = null
 
 describe 'server tests', ->
 

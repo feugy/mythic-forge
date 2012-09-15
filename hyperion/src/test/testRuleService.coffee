@@ -71,9 +71,13 @@ describe 'RuleService tests', ->
         script = saved
         Player.collection.drop ->
           new Player({email: 'Loïc', password:'toto'}).save (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             player = saved
             done()
+
+    # Restore admin player for further tests
+    after (done) ->
+      new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player

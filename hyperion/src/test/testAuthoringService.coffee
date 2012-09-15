@@ -20,38 +20,54 @@
 async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
+gift = require 'gift'
 FSItem = require '../main/model/FSItem'
 utils = require '../main/utils'
 service = require('../main/service/AuthoringService').get()
 assert = require('chai').assert
 
 root = utils.confKey 'game.dev'
-
+repo = pathUtils.resolve pathUtils.dirname root
+gitRoot = pathUtils.basename root
+git = gift repo
+        
 describe 'AuthoringService tests', -> 
 
   before (done) ->
-    fs.remove root, (err) ->
-      throw new Error err if err?
+    fs.remove repo, (err) ->
+      return done err if err?
       service.init done
 
   it 'should file be created', (done) -> 
     # given a new file
-    item = new FSItem "file.txt", false
+    item = new FSItem 'file.txt', false
     # when saving it 
-    service.save item, (err, saved) ->
-      throw new Error "Cannot save file: #{err}" if err?
+    service.save item, 'admin', (err, saved) ->
+      return done "Cannot save file: #{err}" if err?
       # then the file was saved
       assert.ok item.equals saved
       fs.exists pathUtils.join(root, item.path), (exists) ->
         assert.ok exists, "file #{item.path} wasn't created"
-        done()
+        # then it was added to version control
+        git.commits (err, history) ->
+          return done "Failed to check git log: #{err}" if err?
+          assert.equal 1, history.length
+          commit = history[0]
+          assert.equal commit.author.name, 'unknown'
+          assert.equal commit.author.email, 'admin@unknown.org'
+          assert.equal commit.message, 'save'
+          commit.tree().find "#{gitRoot}/#{item.path}", (err, obj) ->
+            return done "Failed to check git details: #{err}" if err?
+            assert.isNotNull obj
+            assert.equal obj.name, item.path
+            done()
 
   it 'should folder be created', (done) -> 
     # given a new file
     item = new FSItem "folder", true
     # when saving it 
-    service.save item, (err, saved) ->
-      throw new Error "Cannot save folder: #{err}" if err?
+    service.save item, 'admin', (err, saved) ->
+      return done "Cannot save folder: #{err}" if err?
       # then the file was saved
       assert.ok item.equals saved
       fs.exists pathUtils.join(root, item.path), (exists) ->
@@ -78,7 +94,7 @@ describe 'AuthoringService tests', ->
     it 'should root retrieve populated root folder', (done) ->
       # when retrieving root folder
       service.readRoot (err, folder) ->
-        throw new Error "Cannot retrieve root folder: #{err}" if err?
+        return done "Cannot retrieve root folder: #{err}" if err?
         # then all awaited subitems are present.
         assert.equal folder.content.length, content.length
         for file in content
@@ -93,48 +109,65 @@ describe 'AuthoringService tests', ->
     file = null
 
     before (done) ->
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
-        throw new Error err if err?
-        file = new FSItem 'folder/image1.png', false
-        file.content = data
-        service.save file, (err, saved) ->
-          throw new Error err if err?
-          file = saved
-          done()
+      fs.remove repo, (err) ->
+        return done err if err?
+        service.init (err) ->
+          return done err if err?
+          fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+            return done err if err?
+            file = new FSItem 'folder/image1.png', false
+            file.content = data
+            service.save file, 'admin', (err, saved) ->
+              return done err if err?
+              file = saved
+              done()
 
     it 'should file content be read', (done) -> 
       file.content = null
       # when reading the file
       service.read file, (err, read) ->
-        throw new Error "Cannot read file: #{err}" if err?
+        return done "Cannot read file: #{err}" if err?
         # then read data is correct
         fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
-          throw new Error err if err?
+          return done err if err?
           assert.equal read.content, data.toString('base64')
           done()
         
     it 'should file content be updated', (done) -> 
       # given a binary content
       fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
-        throw new Error err if err?
+        return done err if err?
         file.content = data
         # when saving it 
-        service.save file, (err, saved) ->
-          throw new Error "Cannot save existing file: #{err}" if err?
+        service.save file, 'admin', (err, saved) ->
+          return done "Cannot save existing file: #{err}" if err?
           # then the file was saved
           assert.ok file.equals saved
           assert.equal saved.content, data.toString('base64'),
           # then the saved content is equals
           fs.readFile pathUtils.join(root, saved.path), (err, readData) ->
-            throw new Error err if err?
+            return done err if err?
             assert.equal readData.toString('base64'), data.toString('base64')
-            done()
+            # then it was the object of two entries in version control
+            git.commits (err, history) ->
+              return done "Failed to check git log: #{err}" if err?
+              assert.equal 2, history.length
+              async.forEach history, (commit, next) ->
+                assert.equal commit.author.name, 'unknown'
+                assert.equal commit.author.email, 'admin@unknown.org'
+                assert.equal commit.message, 'save'
+                commit.tree().find "#{gitRoot}/#{file.path.replace '\\', '/'}", (err, obj) ->
+                  return done "Failed to check git details: #{err}" if err?
+                  assert.isNotNull obj
+                  assert.equal obj.name, pathUtils.dirname file.path
+                  next()
+              , done
 
     it 'should file content be moved', (done) -> 
       # when reading the folder
       oldPath = "#{file.path}"
-      service.move file, 'folder5/newFile', (err, moved) ->
-        throw new Error "Cannot move file: #{err}" if err?
+      service.move file, 'folder5/newFile', 'admin', (err, moved) ->
+        return done "Cannot move file: #{err}" if err?
         # then new file is created and old one removed
         assert.notEqual moved.path, oldPath
         fs.exists pathUtils.join(root, moved.path), (exists) ->
@@ -145,17 +178,46 @@ describe 'AuthoringService tests', ->
             fs.exists pathUtils.join(root, oldPath), (exists) ->
               assert.isFalse exists, "file #{oldPath} wasn't removed"
               file = moved
-              done()
+              # then it was registered into version control
+              git.commits (err, history) ->
+                return done "Failed to check git log: #{err}" if err?
+                assert.equal 3, history.length
+                commit = history[0]
+                assert.equal commit.author.name, 'unknown'
+                assert.equal commit.author.email, 'admin@unknown.org'
+                assert.equal commit.message, 'move'
+                # then the new path was created
+                commit.tree().find "#{gitRoot}/#{moved.path.replace '\\', '/'}", (err, obj) ->
+                  return done "Failed to check git details: #{err}" if err?
+                  assert.isNotNull obj
+                  assert.equal obj.name, pathUtils.dirname moved.path
+
+                  # then the old path was removed
+                  commit.tree().find "#{gitRoot}/#{oldPath.replace '\\', '/'}", (err, obj) ->
+                    return done "Failed to check git details: #{err}" if err?
+                    assert.isNull obj
+                    done()
 
     it 'should file be removed', (done) -> 
       # when removing the file
-      service.remove file, (err, removed) ->
-        throw new Error "Cannot remove file: #{err}" if err?
+      service.remove file, 'admin', (err, removed) ->
+        return done "Cannot remove file: #{err}" if err?
         # then the file was removed
         assert.ok file.equals removed
         fs.exists pathUtils.join(root, file.path), (exists) ->
           assert.isFalse exists, "file #{file.path} wasn't removed"
-          done()  
+          # then it was removed from version control
+          git.commits (err, history) ->
+            return done "Failed to check git log: #{err}" if err?
+            assert.equal 4, history.length
+            commit = history[0]
+            assert.equal commit.author.name, 'unknown'
+            assert.equal commit.author.email, 'admin@unknown.org'
+            assert.equal commit.message, 'remove'
+            commit.tree().find "#{gitRoot}/#{file.path.replace '\\', '/'}", (err, obj) ->
+              return done "Failed to check git details: #{err}" if err?
+              assert.isNull obj
+              done()
 
   describe 'given an existing folder', ->
     folder = null
@@ -163,22 +225,22 @@ describe 'AuthoringService tests', ->
 
     before (done) ->
       folder = new FSItem 'folder/folder2', true
-      service.save folder, (err, saved) ->
-        throw new Error err if err?
+      service.save folder, 'admin', (err, saved) ->
+        return done err if err?
         folder = saved
         async.forEachSeries ['file1.txt', 'file2.txt'], (file, next) ->
           item = new FSItem pathUtils.join(folder.path, file), false
           files.push item
-          service.save item, next
+          service.save item, 'admin', next
         , (err) ->
-          throw new Error err if err?
+          return done err if err?
           done()
 
     it 'should folder content be read', (done) -> 
       folder.content = null
       # when reading the folder
       service.read folder, (err, read) ->
-        throw new Error "Cannot read folder: #{err}" if err?
+        return done "Cannot read folder: #{err}" if err?
         # then read data is correct
         assert.equal read.content.length, files.length
         for file in read.content
@@ -192,8 +254,8 @@ describe 'AuthoringService tests', ->
     it 'should folder content be moved', (done) -> 
       # when reading the folder
       oldPath = "#{folder.path}"
-      service.move folder, 'folder3/folder4', (err, moved) ->
-        throw new Error "Cannot move folder: #{err}" if err?
+      service.move folder, 'folder3/folder4', 'admin', (err, moved) ->
+        return done "Cannot move folder: #{err}" if err?
         # then new folder is created and old one removed
         assert.notEqual moved.path, oldPath
         fs.exists pathUtils.join(root, moved.path), (exists) ->
@@ -205,8 +267,8 @@ describe 'AuthoringService tests', ->
 
     it 'should folder be removed', (done) -> 
       # when removing the folder
-      service.remove folder, (err, removed) ->
-        throw new Error "Cannot remove folder: #{err}" if err?
+      service.remove folder, 'admin', (err, removed) ->
+        return done "Cannot remove folder: #{err}" if err?
         # then the file was removed
         assert.ok folder.equals removed
         fs.exists pathUtils.join(root, folder.path), (exists) ->

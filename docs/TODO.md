@@ -66,7 +66,7 @@
         - **[done]** rename/move FSItem
         - **[done]** service layer
         - **[done]** web layer
-        - commit FSItem on save
+        - **[done]** commit FSItem on save
         - get FSItem history
         - get FSItem version
     - Authoring Service and game deployment

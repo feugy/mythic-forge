@@ -37,14 +37,17 @@ describe 'Player tests', ->
         throw new Error err if err?
         type = saved
         Item.collection.drop -> 
-        new Item({type: type}).save (err, saved) ->
-          throw new Error err if err?
-          item = saved
-          Player.collection.drop ->
-            done()
+          new Item({type: type}).save (err, saved) ->
+            throw new Error err if err?
+            item = saved
+            Player.collection.drop -> done()
       
   afterEach (done) ->
     Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> done()
+
+  # Restore admin player for further tests
+  after (done) ->
+    new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
   it 'should player be created', (done) -> 
     # given a new Player

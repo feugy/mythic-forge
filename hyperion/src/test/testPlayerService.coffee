@@ -49,6 +49,10 @@ describe 'PlayerService tests', ->
             item2 = saved
             done()
 
+  # Restore admin player for further tests
+  after (done) ->
+    new Player(email:'admin', password: 'admin', isAdmin:true).save done
+
   it 'should register creates an account', (done) ->
     # when registering an account with email Jack
     service.register 'Jack', 'toto', (err, player) ->

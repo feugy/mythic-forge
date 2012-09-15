@@ -24,15 +24,16 @@ pathUtils = require 'path'
 coffee = require 'coffee-script'
 stylus = require 'stylus'
 fs = require 'fs-extra'
-git = require 'gift'
+gift = require 'gift'
+gitWrapper = require 'gift/lib/git'
 async = require 'async'
 requirejs = require 'requirejs'
-child = require 'child_process'
 EventEmitter = require('events').EventEmitter
 utils = require '../utils'
 logger = require('../logger').getLogger 'service'
+playerService = require('./PlayerService').get()
 
-repo = null
+git = null
 root = null
 
 #Simple method to remove occurence of the root path from error messages
@@ -215,6 +216,18 @@ makeCacheable = (folder, main, callback) ->
                 logger.debug "#{newMain} rewritten"
                 callback null, dest
 
+# Generate a proper Git author string, that ensure at least lastName and correct email
+#
+# @param player [Player] the concerned author
+# @return the author string.
+getAuthor = (player) ->
+  firstName = player.get('firstName') or ''
+  lastName = player.get('lastName') or ''
+  lastName = 'unknown' unless lastName or firstName
+  email = player.get 'email'
+  email += '@unknown.org' unless -1 isnt email.indexOf '@'
+  "#{firstName} #{lastName} <#{email}>"
+
 # The AuthoringService export feature relative to game client.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 class _AuthoringService extends EventEmitter
@@ -236,20 +249,19 @@ class _AuthoringService extends EventEmitter
     utils.enforceFolderSync root, false, logger
     repository = pathUtils.dirname root
 
-    finished = =>
-      # creates also the git repository
-      logger.info "git repository initialized !"
-      repo = git repository
+    finished = (err) =>
+      return callback err if err?
+        # creates also the git repository
+      logger.debug "git repository initialized !"
+      git = gift repository
       callback null
 
     # Performs a 'git init' if git repository do not exists
     unless fs.existsSync pathUtils.join repository, '.git'
-      logger.info "initialize git repository at #{repository}..."
-      child.exec "git init #{repository}", (err, stdout, stderr) ->
-        return callback err if err?
-        finished()
+      logger.debug "initialize git repository at #{repository}..."
+      gift.init repository, finished
     else
-      logger.info "using existing git repository..."
+      logger.debug "using existing git repository..."
       finished()
 
   # Retrieves the root FSItem, populated with its content.
@@ -270,87 +282,124 @@ class _AuthoringService extends EventEmitter
   # File content must base64 encoded
   #
   # @param item [FSItem] saved FSItem
+  # @param email [String] the author email, that must be an existing player email
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback saved [FSItem] the saved fSItem
-  save: (item, callback) =>
-    try 
-      item = new FSItem item
-    catch exc
-      return callback "Only FSItem are supported: #{exc}"
-    # make relative path absolute
-    item.path = pathUtils.resolve root, item.path
-    # saves it
-    item.save (err, saved, isNew) =>
-      return callback purge err if err?
+  save: (item, email, callback) =>
+    playerService.getByEmail email, false, (err, author) =>
+      return callback "Failed to get author: #{err}" if err?
+      return callback "No author with email #{email}" unless author?
+      try 
+        item = new FSItem item
+      catch exc
+        return callback "Only FSItem are supported: #{exc}"
+      # make relative path absolute
+      item.path = pathUtils.resolve root, item.path
+      # saves it
+      item.save (err, saved, isNew) =>
+        return callback purge err if err?
 
-      # do not commit folders
-      if saved.isFolder
-        # makes fs-item relative to root
-        saved.path = pathUtils.relative root, saved.path
-        return callback null, saved
-
-      # but do it for files
-      commit = =>
-        # now commit it on git
-        repo.commit 'TODO', {all:true}, (err, stdout) =>
-          return callback "Failed to commit: #{err}" if err?
-          logger.debug "#{saved.path} commited"
+        finish = =>
           # makes fs-item relative to root
           saved.path = pathUtils.relative root, saved.path
           callback null, saved
 
-      if isNew
-        # first add it to git
-        repo.add saved.path, (err, stdout) =>
-          return callback "Failed to add to version control: #{purge err}" if err?
-          logger.debug "#{saved.path} added to version control"
+        # do not commit folders
+        return finish() if saved.isFolder
+
+        # but do it for files
+        commit = =>
+          # now commit it on git
+          git.commit 'save',
+            all: true
+            author: getAuthor author
+          , (err, stdout) =>
+            return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
+            logger.debug "#{saved.path} commited"
+            finish()
+
+        if isNew
+          # first add it to git
+          git.add saved.path, (err, stdout) =>
+            return callback "Failed to add to version control: #{purge err} #{purge stdout}" if err?
+            logger.debug "#{saved.path} added to version control"
+            commit()
+        else 
           commit()
-      else 
-        commit()
 
   # Removes a given FSItem, with all its content.
   # Only one deletion event will be triggered.
   #
   # @param item [FSItem] removed FSItem
+  # @param email [String] the author email, that must be an existing player email
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback removed [FSItem] the removed fSItem
-  remove: (item, callback) =>
-    try 
-      item = new FSItem item
-    catch exc
-      return callback "Only FSItem are supported: #{exc}"
-    # make relative path absolute
-    item.path = pathUtils.resolve root, item.path
-    # removes it
-    item.remove (err, removed) =>
-      return callback purge err if err?
-      # makes fs-item relative to root
-      removed.path = pathUtils.relative root, removed.path
-      callback null, removed
+  remove: (item, email, callback) =>
+    playerService.getByEmail email, false, (err, author) =>
+      return callback "Failed to get author: #{err}" if err? 
+      return callback "No author with email #{email}" unless author?
+      try 
+        item = new FSItem item
+      catch exc
+        return callback "Only FSItem are supported: #{exc}"
+      # make relative path absolute
+      item.path = pathUtils.resolve root, item.path
+      # removes it
+      item.remove (err, removed) =>
+        return callback purge err if err?
+
+        # now commit it on git
+        git.commit 'remove',
+          all: true
+          author: getAuthor author
+        , (err, stdout) =>
+          return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
+          logger.debug "#{removed.path} removed from version control"
+          # makes fs-item relative to root
+          removed.path = pathUtils.relative root, removed.path
+          callback null, removed
 
   # Moves and/or renames a given FSItem, with all its content.
   # A deletion and a creation events will be triggered.
   #
   # @param item [FSItem] moved FSItem
   # @param newPath [String] new path for this item
+  # @param email [String] the author email, that must be an existing player email
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback moved [FSItem] the moved fSItem
-  move: (item, newPath, callback) =>
-    try 
-      item = new FSItem item
-    catch exc
-      return callback "Only FSItem are supported: #{exc}"
-    # make relative path absolute
-    item.path = pathUtils.resolve root, item.path
-    # moves it, to an absolute new path
-    item.move pathUtils.resolve(root, newPath), (err, moved) =>
-      return callback purge err if err?
-      # makes fs-item relative to root
-      moved.path = pathUtils.relative root, moved.path
-      callback null, moved
+  move: (item, newPath, email, callback) =>
+    playerService.getByEmail email, false, (err, author) =>
+      return callback "Failed to get author: #{err}" if err
+      return callback "No author with email #{email}" unless author?
+      try 
+        item = new FSItem item
+      catch exc
+        return callback "Only FSItem are supported: #{exc}"
+      # make relative path absolute
+      item.path = pathUtils.resolve root, item.path
+      # moves it, to an absolute new path
+      item.move pathUtils.resolve(root, newPath), (err, moved) =>
+        return callback purge err if err?
+
+        # add/remove new files into git
+        git.add [], all:true, (err, stdout) =>
+          return callback "Failed to add to version control: #{purge err} #{purge stdout}" if err?
+          logger.debug "#{moved.path} added to version control"
+          
+          # now commit it on git
+          git.commit 'move',
+            all: true
+            author: getAuthor author
+          , (err, stdout) =>
+            return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
+            logger.debug "#{moved.path} commited"
+
+            # makes fs-item relative to root
+            moved.path = pathUtils.relative root, moved.path
+            callback null, moved
 
   # Retrieves the FSItem content, either file or folder.
   # File content is returned base64 encoded
