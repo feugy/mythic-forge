@@ -17,9 +17,9 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Item = require '../main/model/Item'
+Item = require '../src/model/Item'
 assert = require('chai').assert
-utils = require '../main/utils'
+utils = require '../src/utils'
 
 property = {}
 

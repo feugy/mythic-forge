@@ -20,13 +20,13 @@
 
 fs = require 'fs'
 path = require 'path'
-ItemType = require '../main/model/ItemType'
-FieldType = require '../main/model/FieldType'
+ItemType = require '../src/model/ItemType'
+FieldType = require '../src/model/FieldType'
 assert = require('chai').assert
-service = require('../main/service/ImagesService').get()
+service = require('../src/service/ImagesService').get()
 testUtils = require './utils/testUtils'
 
-imagesPath = require('../main/utils').confKey 'images.store'
+imagesPath = require('../src/utils').confKey 'images.store'
 
 iType = null
 fType = null
@@ -49,7 +49,7 @@ describe 'ImagesService tests', ->
 
     it 'should new type image be saved for item type', (done) ->
       # given an image
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
         service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
@@ -65,7 +65,7 @@ describe 'ImagesService tests', ->
 
     it 'should new type image be saved for field type', (done) ->
       # given an image
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
         service.uploadImage 'FieldType', fType._id, 'png', data.toString('base64'), (err, saved) ->
@@ -81,7 +81,7 @@ describe 'ImagesService tests', ->
 
     it 'should new instance image be saved for item type', (done) ->
       # given an image
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         idx = 0
         # when saving the instance image 2
@@ -101,7 +101,7 @@ describe 'ImagesService tests', ->
 
     it 'should new instance image be saved for field type', (done) ->
       # given an image
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         idx = 0
         # when saving the instance image 2
@@ -117,7 +117,7 @@ describe 'ImagesService tests', ->
           done()
 
     it 'should all images deleted when removing item type', (done) ->
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # given an arbitraty image inside the folder
         fs.writeFile path.join(imagesPath, '123-0.png'), data, (err) ->
@@ -144,7 +144,7 @@ describe 'ImagesService tests', ->
                 , 50
 
     it 'should all images deleted when removing field type', (done) ->
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # given an arbitraty image inside the folder
         fs.writeFile path.join(imagesPath, '123-0.png'), data, (err) ->
@@ -179,7 +179,7 @@ describe 'ImagesService tests', ->
           throw new Error err if err?
           iType = saved
           # saves a type image for it
-          fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+          fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
             throw new Error err if err?
             service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
               throw new Error err if err?
@@ -192,7 +192,7 @@ describe 'ImagesService tests', ->
 
     it 'should existing type image be changed', (done) ->
       # given a new image
-      fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
         service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), (err, saved) ->
@@ -221,7 +221,7 @@ describe 'ImagesService tests', ->
     it 'should existing instance image be changed', (done) ->
       idx = 0
       # given a new image
-      fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image2.png', (err, data) ->
         throw new Error err if err?
         # when saving the type image
         service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), idx, (err, saved) ->
@@ -253,7 +253,7 @@ describe 'ImagesService tests', ->
 
     it 'should existing instance image be set to null', (done) ->
       # given another image
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
         throw new Error err if err?
         # given it saved as second instance image
         service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), 1, (err, saved) ->

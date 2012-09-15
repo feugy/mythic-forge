@@ -17,11 +17,11 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Player = require '../main/model/Player'
-Item = require '../main/model/Item'
-ItemType = require '../main/model/ItemType'
-utils = require '../main/utils'
-service = require('../main/service/PlayerService').get()
+Player = require '../src/model/Player'
+Item = require '../src/model/Item'
+ItemType = require '../src/model/ItemType'
+utils = require '../src/utils'
+service = require('../src/service/PlayerService').get()
 assert = require('chai').assert
      
 player = null

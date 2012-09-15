@@ -20,13 +20,13 @@
 async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
-FSItem = require '../main/model/FSItem'
-utils = require '../main/utils'
+FSItem = require '../src/model/FSItem'
+utils = require '../src/utils'
 util = require 'util'
-server = require '../main/web/proxy'
+server = require '../src/web/proxy'
 Browser = require 'zombie'
 assert = require('chai').assert
-service = require('../main/service/AuthoringService').get()
+service = require('../src/service/AuthoringService').get()
 
 port = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"
@@ -40,13 +40,13 @@ describe 'Optimization tests', ->
       fs.mkdir root, (err) ->
         throw new Error err if err?
         # and a valid game client in it
-        fs.copy './hyperion/src/test/fixtures/working-client', root, (err) ->
+        fs.copy './hyperion/test/fixtures/working-client', root, (err) ->
           throw new Error err if err?
           done()
 
   it 'should coffee compilation errors be reported', (done) ->
     # given a non-compiling coffee script
-    fs.copy './hyperion/src/test/fixtures/Router.coffee.error', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+    fs.copy './hyperion/test/fixtures/Router.coffee.error', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
       throw new Error err if err?
 
       # when optimizing the game client
@@ -58,7 +58,7 @@ describe 'Optimization tests', ->
   
   it 'should stylus compilation errors be reported', (done) ->
     # given a non-compiling stylus sheet
-    fs.copy './hyperion/src/test/fixtures/rheia.styl.error', pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
+    fs.copy './hyperion/test/fixtures/rheia.styl.error', pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
       throw new Error err if err?
 
       # when optimizing the game client
@@ -82,7 +82,7 @@ describe 'Optimization tests', ->
 
   it 'should main html file without requirejs be detected', (done) ->
     # given a main file without requirejs
-    fs.copy './hyperion/src/test/fixtures/index.html.norequire', pathUtils.join(root, 'index.html'), (err) ->
+    fs.copy './hyperion/test/fixtures/index.html.norequire', pathUtils.join(root, 'index.html'), (err) ->
       throw new Error err if err?
 
       # when optimizing the game client
@@ -94,7 +94,7 @@ describe 'Optimization tests', ->
 
   it 'should no requirejs configuration be detected', (done) ->
     # given a requirejs entry file without configuration
-    fs.copy './hyperion/src/test/fixtures/Router.js.noconfigjs', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+    fs.copy './hyperion/test/fixtures/Router.js.noconfigjs', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
       throw new Error err if err?
 
       # when optimizing the game client
@@ -107,7 +107,7 @@ describe 'Optimization tests', ->
   it 'should requirejs optimization error be detected', (done) ->
 
     # given a requirejs entry file without error
-    fs.copy './hyperion/src/test/fixtures/Router.coffee.requirejserror', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+    fs.copy './hyperion/test/fixtures/Router.coffee.requirejserror', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
       throw new Error err if err?
 
       # when optimizing the game client

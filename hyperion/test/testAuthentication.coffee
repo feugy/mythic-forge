@@ -17,9 +17,9 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-server = require '../main/web/server'
-Player = require '../main/model/Player'
-utils = require '../main/utils'
+server = require '../src/web/server'
+Player = require '../src/model/Player'
+utils = require '../src/utils'
 request = require 'request'
 parseUrl = require('url').parse
 assert = require('chai').assert

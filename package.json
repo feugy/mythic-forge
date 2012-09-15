@@ -35,7 +35,7 @@
     "zombie": "1.4.1"
   },
   "scripts": {
-    "test": "(set NODE_ENV=test) & mocha -R spec --compilers coffee:coffee-script hyperion/src/test",
+    "test": "(set NODE_ENV=test) & mocha -R spec --compilers coffee:coffee-script hyperion/test",
     "postinstall": "coffee --bare --compile --output hyperion/lib hyperion/src"
   },
   "bin": {

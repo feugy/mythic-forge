@@ -17,9 +17,9 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Executable = require '../main/model/Executable'
+Executable = require '../src/model/Executable'
 testUtils = require './utils/testUtils'
-utils = require '../main/utils'
+utils = require '../src/utils'
 path = require 'path'
 fs = require 'fs'
 assert = require('chai').assert

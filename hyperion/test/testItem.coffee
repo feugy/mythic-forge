@@ -17,9 +17,9 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Item = require '../main/model/Item'
-ItemType = require '../main/model/ItemType'
-watcher = require('../main/model/ModelWatcher').get()
+Item = require '../src/model/Item'
+ItemType = require '../src/model/ItemType'
+watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
 item = null

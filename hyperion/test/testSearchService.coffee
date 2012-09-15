@@ -18,13 +18,13 @@
 ###
 
 testUtils = require './utils/testUtils'
-utils = require '../main/utils'
-ItemType = require '../main/model/ItemType'
-FieldType = require '../main/model/FieldType'
-EventType = require '../main/model/EventType'
-Map = require '../main/model/Map'
-Executable = require '../main/model/Executable'
-service = require('../main/service/SearchService').get()
+utils = require '../src/utils'
+ItemType = require '../src/model/ItemType'
+FieldType = require '../src/model/FieldType'
+EventType = require '../src/model/EventType'
+Map = require '../src/model/Map'
+Executable = require '../src/model/Executable'
+service = require('../src/service/SearchService').get()
 assert = require('chai').assert
 
 itemTypes = []
@@ -123,7 +123,7 @@ describe 'SearchService tests', ->
                   clazz: Executable
                   args: 
                     _id: 'move'
-                    content:"""Rule = require '../main/model/Rule'
+                    content:"""Rule = require '../model/Rule'
                       module.exports = new (class Move extends Rule
                         constructor: ->
                           @name= 'move'
@@ -138,7 +138,7 @@ describe 'SearchService tests', ->
                   clazz: Executable
                   args:
                     _id: 'attack'
-                    content:"""Rule = require '../main/model/Rule'
+                    content:"""Rule = require '../model/Rule'
                       module.exports = new (class Attack extends Rule
                         constructor: ->
                           @name= 'attack'
@@ -153,7 +153,7 @@ describe 'SearchService tests', ->
                   clazz: Executable
                   args:
                     _id: 'sell'
-                    content:"""TurnRule = require '../main/model/TurnRule'
+                    content:"""TurnRule = require '../model/TurnRule'
                       module.exports = new (class Sell extends TurnRule
                         constructor: ->
                           @name= 'sell'
@@ -169,7 +169,7 @@ describe 'SearchService tests', ->
                   clazz: Executable
                   args:
                     _id: 'monsters'
-                    content:"""TurnRule = require '../main/model/TurnRule'
+                    content:"""TurnRule = require '../model/TurnRule'
                       module.exports = new (class Monsters extends TurnRule
                         constructor: ->
                           @name= 'monsters'

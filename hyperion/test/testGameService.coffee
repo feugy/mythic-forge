@@ -17,15 +17,15 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Item = require '../main/model/Item'
-ItemType = require '../main/model/ItemType'
-Map = require '../main/model/Map'
-Field = require '../main/model/Field'
-FieldType = require '../main/model/FieldType'
-utils = require '../main/utils'
+Item = require '../src/model/Item'
+ItemType = require '../src/model/ItemType'
+Map = require '../src/model/Map'
+Field = require '../src/model/Field'
+FieldType = require '../src/model/FieldType'
+utils = require '../src/utils'
 testUtils = require './utils/testUtils'
-Executable = require '../main/model/Executable'
-service = require('../main/service/GameService').get()
+Executable = require '../src/model/Executable'
+service = require('../src/service/GameService').get()
 assert = require('chai').assert
      
 type = null

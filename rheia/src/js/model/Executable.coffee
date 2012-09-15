@@ -54,7 +54,7 @@ define [
       while -1 isnt content.search(depReg)
         # removes the require directive and extract relevant variable and path
         content = content.replace depReg, (str, variable, dep)->
-          deps.push dep.replace /^'\.\.\/main\//, "'"
+          deps.push dep.replace /^'\.\.\//, "'"
           vars.push variable
           return ''
 

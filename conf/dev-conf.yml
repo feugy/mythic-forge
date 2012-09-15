@@ -25,8 +25,8 @@ authentication:
 
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
-  certificate: ./hyperion/conf/ssl/localhost.crt
-  key: ./hyperion/conf/ssl/localhost.key
+  certificate: ./conf/ssl/localhost.crt
+  key: ./conf/ssl/localhost.key
 
 # MongoDB connection
 mongo:

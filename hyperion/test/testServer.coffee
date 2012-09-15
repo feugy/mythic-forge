@@ -18,18 +18,18 @@
 ###
 
 pathUtils = require 'path'
-server = require '../main/web/server'
+server = require '../src/web/server'
 socketClient = require 'socket.io-client'
-Item = require '../main/model/Item'
-Map = require '../main/model/Map'
-ItemType = require '../main/model/ItemType'
-Executable = require '../main/model/Executable'
-FSItem = require '../main/model/FSItem'
-utils = require '../main/utils'
+Item = require '../src/model/Item'
+Map = require '../src/model/Map'
+ItemType = require '../src/model/ItemType'
+Executable = require '../src/model/Executable'
+FSItem = require '../src/model/FSItem'
+utils = require '../src/utils'
 request = require 'request'
 fs = require 'fs-extra'
 testUtils = require './utils/testUtils'
-authoringService = require('../main/service/AuthoringService').get()
+authoringService = require('../src/service/AuthoringService').get()
 assert = require('chai').assert
 
 port = 9090
@@ -64,7 +64,7 @@ describe 'server tests', ->
       socket = socketClient.connect "#{rootUrl}/admin"
 
       # given a file with binary content
-      fs.readFile './hyperion/src/test/fixtures/image1.png', (err, imgData) ->
+      fs.readFile './hyperion/test/fixtures/image1.png', (err, imgData) ->
         throw new Error err if err?
         root = utils.confKey 'game.dev'
         # given a clean root
@@ -215,8 +215,8 @@ describe 'server tests', ->
             Executable.resetAll -> 
               script = new Executable 
                 _id:'rename', 
-                content: """Rule = require '../main/model/Rule'
-                  Item = require '../main/model/Item'
+                content: """Rule = require '../model/Rule'
+                  Item = require '../model/Item'
 
                   module.exports = new (class RenameRule extends Rule
                     constructor: ->
@@ -345,7 +345,7 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/admin"
 
         # given an image
-        fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
           throw new Error err if err?
 
           # then the character type was updated
@@ -378,7 +378,7 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/admin"
 
         # given an image
-        fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
           throw new Error err if err?
 
           # then the character type was updated

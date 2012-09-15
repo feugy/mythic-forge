@@ -17,20 +17,20 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-ItemType = require '../main/model/ItemType'
-Item = require '../main/model/Item'
-FieldType = require '../main/model/FieldType'
-Field = require '../main/model/Field'
-EventType = require '../main/model/EventType'
-Event = require '../main/model/Event'
-Executable = require '../main/model/Executable'
-Map = require '../main/model/Map'
-FSItem = require '../main/model/FSItem'
-authoringService = require('../main/service/AuthoringService').get()
-service = require('../main/service/AdminService').get()
-watcher = require('../main/model/ModelWatcher').get()
+ItemType = require '../src/model/ItemType'
+Item = require '../src/model/Item'
+FieldType = require '../src/model/FieldType'
+Field = require '../src/model/Field'
+EventType = require '../src/model/EventType'
+Event = require '../src/model/Event'
+Executable = require '../src/model/Executable'
+Map = require '../src/model/Map'
+FSItem = require '../src/model/FSItem'
+authoringService = require('../src/service/AuthoringService').get()
+service = require('../src/service/AdminService').get()
+watcher = require('../src/model/ModelWatcher').get()
 testUtils = require './utils/testUtils'
-utils = require '../main/utils'
+utils = require '../src/utils'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 assert = require('chai').assert

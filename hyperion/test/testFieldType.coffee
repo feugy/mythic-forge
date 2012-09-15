@@ -17,9 +17,9 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Field = require '../main/model/Field'
-FieldType = require '../main/model/FieldType'
-watcher = require('../main/model/ModelWatcher').get()
+Field = require '../src/model/Field'
+FieldType = require '../src/model/FieldType'
+watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
 type = null

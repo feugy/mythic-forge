@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-utils = require '../main/utils'
+utils = require '../src/utils'
 assert = require('chai').assert
 
 describe 'Utilities tests', -> 

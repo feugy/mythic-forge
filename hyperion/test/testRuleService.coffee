@@ -18,15 +18,15 @@
 ###
 
 testUtils = require './utils/testUtils'
-Executable = require '../main/model/Executable'
-Item = require '../main/model/Item'
-Map = require '../main/model/Map'
-Field = require '../main/model/Field'
-Player = require '../main/model/Player'
-ItemType = require '../main/model/ItemType'
-FieldType = require '../main/model/FieldType'
-service = require('../main/service/RuleService').get()
-utils = require '../main/utils'
+Executable = require '../src/model/Executable'
+Item = require '../src/model/Item'
+Map = require '../src/model/Map'
+Field = require '../src/model/Field'
+Player = require '../src/model/Player'
+ItemType = require '../src/model/ItemType'
+FieldType = require '../src/model/FieldType'
+service = require('../src/service/RuleService').get()
+utils = require '../src/utils'
 assert = require('chai').assert
  
 map= null
@@ -56,7 +56,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         _id:'rule0'
-        content:"""Rule = require '../main/model/Rule'
+        content:"""Rule = require '../model/Rule'
           class MyRule extends Rule
             constructor: ->
               @name= 'rule 0'
@@ -128,7 +128,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be updated and modifications applicable', (done) ->
       # given a modification on rule content
-      script.content = """Rule = require '../main/model/Rule'
+      script.content = """Rule = require '../model/Rule'
         class MyRule extends Rule
           constructor: ->
             @name= 'rule 0'
@@ -157,7 +157,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         _id:'rule1', 
-        content: """Rule = require '../main/model/Rule'
+        content: """Rule = require '../model/Rule'
           class MyRule extends Rule
             constructor: ->
               @name= 'rule 1'
@@ -257,7 +257,7 @@ describe 'RuleService tests', ->
       # given a rule that modified coordinates
       script = new Executable
         _id:'rule2', 
-        content: """Rule = require '../main/model/Rule'
+        content: """Rule = require '../model/Rule'
           class MoveRule extends Rule
             constructor: ->
               @name= 'rule 2'
@@ -298,7 +298,7 @@ describe 'RuleService tests', ->
     # given a rule that need links resolution
     script = new Executable 
       _id:'rule3', 
-      content: """Rule = require '../main/model/Rule'
+      content: """Rule = require '../model/Rule'
         class DriveLeft extends Rule
           constructor: ->
             @name= 'rule 3'
@@ -355,8 +355,8 @@ describe 'RuleService tests', ->
     # given a rule that creates an object
     script = new Executable
       _id:'rule4', 
-      content: """Rule = require '../main/model/Rule'
-        Item = require '../main/model/Item'
+      content: """Rule = require '../model/Rule'
+        Item = require '../model/Item'
         module.exports = new (class AddPart extends Rule
           constructor: ->
             @name= 'rule 4'
@@ -405,7 +405,7 @@ describe 'RuleService tests', ->
     # given a rule that creates an object
     script = new Executable
       _id:'rule5', 
-      content: """Rule = require '../main/model/Rule'
+      content: """Rule = require '../model/Rule'
         module.exports = new (class RemovePart extends Rule
           constructor: ->
             @name= 'rule 5'
@@ -481,8 +481,8 @@ describe 'RuleService tests', ->
       # given a turn rule on dogs
       script = new Executable
         _id:'rule6', 
-        content: """TurnRule = require '../main/model/TurnRule'
-          Item = require '../main/model/Item'
+        content: """TurnRule = require '../model/TurnRule'
+          Item = require '../model/Item'
           ObjectId = require('mongodb').BSONPure.ObjectID
 
           module.exports = new (class Dumb extends TurnRule
@@ -514,8 +514,8 @@ describe 'RuleService tests', ->
       # given a first turn rule on lassie with rank 10
       script = new Executable
         _id:'rule7', 
-        content: """TurnRule = require '../main/model/TurnRule'
-          Item = require '../main/model/Item'
+        content: """TurnRule = require '../model/TurnRule'
+          Item = require '../model/Item'
 
           module.exports = new (class Dumb extends TurnRule
             constructor: ->
@@ -534,8 +534,8 @@ describe 'RuleService tests', ->
         # given a another turn rule on lassie with rank 1
         script = new Executable
           _id:'rule8', 
-          content: """TurnRule = require '../main/model/TurnRule'
-            Item = require '../main/model/Item'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -566,8 +566,8 @@ describe 'RuleService tests', ->
       # given a disabled turn rule on lassie
       script = new Executable
         _id:'rule9', 
-        content: """TurnRule = require '../main/model/TurnRule'
-          Item = require '../main/model/Item'
+        content: """TurnRule = require '../model/TurnRule'
+          Item = require '../model/Item'
 
           module.exports = new (class Dumb extends TurnRule
             constructor: ->
@@ -595,7 +595,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         _id:'rule10', 
-        content: """Rule = require '../main/model/Rule'
+        content: """Rule = require '../model/Rule'
           
           module.exports = new (class Dumb extends Rule
             constructor: ->
@@ -621,7 +621,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         _id:'rule11', 
-        content: """Rule = require '../main/model/Rule'
+        content: """Rule = require '../model/Rule'
           
           module.exports = new (class Dumb extends Rule
             constructor: ->

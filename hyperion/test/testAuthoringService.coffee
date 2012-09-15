@@ -21,9 +21,9 @@ async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 gift = require 'gift'
-FSItem = require '../main/model/FSItem'
-utils = require '../main/utils'
-service = require('../main/service/AuthoringService').get()
+FSItem = require '../src/model/FSItem'
+utils = require '../src/utils'
+service = require('../src/service/AuthoringService').get()
 assert = require('chai').assert
 
 root = utils.confKey 'game.dev'
@@ -113,7 +113,7 @@ describe 'AuthoringService tests', ->
         return done err if err?
         service.init (err) ->
           return done err if err?
-          fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+          fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
             return done err if err?
             file = new FSItem 'folder/image1.png', false
             file.content = data
@@ -128,14 +128,14 @@ describe 'AuthoringService tests', ->
       service.read file, (err, read) ->
         return done "Cannot read file: #{err}" if err?
         # then read data is correct
-        fs.readFile './hyperion/src/test/fixtures/image1.png', (err, data) ->
+        fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
           return done err if err?
           assert.equal read.content, data.toString('base64')
           done()
         
     it 'should file content be updated', (done) -> 
       # given a binary content
-      fs.readFile './hyperion/src/test/fixtures/image2.png', (err, data) ->
+      fs.readFile './hyperion/test/fixtures/image2.png', (err, data) ->
         return done err if err?
         file.content = data
         # when saving it 

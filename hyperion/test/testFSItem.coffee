@@ -21,9 +21,9 @@ fs = require 'fs'
 pathUtils = require 'path'
 fsExtra = require 'fs-extra'
 async = require 'async'
-FSItem = require '../main/model/FSItem'
-utils = require '../main/utils'
-watcher = require('../main/model/ModelWatcher').get()
+FSItem = require '../src/model/FSItem'
+utils = require '../src/utils'
+watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
 root = null
