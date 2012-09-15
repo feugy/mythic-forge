@@ -63,17 +63,11 @@ processLinks = (instance, properties) ->
 # @option options instanceClass [String] if this type has type-properties, the instance class name
 # @option options instanceProperties [Boolean] wether this type will embed properties
 # @option options typeClass [Object] if this type has instance-properties, the type class name
+# @option options hasImages [Boolean] if this type has images to be removed when type is removed
 module.exports = (typeName, spec, options = {}) ->
 
   # Local cache
   cache = {}
-
-  # We use the post-save middleware to propagate creation and saves.
-  # But within this function, all instances have lost their "isNew" status
-  # thus we store that status from the pre-save middleware, to use it in the post-save
-  # middleware 
-  wasNew = {}
-  modifiedPaths = {}
 
   if options?.typeProperties
     # event properties definition, stored by names
@@ -137,30 +131,27 @@ module.exports = (typeName, spec, options = {}) ->
   # pre-save middleware: store modified path for changes propagation
   AbstractType.pre 'save', (next) ->
     # stores the isNew status and modified paths.
-    wasNew[@_id] = @isNew
-    modifiedPaths[@_id] = @modifiedPaths.concat()
+    wasNew = @isNew
+    modifiedPaths = @modifiedPaths().concat()
     next()
-
-  # post-save middleware: now that the instance was properly saved, update the cache.
-  AbstractType.post 'save', ->
-    # updates the cache
+    # now that the instance was properly saved, update the cache.
     cache[@_id] = @ unless options?.noCache
-    modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), typeName, this, modifiedPaths[@_id]
+    modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
     
   # post-remove middleware: now that the type was properly removed, update the cache.
-  AbstractType.post 'remove', ->
+  AbstractType.pre 'remove', (next) ->
+    # do removal
+    next()
     # updates the cache
     delete cache[@_id] unless options?.noCache
     # broadcast deletion
-    modelWatcher.change 'deletion', typeName, this
-
-  # post-remove middleware: removes images, without using the ImageService
-  AbstractType.post 'remove', ->
-    # removes all images that starts with the id from the image store.
-    id = @_id
-    fs.readdir imageStore, (err, files) ->
-      for file in files when file.indexOf("#{id}-") is 0
-        fs.unlink path.join imageStore, file
+    modelWatcher.change 'deletion', typeName, @
+    if options?.hasImages
+      # removes all images that starts with the id from the image store.
+      id = @_id
+      fs.readdir imageStore, (err, files) ->
+        for file in files when file.indexOf("#{id}-") is 0
+          fs.unlink path.join imageStore, file
 
   if options?.typeProperties
 
@@ -218,7 +209,9 @@ module.exports = (typeName, spec, options = {}) ->
         delete @_deletedProps
         delete @_updatedProps
         # save all the modified instances
-        async.forEach saved, ((instance, done) -> instance.save done), next
+        async.forEach saved, (instance, done) -> 
+          instance.save done
+        , next
 
   if options?.instanceProperties
 
@@ -324,7 +317,7 @@ module.exports = (typeName, spec, options = {}) ->
       properties = @type.get 'properties'
       # get through all existing attributes
       attrs = Object.keys @_doc;
-      for attr in attrs
+      for attr in attrs when attr isnt '__v' # ignore versionning attribute
         # not in schema, nor in type
         if attr of properties
           err = utils.checkPropertyType @get(attr), properties[attr] 
@@ -336,10 +329,6 @@ module.exports = (typeName, spec, options = {}) ->
       for prop, value of @type.get 'properties'
         if undefined is @get prop
           @set prop, if value.type is 'array' then [] else if value.type is 'object' then null else value.def
-
-      # stores the isNew status.
-      wasNew[@_id] = @isNew
-      modifiedPaths[@_id] = @modifiedPaths.concat()
 
       # replace links by them _ids
       processLinks this, properties

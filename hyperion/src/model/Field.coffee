@@ -25,7 +25,7 @@ Map = require './Map'
 logger = require('../logger').getLogger 'model'
 
 # Define the schema for fields.
-FieldSchema = new mongoose.Schema {
+FieldSchema = new mongoose.Schema 
   # link to map
   mapId: 
     type: String
@@ -45,7 +45,7 @@ FieldSchema = new mongoose.Schema {
   y: 
     type:Number
     default: 0
-}, {strict:true}
+, strict:true
 
 # Override the equals() method defined in Document, to check correctly the equality between _ids, 
 # with their `equals()` method and not with the strict equality operator.

@@ -50,7 +50,7 @@ describe 'Authentication tests', ->
       twitterPassword = "toto1818"
 
       it 'should Twitter user be enrolled', (done) ->
-        @timeout 15000
+        @timeout 20000
 
         # when requesting the twitter authentication page
         request "#{rootUrl}/auth/twitter", (err, res, body) ->
@@ -96,7 +96,7 @@ describe 'Authentication tests', ->
                 done()   
 
       it 'should existing logged-in Twitter user be immediately authenticated', (done) ->
-        @timeout 7000
+        @timeout 10000
 
         # when requesting the twitter authentication page while a twitter user is already logged-in
         request "#{rootUrl}/auth/twitter", (err, res, body) ->
@@ -117,7 +117,7 @@ describe 'Authentication tests', ->
             done()    
 
       it 'should existing Twitter user be authenticated after log-in', (done) ->
-        @timeout 15000
+        @timeout 20000
 
         # given an existing but not logged in Twitter account
         request 'http://twitter.com/logout', (err, res, body) ->
@@ -178,7 +178,7 @@ describe 'Authentication tests', ->
       googlePassword = "toto1818"
 
       it 'should Google user be enrolled', (done) ->
-        @timeout 15000
+        @timeout 20000
 
         # when requesting the google authentication page
         request "#{rootUrl}/auth/google", (err, res, body) ->
@@ -240,7 +240,7 @@ describe 'Authentication tests', ->
                   done()     
 
       it 'should existing logged-in Google user be immediately authenticated', (done) ->
-        @timeout 7000
+        @timeout 10000
 
         # when requesting the google authentication page while a google user is already logged-in
         request "#{rootUrl}/auth/google", (err, res, body) ->
@@ -260,7 +260,7 @@ describe 'Authentication tests', ->
             done()    
 
       it 'should existing Google user be authenticated after log-in', (done) ->
-        @timeout 15000
+        @timeout 20000
 
         # given an existing but not logged in Google account
         request "https://code.google.com/apis/console/logout", (err, res, body) ->

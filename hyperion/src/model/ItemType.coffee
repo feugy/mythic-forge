@@ -59,7 +59,7 @@ ItemType = typeFactory 'ItemType',
 , 
   typeProperties: true
   instanceClass: 'Item'
-
+  hasImages: true
 
 # Export the Class.
 module.exports = conn.model 'itemType', ItemType

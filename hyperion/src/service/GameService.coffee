@@ -75,7 +75,7 @@ class _GameService
       .where('x').lte(upX)
       .where('y').gte(lowY)
       .where('y').lte(upY)
-      .run (err, items) ->
+      .exec (err, items) ->
         return callback err, [], [] if err?
         # then gets the fields
         Field.where('mapId', new ObjectId(''+mapId))
@@ -83,7 +83,7 @@ class _GameService
           .where('x').lte(upX)
           .where('y').gte(lowY)
           .where('y').lte(upY)
-          .run (err, fields) ->
+          .exec (err, fields) ->
             return callback err, [], [] if err?
             callback null, items, fields
 

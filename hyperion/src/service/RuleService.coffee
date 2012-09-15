@@ -352,7 +352,7 @@ class _RuleService
     # do not process if already known
     return if item in modified 
     # will be save if at least one path is modified
-    modified.push(item) if item?.modified
+    modified.push(item) if item?.isModified()
     # do not go further if not an item
     return unless item instanceof Item
     properties = item.type.get('properties')

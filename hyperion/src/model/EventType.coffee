@@ -30,6 +30,7 @@ EventType = typeFactory 'EventType',
 , 
   typeProperties: true
   instanceClass: 'Event'
+  hasImages: true
 
 
 # Export the Class.

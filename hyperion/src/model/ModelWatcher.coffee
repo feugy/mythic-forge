@@ -45,11 +45,14 @@ class _ModelWatcher extends EventEmitter
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, className, instance, modified) =>
+
     parameter = {}
     if '_doc' of instance
       parameter[key] = value for own key,value of instance._doc
     else 
       parameter = _.clone instance
+
+    delete parameter.__v # added by mongoose to store version
 
     # do not embed the linked map and type for items and fields
     parameter.type = parameter.type?._id if className is 'Item'
@@ -64,7 +67,6 @@ class _ModelWatcher extends EventEmitter
         parameter = 
           _id: instance._id
         parameter[path] = instance.get path for path in modified
-
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{parameter._id or parameter.path}}"
 

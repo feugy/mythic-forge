@@ -100,7 +100,7 @@ PlayerSchema.pre 'save', (next) ->
 
   # stores the isNew status.
   wasNew[@_id] = @isNew
-  modifiedPaths[@_id] = @modifiedPaths.concat()
+  modifiedPaths[@_id] = @modifiedPaths().concat()
   # replace characters with their id, for storing in Mongo, without using setters.
   saveCharacters = @characters
   @_doc.characters[i] = character._id for character, i in saveCharacters

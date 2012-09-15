@@ -26,7 +26,7 @@ requirejs.config
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
     'jquery-ui': 'lib/jquery-ui-1.8.21-min'
-    'transit': 'lib/jquery-transit-0.1.3-min'
+    'transit': 'lib/jquery-transit-0.1.4-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'

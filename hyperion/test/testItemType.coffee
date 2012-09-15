@@ -33,21 +33,22 @@ describe 'ItemType tests', ->
     # empty items and types.
     Item.collection.drop -> ItemType.collection.drop -> done()
 
+  afterEach (done) ->
+    # remove all listeners
+    watcher.removeAllListeners 'change'
+    done()
+
   it 'should type\'s properties be distinct', (done) ->
     # given a type with a property
     type = new ItemType({name: 'vehicule'})
     type.setProperty 'wheels', 'integer', 4
     type.save (err) ->
-      if (err?)
-        throw new Error err
-        done()
+      return done err if err?
       # when creating another type with distinct property
       type2 = new ItemType({name: 'animal'})
       type2.setProperty 'mammal', 'boolean', true
       type2.save (err) ->
-        if (err?)
-          throw new Error err
-          done()
+        return done err if err?
         # then their properties ar not mixed
         keys = Object.keys(type.get('properties'))
         keys2 = Object.keys(type2.get('properties'))
@@ -65,7 +66,7 @@ describe 'ItemType tests', ->
 
     # when saving it
     type.save (err, saved) ->
-      throw new Error "Can't save type: #{err}" if err?
+      return done "Can't save type: #{err}" if err?
 
       # then it is in mongo
       ItemType.find {}, (err, types) ->
@@ -86,7 +87,7 @@ describe 'ItemType tests', ->
 
     # when saving it
     type.save (err, saved) ->
-      throw new Error "Can't save type: #{err}" if err?
+      return done "Can't save type: #{err}" if err?
 
       # then translations are available
       saved.locale = null
@@ -103,7 +104,7 @@ describe 'ItemType tests', ->
       saved.set 'desc', descFr
 
       saved.save (err, saved) ->
-        throw new Error "Can't save type: #{err}" if err?
+        return done "Can't save type: #{err}" if err?
 
         # then it is in mongo
         ItemType.find {}, (err, types) ->
@@ -125,7 +126,7 @@ describe 'ItemType tests', ->
       type.setProperty 'color', 'string', 'blue'
       type.save (err, saved) -> 
         type = saved
-        done()
+        done err
 
     afterEach (done) ->
       # removes the type at the end.
@@ -197,20 +198,18 @@ describe 'ItemType tests', ->
       type = new ItemType {name: 'river'}
       type.setProperty 'color', 'string', 'blue'
       type.setProperty 'affluents', 'array', 'Item'
-      type.save (err, saved) -> 
-        throw new Error(err) if err?
-        type = saved
+      type.save (err) -> 
+        return done err if err?
         # creates three items of this type.
         item1 = new Item {type: type, affluents: []}
         item1.save (err) ->
-          throw new Error(err) if err?
+          return done err if err?
           item2 = new Item {type: type, affluents: []}
           item2.save (err) ->
-            throw new Error(err) if err?
+            return done err if err?
             item3 = new Item {type: type, affluents: []}
             item3.save (err) -> 
-              throw new Error(err) if err?
-              done()
+              done err
 
     it 'should existing items be updated when setting a type property', (done) ->
       updates = []
@@ -225,14 +224,15 @@ describe 'ItemType tests', ->
       defaultDepth = 30
       type.setProperty 'depth', 'integer', defaultDepth
       type.save (err) -> 
+        return done err if err?
         block = ->
           Item.find {type: type._id}, (err, items) ->
             for item in items
+              assert.isDefined item.get 'depth'
               assert.equal item.get('depth'), defaultDepth
               assert.ok item._id+'' in updates
-            watcher.removeAllListeners 'change'
             done()
-        setTimeout block, 50
+        setTimeout block, 500
 
     it 'should existing items be updated when removing a type property', (done) ->
       updates = []
@@ -247,11 +247,11 @@ describe 'ItemType tests', ->
       defaultDepth = 30
       type.unsetProperty 'color'
       type.save (err) -> 
+        return done err if err?
         block = ->
           Item.find {type: type._id}, (err, items) ->
             for item in items
               assert.ok undefined is item.get('color'), 'color still present'
               assert.ok item._id+'' in updates
-            watcher.removeAllListeners 'change'
             done()
         setTimeout block, 50

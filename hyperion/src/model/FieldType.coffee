@@ -33,6 +33,8 @@ FieldType = typeFactory 'FieldType',
   images: 
     type: []
     default: -> []
+, 
+  hasImages: true
 
 # Export the Class.
 module.exports = conn.model 'fieldType', FieldType

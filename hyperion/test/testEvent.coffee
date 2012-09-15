@@ -202,7 +202,7 @@ describe 'Event tests', ->
 
     it 'should multi-resolve retrieves all properties of all objects', (done) ->
       # given a unresolved events
-      Event.where().asc('content').run (err, docs) ->
+      Event.where().sort(content: 'asc').exec (err, docs) ->
         throw new Error "Can't find event: #{err}" if err?
         # when resolving them
         Event.multiResolve docs, (err, docs) ->

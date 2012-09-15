@@ -227,7 +227,7 @@ describe 'Item tests', ->
 
     it 'should multi-resolve retrieves all properties of all objects', (done) ->
       # given a unresolved items
-      Item.where().asc('name').run (err, docs) ->
+      Item.where().sort(name:'asc').exec (err, docs) ->
         throw new Error "Can't find item: #{err}" if err?
         # when resolving them
         Item.multiResolve docs, (err, docs) ->
