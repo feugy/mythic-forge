@@ -131,6 +131,8 @@ describe 'Deployement tests', ->
 
   describe 'given a started static server', ->
 
+    notifications = []
+
     before (done) ->
       # given a valid game client in it
       fs.copy './hyperion/test/fixtures/working-client', root, (err) ->
@@ -144,6 +146,16 @@ describe 'Deployement tests', ->
             repo.commit 'initial', all:true, (err, stdout, stderr) ->
               return done err if err?
               server.listen port, 'localhost', done
+
+    beforeEach (done) ->
+      # given a registered notification listener
+      notifications = []
+      notifier.on notifier.NOTIFICATION, (event, type, number) ->
+        return unless event is 'deployement'
+        notifications.push type
+        # then notifications are received in the right order
+        assert.equal number, notifications.length, 'unexpected notification number' 
+      done()
 
     afterEach (done) ->
       notifier.removeAllListeners notifier.NOTIFICATION
@@ -161,14 +173,6 @@ describe 'Deployement tests', ->
 
     it 'should file be correctly compiled and deployed', (done) ->
       @timeout 20000
-      notifications = []
-
-      # then notifications are received in the right order
-      notifier.on notifier.NOTIFICATION, (event, type, number) ->
-        return unless event is 'deployement'
-        notifications.push type
-        assert.equal number, notifications.length, 'unexpected notification number' 
-
       # when deploying the game client
       service.deploy version, (err) ->
         return done "Failed to deploy valid client: #{err}" if err?
@@ -212,6 +216,8 @@ describe 'Deployement tests', ->
       # when commiting the deployement
       service.commit (err) ->
         return done "Failed to commit deployement: #{err}" if err?
+        # then notifications were properly received
+        assert.deepEqual notifications, ['COMMIT_START', 'COMMIT_END']
 
         # then a git version was created
         repo.tags (err, tags) ->
@@ -269,6 +275,7 @@ describe 'Deployement tests', ->
               body = browser.body.textContent.trim()
               assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"
               # then the deployement can be commited
+              notifications = []
               service.commit done
             ).fail done
 
@@ -334,10 +341,14 @@ describe 'Deployement tests', ->
             # given a deployed game client
             service.deploy version3, (err) ->
               return done err if err?
+              notifications = []
               
               # when rollbacking
               service.rollback (err) ->
                 return done "Failed to rollback: #{err}" if err?
+
+                # then notifications were properly received
+                assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
 
                 # then no version was made
                 repo.tags (err, tags) ->
