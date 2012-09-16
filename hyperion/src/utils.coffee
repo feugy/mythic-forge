@@ -145,10 +145,15 @@ module.exports =
   # @param forceRemove [boolean] if specifed and true, first erase the folder.
   # @param logger [Object] optional logger
   enforceFolderSync: (folderPath, forceRemove = false, logger = null) ->
+    exists = fs.existsSync folderPath
+
     # force Removal if specified
-    fs.removeSync folderPath if forceRemove and fs.existsSync folderPath
-      
-    if not fs.existsSync folderPath
+    if forceRemove and exists
+      fs.removeSync folderPath 
+      exists = false
+    
+    # creates if needed  
+    unless exists
       try 
         fs.mkdirSync folderPath
         logger?.info "Folder '#{folderPath}' successfully created"
@@ -252,3 +257,49 @@ module.exports =
       continue if rand >= 58 and rand <= 64 # ignore : ; < = > ? @
       token += String.fromCharCode(rand).toLowerCase()
     token
+
+  # Collapse history, from a given version to previous tag (or begining)
+  # Will create a tag to aim at the new collasped commit.
+  # The first original commit cannot never be collapsed.
+  #
+  # @param repo [Git] Git tools configured on the right repository
+  # @param tag [String] the tag name that will be used to create the collapse
+  # @param callback [Function] collapsing end function, invoked with
+  # @option callback err [String] an error details string, or null if no error occured.
+  collapseHistory: (repo, to, callback) ->
+    # get commit id corresponding to tag
+    repo.tags (err, tags) ->
+      return callback "failed to check tags: #{err}" if err?
+      names = _.pluck tags, 'name'
+
+      # checks tags validity
+      return callback "cannot reuse existing tag #{to}" if to in names
+
+      finish = ->
+        # then reset to it, leaving the working copy unmodified
+        repo.git 'reset', mixed:true, from, (err, stdout, stderr) ->
+          return callback "failed to go back to revision #{from}: #{err}" if err?
+
+          # now we can add and remove everything in only one commit
+          repo.add [], all:true, (err, stdout, stderr) ->
+            return callback "failed to add the working copy: #{err}" if err?
+            repo.commit "collapse for #{to}", all:true, (err, stdout, stderr) ->
+              # ignore warnings about empty working copy
+              err = null if err? and -1 isnt stdout?.indexOf 'nothing to commit'
+              return callback "failed to commit the working copy: #{err}" if err?
+
+              # and at last ceates the tag
+              repo.create_tag to, (err) ->
+                return callback "failed to create tag: #{err}" if eff?
+                callback null
+
+      if tags.length > 0
+        # get commit is corresponding to last tag
+        from = tags.pop().commit.id
+        finish()
+      else
+        # get first commit
+        repo.commits (err, history) ->
+          return callback "failed to check history: #{err}" if err?
+          from = history.pop().id
+          finish()

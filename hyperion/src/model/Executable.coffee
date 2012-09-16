@@ -26,13 +26,15 @@ modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 utils = require '../utils'
 
-root = utils.confKey 'executable.source'
-compiledRoot = utils.confKey 'executable.target'
+root = path.resolve path.normalize utils.confKey 'executable.source'
+compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
 ext = utils.confKey 'executable.extension','.coffee'
 
 utils.enforceFolderSync root, false, logger
-
+# check that is not sibling of game dev
+game = path.resolve path.normalize utils.confKey 'game.dev'
+throw new Error "executable.source must not be sibling or under game.dev" if 0 is path.dirname(root).indexOf path.dirname game
 
 # hashmap to differentiate creations from updates
 wasNew= {}
@@ -56,7 +58,7 @@ compileFile = (executable, silent, callback) ->
     # store it in local cache.
     executables[executable._id] = executable
     # clean require cache.
-    requireId = path.normalize path.join process.cwd(), executable.compiledPath
+    requireId = path.resolve path.normalize executable.compiledPath
     delete require.cache[requireId]
     # propagate change
     unless silent

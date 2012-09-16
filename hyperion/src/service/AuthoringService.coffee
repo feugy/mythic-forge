@@ -24,17 +24,18 @@ pathUtils = require 'path'
 coffee = require 'coffee-script'
 stylus = require 'stylus'
 fs = require 'fs-extra'
-gift = require 'gift'
-gitWrapper = require 'gift/lib/git'
+git = require 'gift'
 async = require 'async'
 requirejs = require 'requirejs'
 EventEmitter = require('events').EventEmitter
 utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 playerService = require('./PlayerService').get()
+notifier = require('../service/Notifier').get()
 
-git = null
+repo = null
 root = null
+CURRENT_TAG = '__CURRENT__'
 
 #Simple method to remove occurence of the root path from error messages
 purge = (err) -> 
@@ -162,10 +163,11 @@ optimize = (folder, callback) ->
 #
 # @param folder [String] the folder containing the optimized game client
 # @param main [String] Absolute path of the main HTML file
+# @param version [String] Name of the deployed version
 # @param callback [Function] optimization end function, invoked with
 # @option callback err [String] an error details string, or null if no error occured.
 # @option callback out [String] absolute path of folder containing optimized results
-makeCacheable = (folder, main, callback) ->
+makeCacheable = (folder, main, version, callback) ->
   # first cleans and creates a temporary destination folder
   dest = "#{folder}.tmp"
   fs.remove dest, (err) ->
@@ -209,13 +211,16 @@ makeCacheable = (folder, main, callback) ->
               ,
                 pattern: /<\s*link([^>]*)href\s*=\s*(["'])([^\2]*)\2/g
                 replace: "<link$1href=\"#{timestamp}/$3\""
+              ,
+                pattern: /\{\{version\}\}/g
+                replace: version
               ]
               content = content.replace spec.pattern, spec.replace for spec in specs
               fs.writeFile newMain, content, (err) ->
                 return callback "failed to write new main file: #{err}" if err?
                 logger.debug "#{newMain} rewritten"
                 callback null, dest
-
+                
 # Generate a proper Git author string, that ensure at least lastName and correct email
 #
 # @param player [Player] the concerned author
@@ -232,9 +237,15 @@ getAuthor = (player) ->
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 class _AuthoringService extends EventEmitter
 
+  # **private**
+  # Version currently deployed.
+  # Only one version may be deployed at a time.
+  @_deployed: null
+
   # Service constructor. Invoke init()
   # Triggers 'initialized' event on singleton instance when ready.
   constructor: ->
+    @_deployed = null
     @init (err) =>
       throw new Error "Failed to init: #{err}" if err?
       @emit 'initialized'
@@ -245,6 +256,7 @@ class _AuthoringService extends EventEmitter
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
     root = pathUtils.resolve pathUtils.normalize utils.confKey 'game.dev'
+
     # enforce folders existence at startup.
     utils.enforceFolderSync root, false, logger
     repository = pathUtils.dirname root
@@ -253,13 +265,13 @@ class _AuthoringService extends EventEmitter
       return callback err if err?
         # creates also the git repository
       logger.debug "git repository initialized !"
-      git = gift repository
+      repo = git repository
       callback null
 
     # Performs a 'git init' if git repository do not exists
     unless fs.existsSync pathUtils.join repository, '.git'
       logger.debug "initialize git repository at #{repository}..."
-      gift.init repository, finished
+      git.init repository, finished
     else
       logger.debug "using existing git repository..."
       finished()
@@ -287,6 +299,7 @@ class _AuthoringService extends EventEmitter
   # @option callback err [String] error string. Null if no error occured
   # @option callback saved [FSItem] the saved fSItem
   save: (item, email, callback) =>
+    return callback "Deployment of version #{@_deployed} in progress" if @_deployed?
     playerService.getByEmail email, false, (err, author) =>
       return callback "Failed to get author: #{err}" if err?
       return callback "No author with email #{email}" unless author?
@@ -311,7 +324,7 @@ class _AuthoringService extends EventEmitter
         # but do it for files
         commit = =>
           # now commit it on git
-          git.commit 'save',
+          repo.commit 'save',
             all: true
             author: getAuthor author
           , (err, stdout) =>
@@ -321,7 +334,7 @@ class _AuthoringService extends EventEmitter
 
         if isNew
           # first add it to git
-          git.add saved.path, (err, stdout) =>
+          repo.add saved.path, (err, stdout) =>
             return callback "Failed to add to version control: #{purge err} #{purge stdout}" if err?
             logger.debug "#{saved.path} added to version control"
             commit()
@@ -337,6 +350,7 @@ class _AuthoringService extends EventEmitter
   # @option callback err [String] error string. Null if no error occured
   # @option callback removed [FSItem] the removed fSItem
   remove: (item, email, callback) =>
+    return callback "Deployment of version #{@_deployed} in progress" if @_deployed?
     playerService.getByEmail email, false, (err, author) =>
       return callback "Failed to get author: #{err}" if err? 
       return callback "No author with email #{email}" unless author?
@@ -351,7 +365,7 @@ class _AuthoringService extends EventEmitter
         return callback purge err if err?
 
         # now commit it on git
-        git.commit 'remove',
+        repo.commit 'remove',
           all: true
           author: getAuthor author
         , (err, stdout) =>
@@ -371,6 +385,7 @@ class _AuthoringService extends EventEmitter
   # @option callback err [String] error string. Null if no error occured
   # @option callback moved [FSItem] the moved fSItem
   move: (item, newPath, email, callback) =>
+    return callback "Deployment of version #{@_deployed} in progress" if @_deployed?
     playerService.getByEmail email, false, (err, author) =>
       return callback "Failed to get author: #{err}" if err
       return callback "No author with email #{email}" unless author?
@@ -385,13 +400,13 @@ class _AuthoringService extends EventEmitter
         return callback purge err if err?
 
         # add/remove new files into git
-        git.add [], all:true, (err, stdout) =>
+        repo.add [], all:true, (err, stdout) =>
           return callback "Failed to add to version control: #{purge err} #{purge stdout}" if err?
           logger.debug "#{moved.path} added to version control"
           
           # now commit it on git
-          git.commit 'move',
-            all: true
+          repo.commit 'move',
+            all: true 
             author: getAuthor author
           , (err, stdout) =>
             return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
@@ -426,68 +441,217 @@ class _AuthoringService extends EventEmitter
         file.path = pathUtils.relative(root, file.path) for file in read.content
       callback null, read
 
-  # Performs compilation and optimization on game client:
-  # - makes a copy to temporary folder
-  # - compiles stylus stylesheets and remove sources
-  # - compiles coffee files and removes sources
-  # - optimize with requirejs utilities
+  # Performs compilation and optimization of game client, and send 'deployment' notifications
+  # with relevant step name and number: 
+  # 1 - makes a copy to temporary folder (DEPLOY_START)
+  # 2 - compiles stylus stylesheets and remove sources (COMPILE_STYLUS)
+  # 3 - compiles coffee files and removes sources (COMPILE_COFFEE)
+  # 4 - optimize with requirejs utilities (OPTIMIZE_JS)
+  # 5 - make html static resources cacheable (OPTIMIZE_HTML)
+  # 6 - save current production folder into save folder (DEPLOY)
+  # 7 - move optimization results into production (DEPLOY_END)
   #
-  # @param callback [Function] invoked when optimization is done, with following parameters:
+  # Then the deployement is stopped and must be finished with `commit()` or `rollback()`
+  #
+  # @param version [String] name of the deployed version.
+  # @param callback [Function] invoked when deployement is done, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   # @option callback path [String] path to the compiled and optimized location of the client
-  optimize: (callback) =>
-    # first, clean to optimized destination
-    folder = pathUtils.resolve pathUtils.normalize utils.confKey 'game.optimized'
-    production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
+  deploy: (version, callback) =>
+    return callback "Deployment of version #{@_deployed} already in progress" if @_deployed?
+    return callback "Version #{CURRENT_TAG} is reserved" if version is CURRENT_TAG
+    # check version unicity
+    @listVersion (err, versions) =>
+      return callback err if err?
+      return callback "Version #{version} already used" if version in versions
+      @_deployed = "#{version}"
 
-    fs.remove folder, (err) => fs.remove "#{folder}.out", (err) =>
-      return callback "Failed to clean optimized folder: #{err}" if err?
-      logger.debug "optimized folder #{folder} cleaned"
-      
-      # second, move sources to optimized destination
-      fs.copy root, folder, (err) =>
-        return callback "Failed to copy to optimized folder: #{err}" if err?
-        logger.debug "client copied to optimized folder"
+      error = (err) =>
+        @_deployed = null
+        callback err
 
-        # fifth, optimize with requirejs
-        _optimize = =>
-          optimize folder, (err, root, temp) =>
-            return callback "Failed to optimized client: #{err}" if err?
-            # sixth, make it cacheable
-            makeCacheable temp, root, (err, result) =>
-              return callback "Failed to make client cacheable: #{err}" if err?
-              # cleans production folder and move everything in it
-              fs.remove production, (err) =>
-                return callback "Failed to clean production folder: #{err}" if err?
+      # first, clean to optimized destination
+      folder = pathUtils.resolve pathUtils.normalize utils.confKey 'game.optimized'
+      production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
+      save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
 
-                fs.copy result, production, (err) =>
-                  return callback "Failed to copy into production folder: #{err}" if err?
-                  logger.debug "client moved to production folder"
+      notifier.notify 'deployement', 'DEPLOY_START', 1
 
-                  # cleans optimization folders
-                  async.forEach [folder, temp, result], fs.remove, (err) =>
-                    # ignore removal errors
-                    callback null
+      fs.remove folder, (err) => fs.remove "#{folder}.out", (err) =>
+        return error "Failed to clean optimized folder: #{err}" if err?
+        logger.debug "optimized folder #{folder} cleaned"
+        
+        # second, move sources to optimized destination
+        fs.copy root, folder, (err) =>
+          return error "Failed to copy to optimized folder: #{err}" if err?
+          logger.debug "client copied to optimized folder"
 
-        # fourth, compile coffee scripts
-        _compileCoffee = =>
-          utils.find folder, /^.*\.coffee?$/, (err, results) =>
-            return _optimize() if err? or results.length is 0
-            async.forEach results, (script, next) =>
-              compileCoffee script, next
+          # fifth, optimize with requirejs
+          _optimize = =>
+            notifier.notify 'deployement', 'OPTIMIZE_JS', 4
+            optimize folder, (err, root, temp) =>
+              return error "Failed to optimized client: #{err}" if err?
+              # sixth, make it cacheable
+              notifier.notify 'deployement', 'OPTIMIZE_HTML', 5
+              makeCacheable temp, root, @_deployed, (err, result) =>
+                return error "Failed to make client cacheable: #{err}" if err?
+                # save production folder content and move everything in it
+                notifier.notify 'deployement', 'DEPLOY', 6
+                fs.remove save, (err) =>
+                  return error "Failed to clean save folder: #{err}" if err? and err.code isnt 'ENOENT'
+                  fs.mkdir save, (err) =>
+                    return error "Failed to create save folder: #{err}" if err?
+                    fs.copy production, save, (err) =>
+                      return error "Failed to save current production: #{err}" if err? and !(Array.isArray err) # when production do not exists
+                      logger.debug "old version saved"
+                      fs.remove production, (err) =>
+                        return error "Failed to clean production folder: #{err}" if err? and err.code isnt 'ENOENT'
+                        fs.copy result, production, (err) =>
+                          return error "Failed to copy into production folder: #{err}" if err?
+                          logger.debug "client moved to production folder"
+
+                          # cleans optimization folders
+                          async.forEach [folder, temp, result], fs.remove, (err) =>
+                            notifier.notify 'deployement', 'DEPLOY_END', 7
+                            # ignore removal errors
+                            callback null
+
+          # fourth, compile coffee scripts
+          _compileCoffee = =>
+            notifier.notify 'deployement', 'COMPILE_COFFEE', 3
+            utils.find folder, /^.*\.coffee?$/, (err, results) =>
+              return _optimize() if err? or results.length is 0
+              async.forEach results, (script, next) =>
+                compileCoffee script, next
+              , (err) =>
+                return error "Failed to compile coffee scripts: #{err}" if err?
+                _optimize()
+
+          # third, compile stylus sheets
+          notifier.notify 'deployement', 'COMPILE_STYLUS', 2
+          utils.find folder, /^.*\.styl(us)?$/, (err, results) =>
+            return _compileCoffee() if err? or results.length is 0
+            async.forEach results, (sheet, next) =>
+              compileStylus sheet, next
             , (err) =>
-              return callback "Failed to compile coffee scripts: #{err}" if err?
-              _optimize()
+              return error "Failed to compile stylus sheets: #{err}" if err?
+              _compileCoffee()
 
-        # third, compile stylus sheets
-        utils.find folder, /^.*\.styl(us)?$/, (err, results) =>
-          return _compileCoffee() if err? or results.length is 0
-          async.forEach results, (sheet, next) =>
-            compileStylus sheet, next
-          , (err) =>
-            return callback "Failed to compile stylus sheets: #{err}" if err?
-            _compileCoffee()
+  # Commit definitively the current deployement, and send 'deployment' notifications
+  # with relevant step name and number: 
+  # 1 - creates a version named after version used in `deploy` and compact history (COMMIT_START)
+  # 2 - removes the previous game save (COMMIT_END)
+  #
+  # @param callback [Function] invoked when deployement is committed, with following parameters:
+  # @option callback err [String] an error message, or null if no error occures
+  commit: (callback) =>
+    return callback 'Commit can only be performed after deploy' unless @_deployed?
 
+    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
+
+    notifier.notify 'deployement', 'COMMIT_START', 1
+    
+    # first compact git history and create tag
+    utils.collapseHistory repo, @_deployed, (err) =>
+      return callback "Failed to collapse history: #{err}" if err?
+      logger.debug "git history compacted"
+
+      # at least, remove save folder
+      fs.remove save, (err) =>
+        return callback "Failed to remove previous version save: #{err}" if err? and err.code isnt 'ENOENT'
+        logger.debug "previous game client files deleted"
+
+        # before exiting, remove CURRENT_TAG, to allow further restoreVersion
+        repo.delete_tag CURRENT_TAG, (err) =>
+          logger.debug "remove current tag"
+
+          # end of the deployement
+          @_deployed = null
+          notifier.notify 'deployement', 'COMMIT_END', 2
+
+          callback null
+
+  # Rollback the current deployement, and send 'deployment' notifications
+  # with relevant step name and number: 
+  # 1 - remove current deployed game client (ROLLBACK_START)
+  # 2 - restore previous game client (ROLLBACK_END)
+  #
+  # @param callback [Function] invoked when deployement is rollbacked, with following parameters:
+  # @option callback err [String] an error message, or null if no error occures
+  rollback: (callback) =>
+    return callback 'Rollback can only be performed after deploy' unless @_deployed?
+
+    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
+    production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
+    
+    notifier.notify 'deployement', 'ROLLBACK_START', 1
+
+    # removes production folder
+    fs.remove production, (err) =>
+      return callback "Failed to remove deployed version: #{err}" if err? and err.code isnt 'ENOENT'
+      logger.debug "deployed game client files deleted"
+
+      fs.rename save, production, (err) =>
+        return callback "Failed to move saved version to production: #{err}" if err?
+        logger.debug "previous game client files restored"
+
+        # before exiting, remove CURRENT_TAG, to allow further restoreVersion
+        repo.delete_tag CURRENT_TAG, (err) =>
+          logger.debug "remove current tag"
+
+          # end of the deployement
+          @_deployed = null
+          notifier.notify 'deployement', 'ROLLBACK_END', 2
+
+          callback null
+
+  # List all the known version of the deployed game client
+  # 
+  # @param callback [Function] invoked with versions:
+  # @option callback err [String] an error message, or null if no error occures
+  # @option callback versions [Array<String>] an array (may be empty) of known versions
+  listVersion: (callback) =>
+    # get tags
+    repo.tags (err, tags) =>
+      return callback "Failed to consult versions: #{err}" if err?
+      versions = []
+      # keep only names and remove special current tag
+      versions.push tag.name for tag in tags when tag?.name isnt CURRENT_TAG
+      callback null, versions
+
+  # Restore a given version of the game client. If no version is specified, then restore the current 
+  # undeployed version of the game client.
+  # 
+  # @param version [String] the desired version, or null to get the current undeployed version
+  # @param callback [Function] invoked when game client was restored
+  # @option callback err [String] an error message, or null if no error occures
+  restoreVersion: (version, callback) =>
+    return callback "Deployment of version #{@_deployed} in progress" if @_deployed?
+    version = version or CURRENT_TAG
+
+    # get tags first
+    repo.tags (err, tags) =>
+      return callback "Failed to consult versions: #{err}" if err?
+      # check that we know version
+      versions = _.pluck tags, 'name'
+      return callback "Unknown version #{version}" unless version in versions
+
+      reset = =>
+        logger.debug "reset working copy to version #{version}"
+        # now we can rest with no fear...
+        repo.git 'reset', hard:true, [version], (err, stdout, stderr) =>
+          return callback "Failed to restore version #{version}: #{err}" if err?
+          callback null
+
+      # do not create CURRENT_TAG if restoring current or if already exists
+      return reset() if version is CURRENT_TAG or CURRENT_TAG in versions
+
+      # before reseting, put a tag on current version
+      repo.create_tag CURRENT_TAG, (err, stdout) =>
+        return callback "Failed to tag last commit as current: #{err}" if err?
+        logger.debug "current tag set to #{stdout}"
+        reset()
+        
 # Singleton instance
 _instance = undefined
 class AuthoringService

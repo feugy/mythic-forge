@@ -19,7 +19,7 @@
 'use strict'
 
 _ = require 'underscore'
-fs = require 'fs'
+fs = require 'fs-extra'
 path= require 'path'
 utils = require '../utils'
 ItemType = require '../model/ItemType'
@@ -27,8 +27,13 @@ FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
 logger = require('../logger').getLogger 'service'
 
+      
+imagesPath = path.resolve path.normalize utils.confKey 'images.store'
 # enforce folder existence
-utils.enforceFolderSync utils.confKey('images.store'), false, logger
+utils.enforceFolderSync imagesPath, false, logger
+# check that is not sibling of game dev
+game = path.resolve path.normalize utils.confKey 'game.dev'
+throw new Error "image.store must not be sibling or under game.dev" if 0 is path.dirname(imagesPath).indexOf path.dirname game
 
 supported = ['ItemType', 'FieldType', 'EventType']
 
@@ -84,8 +89,6 @@ class _ImagesService
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.get('images')[suffix]?.file
         else throw new Error "save must be called with arguments (modelName, id, ext, imageData, [idx], callback)"
-
-      imagesPath = utils.confKey 'images.store'
 
       proceed = (err) =>
         return callback "Failed to save image #{suffix} on model #{model._id}: #{err}" if err? and err.code isnt 'ENOENT'
@@ -169,8 +172,6 @@ class _ImagesService
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.get('images')[suffix]?.file
         else throw new Error "semove must be called with arguments (model, [idx], callback)"
-      
-      imagesPath = utils.confKey 'images.store'
 
       # removes the existing file
       fs.unlink path.join(imagesPath, existing), (err) =>

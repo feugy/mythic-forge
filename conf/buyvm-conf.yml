@@ -41,9 +41,11 @@ executable:
 
 # Game client
 game:
-  dev: /home/damien/workspace/mythic-forge/game/client
+  # Must not contains or be a sibling of other paths.
+  dev: /home/damien/workspace/mythic-forge/game/source/client
   optimized: /home/damien/workspace/mythic-forge/game/optimized
   production: /home/damien/workspace/mythic-forge/game/final  
+  save: /home/damien/workspace/mythic-forge/game/previous  
 
 # Turns execution settings. Frequency in seconds
 turn:

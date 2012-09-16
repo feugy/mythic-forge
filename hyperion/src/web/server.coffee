@@ -35,6 +35,7 @@ imagesService = require('../service/ImagesService').get()
 searchService = require('../service/SearchService').get()
 authoringService = require('../service/AuthoringService').get()
 watcher = require('../model/ModelWatcher').get()
+notifier = require('../service/Notifier').get()
 
 # If an ssl certificate is found, use it.
 app = null
@@ -184,12 +185,17 @@ io.of('/game').on 'connection', (socket) ->
 #
 # configure the differents message allowed
 # 'admin' namespace is associated to AdminService, ImageService, AuthoringService and SearchService
+# send also notification of AdminNotifier
 # @see {AdminService}
 io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->    
   exposeMethods adminService, socket, ['save', 'remove']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
+
+  notifier.on notifier.NOTIFICATION, (event, details...) ->
+    logger.debug "broadcast of #{event}"
+    socket.emit.apply socket, [event].concat details
 
 # socket.io `updates` namespace 
 #

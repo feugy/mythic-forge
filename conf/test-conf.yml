@@ -22,7 +22,7 @@ authentication:
   twitter:
     id: LosYMjbW1mompu5Dxkg3Bw
     secret: COQe0t413fAcMRlU5eK7ZthPxolV5nf2tfs442lZUU
-    
+
 # SSL certificates. Do not specify them to use plain Http.
 
 # MongoDB connection
@@ -37,9 +37,11 @@ executable:
 
 # Game client
 game:
-  dev: ../test/client
-  optimized: ../test/optimized
-  production: ../test/final
+  # Must not contains or be a sibling of other paths.
+  dev: ./hyperion/lib/game-test/source/client
+  optimized: ./hyperion/lib/game-test/optimized
+  production: ./hyperion/lib/game-test/final
+  save: ./hyperion/lib/game-test/previous
 
 # Turns execution settings. Frequency in seconds
 turn:

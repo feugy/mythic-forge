@@ -72,9 +72,9 @@
     - Authoring Service and game deployment
         - **[done]** compile stylus, coffee and optimize js and css
         - **[done]** move to production path and create unic url for resources
-        - compact git history and create version
-        - revert to previous version
-        - list existing versions and current
+        - **[done]** compact git history and create version
+        - **[done]** revert to previous version
+        - **[done]** list existing versions and current
         - allow/block non-administrator login
         - **[done]** serve production version with cache and gzip
     - Security

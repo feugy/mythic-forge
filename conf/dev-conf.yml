@@ -40,9 +40,11 @@ executable:
 
 # Game client
 game:
-  dev: ../proto-game/client
+  # Must not contains or be a sibling of other paths.
+  dev: ../proto-game/source/client
   optimized: ./proto-game/optimized
-  production: ./hyperion/lib/game-test/final #./proto-game/final
+  production: ./proto-game/final
+  save: ./proto-game/previous
 
 # Turns execution settings. Frequency in seconds
 turn:

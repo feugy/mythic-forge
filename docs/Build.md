@@ -87,4 +87,4 @@ Open with a webkit browser (chrome or safari): [http://localhost:8080/debug?port
 
 Then launch the program in debug mode (for example a unit test):
 
-    node --debug-brk node_modules\mocha\bin\mocha hyperion\lib\tests
+  mocha -d --debug-brk .\hyperion\test

@@ -17,8 +17,8 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-fs = require 'fs'
-p = require 'path'
+fs = require 'fs-extra'
+pathUtils = require 'path'
 async = require 'async'
 
 module.exports =
@@ -32,9 +32,9 @@ module.exports =
   cleanFolder: (path, callback) ->
     fs.readdir path, (err, files) ->
       return callback err if err?
-      remove = (file, done) ->
-        fileName = p.join(path, file)
-        fs.unlink fileName, done
-      async.forEach files, remove, (err) ->
+      
+      async.forEachSeries files, (file, next) ->
+        fs.remove pathUtils.join(path, file), next
+      , (err) ->
         return callback err if err?
-        setTimeout callback, 5
+        callback null

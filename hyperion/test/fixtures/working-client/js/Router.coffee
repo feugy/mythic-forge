@@ -50,13 +50,11 @@ define [
 
       @route '*route', '_showTemplate'
 
-      $('body').empty()
-
       Backbone.history.start
         pushState: true
         root: conf.basePath
 
     _showTemplate: =>
-      $('body').empty().append(template).find('h1').html i18n.titles.editionPerspective
+      $('body').append(template).find('h1').html i18n.titles.editionPerspective
 
   new Router()
