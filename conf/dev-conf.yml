@@ -42,9 +42,9 @@ executable:
 game:
   # Must not contains or be a sibling of other paths.
   dev: ../proto-game/source/client
-  optimized: ./proto-game/optimized
-  production: ./proto-game/final
-  save: ./proto-game/previous
+  optimized: ../proto-game/optimized
+  production: ../proto-game/final
+  save: ../proto-game/previous
 
 # Turns execution settings. Frequency in seconds
 turn:

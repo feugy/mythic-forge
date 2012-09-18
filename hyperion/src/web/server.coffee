@@ -187,15 +187,15 @@ io.of('/game').on 'connection', (socket) ->
 # 'admin' namespace is associated to AdminService, ImageService, AuthoringService and SearchService
 # send also notification of AdminNotifier
 # @see {AdminService}
-io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->    
+adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->    
   exposeMethods adminService, socket, ['save', 'remove']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
-  exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
+  exposeMethods authoringService, socket, ['move', 'deploy', 'commit', 'rollback'], ['readRoot', 'save', 'remove']
 
-  notifier.on notifier.NOTIFICATION, (event, details...) ->
-    logger.debug "broadcast of #{event}"
-    socket.emit.apply socket, [event].concat details
+notifier.on notifier.NOTIFICATION, (event, details...) ->
+  logger.debug "broadcast of #{event}"
+  adminNS.emit.apply adminNS, [event].concat details
 
 # socket.io `updates` namespace 
 #

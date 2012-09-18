@@ -76,6 +76,8 @@
         - **[done]** revert to previous version
         - **[done]** list existing versions and current
         - allow/block non-administrator login
+        - **[done]** return current version and deployed version
+        - restrict game dev to administors
         - **[done]** serve production version with cache and gzip
     - Security
         - **[done]** register users from Google
@@ -108,6 +110,7 @@
             - input query with help and validation
             - display result and navigates
     - authoring perspective
+        - error handling while saving/moving/removing files (durring deployement)
         - multiple file search & replace
         - single file search & replace
         - History
@@ -171,6 +174,10 @@
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
         - **[done]** TurnRule
+    - administration perspective
+        - game client version list and restoration
+        - **[done]** deploy, commit and rollback
+        - **[done]** error handling on AdminService
 
 # Changes
     - no more distinction between Items and Actors
