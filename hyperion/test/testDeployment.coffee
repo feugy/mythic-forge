@@ -54,15 +54,15 @@ describe 'Deployement tests', ->
         fs.mkdir root, (err) ->
           return done err if err?
           # given a valid game client in it
-          fs.copy './hyperion/test/fixtures/working-client', root, done
+          fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client'), root, done
 
     it 'should coffee compilation errors be reported', (done) ->
       # given a non-compiling coffee script
-      fs.copy './hyperion/test/fixtures/Router.coffee.error', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.coffee.error'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
 
         # when optimizing the game client
-        service.deploy version, (err) ->
+        service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, "Parse error on line 50: Unexpected 'STRING'", "Unexpected error: #{err}"
@@ -70,11 +70,11 @@ describe 'Deployement tests', ->
     
     it 'should stylus compilation errors be reported', (done) ->
       # given a non-compiling stylus sheet
-      fs.copy './hyperion/test/fixtures/rheia.styl.error', pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'rheia.styl.error'), pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
         return done err if err?
 
         # when optimizing the game client
-        service.deploy version, (err) ->
+        service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, "@import 'unexisting'", "Unexpected error: #{err}"
@@ -86,7 +86,7 @@ describe 'Deployement tests', ->
         return done err if err?
 
         # when optimizing the game client
-        service.deploy version, (err) ->
+        service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'no html page including requirej found', "Unexpected error: #{err}"
@@ -94,11 +94,11 @@ describe 'Deployement tests', ->
 
     it 'should main html file without requirejs be detected', (done) ->
       # given a main file without requirejs
-      fs.copy './hyperion/test/fixtures/index.html.norequire', pathUtils.join(root, 'index.html'), (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'index.html.norequire'), pathUtils.join(root, 'index.html'), (err) ->
         return done err if err?
 
         # when optimizing the game client
-        service.deploy version, (err) ->
+        service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'no html page including requirej found', "Unexpected error: #{err}"
@@ -106,11 +106,11 @@ describe 'Deployement tests', ->
 
     it 'should no requirejs configuration be detected', (done) ->
       # given a requirejs entry file without configuration
-      fs.copy './hyperion/test/fixtures/Router.js.noconfigjs', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.js.noconfigjs'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
 
         # when optimizing the game client
-        service.deploy version, (err) ->
+        service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'no requirejs configuration file found', "Unexpected error: #{err}"
@@ -119,11 +119,11 @@ describe 'Deployement tests', ->
     it 'should requirejs optimization error be detected', (done) ->
 
       # given a requirejs entry file without error
-      fs.copy './hyperion/test/fixtures/Router.coffee.requirejserror', pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
 
         # when optimizing the game client
-        service.deploy version, (err) ->
+        service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'optimized.out\\js\\backbone.js', "Unexpected error: #{err}"
@@ -135,7 +135,7 @@ describe 'Deployement tests', ->
 
     before (done) ->
       # given a valid game client in it
-      fs.copy './hyperion/test/fixtures/working-client', root, (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client'), root, (err) ->
         return done err if err?
         # given a initiazed git repository
         git.init repository, (err) ->
@@ -166,7 +166,7 @@ describe 'Deployement tests', ->
       done()
 
     it 'should no version be registerd', (done) ->
-      service.listVersion (err, versions) ->
+      service.listVersions (err, versions) ->
         return done err if err?
         assert.equal 0, versions.length
         done()
@@ -174,7 +174,7 @@ describe 'Deployement tests', ->
     it 'should file be correctly compiled and deployed', (done) ->
       @timeout 20000
       # when deploying the game client
-      service.deploy version, (err) ->
+      service.deploy version, 'admin', (err) ->
         return done "Failed to deploy valid client: #{err}" if err?
         # then notifications were properly received
         assert.deepEqual notifications, [
@@ -197,7 +197,7 @@ describe 'Deployement tests', ->
 
     it 'should deploy, save, remove, move and restoreVersion be disabled while deploying', (done) ->
       async.forEach [
-        {method: 'deploy', args: ['2.0.0']}
+        {method: 'deploy', args: ['2.0.0', 'admin']}
         {method: 'save', args: ['index.html', 'admin']}
         {method: 'remove', args: ['index.html', 'admin']}
         {method: 'move', args: ['index.html', 'index.html2', 'admin']}
@@ -212,9 +212,28 @@ describe 'Deployement tests', ->
         service[spec.method].apply service, spec.args
       , done
 
+    it 'should state indicates deploy by admin from no version', (done) ->
+      service.deployementState (err, state) ->
+        return done err if err?
+        assert.equal state.author, 'admin'
+        assert.equal state.deployed, version
+        assert.isFalse state.inProgress
+        assert.isNull state.version
+        done()
+
+    it 'should no other author commit or rollback', (done) ->
+      async.forEach ['Commit', 'Rollback'], (method, next) ->
+        # when invoking the medhod
+        service[method.toLowerCase()] 'admin2', (err) ->
+          # then error is throwned
+          assert.isDefined err
+          assert.equal err, "#{method} can only be performed be deployement author admin", "unexpected error #{err}"
+          next()
+      , done
+
     it 'should commit be successful', (done) ->
       # when commiting the deployement
-      service.commit (err) ->
+      service.commit 'admin', (err) ->
         return done "Failed to commit deployement: #{err}" if err?
         # then notifications were properly received
         assert.deepEqual notifications, ['COMMIT_START', 'COMMIT_END']
@@ -231,10 +250,19 @@ describe 'Deployement tests', ->
             assert.isFalse exists, "#{save} still exists"
             done()
 
+    it 'should state indicates no deployement from version 1.0.0', (done) ->
+      service.deployementState (err, state) ->
+        return done err if err?
+        assert.isNull state.author
+        assert.isNull state.deployed
+        assert.isFalse state.inProgress
+        assert.equal state.version, version
+        done()
+
     it 'should commit and rollback not invokable outside deploy', (done) ->
       async.forEach ['Commit', 'Rollback'], (method, next) ->
         # when invoking the medhod
-        service[method.toLowerCase()] (err) ->
+        service[method.toLowerCase()] 'admin', (err) ->
           # then error is throwned
           assert.isDefined err
           assert.equal err, "#{method} can only be performed after deploy", "unexpected error #{err}"
@@ -242,13 +270,13 @@ describe 'Deployement tests', ->
       , done
 
     it 'should version not be reused', (done) ->
-      service.deploy version, (err) ->
+      service.deploy version, 'admin', (err) ->
         assert.isDefined err
         assert.equal err, "Version #{version} already used", "unexpected error #{err}"
         done()
 
     it 'should version be registerd', (done) ->
-      service.listVersion (err, versions) ->
+      service.listVersions (err, versions) ->
         return done err if err?
         assert.equal 1, versions.length
         assert.deepEqual [version], versions
@@ -260,13 +288,13 @@ describe 'Deployement tests', ->
       @timeout 20000
 
       # given a modification on a file
-      fs.copy './hyperion/test/fixtures/common.coffee.v2', pathUtils.join(root, 'nls', 'common.coffee'), (err) ->
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'common.coffee.v2'), pathUtils.join(root, 'nls', 'common.coffee'), (err) ->
         return done err if err?
         repo.commit 'change to v2', all:true, (err, stdout, stderr) ->
           return done err if err?
 
           # when deploying the game client
-          service.deploy version2, (err) ->
+          service.deploy version2, 'admin', (err) ->
             return done "Failed to deploy valid client: #{err}" if err?
             # then the client was deployed
             browser = new Browser silent: true
@@ -276,51 +304,61 @@ describe 'Deployement tests', ->
               assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"
               # then the deployement can be commited
               notifications = []
-              service.commit done
+              service.commit 'admin', done
             ).fail done
 
+    it 'should state indicates no deployement from version 2.0.0', (done) ->
+      service.deployementState (err, state) ->
+        return done err if err?
+        assert.isNull state.author
+        assert.isNull state.deployed
+        assert.isFalse state.inProgress
+        assert.equal state.version, version2
+        done()
+
     it 'should new version be also registered', (done) ->
-      service.listVersion (err, versions) ->
+      service.listVersions (err, versions) ->
         return done err if err?
         assert.equal 2, versions.length
-        assert.deepEqual [version, version2], versions
+        assert.deepEqual [version2, version], versions
         done()
 
     it 'should previous version be restored', (done) ->
-      # given a modification not versionned with tags
-      fs.copy './hyperion/test/fixtures/common.coffee.v3', pathUtils.join(root, 'nls', 'common.coffee'), (err) ->
+      # when restoring version 1
+      service.restoreVersion version, (err) ->
         return done err if err?
-        repo.commit 'change to v3', all:true, (err, stdout, stderr) ->
-          return done err if err?
-
-          # when restoring version 1
-          service.restoreVersion version, (err) ->
-            return done err if err?
-            # then file common.coffee was restored
-            fs.readFile './hyperion/test/fixtures/working-client/nls/common.coffee', 'utf-8', (err, originalContent) ->
-              fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
-                assert.equal content, originalContent, 'Version was not restored'
-                done()
+        
+        # then file common.coffee was restored
+        fs.readFile pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client', 'nls', 'common.coffee'), 'utf-8', (err, originalContent) ->
+          fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
+            assert.equal content, originalContent, 'Version was not restored'
+            
+            # then version is now version 1
+            service.deployementState (err, state) ->
+              return done err if err?
+              assert.isNull state.author
+              assert.isNull state.deployed
+              assert.isFalse state.inProgress
+              assert.equal state.version, version
+              done()
 
     it 'should last version be restored', (done) ->
       # when restoring version 2
       service.restoreVersion version2, (err) ->
         return done err if err?
         # then file common.coffee was restored
-        fs.readFile './hyperion/test/fixtures/common.coffee.v2', 'utf-8', (err, originalContent) ->
+        fs.readFile pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'common.coffee.v2'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
-            done()
 
-    it 'should unversionned be restored', (done) ->
-      # when restoring current working file
-      service.restoreVersion null, (err) ->
-        return done err if err?
-        # then file common.coffee was restored
-        fs.readFile './hyperion/test/fixtures/common.coffee.v3', 'utf-8', (err, originalContent) ->
-          fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
-            assert.equal content, originalContent, 'Version was not restored'
-            done()
+            # then version is now version 2
+            service.deployementState (err, state) ->
+              return done err if err?
+              assert.isNull state.author
+              assert.isNull state.deployed
+              assert.isFalse state.inProgress
+              assert.equal state.version, version2
+              done()
     
     version3 = '3.0.0'
 
@@ -329,47 +367,56 @@ describe 'Deployement tests', ->
 
       # given a modification on game files
       labels = pathUtils.join root, 'nls', 'common.coffee'
-      fs.readFile labels, 'utf8', (err, content) ->
+      original = pathUtils.join '.', 'hyperion', 'test', 'fixtures', 'common.coffee.v3'
+      fs.copy original, labels, (err) ->
         return done err if err?
-        content = content.replace 'Edition du monde 3', 'yeah !'
-        fs.writeFile labels, content, (err) ->
+
+        # given a commit
+        repo.commit 'change to v3', all:true, (err, stdout, stderr) ->
           return done err if err?
-          # given a commit
-          repo.commit 'change to v3', all:true, (err, stdout, stderr) ->
+
+          # given a deployed game client
+          service.deploy version3, 'admin', (err) ->
             return done err if err?
+            notifications = []
+            
+            # when rollbacking
+            service.rollback 'admin', (err) ->
+              return done "Failed to rollback: #{err}" if err?
 
-            # given a deployed game client
-            service.deploy version3, (err) ->
-              return done err if err?
-              notifications = []
-              
-              # when rollbacking
-              service.rollback (err) ->
-                return done "Failed to rollback: #{err}" if err?
+              # then notifications were properly received
+              assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
 
-                # then notifications were properly received
-                assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
+              # then no version was made
+              repo.tags (err, tags) ->
+                return done err if err?
+                return assert.fail "Version #{version2} has been tagged" for tag in tags when tag.name is version3
 
-                # then no version was made
-                repo.tags (err, tags) ->
+                # then file still modified
+                fs.readFile labels, 'utf8', (err, newContent) ->
                   return done err if err?
-                  return assert.fail "Version #{version2} has been tagged" for tag in tags when tag.name is version3
-
-                  # then file still modified
-                  fs.readFile labels, 'utf8', (err, newContent) ->
+                  fs.readFile original, 'utf8', (err, content) ->
                     return done err if err?
                     assert.equal newContent, content, "File was modified"
 
-                    # then the save folder do nt exists anymore 
-                    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
-                    fs.exists save, (exists) ->
-                      assert.isFalse exists, "#{save} still exists"
+                    # then version is still version 2
+                    service.deployementState (err, state) ->
+                      return done err if err?
+                      assert.isNull state.author
+                      assert.isNull state.deployed
+                      assert.isFalse state.inProgress
+                      assert.equal state.version, version2
 
-                      # then the previous client was deployed
-                      browser = new Browser silent: true
-                      browser.visit("#{rootUrl}/game").then( ->
-                        # then the resultant url is working, with template rendering and i18n usage
-                        body = browser.body.textContent.trim()
-                        assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"
-                        done()
-                      ).fail done
+                      # then the save folder do not exists anymore 
+                      save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
+                      fs.exists save, (exists) ->
+                        assert.isFalse exists, "#{save} still exists"
+
+                        # then the previous client was deployed
+                        browser = new Browser silent: true
+                        browser.visit("#{rootUrl}/game").then( ->
+                          # then the resultant url is working, with template rendering and i18n usage
+                          body = browser.body.textContent.trim()
+                          assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"
+                          done()
+                        ).fail done
