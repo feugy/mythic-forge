@@ -119,6 +119,8 @@ define [
         @_showPerspective 'editionPerspective', 'view/edition/Perspective'
       @route 'authoring', 'authoring', =>
         @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
+      @route 'admin', 'admin', =>
+        @_showPerspective 'administrationPerspective', 'view/admin/Perspective'
 
       # general error handler
       @on 'serverError', (err, details) ->
@@ -176,11 +178,13 @@ define [
         require [
           'service/ImagesService'
           'service/SearchService' 
+          'service/AdminService' 
           'view/Layout'
-        ], (ImagesService, SearchService, LayoutView) =>
+        ], (ImagesService, SearchService, AdminService, LayoutView) =>
           # instanciates singletons.
           rheia.imagesService = new ImagesService()
           rheia.searchService = new SearchService()
+          rheia.adminService = new AdminService()
           rheia.layoutView = new LayoutView()
 
           # display layout

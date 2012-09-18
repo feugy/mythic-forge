@@ -46,6 +46,8 @@ define [
 
   # The search service performs search on server side, and dispatch results to corresponding 
   # collections
+  #
+  # Instanciated as a singleton in `rheia.searchService` by the Router
   class SearchService
     
     # Service constructor

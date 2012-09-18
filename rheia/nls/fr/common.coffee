@@ -23,6 +23,7 @@ define
     loginError: 'Erreur de connexion'
     editionPerspective: 'Edition du monde'
     authoringPerspective: 'Client de jeu'
+    administrationPerspective: "Outils d'administration"
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
     external: 'Modification externe'
@@ -41,6 +42,7 @@ define
     enterPassword: 'Mot de passe : '
     connectWith: 'Connectez vous avec :'
     orConnect: 'ou'
+    fieldSeparator: ' : '
 
   buttons:
     login: 'Entrer'

@@ -175,7 +175,8 @@
             - **[done]** rule special behaviour when renaming
         - **[done]** TurnRule
     - administration perspective
-        - game client version list and restoration
+        - create and restore game client versions
+        - **[done]** game client version list 
         - **[done]** deploy, commit and rollback
         - **[done]** error handling on AdminService
 

@@ -153,9 +153,19 @@ typeIcons(selector, size, margin = 0)
 multiIcon(names, row = 0)
   for name, i in names
 
-    a > .ui-icon.{name} 
+    a.ui-button > .ui-icon.{name} 
       top 1px
       left 1px
+
+    a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary)
+      padding 1px
+
+      > .ui-button-text
+        padding-left 2.8em
+
+      > .ui-icon.{name} 
+        top 2px
+        left 2px
 
     button > .ui-icon.{name} 
       top 3px

@@ -65,7 +65,9 @@ define [
       for name, value of attributes
         @[name] = value
       @errors = []
+
       @_node.on @eventName, @validate if @eventName?
+        
     
     # Triggers validation. Could be invoked manually or on node change.
     # 
@@ -75,6 +77,7 @@ define [
       @errors = @_doValidation @_getValue @_node
       # S'il y a une erreur, on remet la classe d'erreur
       @_node.toggleClass @errorClass, @errors.length isnt 0
+      @_node.trigger 'validation', [@errors]
       @errors
 
     # Do not forget to invoke the dispose method to remove binding !

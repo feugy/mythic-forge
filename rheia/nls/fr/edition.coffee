@@ -52,7 +52,6 @@ define
     images: 'Instances'
     category: 'Catégorie'
     rank: 'Rang'
-    fieldSeparator: ' : '
     name: 'Nom'
     desc: 'Description'
     newName: 'A remplir'

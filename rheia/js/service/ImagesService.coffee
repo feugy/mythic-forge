@@ -36,6 +36,7 @@ define [
     ctx.drawImage image, 0, 0
     canvas.toDataURL 'image/png'
 
+  # Instanciated as a singleton in `rheia.imagesService` by the Router
   class ImagesService
 
     # **private**        

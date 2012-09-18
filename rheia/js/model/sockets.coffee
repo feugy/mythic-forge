@@ -42,6 +42,7 @@ define [
       # On connection, retrieve current connected player immediately
       socket.emit 'getConnected', (err, player) =>
         # stores the token to allow re-connection
+        rheia.player = player
         localStorage.setItem 'token', player.token
 
       # wire logout facilities
