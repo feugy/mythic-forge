@@ -35,6 +35,7 @@ rootUrl = "http://localhost:#{port}"
 root = utils.confKey 'game.dev'
 repository = pathUtils.resolve pathUtils.dirname root
 repo = null
+notifications = []
 
 describe 'Deployement tests', -> 
 
@@ -43,6 +44,20 @@ describe 'Deployement tests', ->
     fs.remove repository, (err) ->
       return done err if err?
       fs.mkdir root, done
+
+  beforeEach (done) ->
+    # given a registered notification listener
+    notifications = []
+    notifier.on notifier.NOTIFICATION, (event, type, number) ->
+      return unless event is 'deployement'
+      notifications.push type
+      # then notifications are received in the right order
+      assert.equal number, notifications.length, 'unexpected notification number' unless type.match /FAILED$/
+    done()
+
+  afterEach (done) ->
+    notifier.removeAllListeners notifier.NOTIFICATION
+    done()
 
   version = '1.0.0'
 
@@ -66,6 +81,13 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, "Parse error on line 50: Unexpected 'STRING'", "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'COMPILE_COFFEE'
+            'DEPLOY_FAILED'
+          ]
           done()
     
     it 'should stylus compilation errors be reported', (done) ->
@@ -78,6 +100,12 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, "@import 'unexisting'", "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'DEPLOY_FAILED'
+          ]
           done()
 
     it 'should no main html file be detected', (done) ->
@@ -90,6 +118,14 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'no html page including requirej found', "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'COMPILE_COFFEE'
+            'OPTIMIZE_JS'
+            'DEPLOY_FAILED'
+          ]
           done()
 
     it 'should main html file without requirejs be detected', (done) ->
@@ -102,6 +138,14 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'no html page including requirej found', "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'COMPILE_COFFEE'
+            'OPTIMIZE_JS'
+            'DEPLOY_FAILED'
+          ]
           done()
 
     it 'should no requirejs configuration be detected', (done) ->
@@ -114,6 +158,14 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'no requirejs configuration file found', "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'COMPILE_COFFEE'
+            'OPTIMIZE_JS'
+            'DEPLOY_FAILED'
+          ]
           done()
 
     it 'should requirejs optimization error be detected', (done) ->
@@ -127,11 +179,17 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'optimized.out\\js\\backbone.js', "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'COMPILE_COFFEE'
+            'OPTIMIZE_JS'
+            'DEPLOY_FAILED'
+          ]
           done()
 
   describe 'given a started static server', ->
-
-    notifications = []
 
     before (done) ->
       # given a valid game client in it
@@ -146,20 +204,6 @@ describe 'Deployement tests', ->
             repo.commit 'initial', all:true, (err, stdout, stderr) ->
               return done err if err?
               server.listen port, 'localhost', done
-
-    beforeEach (done) ->
-      # given a registered notification listener
-      notifications = []
-      notifier.on notifier.NOTIFICATION, (event, type, number) ->
-        return unless event is 'deployement'
-        notifications.push type
-        # then notifications are received in the right order
-        assert.equal number, notifications.length, 'unexpected notification number' 
-      done()
-
-    afterEach (done) ->
-      notifier.removeAllListeners notifier.NOTIFICATION
-      done()
       
     after (done) ->
       server.close()
@@ -183,7 +227,7 @@ describe 'Deployement tests', ->
           'COMPILE_COFFEE'
           'OPTIMIZE_JS'
           'OPTIMIZE_HTML'
-          'DEPLOY'
+          'DEPLOY_FILES'
           'DEPLOY_END'
         ]
         # then the client was deployed
@@ -236,7 +280,7 @@ describe 'Deployement tests', ->
       service.commit 'admin', (err) ->
         return done "Failed to commit deployement: #{err}" if err?
         # then notifications were properly received
-        assert.deepEqual notifications, ['COMMIT_START', 'COMMIT_END']
+        assert.deepEqual notifications, ['COMMIT_START', 'VERSION_CREATED', 'COMMIT_END']
 
         # then a git version was created
         repo.tags (err, tags) ->
@@ -332,6 +376,9 @@ describe 'Deployement tests', ->
         fs.readFile pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client', 'nls', 'common.coffee'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
+
+            # then notifications were properly received
+            assert.deepEqual notifications, ['VERSION_RESTORED']
             
             # then version is now version 1
             service.deployementState (err, state) ->
@@ -350,6 +397,9 @@ describe 'Deployement tests', ->
         fs.readFile pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'common.coffee.v2'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
+
+            # then notifications were properly received
+            assert.deepEqual notifications, ['VERSION_RESTORED']
 
             # then version is now version 2
             service.deployementState (err, state) ->
@@ -420,3 +470,25 @@ describe 'Deployement tests', ->
                           assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"
                           done()
                         ).fail done
+
+    it 'should version be created', (done) ->
+      # when creating version 3
+      service.createVersion version3, (err) ->
+        return done err if err?
+
+        # then notifications were properly received
+        assert.deepEqual notifications, ['VERSION_CREATED']
+
+        # then a git version was created
+        repo.tags (err, tags) ->
+          return done "Failed to consult tags: #{err}" if err?
+          assert.equal 3, tags.length
+          assert.equal tags[0].name, version
+          done()
+
+    it 'should existing version not be created', (done) ->
+      # when creating version 3 another time
+      service.createVersion version3, (err) ->
+        assert.isDefined err
+        assert.equal err, "Cannot reuse existing version #{version3}", "unexpected error #{err}"
+        done()

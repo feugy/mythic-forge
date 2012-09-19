@@ -176,6 +176,7 @@
         - **[done]** TurnRule
     - administration perspective
         - create and restore game client versions
+        - display externally triggered deployements
         - **[done]** game client version list 
         - **[done]** deploy, commit and rollback
         - **[done]** error handling on AdminService

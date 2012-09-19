@@ -455,7 +455,7 @@ class _AuthoringService extends EventEmitter
   # 3 - compiles coffee files and removes sources (COMPILE_COFFEE)
   # 4 - optimize with requirejs utilities (OPTIMIZE_JS)
   # 5 - make html static resources cacheable (OPTIMIZE_HTML)
-  # 6 - save current production folder into save folder (DEPLOY)
+  # 6 - save current production folder into save folder (DEPLOY_FILES)
   # 7 - move optimization results into production (DEPLOY_END)
   #
   # Then the deployement is stopped and must be finished with `commit()` or `rollback()`
@@ -468,20 +468,22 @@ class _AuthoringService extends EventEmitter
   deploy: (version, email, callback) =>
     return callback "Deployment of version #{@_deployed} already in progress" if @_deployed?
     return callback "Commit or rollback of previous version not finished" if @_deployPending
-    @_deployPending = true
-    @_deployed = "#{version}"
-    @_deployer = email
-
-    error = (err) =>
-      @_deployed = null
-      @_deployer = null
-      @_deployPending = false
-      callback err
 
     # check version unicity
     @listVersions (err, versions) =>
       return callback err if err?
-      return error "Version #{version} already used" if version in versions
+      return callback "Version #{version} already used" if version in versions
+
+      @_deployPending = true
+      @_deployed = "#{version}"
+      @_deployer = email
+
+      error = (err) =>
+        notifier.notify 'deployement', 'DEPLOY_FAILED', err
+        @_deployed = null
+        @_deployer = null
+        @_deployPending = false
+        callback err
 
       # first, clean to optimized destination
       folder = pathUtils.resolve pathUtils.normalize utils.confKey 'game.optimized'
@@ -511,7 +513,7 @@ class _AuthoringService extends EventEmitter
                 makeCacheable temp, root, @_deployed, (err, result) =>
                   return error "Failed to make client cacheable: #{err}" if err?
                   # save production folder content and move everything in it
-                  notifier.notify 'deployement', 'DEPLOY', 6
+                  notifier.notify 'deployement', 'DEPLOY_FILES', 6
                   fs.remove save, (err) =>
                     return error "Failed to clean save folder: #{err}" if err? and err.code isnt 'ENOENT'
                     fs.mkdir save, (err) =>
@@ -567,25 +569,31 @@ class _AuthoringService extends EventEmitter
     return callback 'Deploy not finished' if @_deployPending
     @_deployPending = true
 
+    error = (err) =>
+      notifier.notify 'deployement', 'COMMIT_FAILED', err
+      callback err
+
     save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
 
     notifier.notify 'deployement', 'COMMIT_START', 1
     
     # first compact git history and create tag
     utils.collapseHistory repo, @_deployed, (err) =>
-      return callback "Failed to collapse history: #{err}" if err?
+      return error "Failed to collapse history: #{err}" if err?
       logger.debug "git history compacted"
+
+      notifier.notify 'deployement', 'VERSION_CREATED', 2, @_deployed
 
       # at least, remove save folder
       fs.remove save, (err) =>
-        return callback "Failed to remove previous version save: #{err}" if err? and err.code isnt 'ENOENT'
+        return error "Failed to remove previous version save: #{err}" if err? and err.code isnt 'ENOENT'
         logger.debug "previous game client files deleted"
 
         # end of the deployement
         @_deployed = null
         @_deployer = null
         @_deployPending = false
-        notifier.notify 'deployement', 'COMMIT_END', 2
+        notifier.notify 'deployement', 'COMMIT_END', 3
         callback null
 
   # Rollback the current deployement, and send 'deployment' notifications
@@ -604,16 +612,20 @@ class _AuthoringService extends EventEmitter
 
     save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
     production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
+
+    error = (err) =>
+      notifier.notify 'deployement', 'ROLLBACK_FAILED', err
+      callback err
     
     notifier.notify 'deployement', 'ROLLBACK_START', 1
 
     # removes production folder
     fs.remove production, (err) =>
-      return callback "Failed to remove deployed version: #{err}" if err? and err.code isnt 'ENOENT'
+      return error "Failed to remove deployed version: #{err}" if err? and err.code isnt 'ENOENT'
       logger.debug "deployed game client files deleted"
 
       fs.rename save, production, (err) =>
-        return callback "Failed to move saved version to production: #{err}" if err?
+        return error "Failed to move saved version to production: #{err}" if err?
         logger.debug "previous game client files restored"
 
         # end of the deployement
@@ -686,6 +698,8 @@ class _AuthoringService extends EventEmitter
       # and at last ceates the tag
       repo.create_tag version, (err) ->
         return callback "failed to create version: #{err}" if eff?
+        notifier.notify 'deployement', 'VERSION_CREATED', 1, version
+
         callback null
 
   # Restore a given version of the game client.
@@ -707,6 +721,8 @@ class _AuthoringService extends EventEmitter
       # now we can rest with no fear...
       repo.git 'reset', hard:true, [version], (err, stdout, stderr) =>
         return callback "Failed to restore version #{version}: #{err}" if err?
+        notifier.notify 'deployement', 'VERSION_RESTORED', 1, version
+
         callback null
         
 # Singleton instance
