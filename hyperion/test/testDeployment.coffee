@@ -210,9 +210,10 @@ describe 'Deployement tests', ->
       done()
 
     it 'should no version be registerd', (done) ->
-      service.listVersions (err, versions) ->
+      service.deployementState (err, state) ->
         return done err if err?
-        assert.equal 0, versions.length
+        assert.isNull state?.current
+        assert.equal 0, state?.versions?.length
         done()
 
     it 'should file be correctly compiled and deployed', (done) ->
@@ -259,10 +260,11 @@ describe 'Deployement tests', ->
     it 'should state indicates deploy by admin from no version', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.equal state.author, 'admin'
-        assert.equal state.deployed, version
-        assert.isFalse state.inProgress
-        assert.isNull state.version
+        assert.equal state?.author, 'admin'
+        assert.equal state?.deployed, version
+        assert.isFalse state?.inProgress
+        assert.isNull state?.current
+        assert.deepEqual state?.versions, []
         done()
 
     it 'should no other author commit or rollback', (done) ->
@@ -297,10 +299,11 @@ describe 'Deployement tests', ->
     it 'should state indicates no deployement from version 1.0.0', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.isNull state.author
-        assert.isNull state.deployed
-        assert.isFalse state.inProgress
-        assert.equal state.version, version
+        assert.isNull state?.author
+        assert.isNull state?.deployed
+        assert.isFalse state?.inProgress
+        assert.deepEqual state?.versions, [version]
+        assert.equal state?.current, version
         done()
 
     it 'should commit and rollback not invokable outside deploy', (done) ->
@@ -317,13 +320,6 @@ describe 'Deployement tests', ->
       service.deploy version, 'admin', (err) ->
         assert.isDefined err
         assert.equal err, "Version #{version} already used", "unexpected error #{err}"
-        done()
-
-    it 'should version be registerd', (done) ->
-      service.listVersions (err, versions) ->
-        return done err if err?
-        assert.equal 1, versions.length
-        assert.deepEqual [version], versions
         done()
 
     version2 = '2.0.0'
@@ -354,17 +350,11 @@ describe 'Deployement tests', ->
     it 'should state indicates no deployement from version 2.0.0', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.isNull state.author
-        assert.isNull state.deployed
-        assert.isFalse state.inProgress
-        assert.equal state.version, version2
-        done()
-
-    it 'should new version be also registered', (done) ->
-      service.listVersions (err, versions) ->
-        return done err if err?
-        assert.equal 2, versions.length
-        assert.deepEqual [version2, version], versions
+        assert.isNull state?.author
+        assert.isNull state?.deployed
+        assert.isFalse state?.inProgress
+        assert.deepEqual state?.versions, [version2, version]
+        assert.equal state?.current, version2
         done()
 
     it 'should previous version be restored', (done) ->
@@ -383,10 +373,11 @@ describe 'Deployement tests', ->
             # then version is now version 1
             service.deployementState (err, state) ->
               return done err if err?
-              assert.isNull state.author
-              assert.isNull state.deployed
-              assert.isFalse state.inProgress
-              assert.equal state.version, version
+              assert.isNull state?.author
+              assert.isNull state?.deployed
+              assert.isFalse state?.inProgress
+              assert.equal state?.current, version
+              assert.deepEqual state?.versions, [version2, version]
               done()
 
     it 'should last version be restored', (done) ->
@@ -404,10 +395,11 @@ describe 'Deployement tests', ->
             # then version is now version 2
             service.deployementState (err, state) ->
               return done err if err?
-              assert.isNull state.author
-              assert.isNull state.deployed
-              assert.isFalse state.inProgress
-              assert.equal state.version, version2
+              assert.isNull state?.author
+              assert.isNull state?.deployed
+              assert.isFalse state?.inProgress
+              assert.equal state?.current, version2
+              assert.deepEqual state?.versions, [version2, version]
               done()
     
     version3 = '3.0.0'
@@ -452,10 +444,11 @@ describe 'Deployement tests', ->
                     # then version is still version 2
                     service.deployementState (err, state) ->
                       return done err if err?
-                      assert.isNull state.author
-                      assert.isNull state.deployed
-                      assert.isFalse state.inProgress
-                      assert.equal state.version, version2
+                      assert.isNull state?.author
+                      assert.isNull state?.deployed
+                      assert.isFalse state?.inProgress
+                      assert.equal state?.current, version2
+                      assert.deepEqual state?.versions, [version2, version]
 
                       # then the save folder do not exists anymore 
                       save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'

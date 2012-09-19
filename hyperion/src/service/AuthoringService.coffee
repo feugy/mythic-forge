@@ -35,6 +35,16 @@ notifier = require('../service/Notifier').get()
 
 repo = null
 root = null
+    
+# Retrieve the list of versions names    
+# 
+# @param callback [Function] invoked when versions retrieved, with arguments:
+# @option callback err [String] an error string, or null if no error occured
+# @option callback versions [Array<String>] an array of versions names (may be empty)
+listVersions = (callback) ->
+  repo.tags (err, tags) ->
+    return callback "Failed to list existing versions: #{err}" if err?
+    callback null, _.pluck tags, 'name'
 
 #Simple method to remove occurence of the root path from error messages
 purge = (err) -> 
@@ -470,7 +480,7 @@ class _AuthoringService extends EventEmitter
     return callback "Commit or rollback of previous version not finished" if @_deployPending
 
     # check version unicity
-    @listVersions (err, versions) =>
+    listVersions (err, versions) =>
       return callback err if err?
       return callback "Version #{version} already used" if version in versions
 
@@ -490,7 +500,7 @@ class _AuthoringService extends EventEmitter
       production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
       save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
 
-      notifier.notify 'deployement', 'DEPLOY_START', 1
+      notifier.notify 'deployement', 'DEPLOY_START', 1, @_deployed, @_deployer
 
       fs.remove folder, (err) => fs.remove "#{folder}.out", (err) =>
         return error "Failed to clean optimized folder: #{err}" if err?
@@ -640,9 +650,10 @@ class _AuthoringService extends EventEmitter
   # @param callback [Function] invoked with versions:
   # @option callback err [String] an error message, or null if no error occures
   # @option callback state [Object] server state, with:
-  # @option callback state version [String] current version, or null if no version 
-  # @option callback state deployed [String] name of the deployed version, null if ne pending deployement 
-  # @option callback state author [String] email of the deployer
+  # @option callback state current [String] current version, or null if no version 
+  # @option callback state versions [Array<String>] list of known version
+  # @option callback state deployed [String] name of the deployed version, null if no pending deployement 
+  # @option callback state author [String] email of the deployer, null if no pending deployement
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
     # get known tags
@@ -659,29 +670,18 @@ class _AuthoringService extends EventEmitter
           deployed: @_deployed
           inProgress: @_deployPending
           author: @_deployer
-          version: null
+          current: null
+          versions: _.pluck tags, 'name'
 
         # parse commits from the last one
         for commit in history
           # confront the commit id and the tag commits
           for id, i in tagIds when id is commit.id
             # we found our parent !
-            result.version = tags[i].name
+            result.current = tags[i].name
             return callback null, result
 
         callback null, result
-
-  # List all the known version of the deployed game client
-  # 
-  # @param callback [Function] invoked with versions:
-  # @option callback err [String] an error message, or null if no error occures
-  # @option callback versions [Array<String>] an array (may be empty) of known versions
-  listVersions: (callback) =>
-    # get tags
-    repo.tags (err, tags) =>
-      return callback "Failed to consult versions: #{err}" if err?
-      tags.reverse() # make the last tag comming first
-      callback null, _.pluck tags, 'name'
 
   # Creates a given version of the game client.
   # 
@@ -690,7 +690,7 @@ class _AuthoringService extends EventEmitter
   # @option callback err [String] an error message, or null if no error occures
   createVersion: (version, callback) =>
     # get tags first
-    @listVersions (err, versions) =>
+    listVersions (err, versions) =>
       return callback err if err?
       # check that we know version
       return callback "Cannot reuse existing version #{version}" if version in versions
@@ -712,7 +712,7 @@ class _AuthoringService extends EventEmitter
     return callback "Deployment of version #{@_deployed} in progress" if @_deployed?
 
     # get tags first
-    @listVersions (err, versions) =>
+    listVersions (err, versions) =>
       return callback err if err?
       # check that we know version
       return callback "Unknown version #{version}" unless version in versions
@@ -724,7 +724,7 @@ class _AuthoringService extends EventEmitter
         notifier.notify 'deployement', 'VERSION_RESTORED', 1, version
 
         callback null
-        
+
 # Singleton instance
 _instance = undefined
 class AuthoringService
