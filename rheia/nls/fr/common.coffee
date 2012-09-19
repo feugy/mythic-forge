@@ -43,6 +43,7 @@ define
     connectWith: 'Connectez vous avec :'
     orConnect: 'ou'
     fieldSeparator: ' : '
+    deployementInProgress: 'déploiement...'
 
   buttons:
     login: 'Entrer'

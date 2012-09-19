@@ -110,7 +110,7 @@
             - input query with help and validation
             - display result and navigates
     - authoring perspective
-        - error handling while saving/moving/removing files (durring deployement)
+        - error handling while saving/moving/removing files (during deployement)
         - multiple file search & replace
         - single file search & replace
         - History
@@ -174,9 +174,9 @@
             - **[done]** rule CRUD
             - **[done]** rule special behaviour when renaming
         - **[done]** TurnRule
-    - administration perspective
-        - create and restore game client versions
-        - display externally triggered deployements
+    - **[done]** administration perspective
+        - **[done]** create and restore game client versions
+        - **[done]** display externally triggered deployements
         - **[done]** game client version list 
         - **[done]** deploy, commit and rollback
         - **[done]** error handling on AdminService

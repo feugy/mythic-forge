@@ -38,29 +38,37 @@ define [
     # mustache template rendered
     _template: template
 
+    # **private**
+    # Current developpement version
+    _version: null
+
     # The view constructor.
     #
     # @param className [String] css ClassName, set by subclasses
     constructor: (className) ->
       super tagName: 'div', className:'deploy view'
-      @bindTo rheia.adminService, 'state', @render # re-render all when state changed
-      @bindTo rheia.adminService, 'versions', @_onRefreshVersions
-      @bindTo rheia.adminService, 'deploy', @_onDeployed
-      @bindTo rheia.adminService, 'commit', @_onEndDeploy
-      @bindTo rheia.adminService, 'rollback', @_onEndDeploy
-      @bindTo rheia.adminService, 'progress', (state, step) =>
-        @$el.find('.progress label').html if i18n.labels[state]? then i18n.labels[state] else state
+      @bindTo rheia.adminService, 'initialized', @render # re-render all when state changed
+      @bindTo rheia.adminService, 'versionChanged', @_onRefreshVersions
+      @bindTo rheia.adminService, 'progress', @_onStateChanged
+      for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
+        @bindTo rheia.adminService, method, @_onError
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
       super()
+      return @ unless rheia.adminService.initialized
+
       # creates buttons
       @$el.find('a.deploy').button(
         text: true
         icons: 
           primary: 'upload small'
         label: i18n.buttons.deploy
-      ).on 'click', @_onDeploy
+      ).on 'click', (event) =>
+        event?.preventDefault()
+        @_askVersion i18n.titles.confirmDeploy, i18n.msgs.confirmDeploy, (version) =>
+          # triggers deployement
+          rheia.adminService.deploy version
 
       @$el.find('a.commit').button(
         text: true
@@ -69,7 +77,6 @@ define [
         label: i18n.buttons.commit
       ).hide().on 'click', (event) =>
         event?.preventDefault()
-        @_renderProgress()
         rheia.adminService.commit()
 
       @$el.find('a.rollback').button(
@@ -79,19 +86,40 @@ define [
         label: i18n.buttons.rollback
       ).hide().on 'click', (event) =>
         event?.preventDefault()
-        @_renderProgress()
         rheia.adminService.rollback()
 
+      @$el.find('.new-version').button(
+        text: true
+        label: i18n.buttons.createVersion
+      ).on 'click', (event) =>
+        event?.preventDefault()
+        @_askVersion i18n.titles.createVersion, i18n.msgs.createVersion, (version) =>
+          # triggers deployement
+          rheia.adminService.createVersion version
+
+      # displays versions
+      @_onRefreshVersions null, rheia.adminService.versions(), rheia.adminService.current()
+      # wire version change
+      @$el.find('select').on 'change', =>
+        name = @$el.find('select :selected').attr 'value'
+        return unless @_version isnt name
+        utils.popup i18n.titles.confirmRestore, _.sprintf(i18n.msgs.confirmRestore, name, @_version), 'warning', [
+          text: i18n.buttons.cancel
+          icon: 'invalid'
+          click: =>
+            # reselect previous version
+            @$el.find('option').removeAttr 'selected'
+            @$el.find("option[value='#{@_version}']").attr 'selected', 'selected'
+        , 
+          text: i18n.buttons.ok
+          icon: 'valid'
+          click: =>
+            @$el.find('select').attr 'disabled', 'disabled'
+            @$el.find('.new-version').button 'option', 'disabled', true
+            rheia.adminService.restoreVersion name
+        ]
+
       @$el.find('.progress').hide()
-      # get the version list
-      rheia.adminService.versions()
-
-      # check if no deployement in progress
-      if rheia.adminService.isDeploying()
-        @_renderProgress()
-      else if rheia.adminService.hasDeployed()
-        @_onDeployed null
-
       # for chaining purposes
       @
 
@@ -156,46 +184,58 @@ define [
     # @param err [String] server error
     # @param versions [Array] a list (that may be empty) of game client version
     _onRefreshVersions: (err, versions, current) =>
-      return if err?
+      if err?
+        return utils.popup i18n.titles.serverError, _.sprintf(i18n.errors.version, err), 'cancel', [text:i18n.buttons.ok, icons:'valid'] 
+      @_version = current
       selector = @$el.find 'select'
+      # refresh version selector
       selector.empty()
       html = ''
       for version in versions
         html += "<option value='#{version}' #{if version is current then 'selected'}>#{version}</option>"
       selector.append html
+      # enable controls
+      @$el.find('select').removeAttr 'disabled'
+      @$el.find('.new-version').button 'option', 'disabled', false
 
     # **private**
-    # Game client deployement handler. Ask a confirmation an triggers deployement.
+    # Deployement state change: update rendering to get in deploy/commit/rollback mode, and
+    # update the current state.
     #
-    # @param event [event] the button click cancelled event.
-    _onDeploy: (event) =>
-      event?.preventDefault()
-      @_askVersion i18n.titles.confirmDeploy, i18n.msgs.confirmDeploy, (version) =>
-        # triggers deployement
-        @_renderProgress()
-        rheia.adminService.deploy version
+    # @param state [String] the new current state
+    # @param step [Number] the current state number inside operation
+    _onStateChanged: (state, step) =>
+      switch state
+        when 'DEPLOY_START', 'COMMIT_START', 'ROLLBACK_START' 
+          @_renderProgress()
+        when 'COMMIT_END', 'ROLLBACK_END'
+          # hide progress stuff and show deploy button
+          @$el.find('.progress, .waiting').hide()
+          @$el.find('a.deploy').show()
+        when 'DEPLOY_END'
+          @$el.find('.progress').hide()
+          unless err?
+            @$el.find('a.deploy').hide()
+            if rheia.adminService.isDeployer()
+              @$el.find('.commit, .rollback').show()
+            else
+              @$el.find('.waiting').html("#{_.sprintf i18n.labels.waitingCommit, rheia.adminService.deployer()}").show()
+          return unless rheia.adminService.isDeployer()
+          # Display a popup to inform user or display error
+          popup = utils.popup i18n.titles.deployed, i18n.msgs.deployed, 'warning', [
+            text: i18n.buttons.ok
+            icon: 'valid'
+          ]
+        else 
+          @$el.find('.waiting').hide()
+          @$el.find('.progress label').html if i18n.labels[state]? then i18n.labels[state] else state
 
     # **private**
-    # Deployement end handler: displays possible error and activate commit/rollback buttons 
+    # Deploy, commit and rollback error handler that displays a information popup
     #
-    # @param err [String] error string. null if no error occured
-    _onDeployed: (err) =>
-      message = if err? then _.sprintf i18n.msgs.deployError, err else i18n.msgs.deployed
-      icon = if err? then 'cancel' else 'warning'
-      @$el.find('.progress').hide()
-      unless err?
-        @$el.find('.commit, .rollback').show()
-        @$el.find('a.deploy').hide()
-      # Display a popup to inform user or display error
-      popup = utils.popup i18n.titles.deployed, message, icon, [
-        text: i18n.buttons.ok
-        icon: 'valid'
-      ]
-
-    # **private**
-    # End deployement handler that update version list and show deloy button
-    _onEndDeploy: =>
-      # update versions and show deploy button
-      rheia.adminService.versions()
-      @$el.find('.progress').hide()
-      @$el.find('a.deploy').show()
+    # @param err [String] error message, or null if no error occured
+    _onError: (err) =>
+      return unless err?
+      @$el.find('select').removeAttr 'disabled'
+      @$el.find('.new-version').button 'option', 'disabled', false
+      utils.popup i18n.titles.serverError, _.sprintf(i18n.errors.deploy, err), 'cancel', [text:i18n.buttons.ok, icons:'valid']

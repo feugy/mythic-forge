@@ -20,17 +20,21 @@
 define
   titles:
     deployView: 'Client de jeu'
+    createVersion: 'Nouvelle version'
     confirmDeploy: 'Déploiement en production'
     deployed: 'Déploiement terminé'
+    confirmRestore: 'Confirmation du changement'
 
   labels:
     gameVersions: 'Version en développement'
     deployVersion: 'Déployer en production'
+    waitingCommit: 'En attente de confirmation par %s'
     DEPLOY_START: 'début du déploiement...'
     COMPILE_STYLUS: 'compilation Stylus...'
     COMPILE_COFFEE: 'compilation Coffee Script...'
     OPTIMIZE_JS: 'optimisation JavaScript...'
     OPTIMIZE_HTML: 'optimisation Html...'
+    DEPLOY_FILES: 'déploiement des fichiers...'
     DEPLOY_END: 'fin du déploiement !'
     COMMIT_START: 'validation du déploiement...'
     COMMIT_END: 'déploiement validé !'
@@ -39,6 +43,7 @@ define
     
   buttons:
     deploy: 'Go !'
+    createVersion: 'Créer'
     commit: 'Confirmer'
     rollback: 'Retour en arrière'
 
@@ -52,9 +57,10 @@ define
         <li>Dans le cas contraire, la version précédente sera remise en ligne</li>
       </ol>
       <p>Veuillez donner un nom à cette nouvelle version :</p>"""
-    deployError: """<p>Le déployement a échoué :</p>
-      <p>%s</p>
-      <p>Le client actuellement en production n'a pas été modifié.</p>"""
+    createVersion: 'Choissisez un nom pour la nouvelle version :'
+    confirmRestore: """<p>Vous allez restaurer la version \'%1s\'.</p>
+      <p><b>Toute les modifications apportées sur la version courante (%2s) seront perdues.</b></p>
+      <p>Voulez-vous vraiment continuer ?</p>"""
     deployed: """<p>Le déployement a réussi !</p>
       <p>Vous pouvez dès à présent tester la nouvelle version.</p>
       <p>Pour terminer le déploiement, vous devez le confirmer ou l'annuler.</p>"""
@@ -62,3 +68,7 @@ define
   errors:
     missingVersion: 'La version est obligatoire'
     versionWithSpace: 'Les espaces sont interdits'
+    version: "<p>La récupération ou la création d'une nouvelle version à échouée :</p><p>%s</p>"
+    deploy: """<p>Le déployement a échoué :</p>
+      <p>%s</p>
+      <p>Le client actuellement en production n'a pas été modifié.</p>"""

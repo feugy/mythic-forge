@@ -145,6 +145,8 @@ typeIcons(selector, size, margin = 0)
     {selector}.{icon}
       background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
 
+
+
 // Generate selectors for the 5 size of icons: 'x-small', 'small', '', 'big' and 'x-big'.
 // Selector also inside elements 'a' and 'button'
 //
@@ -157,13 +159,7 @@ multiIcon(names, row = 0)
       top 1px
       left 1px
 
-    a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary)
-      padding 1px
-
-      > .ui-button-text
-        padding-left 2.8em
-
-      > .ui-icon.{name} 
+    a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary) > .ui-icon.{name} 
         top 2px
         left 2px
 

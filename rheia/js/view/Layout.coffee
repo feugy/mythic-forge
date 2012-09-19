@@ -39,7 +39,12 @@ define [
     # The view constructor.
     constructor: () ->
       super tagName: 'div', className:'layout'
-      Backbone.history.on 'route', @_onRoute
+      @bindTo Backbone.history, 'route', @_onRoute
+      @bindTo rheia.adminService, 'progress', @_onDeployementStateChanged
+      @bindTo rheia.adminService, 'state', =>
+        # a deployement is in progress
+        if rheia.adminService.isDeploying() or rheia.adminService.hasDeployed()
+          @_onDeployementStateChanged 'DEPLOY_START'
 
     # the render method, which use the specified template
     render: =>
@@ -93,3 +98,15 @@ define [
     # @param handler [String] the ran handler
     _onRoute: (history, handler) =>
       @$el.find('header a').removeClass('active').filter("[data-route='/#{handler}']").addClass 'active'
+
+
+    # **private**
+    # Deployement state change handler. Displays de "deployement in progress indicator", until commit end or rollback
+    #
+    # @param state [String] deployement new state
+    _onDeployementStateChanged: (state) =>
+      switch state
+        when 'DEPLOY_START'
+          @$el.find('.deployement').css 'visibility', 'visible'
+        when 'COMMIT_END', 'ROLLBACK_END', 'DEPLOY_FAILED'
+          @$el.find('.deployement').css 'visibility', 'hidden'
