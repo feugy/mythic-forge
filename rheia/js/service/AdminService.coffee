@@ -118,6 +118,7 @@ define [
     # @param author [String] for `DEPLOY_START` the deployer email
     _onDeployementState: (state, step, version, author) =>
       console.info "deployement: #{state} - #{step}"
+      @trigger 'progress', state, step
       switch state 
         when 'DEPLOY_FAILED'
           rheia.router.trigger 'serverError', step, method:'AdminService.deploy'
@@ -140,16 +141,12 @@ define [
             @_state.versions.splice 0, 0, version if state is 'VERSION_CREATED'
             @_state.current = version
             @trigger 'versionChanged', null, @_state.versions, @_state.current
-        else
-          @trigger 'progress', state, step
-          # Update internal state
-          switch state 
-            when 'DEPLOY_START'
-              @_state.deployed = version
-              @_state.deploying = true
-              @_state.author = author
-            when 'DEPLOY_END'
-              @_state.deploying = false
-            when 'COMMIT_END', 'ROLLBACK_END'
-              @_state.deployed = null
-              @_state.author = null
+        when 'DEPLOY_START'
+          @_state.deployed = version
+          @_state.deploying = true
+          @_state.author = author
+        when 'DEPLOY_END'
+          @_state.deploying = false
+        when 'COMMIT_END', 'ROLLBACK_END'
+          @_state.deployed = null
+          @_state.author = null

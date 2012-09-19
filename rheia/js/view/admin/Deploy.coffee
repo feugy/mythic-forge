@@ -226,6 +226,14 @@ define [
             text: i18n.buttons.ok
             icon: 'valid'
           ]
+        when 'DEPLOY_FAILED'
+          @$el.find('.progress').hide()
+          @$el.find('a.deploy').show()
+        when 'COMMIT_FAILED', 'ROLLBACK_FAILED'
+          @$el.find('.progress').hide()
+          @$el.find('.commit, .rollback').show()
+        when 'VERSION_CREATED', 'VERSION_RESTORED'
+          # do nothing
         else 
           @$el.find('.waiting').hide()
           @$el.find('.progress label').html if i18n.labels[state]? then i18n.labels[state] else state
