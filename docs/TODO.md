@@ -80,6 +80,8 @@
         - restrict game dev to administors
         - **[done]** serve production version with cache and gzip
     - Security
+        - !! use cache to check player email
+        - extend session lifetime when doing stuff
         - **[done]** register users from Google
         - **[done]** register users from Twitter
         - register users from Facebook

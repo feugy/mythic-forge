@@ -42,7 +42,7 @@ root = null
 # @option callback err [String] an error string, or null if no error occured
 # @option callback versions [Array<String>] an array of versions names (may be empty)
 listVersions = (callback) ->
-  repo.tags (err, tags) ->
+  utils.quickTags repo, (err, tags) ->
     return callback "Failed to list existing versions: #{err}" if err?
     callback null, _.pluck tags, 'name'
 
@@ -657,10 +657,10 @@ class _AuthoringService extends EventEmitter
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
     # get known tags
-    repo.tags (err, tags) =>
+    utils.quickTags repo, (err, tags) =>
       return callback "Failed to consult versions: #{err}" if err?
       tags.reverse() # make the last tag comming first
-      tagIds = _.chain(tags).pluck('commit').pluck('id').value()
+      tagIds = _.pluck tags, 'id'
      
       # get history
       repo.commits (err, history) =>
@@ -689,6 +689,7 @@ class _AuthoringService extends EventEmitter
   # @param callback [Function] invoked when version is created
   # @option callback err [String] an error message, or null if no error occures
   createVersion: (version, callback) =>
+    return callback 'Spaces not allowed in version names' unless -1 is version.indexOf ' '
     # get tags first
     listVersions (err, versions) =>
       return callback err if err?

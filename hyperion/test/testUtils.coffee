@@ -25,6 +25,19 @@ git = require 'gift'
 utils = require '../src/utils'
 assert = require('chai').assert
 
+# The commit utility change file content, adds it and commit it
+commit = (spec, done) ->
+  fs.writeFile spec.file, spec.content, (err) ->
+    return done err if err?
+    spec.repo.add spec.file.replace(repository, '.'), (err) ->
+      return done err if err?
+      spec.repo.commit spec.message, all:true, done
+
+repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
+repo = null
+file1 = pathUtils.join repository, 'file1.txt'
+file2 = pathUtils.join repository, 'file2.txt'
+
 describe 'Utilities tests', -> 
 
   it 'should fixed-length token be generated', (done) -> 
@@ -49,20 +62,8 @@ describe 'Utilities tests', ->
 
   describe 'given an initialized git repository', ->
 
-    repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
-    repo = null
     tag1 = 'tag1'
     tag2 = 'tag2'
-    file1 = pathUtils.join repository, 'file1.txt'
-    file2 = pathUtils.join repository, 'file2.txt'
-
-    # The commit utility change file content, adds it and commit it
-    commit = (spec, done) ->
-      fs.writeFile spec.file, spec.content, (err) ->
-        return done err if err?
-        repo.add spec.file.replace(repository, '.'), (err) ->
-          return done err if err?
-          repo.commit spec.message, all:true, done
 
     before (done) ->
       fs.remove repository, (err) ->
@@ -79,9 +80,9 @@ describe 'Utilities tests', ->
 
       # given three commits
       async.forEachSeries [
-        {file: file1, message: 'commit 1', content: 'v1'} 
-        {file: file1, message: 'commit 2', content: 'v2'} 
-        {file: file1, message: 'commit 3', content: 'v3'} 
+        {repo:repo, file: file1, message: 'commit 1', content: 'v1'} 
+        {repo:repo, file: file1, message: 'commit 2', content: 'v2'} 
+        {repo:repo, file: file1, message: 'commit 3', content: 'v3'} 
       ], commit, (err) ->
         return done err if err?
 
@@ -111,9 +112,9 @@ describe 'Utilities tests', ->
 
       # given three commits
       async.forEachSeries [
-        {file: file2, message: 'commit 4', content: 'v1'} 
-        {file: file2, message: 'commit 5', content: 'v2'} 
-        {file: file2, message: 'commit 6', content: 'v3'} 
+        {repo:repo, file: file2, message: 'commit 4', content: 'v1'} 
+        {repo:repo, file: file2, message: 'commit 5', content: 'v2'} 
+        {repo:repo, file: file2, message: 'commit 6', content: 'v3'} 
       ], commit, (err) ->
         return done err if err?
 
@@ -148,3 +149,50 @@ describe 'Utilities tests', ->
         assert.isDefined err
         assert.equal err, "cannot reuse existing tag #{tag2}"
         done()
+
+  describe 'given an initialized git repository', ->
+
+    repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
+
+    before (done) ->
+      fs.remove repository, (err) ->
+        return done err if err?
+        fs.mkdir repository, (err) ->
+          return done err if err?
+          git.init repository, (err) ->
+            return done err if err?
+            repo = git repository
+            done()
+
+    it 'should quickTags returns nothing', (done) ->
+      utils.quickTags repo, (err, tags) ->
+        return done err if err?
+        assert.equal 0, tags?.length
+        done()
+
+    it 'should quickTags returns tags with name and id', (done) ->
+      tag1 = 'tag1'
+      tag2 = 'a_more_long_tag_name'
+      # given a first commit and tag
+      commit {repo:repo, file: file1, message: 'commit 1', content: 'v1'}, (err) ->
+        return done err if err?
+        repo.create_tag tag1, (err) ->
+          return done err if err?
+          # given a second commit and tag
+          commit {repo:repo, file: file1, message: 'commit 2', content: 'v2'}, (err) ->
+            return done err if err?
+            repo.create_tag tag2, (err) ->
+              return done err if err?
+
+              # when getting tags
+              utils.quickTags repo, (err, tags) ->
+                return done err if err?
+                # then two tags where retrieved
+                assert.equal 2, tags?.length
+                assert.deepEqual [tag2, tag1], _.pluck tags, 'name'
+
+                # then commit ids are returned
+                repo.commits (err, history) ->
+                  return done err if err?
+                  assert.deepEqual _.pluck(history, 'id'), _.pluck tags, 'id'
+                  done()
