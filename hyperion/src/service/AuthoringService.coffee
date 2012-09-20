@@ -61,7 +61,7 @@ compileStylus = (sheet, callback) ->
   # compute destination name
   parent = pathUtils.dirname sheet
   name = pathUtils.basename sheet
-  destination = pathUtils.join parent, name.replace /\.styl(us)?$/, '.css'
+  destination = pathUtils.join parent, name.replace /\.styl(us)?$/i, '.css'
   logger.debug "compiles stylus sheet #{sheet}"
   # read the sheet
   fs.readFile sheet, (err, content) =>
@@ -85,7 +85,7 @@ compileStylus = (sheet, callback) ->
 # @option callback err [String] an error details string, or null if no error occured
 compileCoffee = (script, callback) ->
   # compute destination name
-  destination = script.replace /\.coffee?$/, '.js'
+  destination = script.replace /\.coffee?$/i, '.js'
   logger.debug "compiles coffee script #{script}"
   # read the script
   fs.readFile script, (err, content) =>
@@ -115,8 +115,8 @@ optimize = (folder, callback) ->
   folderOut = "#{folder}.out"
 
   # search main entry point
-  requireMatcher = /<script[^>]*data-main\s*=\s*(["'])([^\1]*)\1/
-  utils.find folder, /^.*\.html$/, requireMatcher, (err, results) ->
+  requireMatcher = /<script[^>]*data-main\s*=\s*(["'])(.*(?=\1))/i
+  utils.find folder, /^.*\.html$/i, requireMatcher, (err, results) ->
     return callback "failed to identify html page including requirejs: #{err}" if err?
     return callback 'no html page including requirej found' if results.length is 0
     # choose the least path length
@@ -136,7 +136,7 @@ optimize = (folder, callback) ->
       logger.debug "found main requirejs file #{mainFile} in base url #{baseUrl}"
 
       # search file containing requirejs config
-      utils.find folder, /^.*\.js$/, /requirejs\.config/, (err, results) ->
+      utils.find folder, /^.*\.js$/, /requirejs\.config/i, (err, results) ->
         return callback "failed to identify requirejs configuration file: #{err}" if err?
         return callback 'no requirejs configuration file found' if results.length is 0
         # choose the least path length
@@ -212,13 +212,13 @@ makeCacheable = (folder, main, version, callback) ->
               logger.debug "replace links inside #{newMain}"
               # <script data-main="" src="" />
               specs = [
-                pattern: /<\s*script([^>]*)data-main\s*=\s*(["'])([^\2]*)\2([^>]*)src\s*=\s*(["'])([^\5]*)\5/g
+                pattern: /<\s*script([^>]*)data-main\s*=\s*(["'])(.*(?=\2))\2([^>]*)src\s*=\s*(["'])(.*(?=\5))\5/gi
                 replace: "<script$1data-main=\"#{timestamp}/$3\"$4src=\"#{timestamp}/$6\""
               ,
-                pattern: /<\s*script([^>]*)src\s*=\s*(["'])([^\2]*)\2([^>]*)data-main\s*=\s*(["'])([^\5]*)\5/g
+                pattern: /<\s*script([^>]*)src\s*=\s*(["'])(.*(?=\2))\2([^>]*)data-main\s*=\s*(["'])(.*(?=\5))\5/gi
                 replace: "<script$1src=\"#{timestamp}/$3\"$4data-main=\"#{timestamp}/$6\""
               ,
-                pattern: /<\s*link([^>]*)href\s*=\s*(["'])([^\2]*)\2/g
+                pattern: /<\s*link([^>]*)href\s*=\s*(["'])(.*(?=\2))\2/gi
                 replace: "<link$1href=\"#{timestamp}/$3\""
               ,
                 pattern: /\{\{version\}\}/g

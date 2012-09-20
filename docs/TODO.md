@@ -192,3 +192,4 @@
     - event-kind properties
     - date-kind properties
     - connect with Google, Twitter
+    - FSItem history management
