@@ -34,11 +34,6 @@ define [
   class BaseEditionView extends BaseView
 
     # **private**
-    # name of the model class
-    # **Must be defined by subclasses**
-    _modelClassName: null
-
-    # **private**
     # name of the model attribute that holds name.
     # **May be defined by subclasses**
     _nameAttribute: 'name'
@@ -300,7 +295,7 @@ define [
       @_saveInProgress = true
       if 'oldName' of spec
         # removes existing data
-        rheia.imagesService.remove @_modelClassName, @model.id, spec.oldName, if spec.idx? then spec.idx
+        rheia.imagesService.remove @model.constructor.name, @model.id, spec.oldName, if spec.idx? then spec.idx
       else
         # upload new file data
-        rheia.imagesService.upload @_modelClassName, @model.id, spec.file, if spec.idx? then spec.idx
+        rheia.imagesService.upload @model.constructor.name, @model.id, spec.file, if spec.idx? then spec.idx

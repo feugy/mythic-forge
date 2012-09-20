@@ -40,10 +40,6 @@ define [
   class EventTypeView extends BaseEditionView
 
     # **private**
-    # name of the model class
-    _modelClassName: 'EventType'
-
-    # **private**
     # mustache template rendered
     _template: template
 

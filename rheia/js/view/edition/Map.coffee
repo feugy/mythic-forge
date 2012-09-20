@@ -43,10 +43,6 @@ define [
       'change .zoom': '_onZoomed'
 
     # **private**
-    # name of the model class
-    _modelClassName: 'Map'
-
-    # **private**
     # mustache template rendered
     _template: template
 

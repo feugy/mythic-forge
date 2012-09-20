@@ -39,10 +39,6 @@ define [
   class FieldTypeView extends BaseEditionView
 
     # **private**
-    # name of the model class
-    _modelClassName: 'FieldType'
-
-    # **private**
     # mustache template rendered
     _template: template
 

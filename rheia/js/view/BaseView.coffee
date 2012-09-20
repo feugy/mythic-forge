@@ -259,7 +259,7 @@ define [
       return if $("#serverError-#{@getId()}").length > 0
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
-      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute)), 'cancel', [text: i18n.buttons.ok]
+      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute), err), 'cancel', [text: i18n.buttons.ok]
 
     # **private**
     # Change handler, wired to any changes from the rendering.
@@ -341,9 +341,10 @@ define [
     #
     # @param removed [Object] the removed model
     _onServerError: (err, details) =>
-      return unless _(details.method).startsWith "#{@_modelClassName}.sync"
+      return unless _(details.method).startsWith "#{@model.constructor.name}.sync"
+      
       # the current operation failed
-      if (details.id is @getId() or @_tempId?) and (@_saveInProgress or _removeInProgress)
+      if (details.id is @getId() or @_tempId?) and (@_saveInProgress or @_removeInProgress)
         # displays error.
         @_notifyServerError err
         @_saveInProgress = false

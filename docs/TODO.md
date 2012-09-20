@@ -113,7 +113,7 @@
             - input query with help and validation
             - display result and navigates
     - authoring perspective
-        - error handling while saving/moving/removing files (during deployement)
+        - **[done]**error handling while saving/moving/removing files (during deployement)
         - multiple file search & replace
         - single file search & replace
         - History

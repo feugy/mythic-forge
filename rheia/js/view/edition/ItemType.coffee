@@ -37,10 +37,6 @@ define [
   class ItemTypeView extends EventTypeView
 
     # **private**
-    # name of the model class
-    _modelClassName: 'ItemType'
-
-    # **private**
     # mustache template rendered
     _template: template
 

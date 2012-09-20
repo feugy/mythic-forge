@@ -42,21 +42,25 @@ define [
     # Current developpement version
     _version: null
 
+    # **private**
+    # Simple shortcut to rheia administration service singleton
+    _service: rheia.adminService
+
     # The view constructor.
     #
     # @param className [String] css ClassName, set by subclasses
     constructor: (className) ->
       super tagName: 'div', className:'deploy view'
-      @bindTo rheia.adminService, 'initialized', @render # re-render all when state changed
-      @bindTo rheia.adminService, 'versionChanged', @_onRefreshVersions
-      @bindTo rheia.adminService, 'progress', @_onStateChanged
+      @bindTo @_service, 'initialized', @render # re-render all when state changed
+      @bindTo @_service, 'versionChanged', @_onRefreshVersions
+      @bindTo @_service, 'progress', @_onStateChanged
       for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
-        @bindTo rheia.adminService, method, @_onError
+        @bindTo @_service, method, @_onError
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
       super()
-      return @ unless rheia.adminService.initialized
+      return @ unless @_service.initialized
 
       # creates buttons
       @$el.find('a.deploy').button(
@@ -68,7 +72,7 @@ define [
         event?.preventDefault()
         @_askVersion i18n.titles.confirmDeploy, i18n.msgs.confirmDeploy, (version) =>
           # triggers deployement
-          rheia.adminService.deploy version
+          @_service.deploy version
 
       @$el.find('a.commit').button(
         text: true
@@ -77,7 +81,7 @@ define [
         label: i18n.buttons.commit
       ).hide().on 'click', (event) =>
         event?.preventDefault()
-        rheia.adminService.commit()
+        @_service.commit()
 
       @$el.find('a.rollback').button(
         text: true
@@ -86,7 +90,7 @@ define [
         label: i18n.buttons.rollback
       ).hide().on 'click', (event) =>
         event?.preventDefault()
-        rheia.adminService.rollback()
+        @_service.rollback()
 
       @$el.find('.new-version').button(
         text: true
@@ -95,10 +99,10 @@ define [
         event?.preventDefault()
         @_askVersion i18n.titles.createVersion, i18n.msgs.createVersion, (version) =>
           # triggers deployement
-          rheia.adminService.createVersion version
+          @_service.createVersion version
 
       # displays versions
-      @_onRefreshVersions null, rheia.adminService.versions(), rheia.adminService.current()
+      @_onRefreshVersions null, @_service.versions(), @_service.current()
       # wire version change
       @$el.find('select').on 'change', =>
         name = @$el.find('select :selected').attr 'value'
@@ -116,10 +120,22 @@ define [
           click: =>
             @$el.find('select').attr 'disabled', 'disabled'
             @$el.find('.new-version').button 'option', 'disabled', true
-            rheia.adminService.restoreVersion name
+            @_service.restoreVersion name
         ]
 
       @$el.find('.progress').hide()
+
+      # adapt to service current state
+      state = null
+      if @_service.isDeploying()
+        state = 'DEPLOY_START'
+      else if @_service.hasDeployed()
+        state = 'DEPLOY_END'
+      
+      if state?
+        # defer to let jQuery display rendering, and avoid visual glitch on buttons
+        _.defer => @_onStateChanged state 
+
       # for chaining purposes
       @
 
@@ -203,8 +219,7 @@ define [
     # update the current state.
     #
     # @param state [String] the new current state
-    # @param step [Number] the current state number inside operation
-    _onStateChanged: (state, step) =>
+    _onStateChanged: (state) =>
       switch state
         when 'DEPLOY_START', 'COMMIT_START', 'ROLLBACK_START' 
           @_renderProgress()
@@ -216,11 +231,11 @@ define [
           @$el.find('.progress').hide()
           unless err?
             @$el.find('a.deploy').hide()
-            if rheia.adminService.isDeployer()
+            if @_service.isDeployer()
               @$el.find('.commit, .rollback').show()
             else
-              @$el.find('.waiting').html("#{_.sprintf i18n.labels.waitingCommit, rheia.adminService.deployer()}").show()
-          return unless rheia.adminService.isDeployer()
+              @$el.find('.waiting').html("#{_.sprintf i18n.labels.waitingCommit, @_service.deployer()}").show()
+          return unless @_service.isDeployer()
           # Display a popup to inform user or display error
           popup = utils.popup i18n.titles.deployed, i18n.msgs.deployed, 'warning', [
             text: i18n.buttons.ok

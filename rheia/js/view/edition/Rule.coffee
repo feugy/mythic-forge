@@ -35,10 +35,6 @@ define [
   class RuleView extends BaseEditionView
 
     # **private**
-    # name of the model class
-    _modelClassName: 'Executable'
-
-    # **private**
     # mustache template rendered
     _template: template
 

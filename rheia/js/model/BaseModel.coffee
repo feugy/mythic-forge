@@ -178,10 +178,16 @@ define [
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
           sockets.admin.emit 'save', @_className, @_serialize()
         when 'delete' 
-          sockets.admin.once 'save-resp', (err) =>
+          sockets.admin.once 'remove-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
           sockets.admin.emit 'remove', @_className, @_serialize()
         else throw new Error "Unsupported #{method} operation on #{@_className}"
+
+    # Enhance destroy method to force server response before triggering `destroy` event
+    destroy: (options) =>
+      options = options or {}
+      options.wait = true
+      super options
 
     # **private** 
     # Method used to serialize a model when saving and removing it
