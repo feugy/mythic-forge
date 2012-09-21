@@ -27,7 +27,8 @@ server = require '../src/web/proxy'
 Browser = require 'zombie'
 git = require 'gift'
 assert = require('chai').assert
-service = require('../src/service/AuthoringService').get()
+service = require('../src/service/DeployementService').get()
+authoringService = require('../src/service/AuthoringService').get()
 notifier = require('../src/service/Notifier').get()
 
 port = utils.confKey 'server.staticPort'
@@ -242,11 +243,11 @@ describe 'Deployement tests', ->
 
     it 'should deploy, save, remove, move and restoreVersion be disabled while deploying', (done) ->
       async.forEach [
-        {method: 'deploy', args: ['2.0.0', 'admin']}
-        {method: 'save', args: ['index.html', 'admin']}
-        {method: 'remove', args: ['index.html', 'admin']}
-        {method: 'move', args: ['index.html', 'index.html2', 'admin']}
-        {method: 'restoreVersion', args: [version]}
+        {method: 'deploy', args: ['2.0.0', 'admin'], service: service}
+        {method: 'save', args: ['index.html', 'admin'], service: authoringService}
+        {method: 'remove', args: ['index.html', 'admin'], service: authoringService}
+        {method: 'move', args: ['index.html', 'index.html2', 'admin'], service: authoringService}
+        {method: 'restoreVersion', args: [version], service: service}
       ], (spec, next) ->
         # when invoking the medhod
         spec.args.push (err) ->
@@ -254,7 +255,7 @@ describe 'Deployement tests', ->
           assert.include err, ' in progress', "unexpected error #{err}"
           assert.include err, version, "unexpected error #{err}"
           next()
-        service[spec.method].apply service, spec.args
+        spec.service[spec.method].apply spec.service, spec.args
       , done
 
     it 'should state indicates deploy by admin from no version', (done) ->

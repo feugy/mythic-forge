@@ -23,6 +23,7 @@ yaml = require 'js-yaml'
 fs = require 'fs-extra'
 async = require 'async'
 pathUtil = require 'path'
+git = require 'gift'
 
 classToType = {}
 for name in "Boolean Number String Function Array Date RegExp Undefined Null".split(" ")
@@ -324,6 +325,35 @@ quickTags = (repo, callback) ->
 
     callback null, tags
 
+# Initialize game source folder and its git repository.
+# 
+# @param logger [Object] logger used to trace initialization progress
+# @param callback [Function] initialization end function. Invoked with:
+# @option callback err [String] and error message, or null if no error occured
+# @option callback root [String] absolute path of the game source folder
+# @option callback repo [Object] git repository utility fully initialized
+initGameRepo = (logger, callback) ->
+  root = pathUtil.resolve pathUtil.normalize confKey 'game.dev'
+
+  # enforce folders existence at startup.
+  enforceFolderSync root, false, logger
+  repository = pathUtil.dirname root
+
+  finished = (err) =>
+    return callback err if err?
+      # creates also the git repository
+    logger.debug "git repository initialized !"
+    repo = git repository
+    callback null, root, repo
+
+  # Performs a 'git init' if git repository do not exists
+  unless fs.existsSync pathUtil.join repository, '.git'
+    logger.debug "initialize git repository at #{repository}..."
+    git.init repository, finished
+  else
+    logger.debug "using existing git repository..."
+    finished()
+
 module.exports =
 
   isA: isA
@@ -337,3 +367,4 @@ module.exports =
   enhanceI18n: enhanceI18n
   collapseHistory: collapseHistory
   quickTags: quickTags
+  initGameRepo: initGameRepo

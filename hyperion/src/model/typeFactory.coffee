@@ -64,6 +64,7 @@ processLinks = (instance, properties) ->
 # @option options instanceProperties [Boolean] wether this type will embed properties
 # @option options typeClass [Object] if this type has instance-properties, the type class name
 # @option options hasImages [Boolean] if this type has images to be removed when type is removed
+# @return the created type
 module.exports = (typeName, spec, options = {}) ->
 
   # Local cache

@@ -1,8 +1,8 @@
 # Logger's levels.
 logLevels:
-  service: warn
+  service: debug
   model: warn
-  web: warn
+  web: debug
 
 # Server's configuration
 server:  

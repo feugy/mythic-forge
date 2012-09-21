@@ -19,15 +19,14 @@
 'use strict'
 
 _ = require 'underscore'
-mongoose = require 'mongoose'
 encryptor = require 'password-hash'
 conn = require './connection'
 Item = require './Item'
-modelWatcher = require('./ModelWatcher').get()
+typeFactory = require './typeFactory'
 logger = require('../logger').getLogger 'model'
 
 # Define the schema for players
-PlayerSchema = new mongoose.Schema
+Player = typeFactory 'Player', 
   # email as login
   email: 
     type: String 
@@ -62,58 +61,23 @@ PlayerSchema = new mongoose.Schema
   characters:
     type: []
     default: -> [] # use a function to force instance variable
-, strict: true
-
-
-# Override the equals() method defined in Document, to check correctly the equality between _ids, 
-# with their `equals()` method and not with the strict equality operator.
-#
-# @param other [Object] other object against which the current object is compared
-# @return true if both objects have the same _id, false otherwise
-PlayerSchema.methods.equals = (object) ->
-  @_id.equals object?._id
+, 
+  strict: true 
+  noDesc: true
+  noName: true
 
 # Simple utility method the test a clear password against the hashed stored one.
 # 
 # @param clearPassword [String] the clear tested value
 # @return true if passwords matched, false otherwise
-PlayerSchema.methods.checkPassword = (clearPassword) ->
+Player.methods.checkPassword = (clearPassword) ->
   encryptor.verify clearPassword, @password
 
-# We use the post-save middleware to propagate creation and saves.
-# But within this function, all instances have lost their "isNew" status
-# thus we store that status from the pre-save middleware, to use it in the post-save
-# middleware 
-wasNew = {}
-modifiedPaths = {}
-
-# pre-save middleware: store modified paths to allow their propagation. 
-# for manually provided accounts, check password existence
-#
-# @param next [Function] function that must be called to proceed with other middleware.
-PlayerSchema.pre 'save', (next) ->
-  return next new Error "Cannot save manually provided account without password" if @provider is null and !@password
-
-  # If clear password provided, encrypt it before storing it.
-  if @password?
-    @password = encryptor.generate @password unless encryptor.isHashed @password
-
-  # stores the isNew status.
-  wasNew[@_id] = @isNew
-  modifiedPaths[@_id] = @modifiedPaths().concat()
-  # replace characters with their id, for storing in Mongo, without using setters.
-  saveCharacters = @characters
-  @_doc.characters[i] = character._id for character, i in saveCharacters
-  next()
-  # restore save to allow reference reuse.
-  @_doc.characters = saveCharacters
-
-
-# pre-init middleware: retrieve the character corresponding to the stored id.
+# Pre-init middleware: retrieve the characters corresponding to the stored ids.
 #
 # @param item [Item] the initialized item.
 # @param next [Function] function that must be called to proceed with other middleware.
-PlayerSchema.pre 'init', (next, player) ->
+Player.pre 'init', (next, player) ->
   return next() if player.characters.length is 0 
   # loads the character from database
   Item.find {_id: {$in: player.characters}}, (err, characters) ->
@@ -123,14 +87,22 @@ PlayerSchema.pre 'init', (next, player) ->
     player.characters = characters
     next()
 
-# post-save middleware: now that the instance was properly saved, propagate its modifications
-PlayerSchema.post 'save', () ->
-  modelWatcher.change (if wasNew[@_id] then 'creation' else 'update'), 'Player', this, modifiedPaths[@_id] or {}
+# Pre-save middleware: for manually provided accounts, check password existence.
+# Manages also associated characters, to only store their ids inside Mongo.
+#
+# @param next [Function] function that must be called to proceed with other middleware.
+Player.pre 'save', (next) ->
+  return next new Error "Cannot save manually provided account without password" if @provider is null and !@password
 
-# post-remove middleware: now that the instace was properly removed, propagate the removal.
-PlayerSchema.post 'remove', () ->
-  modelWatcher.change 'deletion', 'Player', this
+  # If clear password provided, encrypt it before storing it.
+  if @password?
+    @password = encryptor.generate @password unless encryptor.isHashed @password
 
-# Export the Class.
-Player = conn.model 'player', PlayerSchema
-module.exports = Player
+  # replace characters with their id, for storing in Mongo, without using setters.
+  saveCharacters = @characters
+  @_doc.characters[i] = character._id for character, i in saveCharacters
+  next()
+  # restore save to allow reference reuse.
+  @_doc.characters = saveCharacters
+
+module.exports = conn.model 'player', Player

@@ -34,6 +34,7 @@ adminService = require('../service/AdminService').get()
 imagesService = require('../service/ImagesService').get()
 searchService = require('../service/SearchService').get()
 authoringService = require('../service/AuthoringService').get()
+deployementService = require('../service/DeployementService').get()
 watcher = require('../model/ModelWatcher').get()
 notifier = require('../service/Notifier').get()
 
@@ -184,14 +185,17 @@ io.of('/game').on 'connection', (socket) ->
 # socket.io `admin` namespace 
 #
 # configure the differents message allowed
-# 'admin' namespace is associated to AdminService, ImageService, AuthoringService and SearchService
-# send also notification of AdminNotifier
+# 'admin' namespace is associated to AdminService, ImageService, AuthoringService, 
+# DeployementService and SearchService
+#
+# send also notification of the Notifier
 # @see {AdminService}
 adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->    
   exposeMethods adminService, socket, ['save', 'remove']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
-  exposeMethods authoringService, socket, ['move', 'deploy', 'commit', 'rollback'], ['readRoot', 'save', 'remove']
+  exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
+  exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback']
 
 notifier.on notifier.NOTIFICATION, (event, details...) ->
   logger.debug "broadcast of #{event}"
