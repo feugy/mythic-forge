@@ -32,20 +32,33 @@ define [
     # mustache template rendered
     _template: template
 
+    # **private**
+    # login form already present inside DOM to attach inside template
+    _form: null
+
     # The view constructor.
     #
-    # @param router [Router] the event bus
-    # @param id [String] the edited object's id, of null for a creation.
-    constructor: (id, className) ->
+    # @param form [Object] login form already present inside DOM to attach inside template
+    constructor: (@_form) ->
       super tagName: 'div', className:'login-view'
 
     # the render method, which use the specified template
     render: =>
       super()
+      # replace form inside view
+      @$el.find('.form-placeholder').replaceWith @_form
+      @_form.find('input').wrap('<fieldset></fieldset>')
+      @_form.find('[name="username"]').before "<label>#{i18n.labels.enterLogin}</label>"
+      @_form.find('[name="password"]').before "<label>#{i18n.labels.enterPassword}</label>"
+      @_form.show()
+
       # wire connection buttons and form
       @$el.find('.google').attr 'href', "#{conf.apiBaseUrl}/auth/google"
       @$el.find('.twitter').attr 'href', "#{conf.apiBaseUrl}/auth/twitter"
-      @$el.find('form').attr 'action', "#{conf.apiBaseUrl}/auth/login"
+      @$el.find('#loginForm').on 'submit', =>
+        # send back form into body
+        @_form.hide().appendTo 'body'
+
       @$el.find('.login').button(
         text: true
         label: i18n.buttons.login
@@ -53,7 +66,7 @@ define [
           primary: 'ui-icon small login'
       ).click (event) => 
         event?.preventDefault()
-        @$el.find('form').submit()
+        @$el.find('#loginForm').submit()
       
       # for chaining purposes
       @

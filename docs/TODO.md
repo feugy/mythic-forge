@@ -101,7 +101,7 @@
     - bugs
         - **[done]** spaces inside tab names 
         - **[done]** rule with category appears in turnRules in search results
-        - browser do not retain passwords
+        - **[done]** browser do not retain passwords
     - **[done]** perspective loader
     - **[done]** login page
     - **[done]** logout button

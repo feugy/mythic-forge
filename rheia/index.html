@@ -27,5 +27,18 @@
     <script data-main="js/Router" src="js/lib/require-2.0.0-min.js"></script>
   </head>
   <body>
+    <!-- Login form must be inside DOM since the start to allow password auto completion -->
+    <div id="loginStock" style="display:none">
+      <form id="loginForm" method="post">
+          <input autofocus="autofocus" type="text" name="username"/>
+          <input autocomplete="on" type="password" name="password"/>
+          <input type="submit" style="width:0; height:0; border:0; padding:0"/>
+      </form>
+      <a href="#" class="login"></a>
+    </div>
+    <script type="application/javascript">
+      // action attribute must be set as soon as possible to allow password completion
+      document.getElementById('loginForm').setAttribute('action', conf.apiBaseUrl+'/auth/login');
+    </script>
   </body>
 </html>

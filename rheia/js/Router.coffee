@@ -122,7 +122,8 @@ define [
       # Define some URL routes (order is significant: evaluated from last to first)
       @route '*route', '_onNotFound'
       @route 'login', 'login', =>
-        $('body').empty().append new LoginView().render().$el
+        form = $('#loginStock').detach()
+        $('body').empty().append new LoginView(form).render().$el
       @route 'login?error=:err', '_onLoginError'
       @route 'login?token=:token', '_onLoggedIn'
       @route 'edition', 'edition', =>
@@ -144,8 +145,6 @@ define [
         @navigate route, trigger: true
 
       # run current route
-      $('body').empty()
-
       Backbone.history.start
         pushState: true
         root: conf.basePath
@@ -198,7 +197,7 @@ define [
           rheia.layoutView = new LayoutView()
 
           # display layout
-          $('body').empty().append rheia.layoutView.render().$el
+          $('body').append rheia.layoutView.render().$el
 
           # run current or last-saved perspective
           current = window.location.pathname.replace conf.basePath, ''
