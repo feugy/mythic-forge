@@ -15,6 +15,7 @@ authentication:
   success: 'http://localhost:3443/rheia/authenticated?'
   error: 'http://localhost:3443/rheia/authenticated?'  
   tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  inactivityTime: 500 # number of seconds of inactivity before kicking user
   # Keys usable on localhost domain without SSL
   google:
     id: 750195776526-hkrs2b3a7ueltmu10108r6j9kcii1elo.apps.googleusercontent.com

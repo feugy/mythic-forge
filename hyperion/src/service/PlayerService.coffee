@@ -21,6 +21,7 @@
 Player = require '../model/Player'
 Item = require '../model/Item'
 utils = require '../utils'
+deployementService = require('./DeployementService').get()
 logger = require('../logger').getLogger 'service'
 
 expiration = utils.confKey 'authentication.tokenLifeTime'
@@ -191,6 +192,8 @@ class _PlayerService
       return callback err, null if err?
       # no player found
       return callback null, null unless player?
+      # not an admin during a deployement: not authorinzed
+      return callback 'Deployment in progress', null if deployementService.deployedVersion()? and !player.get 'isAdmin'
 
       # check expiration date
       if player.get('lastConnection')+expiration*1000 < new Date().getTime()

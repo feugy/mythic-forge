@@ -68,6 +68,29 @@ else
 
 # Configure socket.io with it
 io = require('socket.io').listen server, {logger: logger}
+io.set 'log level', 0 # only errors
+
+# stores for each socket (socket id has key) an inactivity timeout
+inactivity = {}
+inactivityTime = 1000 * utils.confKey 'authentication.inactivityTime'
+
+# Invoked when some socket has activity. It reset its inactivity timer
+#
+# @param id [String] socket id
+activation = (id) ->
+  clearTimeout inactivity[id]
+  inactivity[id] = setTimeout (-> kick id, 'inactivity'), inactivityTime
+
+# Kick a user
+# 
+# @param id [String] the kicked socket id
+# @param reason [String] kicking explanation
+kick = (id, reason) ->
+  # gets the corresponding socket
+  socket =  io?.sockets?.sockets?[id]
+  return unless socket?
+  logger.info "Kick user #{id} for #{reason}"
+  socket.disconnect()
 
 # `GET /konami`
 #
@@ -92,6 +115,8 @@ exposeMethods = (service, socket, connected = [], except = []) ->
       unless method in except
         do(method) ->
           socket.on method, ->
+            # reset inactivity
+            activation socket.id
             originalArgs = Array.prototype.slice.call arguments
             args = originalArgs.concat()
             
@@ -263,6 +288,9 @@ unless noSecurity
 
   # When a client connects, returns it immediately its token
   io.on 'connection', (socket) ->
+    # set inactivity
+    activation socket.id
+
     # retrieve the player email set during autorization phase, and stores it.
     socket.set 'email', socket.manager.handshaken[socket.id]?.playerEmail
 

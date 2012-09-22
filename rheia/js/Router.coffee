@@ -76,6 +76,16 @@ requirejs.config
 # initialize rheia global namespace
 window.rheia = {}
 
+# Mapping between socket.io error reasons and i18n error messages
+errorMapping = 
+  kicked: 'disconnected'
+  disconnected: 'networkFailure'
+  'Wrong credentials': 'wrongCredentials'
+  'Missing credentials': 'wrongCredentials'
+  'Expired token': 'expiredToken'
+  unauthorized: 'insufficientRights'
+  'Deployment in progress': 'deploymentInProgress'
+
 define [
   'underscore'
   'jquery' 
@@ -203,13 +213,8 @@ define [
     # 
     # @param err [String] error details
     _onLoginError: (err) =>
-      console.log err
       err = decodeURIComponent err
-      switch err 
-        when 'Wrong credentials', 'Missing credentials' then msg = i18n.msgs.wrongCredentials 
-        when 'unauthorized' then msg = i18n.msgs.insufficientRights
-        when 'Expired token' then msg = i18n.msgs.expiredToken 
-        else msg = err
+      msg = if err of errorMapping then i18n.errors[errorMapping[err]] else err
       utils.popup i18n.titles.loginError, msg, 'warning', [
         text: i18n.buttons.ok, 
         icon:'valid'

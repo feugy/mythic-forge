@@ -69,6 +69,11 @@ define
     searchFailed: 'La recherche à échouée :<br/><br/>%s'
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2012 Damien Feugas'
-    wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer</p>'
+
+  errors:
+    wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'
     insufficientRights: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, il va falloir trimer un peu !</p>"
-    expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter</p>'
+    expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter.</p>'
+    networkFailure: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants avant de vous reconnecter.</p>'
+    disconnected: '<p>Vous avez été déconnecté du serveur.</p>'
+    deploymentInProgress: '<p>Une version est en cours de déploiement.</p><p>Veuillez patienter quelques instants avant de vous reconnecter.</p>'

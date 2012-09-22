@@ -23,6 +23,7 @@ define [
   'async'
 ], (io, async) ->
 
+  isLoggingOut = false
 
   # different namespaces that ca be used to communicate qith server
   namespaces =
@@ -36,8 +37,12 @@ define [
     # @param callback [Function] invoked when all namespaces have been connected, with arguments:
     # @option callback err [String] the error detailed case, or null if no error occured
     connect: (token, callback) ->
+      isLoggingOut = false
       socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
       socket.on 'error', callback
+      socket.on 'disconnect', (reason) -> 
+        return if isLoggingOut
+        callback if reason is 'booted' then 'kicked' else 'disconnected'
 
       # On connection, retrieve current connected player immediately
       socket.emit 'getConnected', (err, player) =>
@@ -48,6 +53,7 @@ define [
       # wire logout facilities
       rheia.router.on 'logout', => 
         localStorage.removeItem 'token'
+        isLoggingOut = true
         socket.emit 'logout'
         rheia.router.navigate 'login', trigger: true
 

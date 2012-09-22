@@ -1,8 +1,8 @@
 # Logger's levels.
 logLevels:
-  service: debug
+  service: warn
   model: warn
-  web: debug
+  web: warn
 
 # Server's configuration
 server:  
@@ -15,6 +15,7 @@ authentication:
   success: 'http://localhost:8080/rheia/login?'
   error: 'http://localhost:8080/rheia/login?'  
   tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  inactivityTime: 500 # number of seconds of inactivity before kicking user
   # Key usable on localhost domain with SSL
   google:
     id: 750195776526.apps.googleusercontent.com

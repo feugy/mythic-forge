@@ -75,12 +75,12 @@
         - **[done]** compact git history and create version
         - **[done]** revert to previous version
         - **[done]** list existing versions and current
-        - allow/block non-administrator login
+        - **[done]** allow/block non-administrator login
         - **[done]** return current version and deployed version
         - restrict game dev to administors
         - **[done]** serve production version with cache and gzip
     - Security
-        - extend session lifetime when doing stuff
+        - **[done]** kick users after inactivity
         - **[done]** register users from Google
         - **[done]** register users from Twitter
         - register users from Facebook
@@ -105,6 +105,7 @@
     - **[done]** perspective loader
     - **[done]** login page
     - **[done]** logout button
+    - **[done]** error reporting on network failure, kick and deployement in progress cases
     - moderation perspective
         - Players
             - player CRUD
