@@ -22,41 +22,53 @@ Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
 utils = require '../src/utils'
 service = require('../src/service/PlayerService').get()
+notifier = require('../src/service/Notifier').get()
 assert = require('chai').assert
      
 player = null
 type = null
 item1 = null
 item2 = null
+notifications = []
 
 describe 'PlayerService tests', ->
 
   beforeEach (done) ->
+    notifications = []
     # cleans Players, ItemTypes and Items
     Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> 
       # given an item type
       type = new ItemType {name: 'character'}
       type.setProperty 'friends', 'array', 'Item'
       type.save (err, saved) ->
-        throw new Error err if err?
+        return done err if err?
         type = saved
         # given two item
         new Item({type: type}).save (err, saved) ->
-          throw new Error err if err?
+          return done err if err?
           item1 = saved
           new Item({type: type, friends:[item1]}).save (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             item2 = saved
+            # given a registered notification listener
+            notifier.on notifier.NOTIFICATION, (event, args...) ->
+              return unless event is 'players'
+              notifications.push args
             done()
 
-  # Restore admin player for further tests
+  afterEach (done) ->
+    # remove notifier listeners
+    notifier.removeAllListeners notifier.NOTIFICATION
+    done()
+
   after (done) ->
+    # Restore admin player for further tests
     new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
   it 'should register creates an account', (done) ->
     # when registering an account with email Jack
     service.register 'Jack', 'toto', (err, player) ->
-      throw new Error "Can't register: #{err}" if err?
+      return done "Can't register: #{err}" if err?
       # then a player is returned
       assert.equal 'Jack', player.get 'email'
       assert.isNotNull player.get 'password'
@@ -95,7 +107,7 @@ describe 'PlayerService tests', ->
         lastConnection: date
         password: 'toto'
       ).save (err, saved) ->
-        throw new Error err if err?
+        return done err if err?
         player = saved
         done()
         
@@ -110,7 +122,7 @@ describe 'PlayerService tests', ->
     it 'should getByEmail returned player without character resolved', (done) ->
       # when retrieving the player by email
       service.getByEmail player.get('email'), false, (err, account) ->
-        throw new Error "Can't get by email: #{err}" if err?
+        return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account
         assert.ok player.equals account
@@ -124,7 +136,7 @@ describe 'PlayerService tests', ->
     it 'should getByEmail returned player with character resolved', (done) ->
       # when retrieving the player by email
       service.getByEmail player.get('email'), (err, account) ->
-        throw new Error "Can't get by email: #{err}" if err?
+        return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account
         assert.ok player.equals account
@@ -138,7 +150,7 @@ describe 'PlayerService tests', ->
     it 'should getByToken returned player', (done) ->
       # when retrieving the player by token
       service.getByToken token, (err, account) ->
-        throw new Error "Can't get by token: #{err}" if err?
+        return done "Can't get by token: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account
         assert.ok player.equals account
@@ -153,16 +165,44 @@ describe 'PlayerService tests', ->
       player.set 'token', token
       player.set 'lastConnection', expiredDate
       player.save (err, saved) ->
-        throw new Error err if err?
+        return done err if err?
         player = saved
 
         # when retrieving the player by token
-        service.getByToken token, (err, account) ->
+        service.getByToken token, (err) ->
           # then an error is send
           assert.isNotNull err
           assert.equal 'Expired token', err
+          assert.equal 1, notifications.length
+          assert.equal 'disconnect', notifications[0][0]
+          assert.isTrue saved.equals(notifications[0][1]), 'notification do not contains disconnected player'
           # then token was removed in database
           Player.findOne {email:player.get 'email'}, (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             assert.isNull saved.token
             done()    
+
+    it 'should disconnect failed on unknown email', (done) ->
+      # when retrieving the player by token
+      service.disconnect 'toto', (err, account) ->
+        # then an error is send
+        assert.isNotNull err
+        assert.equal 'No player with email toto found', err
+        done()    
+
+    it 'should disconnect reset token to null', (done) ->
+      # when disconneting the player
+      service.disconnect player.get('email'), (err, account) ->
+        return done "Can't disconnect: #{err}" if err?
+        # then the player was returned without token
+        assert.isNotNull account
+        assert.ok player.equals account
+        assert.isNull account.get 'token'
+        assert.equal 1, notifications.length
+        assert.equal 'disconnect', notifications[0][0]
+        assert.isTrue account.equals(notifications[0][1]), 'notification do not contains disconnected player'
+        # then token was removed in database
+        Player.findOne {email:player.get 'email'}, (err, saved) ->
+          return done err if err?
+          assert.isNull saved.token
+          done()    

@@ -46,7 +46,7 @@ app = express()
 
 noSecurity = process.env.NODE_ENV is 'test'
 
-app.use express.cookieParser()
+app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.bodyParser()
 app.use express.methodOverride()
 app.use express.session secret: 'mythic-forge' # mandatory for OAuth providers
@@ -92,12 +92,15 @@ kick = (id, reason) ->
   logger.info "Kick user #{id} for #{reason}"
   socket.disconnect()
 
-# `GET /konami`
+# Set a cookie after authentication to grant access on game dev client.
 #
-# Just a fun test page to ensure the server is running.
-# Responds the conami code in a `<pre>` HTML markup
-app.get '/konami', (req, res) ->
-  res.send '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
+# @param res [Object] Http response on which set the cookie
+# @param cookie [String] the cookie value
+addCookie = (res, cookie) ->
+  res.cookie 'token', cookie,
+    signed: true
+    httpOnly: true 
+    expires: new Date Date.now()+1000*utils.confKey 'authentication.tokenLifeTime'
 
 # This methods exposes all service methods in a given namespace.
 #
@@ -195,6 +198,8 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     passport.authenticate(provider, (err, token) ->
       # authentication failed
       return res.redirect "#{errorUrl}error=#{err}" if err?
+      # before redirecting, set a cookie to allow access to gamedev
+      addCookie res, token
       res.redirect "#{successUrl}token=#{token}"
       # remove session created during authentication
       req.session.destroy()
@@ -259,6 +264,8 @@ app.post '/auth/login', (req, res, next) ->
     # authentication failed
     return res.redirect "#{errorUrl}error=#{err}" if err?
     return res.redirect "#{errorUrl}error=#{details.message}" if token is false
+    # before redirecting, set a cookie to allow access to gamedev
+    addCookie res, token
     res.redirect "#{successUrl}token=#{token}"
   ) req, res, next
 
@@ -307,5 +314,12 @@ unless noSecurity
         socket.disconnect()
         playerService.disconnect value, ->
 
+# `GET /konami`
+#
+# Just a fun test page to ensure the server is running.
+# Responds the conami code in a `<pre>` HTML markup
+app.get '/konami', (req, res) ->
+  res.send '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
+  
 # Exports the application.
 module.exports = server

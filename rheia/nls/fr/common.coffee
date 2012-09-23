@@ -77,3 +77,4 @@ define
     networkFailure: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants avant de vous reconnecter.</p>'
     disconnected: '<p>Vous avez été déconnecté du serveur.</p>'
     deploymentInProgress: '<p>Une version est en cours de déploiement.</p><p>Veuillez patienter quelques instants avant de vous reconnecter.</p>'
+    clientAccessDenied: '<p>Vous devez être authentifié et disposer des droits suffisants pour accéder à cette resource.</p>'

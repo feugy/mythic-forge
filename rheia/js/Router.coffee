@@ -85,6 +85,7 @@ errorMapping =
   'Expired token': 'expiredToken'
   unauthorized: 'insufficientRights'
   'Deployment in progress': 'deploymentInProgress'
+  '^.* not authorized$': 'clientAccessDenied'
 
 define [
   'underscore'
@@ -108,6 +109,7 @@ define [
 
   class Router extends Backbone.Router
 
+
     # Object constructor.
     #
     # For links that have a route specified (attribute data-route), prevent link default action and
@@ -121,11 +123,12 @@ define [
 
       # Define some URL routes (order is significant: evaluated from last to first)
       @route '*route', '_onNotFound'
-      @route 'login', 'login', =>
-        form = $('#loginStock').detach()
-        $('body').empty().append new LoginView(form).render().$el
+      @route 'login', '_onDisplayLogin'
       @route 'login?error=:err', '_onLoginError'
       @route 'login?token=:token', '_onLoggedIn'
+      @route 'login?redirect=:redirect', 'logAndRedirect', (redirect) =>
+        localStorage.setItem 'redirect', decodeURIComponent redirect
+        @_onDisplayLogin()
       @route 'edition', 'edition', =>
         @_showPerspective 'editionPerspective', 'view/edition/Perspective'
       @route 'authoring', 'authoring', =>
@@ -174,11 +177,21 @@ define [
         rheia.layoutView.show rheia[name].render().$el
 
     # **private**
+    # Display the login view
+    _onDisplayLogin: =>
+      form = $('#loginStock').detach()
+      $('body').empty().append new LoginView(form).render().$el
+
+    # **private**
     # Invoked when coming-back from an authentication provider, with a valid token value.
     # Wired to server with socket.io
     #
     # @param token [String] valid autorization token
     _onLoggedIn: (token) =>
+      redirect = localStorage.getItem 'redirect'
+      if redirect?
+        localStorage.removeItem 'redirect'
+        return window.location.pathname = redirect
       # Connects token
       sockets.connect token, (err) =>
         return @_onLoginError err.replace('handshake ', '').replace('error ', '') if err?
@@ -213,7 +226,11 @@ define [
     # @param err [String] error details
     _onLoginError: (err) =>
       err = decodeURIComponent err
-      msg = if err of errorMapping then i18n.errors[errorMapping[err]] else err
+      msg = err
+      for pattern, key of errorMapping when err.match pattern
+        msg = i18n.errors[key]
+        break
+
       utils.popup i18n.titles.loginError, msg, 'warning', [
         text: i18n.buttons.ok, 
         icon:'valid'

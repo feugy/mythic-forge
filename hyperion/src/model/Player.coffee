@@ -57,6 +57,9 @@ Player = typeFactory 'Player',
   # token used during authentication
   token: String
 
+  # cookie used to access game developpment zone
+  cookie: String
+
   # link to characters.
   characters:
     type: []

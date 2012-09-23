@@ -22,9 +22,15 @@ Player = require '../model/Player'
 Item = require '../model/Item'
 utils = require '../utils'
 deployementService = require('./DeployementService').get()
+notifier = require('../service/Notifier').get()
 logger = require('../logger').getLogger 'service'
 
 expiration = utils.confKey 'authentication.tokenLifeTime'
+
+_instance = undefined
+module.exports = class PlayerService
+  @get: ->
+    _instance ?= new _PlayerService()
 
 # The PlayerService performs registration and authentication of players.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -77,12 +83,7 @@ class _PlayerService
       # check player existence and password correctness
       return callback null, false, {type:'error', message:'Wrong credentials'} if player is null or !player.checkPassword password
       # update the saved token and last connection date
-      player.set 'token', utils.generateToken 24
-      player.set 'lastConnection', new Date().getTime()
-      player.save (err, newPlayer) ->
-        return callback "Failed to update player: #{err}" if err?
-        logger.info "Player (#{newPlayer.id}) authenticated with email: #{email}"
-        callback null, newPlayer.get 'token'
+      setTokens player, 'Manual', callback
 
   # Authenticate a Google account: if account does not exists, creates it, or returns the existing one
   # Usable with passport-google-oauth.
@@ -113,12 +114,7 @@ class _PlayerService
           lastName: profile.name.familyName
 
       # update the saved token and last connection date
-      player.set 'token', utils.generateToken 24
-      player.set 'lastConnection', new Date().getTime()
-      player.save (err, newPlayer) ->
-        return callback "Failed to update player: #{err}" if err?
-        logger.info "Google player (#{newPlayer.id}) authenticated with email: #{email}"
-        callback null, newPlayer.get 'token'
+      setTokens player, 'Google', callback
 
   # Authenticate a Twitter account: if account does not exists, creates it, or returns the existing one
   # Usable with passport-twitter.
@@ -149,12 +145,7 @@ class _PlayerService
           lastName: profile.displayName.split(' ')[0] or ''
 
       # update the saved token and last connection date
-      player.set 'token', utils.generateToken 24
-      player.set 'lastConnection', new Date().getTime()
-      player.save (err, newPlayer) ->
-        return callback "Failed to update player: #{err}" if err?
-        logger.info "Twitter player (#{newPlayer.id}) authenticated with email: #{email}"
-        callback null, newPlayer.get 'token'
+      setTokens player, 'Twitter', callback
 
   # Retrieve a player by its email, with its characters resolved.
   #
@@ -201,8 +192,9 @@ class _PlayerService
         player.set 'token', null
         player.save (err, saved) =>
           return callback "Failed to reset player's expired token: #{err}" if err?
+          notifier.notify 'players', 'disconnect', saved
           callback "Expired token"
-      else
+      else 
         # change token for security reason
         player.set 'token', utils.generateToken 24
         player.save (err, saved) =>
@@ -223,11 +215,25 @@ class _PlayerService
       player.set 'token', null
       player.save (err, saved) =>
         return callback "Failed to reset player's token: #{err}" if err?
+        # send disconnection event
+        notifier.notify 'players', 'disconnect', saved
         callback null, saved
 
-_instance = undefined
-class PlayerService
-  @get: ->
-    _instance ?= new _PlayerService()
-
-module.exports = PlayerService
+# Mutualize authentication mecanism last part: generate a token and save player. 
+# Sends also a `connect` notification.
+#
+# @param player [Object] saved player, whose token are generated
+# @param provider [String] provider name, for logs
+# @param callback [Function] save end callback, invoked with two arguments:
+# @option callback err [String] an error string, or null if no error occured
+# @option callback token [String] the generated token
+setTokens = (player, provider, callback) ->
+  # update the saved token and last connection date
+  token = utils.generateToken 24
+  player.set 'token', token
+  player.set 'lastConnection', new Date().getTime()
+  player.save (err, newPlayer) ->
+    return callback "Failed to update player: #{err}" if err?
+    logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.get 'email'}"
+    notifier.notify 'players', 'connect', newPlayer
+    callback null, token

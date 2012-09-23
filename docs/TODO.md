@@ -69,7 +69,7 @@
         - **[done]** commit FSItem on save
         - get FSItem history
         - get FSItem version
-    - Authoring Service and game deployment
+    - **[done]** Authoring Service and game deployment
         - **[done]** compile stylus, coffee and optimize js and css
         - **[done]** move to production path and create unic url for resources
         - **[done]** compact git history and create version
@@ -77,7 +77,7 @@
         - **[done]** list existing versions and current
         - **[done]** allow/block non-administrator login
         - **[done]** return current version and deployed version
-        - restrict game dev to administors
+        - **[done]** restrict game dev to administors
         - **[done]** serve production version with cache and gzip
     - Security
         - **[done]** kick users after inactivity
@@ -157,7 +157,7 @@
             - **[done]** input query with help and validation
             - **[done]** display result and navigates
         - **[done]** auto-adjust panel top when tabs are added/removed and when window is resized
-        - **[done]** ItemType
+        - ItemType
             - **[done]** static fields and description image
             - **[done]** properties
             - **[done]** instance images

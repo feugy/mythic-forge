@@ -9,6 +9,7 @@ server:
   host: www.mythic-forge.com
   staticPort: 80
   apiPort: 443  
+  cookieSecret: Hey monkey donkey !
 
 # Authentication details
 authentication:

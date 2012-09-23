@@ -23,6 +23,11 @@ EventEmitter = require('events').EventEmitter
 
 NOTIF_EVT = 'notify'
 
+module.exports = class Notifier
+  _instance = undefined
+  @get: ->
+    _instance ?= new _Notifier()
+
 # The Notifier allows services to send notifications across the server and administration
 # clients.
 # It exposes a singleton class. The unic instance is retrieved by the `get()` method.
@@ -38,10 +43,3 @@ class _Notifier extends EventEmitter
   # @param details... [Any] optional data send with notification
   notify: (event, details...) =>
     @emit.apply @, [NOTIF_EVT, event].concat details
-
-class Notifier
-  _instance = undefined
-  @get: ->
-    _instance ?= new _Notifier()
-
-module.exports = Notifier

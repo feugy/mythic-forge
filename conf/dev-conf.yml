@@ -9,6 +9,7 @@ server:
   host: localhost
   staticPort: 8080
   apiPort: 8443
+  cookieSecret: Hey monkey donkey !
 
 # Authentication details
 authentication:

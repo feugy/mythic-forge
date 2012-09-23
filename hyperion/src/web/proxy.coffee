@@ -27,6 +27,27 @@ http = require 'http'
 coffee = require 'coffee-script'
 utils = require '../utils'
 stylus = require 'stylus'
+notifier = require('../service/Notifier').get()
+
+# Stores authorized tokens to avoid requesting to much playerService
+authorizedTokens = {}
+# Register handler on players connection and disconnection
+notifier.on notifier.NOTIFICATION, (event, state, player) ->
+  return unless event is 'players'
+  if state is 'connect'
+    if player.get 'isAdmin'
+      logger.debug "allow static connection from player #{player.id}"
+      # adds an entry to grant access on secured RIA 
+      token = player.get 'token'
+      authorizedTokens[token] = player.id 
+      # set expiration mechanism to clean cache
+      setTimeout (-> delete authorizedTokens[token]), 1000*utils.confKey 'authentication.tokenLifeTime'
+  else if state is 'disconnect'
+    logger.debug "deny static connection from player #{player.id}"
+    # removes entry from the cache
+    for token, id of authorizedTokens when id is player.id
+      delete authorizedTokens[token]
+      break
 
 # creates a single server to serve static files
 app = express()
@@ -59,8 +80,22 @@ registerConf = (base) ->
 # Must not be a subpart of another RIA
 # @param rootFolder [String] path to the local folder that contains the RIA files.
 # @param statics [Array<String>] Array of path relative to `rootFolder` that will be statically served
-# @param compiledPath [String] A path under which js files will be the compilation result of coffee files
-configureRIA = (base, rootFolder, statics) ->
+# @param secured [Boolean] Access to this RIA is secured and need authentication. Default to false.
+configureRIA = (base, rootFolder, statics, secured = false) ->
+
+  if secured
+    # if RIA is secured, register first a security filter
+    authentPage = utils.confKey 'authentication.success'
+    app.get new RegExp("^#{base}"), (req, res, next) ->
+      token = req.signedCookies?.token
+      # redirect unless cookie exists
+      return res.redirect "#{authentPage}redirect=#{encodeURIComponent req.url}" unless token?
+      # proceed if cookie value is known
+      return next() if token of authorizedTokens
+      # removes the cookie and deny
+      res.clearCookie 'token'
+      res.redirect "#{authentPage}error=#{encodeURIComponent "#{base} not authorized"}"
+
   # serve static files
   app.use "#{base}/#{stat}", express.static path.join rootFolder, stat for stat in statics
 
@@ -103,7 +138,7 @@ configureRIA = (base, rootFolder, statics) ->
     for stat in statics
       if 0 is req.url.indexOf "#{base}/#{stat}"
         return next();
-
+    
     # redirects with trailing slash to avoid relative path errors from browser
     return res.redirect "#{base}/" if req.url is "#{base}"
 
@@ -115,8 +150,8 @@ configureRIA = (base, rootFolder, statics) ->
       res.send 404
     ).pipe res
 
-
 # serve commun static assets
+app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.compress level:9
 app.use '/images', express.static utils.confKey 'images.store'
 
@@ -144,7 +179,7 @@ app.get /^\/game(\/.*)?$/, (req, res, next) ->
   gameMiddleware req, res, next
 
 # configure a game RIA and the administration RIA 
-configureRIA '/gamedev', utils.confKey('game.dev'), []
+configureRIA '/gamedev', utils.confKey('game.dev'), [], true
 configureRIA '/rheia', './rheia', ['js', 'style', 'templates', 'nls']
 
 # Exports the application.
