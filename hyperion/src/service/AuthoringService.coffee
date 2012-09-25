@@ -153,6 +153,8 @@ class _AuthoringService
           all: true
           author: getAuthor author
         , (err, stdout) =>
+          # ignore commit failure on empty working directory
+          err = null if err?.code is 1
           return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
           logger.debug "#{removed.path} removed from version control"
           # makes fs-item relative to root
@@ -194,6 +196,8 @@ class _AuthoringService
             all: true 
             author: getAuthor author
           , (err, stdout) =>
+            # ignore commit failure on empty working directory
+            err = null if err?.code is 1
             return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
             logger.debug "#{moved.path} commited"
 
