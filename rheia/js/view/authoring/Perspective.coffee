@@ -85,6 +85,9 @@ define [
       # construct explorer
       @_explorer = new FileExplorer()
       @bindTo @_explorer, 'select', @_onSelect
+      @bindTo @_explorer, 'rename', @_onChooseFileName
+      @bindTo @_explorer, 'create', @_onChooseFileName
+      @bindTo @_explorer, 'remove', @_onRemove
       @bindTo rheia.router, 'serverError', @_onServerError
       @bindTo FSItem.collection, 'add', @_onItemCreated
 
@@ -103,12 +106,12 @@ define [
       buttons = [
         icon: 'new-folder'
         tip: i18n.tips.newFolder
-        handler: => @_chooseFileName true
+        handler: => @_onChooseFileName @_explorer.selected, true
         attribute: '_newFileButton'
       ,
         icon: 'new-file'
         tip: i18n.tips.newFile
-        handler: => @_chooseFileName false
+        handler: => @_onChooseFileName @_explorer.selected, false
         attribute: '_newFolderButton'
       ,
         icon: 'upload'
@@ -121,12 +124,12 @@ define [
         handler: => 
           selected = FSItem.collection.get @_explorer.selected
           return unless selected?
-          @_chooseFileName selected.get('isFolder'), @_explorer.selected
+          @_onChooseFileName @_explorer.selected, selected.get('isFolder'), @_explorer.selected
         attribute: '_renameButton'
       ,
         icon: 'remove-folder'
         tip: i18n.tips.removeFolder
-        handler: @_onRemoveFolder
+        handler: => @_onRemove @_explorer.selected, true
         attribute: '_removeFolderButton'
       ,
         icon: 'save'
@@ -238,10 +241,10 @@ define [
     # **private**
     # Item creation/move handler: prompt for name, creates the FSItem and opens it if it's a file, or moves the FSItem
     #
+    # @param selected [String] currently selected path inside explorer. May be null
     # @param isFolder [Boolean] distinguish the creation of a folder and a file
     # @parma oldName [String] old name of the renamed item. Default to null
-    _chooseFileName: (isFolder, oldName = null) =>
-      selected = @_explorer.selected
+    _onChooseFileName: (selected, isFolder, oldName = null) =>
       title = if oldName? then i18n.titles.renameFSItem else i18n.titles[if isFolder then 'newFolder' else 'newFile']
       if oldName?
         msg = i18n.msgs[if isFolder then 'renameFolder' else 'renameFile']
@@ -249,7 +252,7 @@ define [
         msg = _.sprintf i18n.msgs[if isFolder then 'newFolder' else 'newFile'], if selected? then selected else i18n.labels.rootFolder
       # displays the popup
       popup = utils.popup(title, msg, 'question', [
-          text: i18n.labels.create
+          text: i18n.buttons[if oldName? then 'rename' else 'create']
           icon: 'valid'
           click: =>
             # Do not proceed unless no validation error
@@ -290,13 +293,16 @@ define [
     
     # **private**
     # Handler that removes selected fsItem after a confirmation popup
-    _onRemoveFolder: =>
+    #
+    # @param selected [String] currently selected path inside explorer.
+    # @param isFolder [Boolean] distinguish the creation of a folder and a file
+    _onRemove: (selected, isFolder) =>
       # get selected item
-      removed = FSItem.collection.get @_explorer.selected
-      return unless removed? and removed.get 'isFolder'
+      removed = FSItem.collection.get selected
+      return unless removed?
       #confirmation popup
       utils.popup i18n.titles.removeConfirm, 
-        _.sprintf(i18n.msgs.removeFolderConfirm, removed.get 'path'), 
+        _.sprintf(i18n.msgs[if isFolder then 'removeFolderConfirm' else 'removeFileConfirm'], removed.get 'path'), 
         'question', [
           text: i18n.buttons.no
           icon: 'invalid'

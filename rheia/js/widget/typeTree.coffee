@@ -50,7 +50,8 @@ define [
   # A tree that displays type models.
   # Organize models in categories.
   # Triggers `open` event when opening a category (with category in parameter)
-  # Triggers `click` event when clicking an item (with category and id in parameter)
+  # Triggers `openElement` event when clicking an item, or its open contextual menu item (with category and id in parameter)
+  # Triggers `removeElement` event when clicking an item remove contextual menu item (with category and id in parameter)
   $.widget 'rheia.typeTree', $.rheia.baseWidget,
     
     options:  
@@ -76,6 +77,8 @@ define [
     _create: ->
       @element.on 'click', 'dt', (event) => @_onToggleCategory event
       @element.on 'click', 'dd > div', (event) => @_onOpenElement event
+      @element.on 'click', 'dd .menu .open', (event) => @_onOpenElement event
+      @element.on 'click', 'dd .menu .remove', (event) => @_onRemoveElement event
 
       @element.addClass('type-tree').empty()
       # creates categories, and fill with relevant models
@@ -122,11 +125,28 @@ define [
         @_trigger 'open', event, title.next('dd').data 'category'
 
     # **private**
-    # Open the element clicked by issu ing an event on the bus.
+    # Open the element clicked by issuing an event on the bus.
     #
-    # @param event [Event] the click event
+    # @param event [Event] the click cancelled event
     _onOpenElement: (event) ->
-      element = $(event.target).closest 'div'
-      @_trigger 'click', event, 
+      event?.preventDefault()
+      event?.stopImmediatePropagation()
+      element = $(event.target).closest '.type-details'
+      return unless element?
+      @_trigger 'openElement', event, 
+        category: element.data 'category'
+        id: element.data 'id'
+
+    # **private**
+    # Removed the element clicked by issuing an event on the bus.
+    #
+    # @param event [Event] the click cancelled event
+    _onRemoveElement: (event) ->
+      event?.preventDefault()
+      event?.stopImmediatePropagation()
+      element = $(event.target).closest '.type-details'
+      return unless element?
+      $(event.target).closest('.menu').remove()
+      @_trigger 'removeElement', event, 
         category: element.data 'category'
         id: element.data 'id'

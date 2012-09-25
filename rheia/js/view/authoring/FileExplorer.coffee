@@ -25,6 +25,7 @@ define [
   'i18n!nls/common'
   'i18n!nls/authoring'
   'model/FSItem'
+  'widget/toggleable'
 ], ($, _, Backbone, i18n, i18nAuthoring, FSItem) ->
 
   i18n = $.extend true, i18n, i18nAuthoring
@@ -49,7 +50,7 @@ define [
       """
     else 
       html = """<div data-path="#{item.get('path')}" class="file #{item.extension}"><i></i>#{name}</div>"""
-    html
+    $(html)
 
   # Comparator function, that allows to sort FSItems inside the collection.
   # First, folders, then files. Both alphabetically sorted
@@ -78,6 +79,11 @@ define [
       'click .folder:not(.loaded) > h1': '_onLoad'
       'click .folder.loaded > h1': '_onSelect'
       'click .file': '_onSelect'
+      'click .menu .open': '_onSelect'
+      'click .menu .remove': '_onMenuRemove'
+      'click .menu .rename': '_onMenuRename'
+      'click .menu .new': '_onMenuCreate'
+      'contextmenu': '_onShowMenu'
 
     # Current selected path
     selected: null
@@ -89,6 +95,10 @@ define [
     # **private**
     # Loading flag to ignore fsItem addition
     _loading: false
+
+    # **private**
+    # Contextual menu
+    _menu: null
 
     # The view constructor.
     constructor:  ->
@@ -108,8 +118,38 @@ define [
       # load root content
       FSItem.collection.fetch()
 
+      # adds a contextual menu that opens on right click
+      @_menu = $("""<ul class="menu"></ul>""").toggleable().appendTo(@$el).data 'toggleable'
+
       # for chaining purposes
       @
+      
+    # **private**
+    # Fills and displays contextual menu
+    #
+    # @param collection [FSItem.collection] the list of root FSItem
+    _onShowMenu: (event) =>
+      event?.preventDefault()
+      event?.stopImmediatePropagation()
+      item = FSItem.collection.get $(event.target).closest('.file,.folder').data 'path'
+      return unless item?
+      path = item.get 'path'
+      name = path.substring path.lastIndexOf('\\')+1
+      folder = item.get 'isFolder'
+      @_menu.element.empty().data('folder', folder).data 'path', path
+      if folder
+        content = """
+          <li class='new new-file'><i class='x-small ui-icon new-file'></i>#{i18n.labels.newFile}</li>
+          <li class='new new-folder'><i class='x-small ui-icon new-folder'></i>#{i18n.labels.newFolder}</li>
+        """
+      else
+        content = "<li class='open'><i class='x-small ui-icon open'></i>#{_.sprintf i18n.labels.openFSItem, name}</li>"
+      content += """
+        <li class='rename'><i class='x-small ui-icon rename'></i>#{_.sprintf i18n.labels.renameFSItem, name}</li>
+        <li class='remove'><i class='x-small ui-icon remove'></i>#{_.sprintf i18n.labels.removeFSItem, name}</li>
+      """
+      @_menu.element.append content
+      @_menu.open event?.pageX, event?.pageY
 
     # **private**
     # Handler invoked when the root content have been retrieved
@@ -122,6 +162,7 @@ define [
       # redraw all content inside parent.
       @$el.empty()
       @$el.append renderItem subItem for subItem in collection.models
+      @$el.append @_menu.element
 
     # **private**
     # New item added handler: update the tree if this item should appear
@@ -149,7 +190,7 @@ define [
       idx = content.indexOf item
 
       # appends the new node
-      render = $(renderItem item)
+      render = renderItem item
       if idx is parentNode.children().length
         parentNode.append render
       else
@@ -200,7 +241,7 @@ define [
     #
     # @param event [Event] click event inside folder
     _onSelect: (event) =>
-      node = $(event.target).closest 'div'
+      node = $(event.target).closest 'div, ul'
       path = node.data 'path'
       return unless path?
       
@@ -220,9 +261,11 @@ define [
         container = node.find '> .content'
         # Only close when folder
         unless node.hasClass 'open'
-          container.show().css(x:-animShift).transition x:0, animDuration
+          container.show().css(x:-animShift).transition x:0, animDuration, -> $(this).css transform: ''
         else
-          container.transition x:-animShift, animDuration, -> container.hide()
+          container.transition x:-animShift, animDuration, -> 
+            $(this).css transform: ''
+            $(this).hide()
         node.toggleClass 'open'
 
       # trigger an event
@@ -242,3 +285,39 @@ define [
         item: new FSItem
           path: node.data 'path'
           isFolder: true
+
+    # **private**
+    # Handler of contextual menu remove item. Triggers `remove` event.
+    # 
+    # @param event [Event] click event insed contextual menu
+    _onMenuRemove: (event) =>
+      node = $(event.target).closest 'ul'
+      path = node.data 'path'
+      isFolder = node.data 'folder'
+      return unless path? and isFolder?
+      # trigger an event
+      @trigger 'remove', path, isFolder
+
+    # **private**
+    # Handler of contextual menu rename item. Triggers `rename` event.
+    # 
+    # @param event [Event] click event insed contextual menu
+    _onMenuRename: (event) =>
+      node = $(event.target).closest 'ul'
+      path = node.data 'path'
+      isFolder = node.data 'folder'
+      return unless path? and isFolder?
+      # trigger an event
+      @trigger 'rename', path, isFolder, path
+
+    # **private**
+    # Handler of contextual menu create items. Triggers `create` event.
+    # 
+    # @param event [Event] click event insed contextual menu
+    _onMenuCreate: (event) =>
+      node = $(event.target).closest 'ul'
+      path = node.data 'path'
+      isFolder = $(event.target).closest('li').hasClass 'new-folder'
+      return unless path? and isFolder?
+      # trigger an event
+      @trigger 'create', path, isFolder

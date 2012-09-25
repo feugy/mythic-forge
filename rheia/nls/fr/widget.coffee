@@ -21,6 +21,10 @@ define
   loadableImage:
     noImage: 'Aucune image'
 
+  typeDetails:
+    open: 'Ouvrir "%s"'
+    remove: 'Supprimer "%s"'
+
   search:
     noResults: 'Aucun résultat'
     oneResult: '1 résultat'

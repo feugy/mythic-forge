@@ -140,7 +140,8 @@ define [
       @_results = @element.find('.results').hide().typeTree
         openAtStart: true
         hideEmpty: true
-        click: (event, category, id) => @_trigger 'open', event, category, id
+        openElement: (event, category, id) => @_trigger 'openElement', event, category, id
+        removeElement: (event, category, id) => @_trigger 'removeElement', event, category, id
       
       # toggle results visibility
       @element.hover (event) =>

@@ -88,7 +88,8 @@ define [
       @_searchWidget = @$el.find('> .left .search').search(
         helpTip: i18n.tips.searchTypes
         search: (event, query) -> rheia.searchService.searchTypes query
-        open: (event, details) -> rheia.router.trigger 'open', details.category, details.id
+        openElement: (event, details) -> rheia.router.trigger 'open', details.category, details.id
+        removeElement: (event, details) -> rheia.router.trigger 'remove', details.category, details.id
       ).data 'search'
 
       # for chaining purposes

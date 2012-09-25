@@ -126,11 +126,11 @@
             - **[done]** upload in selected
             - **[done]** rename selected
             - **[done]** delete selected
-        - File Explorer
+        - **[done]** File Explorer
             - **[done]** items loading
             - **[done]** items navigation and selection
             - **[done]** update when item added or removed
-            - contextual menu
+            - **[done]** contextual menu
         - **[done]** File View
             - **[done]** action bar (save, delete)
             - **[done]** editor widget
@@ -138,7 +138,7 @@
             - **[done]** external modification/removal notification
             - **[done]** displays images
     - edition perspective
-        - contextual menus in search and explorer
+        - **[done]** contextual menus in search and explorer
         - Maps
             - diamond map widget
             - square map widget

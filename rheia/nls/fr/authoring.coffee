@@ -23,9 +23,17 @@ define
     newFile: "Création d'un fichier"
     renameFSItem: "Renommage/déplacement"
 
+  buttons:
+    rename: 'renommer'
+    
   labels:
+    newFolder: 'Créer un dossier'
+    newFile: 'Créer un fichier'
     rootFolder: 'la racine'
     fsItemName: 'nom'
+    openFSItem: 'Ouvrir "%s"'
+    renameFSItem: 'Renommer "%s"'
+    removeFSItem: 'Supprimer "%s"'
 
   msgs:
     newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b> :'

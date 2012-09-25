@@ -248,6 +248,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     overflow auto
     width 200px
     box-shadow 0 3px 5px shadowColor
+    z-index 1
 
   .nb-results
     font-size fontSize*0.9
@@ -342,3 +343,11 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 
   dd > dt::before
     margin-right 0px
+
+// Toggleable
+.toggleable 
+  position absolute
+  z-index 5000
+  top 0
+  left 0
+  width auto

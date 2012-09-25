@@ -136,8 +136,10 @@ define [
           node.addClass 'loaded'
           # load the relevant category
           loaders[category]() if category of loaders
-        click: (event, details) =>
+        openElement: (event, details) =>
           rheia.router.trigger 'open', details.category, details.id
+        removeElement: (event, details) =>
+          rheia.router.trigger 'remove', details.category, details.id
       ).data 'typeTree'
       # for chaining purposes
       @
@@ -249,7 +251,7 @@ define [
           container.children().eq(idx-1).after markup
         # use a small delay to avoid animation while inserting into the DOM
         _.delay => 
-          markup.transition x:0, animDuration
+          markup.transition x:0, animDuration, -> $(this).css transform: ''
         , 10
         
       switch operation

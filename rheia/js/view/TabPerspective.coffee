@@ -63,6 +63,7 @@ define [
 
       # bind to global events
       @bindTo rheia.router, 'open', @_onOpenElement
+      @bindTo rheia.router, 'remove', @_onRemoveElement
 
       # bind shortcuts
       $(document).bind("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
@@ -144,7 +145,7 @@ define [
       if idx.length is 1 then idx[0] else -1
 
     # **private**
-    # This method is invoked when an element must be shwoned in a tab.
+    # This method is invoked when an element must be showned in a tab.
     #  
     # @param type [String] opened element className.
     # @param id [String] opened element id, or null for a creation.
@@ -160,6 +161,22 @@ define [
 
       @_views.push view
       @_tabs.add '#tabs-'+md5(view.getId()), view.getTitle()
+
+    # **private**
+    # This method is invoked when an element must be removed.
+    #  
+    # @param type [String] opened element className.
+    # @param id [String] opened element id, or null for a creation.
+    _onRemoveElement: (type, id) =>
+      # first check if the view is not already opened.
+      if id?
+        idx = @_indexOfView id
+        return @_views[idx].removeModel() unless idx is -1
+
+      # constructs a temporary view to immediatly removes its model
+      view = @_constructView type, id
+      return unless view?
+      view.removeModel()
 
     # **private**
     # Handler invoked when a tab was added to the widget. Render the view inside the tab.

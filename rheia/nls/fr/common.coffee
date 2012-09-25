@@ -37,7 +37,6 @@ define
     login: 'Rheia - Connexion'
       
   labels:
-    create: 'Créer'
     enterLogin: 'Identifiant : '
     enterPassword: 'Mot de passe : '
     connectWith: 'Connectez vous avec :'
@@ -46,6 +45,7 @@ define
     deployementInProgress: 'déploiement...'
 
   buttons:
+    create: 'Créer'
     login: 'Entrer'
     google: 'Google'
     twitter: 'Twitter'

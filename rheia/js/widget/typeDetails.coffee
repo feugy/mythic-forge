@@ -22,13 +22,18 @@ define [
   'jquery'
   'utils/utilities'
   'i18n!nls/common'
+  'i18n!nls/widget'
   'widget/baseWidget'
-  'widget/Carousel'
-], ($, utils, i18n) ->
+  'widget/carousel'
+  'widget/toggleable'
+], ($, utils, i18n, i18nWidget) ->
+
+  i18n = $.extend true, i18n, i18nWidget
 
   # This widget renders a type model to be displayed in explorer.
   # Draws the type image for EventType and ItemType, use a carousel for FieldType, and displays 
   # just name for others
+  # Displays a contextual menu, but handlers are difined by typeTree widget.
   $.widget 'rheia.typeDetails', $.rheia.baseWidget,
 
     options:  
@@ -43,8 +48,13 @@ define [
     # pending image source
     _pendingImage: null
 
+    # **private**
+    # contextual menu
+    _menu: null
+
     # Frees DOM listeners
     destroy: ->
+      @_element.off()
       rheia.router.off 'imageLoaded', @_loadCallback if @_loadCallback?
       $.Widget.prototype.destroy.apply @, arguments
 
@@ -100,6 +110,17 @@ define [
       else
         @element.prepend "<img/>" if category in ['ItemType', 'EventType']
         @element.toggleClass 'inactive', !@options.model.get 'active' if category in ['TurnRule', 'Rule']
+
+      # adds a contextual menu that opens on right click
+      @_menu = $("""<ul class="menu">
+          <li class="open"><i class="x-small ui-icon open"></i>#{_.sprintf i18n.typeDetails.open, name}</li>
+          <li class="remove"><i class="x-small ui-icon remove"></i>#{_.sprintf i18n.typeDetails.remove, name}</li>
+        </ul>""").toggleable().appendTo(@element).data 'toggleable'
+
+      @element.on 'contextmenu', (event) =>
+        event?.preventDefault()
+        event?.stopImmediatePropagation()
+        @_menu.open event?.pageX, event?.pageY
           
     # **private**
     # Method invoked when the widget options are set. Update rendering if `model` is changed.
