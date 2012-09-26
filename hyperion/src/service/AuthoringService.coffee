@@ -26,6 +26,7 @@ utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 deployementService = require('./DeployementService').get()
+notifier = require('../service/Notifier').get()
 
 repo = null
 root = null
@@ -96,9 +97,11 @@ class _AuthoringService
       item.save (err, saved, isNew) =>
         return callback purge err if err?
 
-        finish = =>
+        finish = (commit =null) =>
           # makes fs-item relative to root
           saved.path = pathUtils.relative root, saved.path
+          if commit?
+            notifier.notify 'authoring', 'committed', saved.path, commit 
           callback null, saved
 
         # do not commit folders
@@ -113,7 +116,15 @@ class _AuthoringService
           , (err, stdout) =>
             return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
             logger.debug "#{saved.path} commited"
-            finish()
+            # get the last commit, ignore errors
+            repo.commits 'master', 1, 0, (err, history) =>
+              unless err?
+                commit =
+                  id: history[0]?.id
+                  message: history[0]?.message
+                  author: history[0]?.author?.name
+                  date: history[0]?.committed_date
+              finish commit
 
         if isNew
           # first add it to git
@@ -196,14 +207,28 @@ class _AuthoringService
             all: true 
             author: getAuthor author
           , (err, stdout) =>
+            noCommit = false
             # ignore commit failure on empty working directory
-            err = null if err?.code is 1
+            if err?.code is 1
+              err = null 
+              noCommit = true
             return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
             logger.debug "#{moved.path} commited"
 
             # makes fs-item relative to root
             moved.path = pathUtils.relative root, moved.path
-            callback null, moved
+
+            # get the last commit, ignore errors
+            repo.commits 'master', 1, 0, (err, history) =>
+              unless err?
+                commit =
+                  id: history[0]?.id
+                  message: history[0]?.message
+                  author: history[0]?.author?.name
+                  date: history[0]?.committed_date
+
+              notifier.notify 'authoring', 'committed', moved.path, commit unless noCommit
+              callback null, moved
 
   # Retrieves the FSItem content, either file or folder.
   # File content is returned base64 encoded
@@ -229,6 +254,48 @@ class _AuthoringService
       if read.isFolder
         file.path = pathUtils.relative(root, file.path) for file in read.content
       callback null, read
+
+  # Retrieves history of an file. Folders do not have history.
+  #
+  # @param item [FSItem] consulted file
+  # @param callback [Function] end callback, invoked with two arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback history [Array] array of commits, each an object containing `message`, `author`, `date` and `id`
+  history: (item, callback) =>
+    # convert into plain FSItem
+    try 
+      file = new FSItem item
+    catch exc
+      return callback "Only FSItem are supported: #{exc}"
+    return callback 'History not supported on folders' if file.isFolder
+
+    # consult file history
+    utils.quickHistory repo, pathUtils.join(root, file.path), (err, history) =>
+      return callback "Failed to get history on  FSItem are supported: #{err}" if err?
+      callback null, history
+
+  # Retrieves a file content to a given version. Folders do not have history.
+  # File content is returned base64 encoded
+  #
+  # @param item [FSItem] consulted FSItem
+  # @param version [String] commit id of the concerned version
+  # @param callback [Function] end callback, invoked with two arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback content [String] the base64 encoded content
+  readVersion: (item, version, callback) =>
+    # convert into plain FSItem
+    try 
+      file = new FSItem item
+    catch exc
+      return callback "Only FSItem are supported: #{exc}"
+    return callback 'History not supported on folders' if file.isFolder
+
+    # item path must be / separated, and relative to repository root
+    path = pathUtils.join(root, file.path).replace(repo.path, '').replace /\\/g, '\/'
+    # show file at specified revision
+    repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
+      return callback "Failed to get version content: #{err}" if err?
+      callback err, new Buffer(stdout, 'binary').toString 'base64'
 
 #Simple method to remove occurence of the root path from error messages
 purge = (err) -> 

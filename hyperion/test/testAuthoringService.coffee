@@ -17,6 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+_ = require 'underscore'
 async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
@@ -24,12 +25,14 @@ gift = require 'gift'
 FSItem = require '../src/model/FSItem'
 utils = require '../src/utils'
 service = require('../src/service/AuthoringService').get()
+notifier = require('../src/service/Notifier').get()
 assert = require('chai').assert
 
 root = utils.confKey 'game.dev'
 repo = pathUtils.resolve pathUtils.dirname root
 gitRoot = pathUtils.basename root
 git = gift repo
+notifications = []
         
 describe 'AuthoringService tests', -> 
 
@@ -37,6 +40,17 @@ describe 'AuthoringService tests', ->
     fs.remove repo, (err) ->
       return done err if err?
       service.init done
+
+  beforeEach (done) ->
+    # given a registered notification listener
+    notifications = []
+    notifier.on notifier.NOTIFICATION, (event, args...) ->
+      notifications.push args if event is 'authoring'
+    done()
+
+  afterEach (done) ->
+    notifier.removeAllListeners notifier.NOTIFICATION
+    done()
 
   it 'should file be created', (done) -> 
     # given a new file
@@ -56,6 +70,17 @@ describe 'AuthoringService tests', ->
           assert.equal commit.author.name, 'unknown'
           assert.equal commit.author.email, 'admin@unknown.org'
           assert.equal commit.message, 'save'
+
+          # then a notification was issued
+          assert.equal 1, notifications.length
+          notif = notifications[0]
+          assert.equal notif[0], 'committed'
+          assert.equal notif[1], item.path
+          assert.equal notif[2].author, commit.author.name
+          assert.equal notif[2].date?.getTime(), commit.committed_date?.getTime()
+          assert.equal notif[2].id, commit.id
+          assert.equal notif[2].message, commit.message
+
           commit.tree().find "#{gitRoot}/#{item.path}", (err, obj) ->
             return done "Failed to check git details: #{err}" if err?
             assert.isNotNull obj
@@ -68,6 +93,9 @@ describe 'AuthoringService tests', ->
     # when saving it 
     service.save item, 'admin', (err, saved) ->
       return done "Cannot save folder: #{err}" if err?
+      # then nonotification issued
+      assert.equal 0, notifications.length
+
       # then the file was saved
       assert.ok item.equals saved
       fs.exists pathUtils.join(root, item.path), (exists) ->
@@ -132,6 +160,19 @@ describe 'AuthoringService tests', ->
           return done err if err?
           assert.equal read.content, data.toString('base64')
           done()
+
+    it 'should file content be read at last version', (done) -> 
+      service.history file, (err, history) ->
+        return done err if err?
+
+        # when reading the file at last version
+        service.readVersion file, history[0].id, (err, content) ->
+          return done "Cannot read file at version: #{err}" if err?
+          # then read data is correct
+          fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
+            return done err if err?
+            assert.equal content, data.toString('base64')
+            done()
         
     it 'should file content be updated', (done) -> 
       # given a binary content
@@ -152,6 +193,17 @@ describe 'AuthoringService tests', ->
             git.commits (err, history) ->
               return done "Failed to check git log: #{err}" if err?
               assert.equal 2, history.length
+
+              # then a notification was issued
+              assert.equal 1, notifications.length
+              notif = notifications[0]
+              assert.equal notif[0], 'committed'
+              assert.equal notif[1], saved.path
+              assert.equal notif[2].author, history[0].author.name
+              assert.equal notif[2].date?.getTime(), history[0].committed_date?.getTime()
+              assert.equal notif[2].id, history[0].id
+              assert.equal notif[2].message, history[0].message
+
               async.forEach history, (commit, next) ->
                 assert.equal commit.author.name, 'unknown'
                 assert.equal commit.author.email, 'admin@unknown.org'
@@ -162,6 +214,30 @@ describe 'AuthoringService tests', ->
                   assert.equal obj.name, pathUtils.dirname file.path
                   next()
               , done
+
+    it 'should file content be read at first version', (done) -> 
+      service.history file, (err, history) ->
+        return done err if err?
+
+        # when reading the file at first version
+        service.readVersion file, history[1].id, (err, content) ->
+          return done "Cannot read file at version: #{err}" if err?
+          # then read data is correct
+          fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
+            return done err if err?
+            assert.equal content, data.toString('base64')
+            done()
+
+    it 'should file history be consulted', (done) ->
+      # when consulting history for this file
+      service.history file, (err, history) ->
+        return done "Cannot get history: #{err}" if err?
+        assert.equal 2, history.length
+        for i in [0..1]
+          assert.instanceOf history[i].date, Date
+          assert.equal 'unknown', history[i].author
+        assert.deepEqual ['save', 'save'], _.pluck history, 'message'
+        done()
 
     it 'should file content be moved', (done) -> 
       # when reading the folder
@@ -186,6 +262,17 @@ describe 'AuthoringService tests', ->
                 assert.equal commit.author.name, 'unknown'
                 assert.equal commit.author.email, 'admin@unknown.org'
                 assert.equal commit.message, 'move'
+
+                # then a notification was issued
+                assert.equal 1, notifications.length
+                notif = notifications[0]
+                assert.equal notif[0], 'committed'
+                assert.equal notif[1], moved.path
+                assert.equal notif[2].author, commit.author.name
+                assert.equal notif[2].date?.getTime(), commit.committed_date?.getTime()
+                assert.equal notif[2].id, commit.id
+                assert.equal notif[2].message, commit.message
+
                 # then the new path was created
                 commit.tree().find "#{gitRoot}/#{moved.path.replace '\\', '/'}", (err, obj) ->
                   return done "Failed to check git details: #{err}" if err?
@@ -206,6 +293,10 @@ describe 'AuthoringService tests', ->
         assert.ok file.equals removed
         fs.exists pathUtils.join(root, file.path), (exists) ->
           assert.isFalse exists, "file #{file.path} wasn't removed"
+
+          # then nonotification issued
+          assert.equal 0, notifications.length
+
           # then it was removed from version control
           git.commits (err, history) ->
             return done "Failed to check git log: #{err}" if err?
@@ -269,6 +360,9 @@ describe 'AuthoringService tests', ->
       # when removing the folder
       service.remove folder, 'admin', (err, removed) ->
         return done "Cannot remove folder: #{err}" if err?
+        # then nonotification issued
+        assert.equal 0, notifications.length
+
         # then the file was removed
         assert.ok folder.equals removed
         fs.exists pathUtils.join(root, folder.path), (exists) ->

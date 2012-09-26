@@ -1,111 +1,14 @@
-# Prototype TODOs
-
-- Map items and their types
-    - **[done]** CRUD in database (Items, Fields, Maps)
-    - Dynamic properties
-        - **[done]** declaration and enforcement 
-        - **[done]** type-checking
-        - **[done]** links resolution at server side
-        - links resolution at client side
-    - **[done]** Modifications propagation
-- Player
-    - **[done]** CRUD in database
-    - **[done]** connection
-- Rule engine 
-    - **[done]** file system storage and compilation
-    - **[done]** runtime resolution and execution at server side
-    - **[done]** runtime resolution at client side
-    - **[done]** items creation and removal
-    - **[done]** items updates
-    - secured rules > mock save() and remove() methods from instances, collection and update() from classes
-    - transactional behaviour
-    - **[done]**turn rules
-- Web layer
-    - **[done]** map items CRUD invokation
-    - **[done]** rule engine invokation
-    - **[done]** rules retrieval
-    - **[done]** map items modification propagation
-    - **[done]** secured websocket
-- Game client
-    - **[done]** map displayal
-    - **[done]** rules resolution
-    - **[done]** application of map items modifications 
-    - **[done]** create a new player and display its map
-    - **[done]** bot mode
-    - **[done]** transitions
-        - **[done]** image sprite specification (size, location)
-        - **[done]** transition duration
-        - **[done]** transition chain
-        - **[done]** image cache
-
-# Final TODOs
+# TODO
 
 - Hyperion
-    - **[done]** ImageService to upload and associate images to types
-    - **[done]** remove all images when removing a type
-    - **[done]** Field type CRUD
-    - **[done]** Map CRUD
-    - **[done]** Field CRUD
-    - **[done]** disabled turn-rules/rules
-    - **[done]** turn-rules ordering rank
-    - **[done]** Event type CRUD
-    - **[done]** Search service
-        - **[done]** (item, event, field, map, rule, turn-rule) search by id (val is string)
-        - **[done]** (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
-        - **[done]** (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
-        - **[done]** (item, event) search property 'p' existence
-        - **[done]** (item, event) search property 'p' default value 'val' (anything)
-        - **[done]** (item) search quantifiable 'val' (boolean)
-        - **[done]** (rule) search 'val' (as string/regexp) in category
-        - **[done]** (turn-rule) search 'val' (as number) in rank
-        - **[done]** (rule, turn-rule) search 'val' (as string/regexp) in body
-    - Authoring service and FSItem
-        - **[done]** get FSItem
-        - **[done]** save FSItem
-        - **[done]** remove FSItem
-        - **[done]** rename/move FSItem
-        - **[done]** service layer
-        - **[done]** web layer
-        - **[done]** commit FSItem on save
-        - get FSItem history
-        - get FSItem version
-    - **[done]** Authoring Service and game deployment
-        - **[done]** compile stylus, coffee and optimize js and css
-        - **[done]** move to production path and create unic url for resources
-        - **[done]** compact git history and create version
-        - **[done]** revert to previous version
-        - **[done]** list existing versions and current
-        - **[done]** allow/block non-administrator login
-        - **[done]** return current version and deployed version
-        - **[done]** restrict game dev to administors
-        - **[done]** serve production version with cache and gzip
+    - Rule engine
+        - secured rules > mock save() and remove() methods from instances, collection and update() from classes
+        - transactional behaviour
     - Security
-        - **[done]** kick users after inactivity
-        - **[done]** register users from Google
-        - **[done]** register users from Twitter
         - register users from Facebook
-        - **[done]** register user manually
-        - **[done]** enforce user existence and rights at socket.io handshake
-        - **[done]** disable security for tests
-        - **[done]** re-authent user after disconnection
-        - **[done]** manual user logout 
-        - **[done]** session expiration
-        - **[done]** restrict rheia access to administrators only
-        - **[done]** test password management of manually registered players
-
     - test images for field types and event types
-    - bugs
-        - **[done]** remove item type property does not update existing items
 
 - Rheia
-    - bugs
-        - **[done]** spaces inside tab names 
-        - **[done]** rule with category appears in turnRules in search results
-        - **[done]** browser do not retain passwords
-    - **[done]** perspective loader
-    - **[done]** login page
-    - **[done]** logout button
-    - **[done]** error reporting on network failure, kick and deployement in progress cases
     - moderation perspective
         - Players
             - player CRUD
@@ -113,78 +16,183 @@
             - input query with help and validation
             - display result and navigates
     - authoring perspective
-        - **[done]**error handling while saving/moving/removing files (during deployement)
         - multiple file search & replace
         - single file search & replace
         - History
             - display file's history
             - display folder's removed files
             - revert to file version
-        - **[done]** Perspective
-            - **[done]** file tab widget
-            - **[done]** create new file/folder
-            - **[done]** upload in selected
-            - **[done]** rename selected
-            - **[done]** delete selected
-        - **[done]** File Explorer
-            - **[done]** items loading
-            - **[done]** items navigation and selection
-            - **[done]** update when item added or removed
-            - **[done]** contextual menu
-        - **[done]** File View
-            - **[done]** action bar (save, delete)
-            - **[done]** editor widget
-            - **[done]** loading/save content
-            - **[done]** external modification/removal notification
-            - **[done]** displays images
     - edition perspective
-        - **[done]** contextual menus in search and explorer
         - Maps
             - diamond map widget
             - square map widget
-            - **[done]** map name and validation
-            - **[done]** map kind (square, diamond, hexa)
-            - **[done]** hexagonal map widget
-            - **[done]** drag'n drop from explorer
-            - **[done]** remove selection
-            - **[done]** display/hide grid
-            - **[done]** zoom in, zoom out
-            - **[done]** selection with Ctrl
-            - **[done]** selection with Shift
-            - **[done]** multiple affectation
-            - **[done]** zoom, toggle markers and toggle grid commands
-        - **[done]** Search
-            - **[done]** input query with help and validation
-            - **[done]** display result and navigates
-        - **[done]** auto-adjust panel top when tabs are added/removed and when window is resized
         - ItemType
-            - **[done]** static fields and description image
-            - **[done]** properties
-            - **[done]** instance images
-            - **[done]** sprites
-            - **[done]** validation
             - categories ?
             - playable status ?
-        - **[done]** EventType
-        - **[done]** FieldType
-            - **[done]** static fields and description image
-            - **[done]** instance images
-            - **[done]** image carousel in explorer
-        - **[done]** Rule
-            - **[done]** categories in explorer
-            - **[done]** static fields (name, category) with validation
-            - **[done]** rule body
-            - **[done]** rule CRUD
-            - **[done]** rule special behaviour when renaming
-        - **[done]** TurnRule
-    - **[done]** administration perspective
-        - **[done]** create and restore game client versions
-        - **[done]** display externally triggered deployements
-        - **[done]** game client version list 
-        - **[done]** deploy, commit and rollback
-        - **[done]** error handling on AdminService
+- Atlas
+    - dynamic properties resolution
 
-# Changes
+# Done
+
+- Hyperion
+    - bugs
+        - remove item type property does not update existing items
+    - ImageService to upload and associate images to types
+    - remove all images when removing a type
+    - Field type CRUD
+    - Map CRUD
+    - Field CRUD
+    - disabled turn-rules/rules
+    - turn-rules ordering rank
+    - Event type CRUD
+    - Player CRUD in database
+    - Map items and their types
+        - CRUD in database (Items, Fields, Maps)
+        - Dynamic properties
+            - declaration and enforcement 
+            - type-checking
+            - links resolution at server side
+        - Modifications propagation
+    - Search service
+        - (item, event, field, map, rule, turn-rule) search by id (val is string)
+        - (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
+        - (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
+        - (item, event) search property 'p' existence
+        - (item, event) search property 'p' default value 'val' (anything)
+        - (item) search quantifiable 'val' (boolean)
+        - (rule) search 'val' (as string/regexp) in category
+        - (turn-rule) search 'val' (as number) in rank
+        - (rule, turn-rule) search 'val' (as string/regexp) in body
+    - Authoring service and FSItem
+        - get FSItem
+        - save FSItem
+        - remove FSItem
+        - rename/move FSItem
+        - service layer
+        - web layer
+        - commit FSItem on save
+        - get FSItem history
+        - get FSItem version
+    - Authoring Service and game deployment
+        - compile stylus, coffee and optimize js and css
+        - move to production path and create unic url for resources
+        - compact git history and create version
+        - revert to previous version
+        - list existing versions and current
+        - allow/block non-administrator login
+        - return current version and deployed version
+        - restrict game dev to administors
+        - serve production version with cache and gzip
+    - Security
+        - kick users after inactivity
+        - register users from Google
+        - register users from Twitter
+        - register user manually
+        - enforce user existence and rights at socket.io handshake
+        - disable security for tests
+        - re-authent user after disconnection
+        - manual user logout 
+        - session expiration
+        - restrict rheia access to administrators only
+        - test password management of manually registered players
+    - Rule engine 
+        - file system storage and compilation
+        - runtime resolution and execution at server side
+        - runtime resolution at client side
+        - items creation and removal
+        - items updates
+        - **[done]**turn rules
+    - Web layer
+        - map items CRUD invokation
+        - rule engine invokation
+        - rules retrieval
+        - map items modification propagation
+        - secured websocket
+
+- Rheia
+    - bugs
+        - spaces inside tab names 
+        - rule with category appears in turnRules in search results
+        - browser do not retain passwords
+    - perspective loader
+    - login page
+    - logout button
+    - error reporting on network failure, kick and deployement in progress cases
+    - authoring perspective
+        - **[done]**error handling while saving/moving/removing files (during deployement)
+        - Perspective
+            - file tab widget
+            - create new file/folder
+            - upload in selected
+            - rename selected
+            - delete selected
+        - File Explorer
+            - items loading
+            - items navigation and selection
+            - update when item added or removed
+            - contextual menu
+        - File View
+            - action bar (save, delete)
+            - editor widget
+            - loading/save content
+            - external modification/removal notification
+            - displays images
+    - edition perspective
+        - contextual menus in search and explorer
+        - Maps
+            - map name and validation
+            - map kind (square, diamond, hexa)
+            - hexagonal map widget
+            - drag'n drop from explorer
+            - remove selection
+            - display/hide grid
+            - zoom in, zoom out
+            - selection with Ctrl
+            - selection with Shift
+            - multiple affectation
+            - zoom, toggle markers and toggle grid commands
+        - Search
+            - input query with help and validation
+            - display result and navigates
+        - auto-adjust panel top when tabs are added/removed and when window is resized
+        - ItemType
+            - static fields and description image
+            - properties
+            - instance images
+            - sprites
+            - validation
+        - EventType
+        - FieldType
+            - static fields and description image
+            - instance images
+            - image carousel in explorer
+        - Rule
+            - categories in explorer
+            - static fields (name, category) with validation
+            - rule body
+            - rule CRUD
+            - rule special behaviour when renaming
+        - TurnRule
+    - administration perspective
+        - create and restore game client versions
+        - display externally triggered deployements
+        - game client version list 
+        - deploy, commit and rollback
+        - error handling on AdminService
+
+- Atlas
+    - map displayal
+    - rules resolution
+    - application of map items modifications 
+    - create a new player and display its map
+    - bot mode
+    - transitions
+        - image sprite specification (size, location)
+        - transition duration
+        - transition chain
+        - image cache
+
+# Consequent changes
     - no more distinction between Items and Actors
     - no more event on actors
     - no more link between rules and actors

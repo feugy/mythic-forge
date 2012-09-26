@@ -154,7 +154,7 @@ describe 'Utilities tests', ->
 
     repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
 
-    before (done) ->
+    beforeEach (done) ->
       fs.remove repository, (err) ->
         return done err if err?
         fs.mkdir repository, (err) ->
@@ -196,3 +196,33 @@ describe 'Utilities tests', ->
                   return done err if err?
                   assert.deepEqual _.pluck(history, 'id'), _.pluck tags, 'id'
                   done()
+
+    it 'should quickHistory returns commits with name, author, message and id', (done) ->
+      # given a first commit
+      commit {repo:repo, file: file1, message: 'commit 1', content: 'v1'}, (err) ->
+        return done err if err?
+        # given a second commit on another file
+        commit {repo:repo, file: file2, message: 'commit 2', content: 'v1'}, (err) ->
+          return done err if err?
+
+          # when getting history
+          utils.quickHistory repo, (err, history) ->
+            return done err if err?
+            # then two commits were retrieved
+            assert.equal 2, history?.length
+
+            # then commit details are exact
+            repo.commits (err, commits) ->
+              return done err if err?
+              assert.deepEqual _.pluck(commits, 'id'), _.pluck history, 'id'
+              assert.deepEqual _.chain(commits).pluck('author').pluck('name').value(), _.pluck history, 'author'
+              assert.deepEqual _.pluck(commits, 'message'), _.pluck history, 'message'
+              assert.deepEqual _.pluck(commits, 'committed_date'), _.pluck history, 'date'
+
+              # when getting file history
+              utils.quickHistory repo, file1.replace(repository, '.'), (err, fileHistory) ->
+                return done err if err?
+                # then only one commit was retrieved
+                assert.equal 1, fileHistory?.length
+                assert.deepEqual fileHistory[0], history[1]
+                done()

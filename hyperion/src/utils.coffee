@@ -295,7 +295,7 @@ collapseHistory = (repo, to, callback) ->
       finish()
     else
       # get first commit
-      repo.commits (err, history) ->
+      quickHistory repo, (err, history) ->
         return callback "failed to check history: #{err}" if err?
         from = history.pop().id
         finish()
@@ -324,6 +324,44 @@ quickTags = (repo, callback) ->
         id: line.substring 0, idx
 
     callback null, tags
+
+# The Gift `repo.commits()` is limited to a certain amount of commits, and gets full details.
+# This function just returned tag names and their corresponding ids
+#
+# @param repo [Git] Git tools configured on the right repository
+# @param file [String] allows to specify a file on which retrieving commits. Optionnal
+# @param callback [Function] invokation end function, invoked with
+# @option callback err [String] an error details string, or null if no error occured.
+# @option callback history [Array] an array of commits (may be empty) containing for each tag an object with `author`, `message`, `date` and `id` attributes
+quickHistory = (repo, file, callback) ->
+  unless callback?
+    callback = file
+    file = []
+  else
+    file = ['--', file]
+
+  repo.git 'log', {format:'format:"%H %at %aN|%s"'}, file,  (err, stdout, stderr) =>
+    # ignore error code 1: means no match
+    err = null if err?.code is 1
+    return callback "failed to read history: #{err} #{stderr}" if err?
+    history = []
+
+    # parse output that is commit id followed by tag name, with refs/tags/ prefix
+    lines = stdout.split '\n'
+    for line in lines
+      sep1 = line.indexOf ' '
+      sep2 = line.indexOf ' ', sep1+1
+      sep3 = line.indexOf '|', sep2+1
+      continue unless sep1 isnt -1 and sep2 isnt -1 and sep3 isnt -1
+      date = new Date()
+      date.setTime Number "#{line.substring sep1+1, sep2}000"
+      history.push 
+        id: line.substring 0, sep1
+        date: date
+        author: line.substring sep2+1, sep3
+        message: line.substring sep3+1
+
+    callback null, history
 
 # Initialize game source folder and its git repository.
 # 
@@ -367,4 +405,5 @@ module.exports =
   enhanceI18n: enhanceI18n
   collapseHistory: collapseHistory
   quickTags: quickTags
+  quickHistory: quickHistory
   initGameRepo: initGameRepo

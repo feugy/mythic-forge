@@ -287,7 +287,7 @@ class _DeployementService
       tagIds = _.pluck tags, 'id'
      
       # get history
-      repo.commits (err, history) =>
+      utils.quickHistory repo, (err, history) =>
         return callback "Failed to consult history: #{err}" if err?
 
         result = 
