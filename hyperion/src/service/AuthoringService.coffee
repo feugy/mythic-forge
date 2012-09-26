@@ -309,7 +309,7 @@ purge = (err) ->
 getAuthor = (player) ->
   firstName = player.get('firstName') or ''
   lastName = player.get('lastName') or ''
-  lastName = 'unknown' unless lastName or firstName
+  lastName = player.get 'email' unless lastName or firstName
   email = player.get 'email'
   email += '@unknown.org' unless -1 isnt email.indexOf '@'
   "#{firstName} #{lastName} <#{email}>"

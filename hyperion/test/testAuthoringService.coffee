@@ -67,7 +67,7 @@ describe 'AuthoringService tests', ->
           return done "Failed to check git log: #{err}" if err?
           assert.equal 1, history.length
           commit = history[0]
-          assert.equal commit.author.name, 'unknown'
+          assert.equal commit.author.name, 'admin'
           assert.equal commit.author.email, 'admin@unknown.org'
           assert.equal commit.message, 'save'
 
@@ -205,7 +205,7 @@ describe 'AuthoringService tests', ->
               assert.equal notif[2].message, history[0].message
 
               async.forEach history, (commit, next) ->
-                assert.equal commit.author.name, 'unknown'
+                assert.equal commit.author.name, 'admin'
                 assert.equal commit.author.email, 'admin@unknown.org'
                 assert.equal commit.message, 'save'
                 commit.tree().find "#{gitRoot}/#{file.path.replace '\\', '/'}", (err, obj) ->
@@ -236,7 +236,7 @@ describe 'AuthoringService tests', ->
         assert.ok file.equals read
         for i in [0..1]
           assert.instanceOf history[i].date, Date
-          assert.equal 'unknown', history[i].author
+          assert.equal 'admin', history[i].author
         assert.deepEqual ['save', 'save'], _.pluck history, 'message'
         done()
 
@@ -260,7 +260,7 @@ describe 'AuthoringService tests', ->
                 return done "Failed to check git log: #{err}" if err?
                 assert.equal 3, history.length
                 commit = history[0]
-                assert.equal commit.author.name, 'unknown'
+                assert.equal commit.author.name, 'admin'
                 assert.equal commit.author.email, 'admin@unknown.org'
                 assert.equal commit.message, 'move'
 
@@ -303,7 +303,7 @@ describe 'AuthoringService tests', ->
             return done "Failed to check git log: #{err}" if err?
             assert.equal 4, history.length
             commit = history[0]
-            assert.equal commit.author.name, 'unknown'
+            assert.equal commit.author.name, 'admin'
             assert.equal commit.author.email, 'admin@unknown.org'
             assert.equal commit.message, 'remove'
             commit.tree().find "#{gitRoot}/#{file.path.replace '\\', '/'}", (err, obj) ->

@@ -48,6 +48,7 @@ define [
       # history() and readVersion() handlers
       sockets.admin.on 'history-resp', @_onHistory
       sockets.admin.on 'readVersion-resp', @_onReadVersion
+      sockets.admin.on 'authoring', @_onNewVersion
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -135,6 +136,22 @@ define [
       super className, model, options
 
     # **private**
+    # Invoked when a message of a new commit is received.
+    # Update the corresponding FSItem if found, and triggers its `history` event.
+    #
+    # @param event [String] kind of version event.
+    # @param path [String] concerned FSItem path
+    # @param commit [Object] commit object, with `author`, `date`, `message` and `id` fields
+    _onNewVersion: (event, path, commit) =>
+      return unless event is 'committed'
+      item = @get path
+      if item?
+        item.history = [] unless item.history?
+        commit.date = new Date commit.date
+        item.history.splice 0, 0, commit
+        item.trigger 'history', item
+
+    # **private**
     # File history retrieval handler. 
     # Triggers an 'history' event on the concerned FSItem after having filled its history attribute
     # Wired on collection to avoid multiple listeners. 
@@ -144,7 +161,7 @@ define [
     # @param history [Array] array of commits, containing `author`, `date`, `id` and `message` attributes
     _onHistory: (err, item, history) =>
       return rheia.router.trigger 'serverError', err, method:"FSItem.fetchHistory" if err? 
-      item = @get(item.path)
+      item = @get item.path
       if item?
         item.history = history
         # reconstruct dates

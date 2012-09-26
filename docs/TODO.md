@@ -16,12 +16,9 @@
             - input query with help and validation
             - display result and navigates
     - authoring perspective
+        - reload when changing game client version
         - multiple file search & replace
         - single file search & replace
-        - History
-            - display file's history
-            - display folder's removed files
-            - revert to file version
     - edition perspective
         - Maps
             - diamond map widget
@@ -119,7 +116,7 @@
     - logout button
     - error reporting on network failure, kick and deployement in progress cases
     - authoring perspective
-        - **[done]**error handling while saving/moving/removing files (during deployement)
+        - error handling while saving/moving/removing files (during deployement)
         - Perspective
             - file tab widget
             - create new file/folder
@@ -137,6 +134,9 @@
             - loading/save content
             - external modification/removal notification
             - displays images
+        - History
+            - display file's history
+            - revert to file version
     - edition perspective
         - contextual menus in search and explorer
         - Maps
