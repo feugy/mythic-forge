@@ -98,6 +98,12 @@ define [
         # get the file content, and display when arrived without external warning
         @_saveInProgress = true
         FSItem.collection.fetch item:@model
+      # wire version changes
+      @model.on 'version', @_onChangeVersion
+
+    dispose: =>
+      @model.off 'version', @_onChangeVersion
+      super()
 
     # Returns the view's title
     #
@@ -165,3 +171,16 @@ define [
         return @trigger 'close'
       # superclass behaviour
       super removed
+
+    # **private**
+    # Wired to FSItem version changes. Update editor if current model have been changed
+    # 
+    # @param item [FSItem] concerned item
+    # @param content [String] utf8 encoded content.
+    _onChangeVersion: (item, content) =>
+      return unless @model.equals item
+      # update content
+      @model.set 'content', content
+      # and refresh rendering
+      @_saveInProgress = true
+      @_onSaved @model

@@ -162,11 +162,11 @@ describe 'AuthoringService tests', ->
           done()
 
     it 'should file content be read at last version', (done) -> 
-      service.history file, (err, history) ->
+      service.history file, (err, read, history) ->
         return done err if err?
 
         # when reading the file at last version
-        service.readVersion file, history[0].id, (err, content) ->
+        service.readVersion file, history[0].id, (err, read, content) ->
           return done "Cannot read file at version: #{err}" if err?
           # then read data is correct
           fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
@@ -216,11 +216,11 @@ describe 'AuthoringService tests', ->
               , done
 
     it 'should file content be read at first version', (done) -> 
-      service.history file, (err, history) ->
+      service.history file, (err, read, history) ->
         return done err if err?
 
         # when reading the file at first version
-        service.readVersion file, history[1].id, (err, content) ->
+        service.readVersion file, history[1].id, (err, read, content) ->
           return done "Cannot read file at version: #{err}" if err?
           # then read data is correct
           fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
@@ -230,9 +230,10 @@ describe 'AuthoringService tests', ->
 
     it 'should file history be consulted', (done) ->
       # when consulting history for this file
-      service.history file, (err, history) ->
+      service.history file, (err, read, history) ->
         return done "Cannot get history: #{err}" if err?
         assert.equal 2, history.length
+        assert.ok file.equals read
         for i in [0..1]
           assert.instanceOf history[i].date, Date
           assert.equal 'unknown', history[i].author

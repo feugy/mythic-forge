@@ -272,7 +272,7 @@ class _AuthoringService
     # consult file history
     utils.quickHistory repo, pathUtils.join(root, file.path), (err, history) =>
       return callback "Failed to get history on  FSItem are supported: #{err}" if err?
-      callback null, history
+      callback null, file, history
 
   # Retrieves a file content to a given version. Folders do not have history.
   # File content is returned base64 encoded
@@ -295,7 +295,7 @@ class _AuthoringService
     # show file at specified revision
     repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
       return callback "Failed to get version content: #{err}" if err?
-      callback err, new Buffer(stdout, 'binary').toString 'base64'
+      callback err, file, new Buffer(stdout, 'binary').toString 'base64'
 
 #Simple method to remove occurence of the root path from error messages
 purge = (err) -> 

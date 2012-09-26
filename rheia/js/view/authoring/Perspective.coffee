@@ -22,6 +22,7 @@ define [
   'jquery'
   'underscore'
   'backbone'
+  'moment'
   'view/TabPerspective'
   'i18n!nls/common'
   'i18n!nls/authoring'
@@ -31,7 +32,7 @@ define [
   'view/authoring/File'
   'utils/utilities'
   'utils/validators'
-], ($, _, Backbone, TabPerspective, i18n, i18nAuthoring, template, FSItem, FileExplorer, FileView, utils, validators) ->
+], ($, _, Backbone, moment, TabPerspective, i18n, i18nAuthoring, template, FSItem, FileExplorer, FileView, utils, validators) ->
 
   i18n = $.extend true, i18n, i18nAuthoring
 
@@ -75,6 +76,14 @@ define [
     _removeButton: null
 
     # **private**
+    # Selector that displays current file history list.
+    _historyList: null
+
+    # **private**
+    # 1 second timeout before getting history of currently displayed file
+    _historyTimeout: null
+
+    # **private**
     # FSItem created to catch server error while creating
     _createInProgress: null
 
@@ -90,6 +99,9 @@ define [
       @bindTo @_explorer, 'remove', @_onRemove
       @bindTo rheia.router, 'serverError', @_onServerError
       @bindTo FSItem.collection, 'add', @_onItemCreated
+      # removes history update handler
+      @bindTo FSItem.collection, 'remove', (item) => 
+        item.off 'history', @_onUpdateHistory
 
     # The `render()` method is invoked by backbne to display view content at screen.
     # oInstanciate bar buttons.
@@ -97,7 +109,7 @@ define [
       super()
       # update button bar on tab change, but after a slight delay to allow internal update when 
       # tab is removed
-      @_tabs.element.on 'tabsselect', => setTimeout (=> @_onUpdateFileBar()), 0
+      @_tabs.element.on 'tabsselect', => setTimeout (=> @_onUpdateFileBar(true)), 0
 
       # render the explorer on the left
       @$el.find('> .left').append @_explorer.render().$el
@@ -152,6 +164,10 @@ define [
 
       # bind file upload
       @$el.find('.file-upload > input').on 'change', @_onFileChoosen
+
+      # get the history selector
+      @_historyList = @$el.find '.action-bar select'
+      @_historyList.on 'change', @_onRequireVersion
 
       # first selection
       @_onSelect null, null
@@ -237,6 +253,9 @@ define [
       
       # bind changes to update tab
       view.on 'change', @_onUpdateFileBar
+      view.model.on 'history', @_onUpdateHistory
+      view.model.on 'version', @_onChangeVersion
+      @_onUpdateFileBar true
 
     # **private**
     # Item creation/move handler: prompt for name, creates the FSItem and opens it if it's a file, or moves the FSItem
@@ -313,14 +332,28 @@ define [
         ]
 
     # **private**
-    # Current edited file change handler: updates the button bar consequently
-    _onUpdateFileBar: =>
+    # Current edited file change handler: updates the button bar consequently, with history selector.
+    #
+    # @param withHistory [Boolean] true to retrieve file history. Default to false
+    _onUpdateFileBar: (withHistory = false)=>
+      clearTimeout @_historyTimeout if @_historyTimeout and withHistory is true
+       
       @_saveButton._setOption 'disabled', true
       @_removeButton._setOption 'disabled', true
       if @_tabs.options.selected isnt -1
         view = @_views[@_tabs.options.selected]
         @_saveButton._setOption 'disabled', !view.canSave()
         @_removeButton._setOption 'disabled', !view.canRemove()
+
+        # disable history if modification pending, and get history if needed
+        if view.canSave()
+          @_historyList.attr 'disabled', 'disabled'
+        else
+          @_historyList.removeAttr 'disabled'
+
+        if withHistory is true
+          @_historyList.empty()
+          @_historyTimeout = setTimeout (-> view.model.fetchHistory()), 1000
 
     # **private**
     # Selection handler inside the file explorer.
@@ -371,3 +404,29 @@ define [
 
       # read data from file as base64 string
       reader.readAsDataURL file
+
+    # **private**
+    # File history retrieval handler. If file is still displayed as first tab, update the selector content.
+    #
+    # @param file [FSItem] the file on which history have been retrieved
+    _onUpdateHistory: (file) =>
+      # no view displayed
+      return if @_tabs.options.selected is -1
+      displayed = @_views[@_tabs.options.selected].model
+      # not the current file
+      return unless displayed.equals file
+      # cleans an redraw history selector content
+      @_historyList.empty()
+      html = ""
+      for commit in file.history
+        date = moment(commit.date).format i18n.constants.dateFormat
+        html += "<option value='#{commit.id}'>#{_.sprintf i18n.labels.commitDetails, date, commit.author}</option>" 
+      @_historyList.append html
+
+    # **private**
+    # File history change handler. Immediately ask versionned content to server.
+    _onRequireVersion: =>
+      return if @_tabs.options.selected is -1
+      version = @_historyList.find(':selected').val()
+      item = @_views[@_tabs.options.selected].model
+      item.fetchVersion version

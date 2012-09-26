@@ -22,5 +22,6 @@ define
   root: 
     constants:
       fieldAffectation: 'affectField'
+      dateFormat: 'YY/MM/DD HH:mm:ss'
     TOTRANSLATE: true    
 

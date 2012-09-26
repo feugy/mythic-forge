@@ -45,6 +45,9 @@ define [
       sockets.admin.on 'move-resp', (err) =>
         return rheia.router.trigger 'serverError', err, method:"FSItem.sync", details:'move' if err? 
         @moveInProgress = false
+      # history() and readVersion() handlers
+      sockets.admin.on 'history-resp', @_onHistory
+      sockets.admin.on 'readVersion-resp', @_onReadVersion
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -131,6 +134,37 @@ define [
       options.move= true if @moveInProgress
       super className, model, options
 
+    # **private**
+    # File history retrieval handler. 
+    # Triggers an 'history' event on the concerned FSItem after having filled its history attribute
+    # Wired on collection to avoid multiple listeners. 
+    #
+    # @param err [String] error string, or null if no error occured
+    # @param item [FSItem] raw concerned FSItem
+    # @param history [Array] array of commits, containing `author`, `date`, `id` and `message` attributes
+    _onHistory: (err, item, history) =>
+      return rheia.router.trigger 'serverError', err, method:"FSItem.fetchHistory" if err? 
+      item = @get(item.path)
+      if item?
+        item.history = history
+        # reconstruct dates
+        commit.date = new Date commit.date for commit in history
+        item.trigger 'history', item
+
+    # **private**
+    # File version retrieval handler. 
+    # Triggers an 'version' event on the concerned FSItem with its content as parameter
+    # Wired on collection to avoid multiple listeners. 
+    #
+    # @param err [String] error string, or null if no error occured
+    # @param item [FSItem] raw concerned FSItem
+    # @param content [String] utf8 encoded file content
+    _onReadVersion: (err, item, content) =>
+      return rheia.router.trigger 'serverError', err, method:"FSItem.fetchVersion" if err? 
+      item = @get(item.path)
+      if item?
+        item.trigger 'version', item, atob content
+
   # Modelisation of a single File System Item.
   class FSItem extends Base.Model
 
@@ -148,6 +182,9 @@ define [
     # File extension, if relevant
     extension: ''
 
+    # File history. Null until retrieved with `fetchHistory()`
+    history: null
+
     # FSItem constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.
@@ -160,6 +197,22 @@ define [
     move: (newPath) =>
       FSItem.collection.moveInProgress = true
       sockets.admin.emit 'move', @_serialize(), newPath
+
+    # fetch history on server, only for files
+    # an `history` event will be triggered on model once retrieved
+    fetchHistory: =>
+      return if @get 'isFolder'
+      console.debug "fetch history for #{@id}"
+      sockets.admin.emit 'history', @_serialize()
+
+    # fetch a given version on server, only for files.
+    # an `version` event will be triggered on model once retrieved
+    #
+    # @param version [String] retrieved version id 
+    fetchVersion: (version) =>
+      return if @get 'isFolder'
+      console.debug "fetch version #{version} for #{@id}"
+      sockets.admin.emit 'readVersion', @_serialize(), version
 
     # **private** 
     # Method used to serialize a model when saving and removing it

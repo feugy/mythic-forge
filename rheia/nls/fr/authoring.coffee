@@ -34,6 +34,8 @@ define
     openFSItem: 'Ouvrir "%s"'
     renameFSItem: 'Renommer "%s"'
     removeFSItem: 'Supprimer "%s"'
+    commitDetails: '%s par %s'
+    history: 'historique'
 
   msgs:
     newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b> :'

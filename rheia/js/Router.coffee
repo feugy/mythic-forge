@@ -38,6 +38,7 @@ requirejs.config
     'md5': 'lib/md5-2.2-min'
     'html5slider': 'lib/html5slider-min'
     'hogan': 'lib/hogan-2.0.0-min'
+    'moment': 'lib/moment-1.7.0-min'
     'ace': 'lib/ace'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
@@ -72,6 +73,8 @@ requirejs.config
       exports: 'Hogan'
     'queryparser':
       exports: 'QueryParser'
+    'moment':
+      exports: 'moment'
 
 # initialize rheia global namespace
 window.rheia = {}
