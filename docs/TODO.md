@@ -6,6 +6,8 @@
         - transactional behaviour
     - Security
         - register users from Facebook
+    - Authoring Service
+        - get history when moving FSItem
     - test images for field types and event types
 
 - Rheia
@@ -16,7 +18,6 @@
             - input query with help and validation
             - display result and navigates
     - authoring perspective
-        - reload when changing game client version
         - multiple file search & replace
         - single file search & replace
     - edition perspective
@@ -116,6 +117,7 @@
     - logout button
     - error reporting on network failure, kick and deployement in progress cases
     - authoring perspective
+        - reload when changing game client version
         - error handling while saving/moving/removing files (during deployement)
         - Perspective
             - file tab widget

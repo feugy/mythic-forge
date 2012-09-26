@@ -93,7 +93,7 @@ describe 'Utilities tests', ->
             return done "Failed to consult commits: #{err}" if err?
             # then last two commits where collapsed
             assert.equal 2, history.length
-            assert.equal history[0].message, "collapse for #{tag1}"
+            assert.equal history[0].message, "#{tag1}"
             assert.equal history[1].message, 'commit 1'
 
             # then a tag was added
@@ -126,7 +126,7 @@ describe 'Utilities tests', ->
 
             # then last three commits where collapsed
             assert.equal 3, history.length
-            assert.equal history[0].message, "collapse for #{tag2}"
+            assert.equal history[0].message, "#{tag2}"
 
             # then a tag was added
             repo.tags (err, tags) ->

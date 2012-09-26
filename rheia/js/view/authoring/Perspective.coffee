@@ -98,6 +98,12 @@ define [
       @bindTo @_explorer, 'create', @_onChooseFileName
       @bindTo @_explorer, 'remove', @_onRemove
       @bindTo rheia.router, 'serverError', @_onServerError
+      @bindTo FSItem.collection, 'reset', =>
+        # removes all views
+        while @_views.length > 0
+          @_forceClose
+          @_views[0].model.off 'history', @_onUpdateHistory
+          @tryCloseTab @_views[0]
       @bindTo FSItem.collection, 'add', @_onItemCreated
       # removes history update handler
       @bindTo FSItem.collection, 'remove', (item) => 
@@ -420,7 +426,7 @@ define [
       html = ""
       for commit in file.history
         date = moment(commit.date).format i18n.constants.dateFormat
-        html += "<option value='#{commit.id}'>#{_.sprintf i18n.labels.commitDetails, date, commit.author}</option>" 
+        html += "<option value='#{commit.id}'>#{_.sprintf i18n.labels.commitDetails, date, commit.author, commit.message}</option>" 
       @_historyList.append html
 
     # **private**

@@ -34,7 +34,7 @@ define
     openFSItem: 'Ouvrir "%s"'
     renameFSItem: 'Renommer "%s"'
     removeFSItem: 'Supprimer "%s"'
-    commitDetails: '%s par %s'
+    commitDetails: '%3$s: %1$s (%2$s)'
     history: 'historique'
 
   msgs:
@@ -45,7 +45,7 @@ define
     removeFileConfirm: "<p>Voulez-vous vraiment supprimer le fichier <b>%s</b> ?</p>"
     removeFolderConfirm: "<p>Voulez-vous vraiment supprimer le dosser <b>%s</b> et tout son contenu ?</p>"
     closeFileConfirm: "<p>Vous avez modifié le fichier <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
-    fsItemCreationFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
+    fsItemCreationFailed: "<p><b>%1$s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2$s</p>" 
 
   tips:
     newFolder: 'Crée un nouveau dossier dans le dossier séléctioné ou la racine'

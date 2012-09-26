@@ -279,7 +279,7 @@ collapseHistory = (repo, to, callback) ->
         # now we can add and remove everything in only one commit
         repo.add [], all:true, (err, stdout, stderr) ->
           return callback "failed to add the working copy: #{err}" if err?
-          repo.commit "collapse for #{to}", all:true, (err, stdout, stderr) ->
+          repo.commit "#{to}", all:true, (err, stdout, stderr) ->
             # ignore warnings about empty working copy
             err = null if err? and -1 isnt stdout?.indexOf 'nothing to commit'
             return callback "failed to commit the working copy: #{err}" if err?

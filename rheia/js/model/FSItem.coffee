@@ -49,6 +49,10 @@ define [
       sockets.admin.on 'history-resp', @_onHistory
       sockets.admin.on 'readVersion-resp', @_onReadVersion
       sockets.admin.on 'authoring', @_onNewVersion
+      sockets.admin.on 'deployement', (state) =>
+        return unless state is 'VERSION_RESTORED'
+        # totally clean collection 
+        @fetch()
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
