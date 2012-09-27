@@ -70,6 +70,7 @@
         - get FSItem history
         - get FSItem version
         - keep history when moving FSItem
+        - list deleted files
     - Authoring Service and game deployment
         - compile stylus, coffee and optimize js and css
         - move to production path and create unic url for resources

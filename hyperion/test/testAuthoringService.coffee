@@ -135,6 +135,7 @@ describe 'AuthoringService tests', ->
 
   describe 'given an existing file', ->
     file = null
+    oldPath = null
 
     before (done) ->
       fs.remove repo, (err) ->
@@ -322,6 +323,15 @@ describe 'AuthoringService tests', ->
               return done "Failed to check git details: #{err}" if err?
               assert.isNull obj
               done()
+
+    it 'should removed file appears in restorable list', (done) ->
+      # when consulting history for this file
+      service.restorables (err, restorables) ->
+        return done "Cannot get restorables: #{err}" if err?
+        assert.equal 2, restorables.length
+        assert.ok restorables[0].item.equals file, 'deleted file not found as first restorable'
+        assert.ok restorables[1].item.equals {path: oldPath}, 'moved file not found as second restorable'
+        done()
 
   describe 'given an existing folder', ->
     folder = null

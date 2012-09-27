@@ -274,6 +274,25 @@ class _AuthoringService
       return callback "Failed to get history on  FSItem are supported: #{err}" if err?
       callback null, file, history
 
+  # Retrieves all files that have been deleted in repository.
+  #
+  # @param callback [Function] end callback, invoked with two arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback restorables [Array] array of restorable FSItems. (may be empty). For each item contains an object with `id`and `item` attributes
+  restorables: (callback) =>
+    utils.listRestorables repo, (err, restorables) =>
+      return callback "Failed to get restorable list: #{err}" if err?
+      results = []
+
+      parent = root.replace repo.path, ''
+      for restorable in restorables
+        results.push 
+          # make path relative to file root, not git repository
+          item: new FSItem {isFolder: false, path: restorable.path.substring parent.length}
+          id: restorable.id
+
+      callback err, results
+
   # Retrieves a file content to a given version. Folders do not have history.
   # File content is returned base64 encoded
   #

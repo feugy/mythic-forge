@@ -345,7 +345,8 @@ quickHistory = (repo, file, callback) ->
 
   repo.git 'log', options, file, (err, stdout, stderr) =>
     # ignore error code 1: means no match
-    err = null if err?.code is 1
+    # ignore error code 128: bad revision when repository is empty
+    err = null if err?.code is 1 or err?.code is 128
     return callback "failed to read history: #{err} #{stderr}" if err?
     history = []
 
@@ -365,6 +366,44 @@ quickHistory = (repo, file, callback) ->
         message: line.substring sep3+1
 
     callback null, history
+
+# Utility to list all path of a git repository that have been deleted and could be restored.
+#
+# @param repo [Git] Git tools configured on the right repository
+# @param callback [Function] invokation end function, invoked with
+# @option callback err [String] an error details string, or null if no error occured.
+# @option callback restorables [Array] an array of objects (may be empty) containing `path` and `id` attributes
+listRestorables = (repo, callback) ->
+  # git log --diff-filter=D --name-only --pretty=format:"%H"
+  repo.git 'log', {'diff-filter': 'D', 'name-only': true, pretty:'format:"%H"'}, (err, stdout, stderr) =>
+    # ignore error code 1: means no match
+    # ignore error code 128: bad revision when repository is empty
+    err = null if err?.code is 1 or err?.code is 128
+    return callback "failed to read restorables: #{err} #{stderr}" if err?
+    restorables = []
+
+    # parse output that is commit id followed by multiple lines containing paths
+    # an empty line distinguish from next commit
+    lines = stdout.split '\n'
+    commitId = null
+    paths = []
+
+    putInRestorables = =>
+      restorables.push id: commitId, path: path for path in paths
+      commitId = null
+      paths = []
+
+    for line in lines
+      if commitId is null
+        commitId = line 
+      else if line is ''
+        # all lines of this commit were found
+        putInRestorables()
+      else
+        paths.push line
+    putInRestorables()
+
+    callback null, restorables
 
 # Initialize game source folder and its git repository.
 # 
@@ -409,4 +448,5 @@ module.exports =
   collapseHistory: collapseHistory
   quickTags: quickTags
   quickHistory: quickHistory
+  listRestorables: listRestorables
   initGameRepo: initGameRepo

@@ -27,11 +27,17 @@ assert = require('chai').assert
 
 # The commit utility change file content, adds it and commit it
 commit = (spec, done) ->
-  fs.writeFile spec.file, spec.content, (err) ->
+  spec.file = [spec.file] unless Array.isArray spec.file
+  spec.content = [spec.content] unless Array.isArray spec.content
+
+  async.forEach _.zip(spec.file, spec.content), (fileAndContent, next) ->
+    fs.writeFile fileAndContent[0], fileAndContent[1], (err) ->
+      return next err if err?
+      spec.repo.add fileAndContent[0].replace(repository, '.'), (err) ->
+        next err
+  , (err) ->
     return done err if err?
-    spec.repo.add spec.file.replace(repository, '.'), (err) ->
-      return done err if err?
-      spec.repo.commit spec.message, all:true, done
+    spec.repo.commit spec.message, all:true, done
 
 repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
 repo = null
@@ -226,3 +232,41 @@ describe 'Utilities tests', ->
                 assert.equal 1, fileHistory?.length
                 assert.deepEqual fileHistory[0], history[1]
                 done()
+
+    it 'should listRestorables returns deleted files', (done) ->
+      # given two commited files
+      commit {repo:repo, file: [file1, file2], message: 'commit 1', content: ['v1', 'v1']}, (err) ->
+        return done err if err?
+        # given another commit on first file
+        commit {repo:repo, file: file1, message: 'commit 2', content: 'v2'}, (err) ->
+          return done err if err?
+          # given those files removed and commited
+          async.forEach [file1, file2], fs.remove, (err) ->
+            return done err if err?
+            repo.commit 'commit 3', all:true, (err) ->
+              return done err if err?
+
+              # when listing restorables
+              utils.listRestorables repo, (err, restorables) ->
+                return done err if err?
+                # then both files are presents
+                assert.equal 2, restorables?.length
+                paths = _.pluck restorables, 'path'
+                assert.include paths, file1.replace(repository, '').substring 1
+                assert.include paths, file2.replace(repository, '').substring 1
+                ids = _.pluck restorables, 'id'
+                assert.equal ids[0], ids[1]
+                done()
+
+    it 'should listRestorables returns nothing without deletion', (done) ->
+      # given a commited files
+      commit {repo:repo, file: file2, message: 'commit 1', content: 'v1'}, (err) ->
+        return done err if err?
+
+        # when listing restorable whithout deletion
+        utils.listRestorables repo, (err, restorables) ->
+          return done err if err?
+
+          # then no results returned
+          assert.equal 0, restorables?.length
+          done()
