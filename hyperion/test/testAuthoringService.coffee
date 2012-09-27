@@ -286,6 +286,18 @@ describe 'AuthoringService tests', ->
                     assert.isNull obj
                     done()
 
+    it 'should file history be be kept after move', (done) ->
+      # when consulting history for this file
+      service.history file, (err, read, history) ->
+        return done "Cannot get history: #{err}" if err?
+        assert.equal 3, history.length
+        assert.ok file.equals read
+        for i in [0..1]
+          assert.instanceOf history[i].date, Date
+          assert.equal 'admin', history[i].author
+        assert.deepEqual ['move', 'save', 'save'], _.pluck history, 'message'
+        done()
+
     it 'should file be removed', (done) -> 
       # when removing the file
       service.remove file, 'admin', (err, removed) ->

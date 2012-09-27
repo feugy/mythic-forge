@@ -334,13 +334,16 @@ quickTags = (repo, callback) ->
 # @option callback err [String] an error details string, or null if no error occured.
 # @option callback history [Array] an array of commits (may be empty) containing for each tag an object with `author`, `message`, `date` and `id` attributes
 quickHistory = (repo, file, callback) ->
+  options = format:'format:"%H %at %aN|%s"'
   unless callback?
     callback = file
     file = []
   else
     file = ['--', file]
+    # track renames and removes
+    options.follow = true 
 
-  repo.git 'log', {format:'format:"%H %at %aN|%s"'}, file,  (err, stdout, stderr) =>
+  repo.git 'log', options, file, (err, stdout, stderr) =>
     # ignore error code 1: means no match
     err = null if err?.code is 1
     return callback "failed to read history: #{err} #{stderr}" if err?

@@ -6,8 +6,6 @@
         - transactional behaviour
     - Security
         - register users from Facebook
-    - Authoring Service
-        - get history when moving FSItem
     - test images for field types and event types
 
 - Rheia
@@ -71,6 +69,7 @@
         - commit FSItem on save
         - get FSItem history
         - get FSItem version
+        - keep history when moving FSItem
     - Authoring Service and game deployment
         - compile stylus, coffee and optimize js and css
         - move to production path and create unic url for resources
