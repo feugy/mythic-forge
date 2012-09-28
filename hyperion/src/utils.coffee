@@ -400,8 +400,11 @@ listRestorables = (repo, callback) ->
         # all lines of this commit were found
         putInRestorables()
       else
-        paths.push line
+        paths.push line.replace '"', ''
     putInRestorables()
+
+    # remove multiples occurence of a path and only kept the last one
+    restorables = _.uniq restorables, false, (element) -> element.path
 
     callback null, restorables
 
