@@ -169,7 +169,12 @@ define [
     #
     # @param item [FSItem] added item
     _onAdd: (item) =>
-      return if @_loading
+      # ignore restored items
+      return if @_loading or item.restored
+      # do not add if already present
+      existing = @$el.find "div[data-path='#{item.get('path').replace(/\\/g, '\\\\')}']"
+      return unless existing.length is 0
+
       # evaluate the parent
       parentPath = item.get('path').substring 0, item.get('path').lastIndexOf conf.separator
       if parentPath is ''
@@ -220,7 +225,8 @@ define [
     # 
     # @param item [FSItem] the updated FSItem
     _onUpdate: (item) =>
-      return unless item.get 'isFolder'
+      # for files, use _onAdd
+      return @_onAdd item unless item.get 'isFolder'
       @_loading = false
       # Get the existing folder inside explorer
       path = item.get 'path'

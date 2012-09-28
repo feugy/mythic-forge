@@ -94,8 +94,9 @@ define [
     constructor: (id) ->
       super id, 'file'
       
-      if id?
-        # get the file content, and display when arrived without external warning
+      # only if content is not already loaded
+      unless @model.get('content')?
+        # get the file content, and display it when arrived without external warning
         @_saveInProgress = true
         FSItem.collection.fetch item:@model
       # wire version changes
@@ -109,6 +110,11 @@ define [
     #
     # @return the edited object name.
     getTitle: => @model.id.substring @model.id.lastIndexOf('\\')+1
+
+    # Extension to add special restored state as reason to be saved
+    #
+    # @return the savable status of this object
+    canSave: => @_canSave or @model.restored
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 

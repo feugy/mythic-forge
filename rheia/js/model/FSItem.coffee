@@ -31,6 +31,10 @@ define [
     moveInProgress: false
 
     # **private**
+    # Temporary stores callback of `restorables()` calls
+    _restorablesCallback: []
+
+    # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'FSItem'
       
@@ -40,19 +44,34 @@ define [
     # @param options [Object] unused
     constructor: (model, @options) ->
       super model, options
+      
       # bind consultation response
       sockets.admin.on 'read-resp', @_onRead
       sockets.admin.on 'move-resp', (err) =>
-        return rheia.router.trigger 'serverError', err, method:"FSItem.sync", details:'move' if err? 
+        return rheia.router.trigger 'serverError', err, method:'FSItem.sync', details:'move' if err? 
         @moveInProgress = false
+
       # history() and readVersion() handlers
       sockets.admin.on 'history-resp', @_onHistory
       sockets.admin.on 'readVersion-resp', @_onReadVersion
       sockets.admin.on 'authoring', @_onNewVersion
+
       sockets.admin.on 'deployement', (state) =>
         return unless state is 'VERSION_RESTORED'
         # totally clean collection 
         @fetch()
+
+      sockets.admin.on 'restorables-resp', (err, restorables) =>
+        if err?
+          rheia.router.trigger 'serverError', err, method:'FSItem.restorables' 
+          restorables = []
+        else
+          # build FSItems
+          restorable.item = new FSItem restorable.item for restorable in restorables
+
+        # invoke all registered callbacks
+        callback restorables for callback in @_restorablesCallback
+        @_restorablesCallback = []
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -68,6 +87,15 @@ define [
       return sockets.admin.emit 'list', 'FSItem' unless item?
       # Or read the item
       return sockets.admin.emit 'read', item._serialize()
+
+    # List all restorables files
+    #
+    # @param callback [Function] end callback, invoked with
+    # @option callback restorables [Array] an array (may be empty) containing for each restorable file an objects with `item` and `id` attributes
+    restorables: (callback) =>
+      # stores callback and ask to server if we have one callback. 
+      @_restorablesCallback.push callback
+      sockets.admin.emit 'restorables' if @_restorablesCallback.length is 1
 
     # **private**
     # End of a FSItem content retrieval. For a folder, adds its content. For a file, triggers an update.
@@ -97,12 +125,19 @@ define [
     # @param model [Object] created model.
     _onAdd: (className, model) =>
       return unless className is @_className
-      # transforms from base64 to utf8 string
-      model.content = atob model.content unless model.isFolder or model.content is null
-      super className, model
+      
+      # manage restored state
+      existing = @get model.path
+      if existing?
+        existing.restored = false
+        @_onUpdate className, model
+      else
+        # transforms from base64 to utf8 string
+        model.content = atob model.content unless model.isFolder or model.content is null
+        super className, model
 
     # **private**
-    # Enhanced to dencode file content from base64.
+    # Enhanced to decode file content from base64.
     #
     # @param className [String] the modified object className
     # @param changes [Object] new changes for a given model.
@@ -203,6 +238,9 @@ define [
     # File extension, if relevant
     extension: ''
 
+    # Special status to indicate this FSItem in restoration.
+    restored: false
+
     # File history. Null until retrieved with `fetchHistory()`
     history: null
 
@@ -211,6 +249,8 @@ define [
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes
+      restored = false
+      history = null
       # update file extension
       @extension = @get('path').substring(@get('path').lastIndexOf('.')+1).toLowerCase() unless @get 'isFolder'
 

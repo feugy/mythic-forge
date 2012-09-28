@@ -45,6 +45,7 @@ define
     deployementInProgress: 'déploiement...'
 
   buttons:
+    close: 'Fermer'
     create: 'Créer'
     login: 'Entrer'
     google: 'Google'

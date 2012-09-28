@@ -11,6 +11,11 @@ This is the configuration I set up to work properly.
   2. OnSaveBuild
   3. CoffeeScript
 
+# Git
+On windows, you'll need to desactivate non-ascii management :
+
+  git config --global core.quotepath off
+
 # Install node-gyp
 
 Some dependencies (especially Zombie, the headless browser) need a platforme-dependent build.

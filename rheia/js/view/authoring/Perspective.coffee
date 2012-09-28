@@ -159,14 +159,20 @@ define [
         tip: i18n.tips.removeFile
         handler: @_onRemoveHotKey
         attribute: '_removeButton'
+      ,
+        icon: 'restore'
+        tip: i18n.tips.restorables
+        disabled: false
+        handler: => FSItem.collection.restorables @_onDisplayRestorables
       ]
       for spec in buttons
-        @[spec.attribute] = @$el.find(".action-bar .#{spec.icon}").button(
+        button = @$el.find(".action-bar .#{spec.icon}").button(
           icons:
             primary: "small #{spec.icon}"
           text: false
-          disabled: true
+          disabled: if spec.disabled? then spec.disabled else true
         ).attr('title', spec.tip).click(spec.handler).data 'button'
+        @[spec.attribute] = button if spec.attribute?
 
       # bind file upload
       @$el.find('.file-upload > input').on 'change', @_onFileChoosen
@@ -436,3 +442,53 @@ define [
       version = @_historyList.find(':selected').val()
       item = @_views[@_tabs.options.selected].model
       item.fetchVersion version
+
+    # **private**
+    # Display list of restorable files inside a popup
+    #
+    # @param restorables [Array] array of restorables files (may be empty)
+    _onDisplayRestorables: (restorables) =>
+      return if $('#restorablesPopup').length isnt 0
+
+      # displays a popup
+      html = """<div id='restorablesPopup' title='#{i18n.titles.restorables.replace /'/g, '&apos;'}'>
+        #{i18n.msgs[if restorables.length is 0 then 'noRestorables' else 'restorables']}"""
+
+      if restorables.length
+        html += '<ul>'
+        html += "<li>#{restorable.item.get 'path'}</li>" for restorable in restorables
+        html += '</ul>'
+
+      html += '</div>'
+
+      buttonSpec = [
+        text: i18n.buttons.close
+        icons:
+          primary: 'ui-icon small valid'
+        click: -> $('#restorablesPopup').remove()
+      ]
+
+      $(html).dialog(
+        modal: false
+        close: (event) -> buttonSpec[0].click()
+        buttons: buttonSpec
+      ).on 'click', 'li', (event) =>
+        # restore file.
+        idx = $(event.target).closest('li').index()
+        return if -1 is idx
+        item = restorables[idx].item
+        
+        # add item to collection to allow opening
+        item.restored = true
+        FSItem.collection.add item
+
+        # when version will be loaded, opens the file
+        opening = (fetched, content) =>
+          item.set 'content', content
+          item.off 'version', opening
+          @_onSelect item.get('path'), null
+        item.on 'version', opening
+
+        # load file content, with special git trick: we need to refer to the parent commit of the
+        # deleting commit.
+        item.fetchVersion "#{restorables[idx].id}~1"

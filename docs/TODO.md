@@ -6,6 +6,7 @@
         - transactional behaviour
     - Security
         - register users from Facebook
+        - **[TODO]** extends session life when activity detected
     - test images for field types and event types
 
 - Rheia
