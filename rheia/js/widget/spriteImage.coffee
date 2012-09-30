@@ -67,12 +67,12 @@ define [
       @element.find('input').unbind()
       @element.unbind()
       validator.dispose() for validator in @options._validators
-      $.rheia.loadableImage.prototype.destroy.apply @, arguments
+      $.rheia.loadableImage::destroy.apply @, arguments
 
     # **private**
     # Builds rendering. Adds inputs for image dimensions
     _create: ->
-      $.rheia.loadableImage.prototype._create.apply @, arguments
+      $.rheia.loadableImage::_create.apply @, arguments
       @options._silent = true
       @element.addClass 'sprite'
       @element.hover (event) => 
@@ -217,7 +217,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.rheia.loadableImage.prototype._setOption.apply @, arguments unless key in ['spriteW', 'spriteH', 'sprite']
+      return $.rheia.loadableImage::_setOption.apply @, arguments unless key in ['spriteW', 'spriteH', 'sprite']
       switch key
         when 'spriteW', 'spriteH' 
           value = parseInt value

@@ -21,12 +21,19 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/> 
     <title>Rheia administration client</title>
     <link type="text/css" rel="stylesheet" href="style/rheia.css" />
     <script src="conf.js"></script>
     <script data-main="js/Router" src="js/lib/require-2.0.0-min.js"></script>
   </head>
   <body>
+    <div class="disclaimer" style="display:none">
+      <h1>Welcome on Rheia !</h1>
+      <p>Rheia is an HTML 5/Javascript 1.8.5/CSS 3 rich application that needs a modern browser.<p>
+      <p>We're sorry, but your browser isn't that modern ;)</p>
+      <p>Please use <a href="http://www.mozilla.org/fr/firefox/fx/">Mozilla Firefox</a> or <a href="https://www.google.com/intl/fr/chrome/browser/">Google Chrome</a>.</p>
+    </div>
     <!-- Login form must be inside DOM since the start to allow password auto completion -->
     <div id="loginStock" style="display:none">
       <form id="loginForm" method="post">

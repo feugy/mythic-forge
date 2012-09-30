@@ -221,7 +221,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   overflow hidden
   position relative
     
-  .perspective
+  .map-perspective
     perspective 600px
     position absolute
     display block
@@ -236,10 +236,21 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     .selection
       opacity 0.5
 
+.map-item
+  position absolute
+  overflow hidden
+  padding 0
+  -moz-transform-origin 0 0
+  -webkit-transform-origin 0 0
+  
+  img
+    height auto
+    width auto
 
 // Search
 .search
   position relative
+  padding-right 30px
 
   .results
     position absolute
@@ -268,7 +279,8 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 
   input    
     padding-right 20px
-    width 75%
+    box-sizing border-box
+    width 100%
 
   .ui-icon.ui-icon-search
     cursor pointer
@@ -277,7 +289,9 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     margin-left -25px
 
   .ui-icon.help
-    float right
+    position absolute
+    right 0
+    cursor pointer
 
 .search.invalid
 

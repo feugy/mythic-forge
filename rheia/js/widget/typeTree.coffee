@@ -70,11 +70,13 @@ define [
     # Frees DOM listeners
     destroy: ->
       @element.off 'click'
-      $.Widget.prototype.destroy.apply @, arguments
+      $.rheia.baseWidget::destroy.apply @, arguments
 
     # **private**
     # Builds rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       @element.on 'click', 'dt', (event) => @_onToggleCategory event
       @element.on 'click', 'dd > div', (event) => @_onOpenElement event
       @element.on 'click', 'dd .menu .open', (event) => @_onOpenElement event
@@ -103,7 +105,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['content']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['content']
       switch key
         when 'content' 
           value = [] unless Array.isArray value

@@ -79,9 +79,6 @@ define
       {name: '2D carrée', value:'square'}
     ]
     randomAffect: 'affectation aléatoire'
-    zoom: 'Zoom'
-    gridShown: 'Grille'
-    markersShown: 'Graduation'
 
   tips:
     save: "Enregistrer l'onglet en cours d'édition"

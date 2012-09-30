@@ -45,6 +45,8 @@ define [
     # the render method, which use the specified template
     render: =>
       super()
+      @$el.find('.loader').hide()
+
       # replace form inside view
       @$el.find('.form-placeholder').replaceWith @_form
       @_form.find('input').wrap('<fieldset></fieldset>')
@@ -56,6 +58,7 @@ define [
       @$el.find('.google').attr 'href', "#{conf.apiBaseUrl}/auth/google"
       @$el.find('.twitter').attr 'href', "#{conf.apiBaseUrl}/auth/twitter"
       @$el.find('#loginForm').on 'submit', =>
+        @$el.find('.loader').show()
         # send back form into body
         @_form.hide().appendTo 'body'
 

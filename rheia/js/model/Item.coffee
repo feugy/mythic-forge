@@ -19,78 +19,46 @@
 'use strict'
 
 define [
-  'backbone'
   'model/sockets'
+  'model/BaseModel'
   'model/ItemType'
-], (Backbone, sockets, ItemType) ->
+], (sockets, Base, ItemType) ->
 
-  # Client cache of items.
-  # Wired to the server through socket.io
-  class _Items extends Backbone.Collection
-
-    constructor: (@model, @options) ->
-      super options
-      # connect server response callbacks
-      sockets.updates.on 'update', @_onUpdate
-      sockets.updates.on 'creation', @_onAdd
-
-    # Provide a custom sync method to wire Items to the server.
-    # Disabled.
-    #
-    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
-    # @param collection [Items] the current collection
-    # @param args [Object] arguments
-    sync: (method, instance, args) =>
-      throw new Error "Unsupported #{method} operation on Items"
+  # Client cache of item types.
+  class _Items extends Base.Collection
 
     # **private**
-    # Callback invoked when a database creation is received.
-    #
-    # @param className [String] the modified object className
-    # @param item [Object] created item.
-    _onAdd: (className, item) =>
-      return unless className is 'Item'
-      # add the created raw item. An event will be triggered
-      @add item
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'Item'
 
     # **private**
-    # Callback invoked when a database update is received.
-    #
-    # @param className [String] the modified object className
-    # @param changes [Object] new changes for a given item.
-    _onUpdate: (className, changes) =>
-      return unless className is 'Item'
-      # first, get the cached item and quit if not found
-      item = @get changes._id
-      return unless item?
-      # then, update the local cache.
-      item.set key, value for key, value of changes when key isnt '_id' and key isnt 'type' and key isnt 'map'
+    # List of not upadated attributes
+    _notUpdated: ['_id', 'type', 'map']
 
-      # emit a change.
-      @trigger 'update', item 
+    # Enhance Backone method to allow existing modesl to be re-added.
+    # Needed because map will add retrieved items when content returned from server, and `add` event needs
+    # to be fired from collection
+    add: (added, options) =>
+      added = [added] unless Array.isArray added
+      # silentely removes existing models to allow map to be updated
+      for obj in added
+        existing = @get obj._id
+        continue unless existing?
+        @remove existing, silent: true
 
+      super added, options
 
-    # Override of the inherited method to disabled default behaviour.
-    # DO NOT reset anything on fetch.
-    reset: =>
+  # Modelisation of a single Item Type.
+  # Not wired to the server : use collections ItemTypes instead
+  #
+  class Item extends Base.Model
 
-
-  # Modelisation of a single Item.
-  # Not wired to the server : use collections Items instead
-  class Item extends Backbone.Model
-
-    # item local cache.
-    # A Backbone.Collection subclass
+    # Local cache for models.
     @collection: new _Items @
 
-    # bind the Backbone attribute and the MongoDB attribute
-    idAttribute: '_id'
-
-    # for transitions: the current background horizontal shift 
-    shiftLeft: 0
-
-    # for transitions: the current background vertical shift 
-    shiftTop: 0
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'Item'
 
     # Item constructor.
     #
@@ -142,13 +110,6 @@ define [
         ItemType.collection.off 'add', @_onTypeFetched
         # update the type object
         @set 'type', type
-
-    # An equality method that tests ids.
-    #
-    # @param other [Object] the object against which the current item is tested
-    # @return true if both object have the samge ids, and false otherwise.
-    equals: (other) =>
-      @.id is other?.id
 
     # This method retrieves linked Item in properties.
     # All `object` and `array` properties are resolved. 

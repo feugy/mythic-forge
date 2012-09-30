@@ -48,6 +48,8 @@ define [
     # **private**
     # builds rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       # creates a container for images, and two navigation buttons
       @element.addClass('carousel').append """
         <div class="previous"></div>
@@ -72,10 +74,10 @@ define [
           return false
 
       # loading handler
-      rheia.router.on 'imageLoaded', (success, src, image, data) => 
-        img = _(@options.images).find (img)-> _(src).endsWith img
+      @bindTo rheia.router, 'imageLoaded', (success, src, image) => 
+        img = _(@options.images).find (source) -> _(src).endsWith source
         return unless img?
-        @element.find("img[data-src='#{img}']").removeData('src').attr 'src', data
+        @element.find("img[data-src='#{img}']").replaceWith $(image).clone()
 
       # first displayal
       @_displayImages @options.images
@@ -140,7 +142,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['current', 'images']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['current', 'images']
       switch key
         when 'current' then @_setCurrent value
         when 'images' then @_displayImages value

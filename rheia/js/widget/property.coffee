@@ -59,10 +59,12 @@ define [
     # destructor: free DOM nodes and handles
     destroy: ->
       @element.find('*').unbind()
-      $.Widget.prototype.destroy.apply @, arguments
+      $.rheia.baseWidget::destroy.apply @, arguments
 
     # build rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       @element.addClass 'property-widget'
       # first cast
       @_castValue()
@@ -267,7 +269,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['type', 'value']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['type', 'value']
       # updates inner option
       @options[key] = value
       return if @_inhibit

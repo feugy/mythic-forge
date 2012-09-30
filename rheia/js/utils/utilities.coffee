@@ -110,4 +110,17 @@ define [
           result += '-'  
         result += char.toLowerCase()
       return result
+
+    # Gets the base 64 image data from an image
+    #
+    # @param image [Image] concerned Image object
+    # @return the base 64 corresponding image data
+    getImageString: (image) ->
+      canvas = $("<canvas></canvas>")[0]
+      canvas.width = image.width
+      canvas.height = image.height
+      # Copy the image contents to the canvas
+      ctx = canvas.getContext '2d'
+      ctx.drawImage image, 0, 0
+      canvas.toDataURL 'image/png'
   }

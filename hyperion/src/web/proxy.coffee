@@ -40,8 +40,6 @@ notifier.on notifier.NOTIFICATION, (event, state, player) ->
       # adds an entry to grant access on secured RIA 
       token = player.get 'token'
       authorizedTokens[token] = player.id 
-      # set expiration mechanism to clean cache
-      setTimeout (-> delete authorizedTokens[token]), 1000*utils.confKey 'authentication.tokenLifeTime'
   else if state is 'disconnect'
     logger.debug "deny static connection from player #{player.id}"
     # removes entry from the cache

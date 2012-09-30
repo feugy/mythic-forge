@@ -115,7 +115,7 @@ define [
       @element.off '.toggleable'
       $(document).off ".toggleable.#{@_id}"
       # superclass call
-      $.Widget.prototype.destroy.apply this, arguments
+      $.rheia.baseWidget::destroy.apply this, arguments
 
     # **private**
     # Mouse leave handler. Closes widget after a timeout
@@ -132,6 +132,8 @@ define [
     # **private**
     # Rendering building
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       @element.addClass 'toggleable'
       @_id =  parseInt Math.random()*1000000000
       if @options.initialyClosed

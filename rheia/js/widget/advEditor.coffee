@@ -54,11 +54,13 @@ define [
     # Frees DOM listeners
     destroy: ->
       @_editor.destroy()
-      $.Widget.prototype.destroy.apply @, arguments
+      $.rheia.baseWidget::destroy.apply @, arguments
 
     # **private**
     # Builds rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       @element.addClass 'adv-editor'
       
       # creates and wire the editor
@@ -85,7 +87,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['text', 'mode', 'theme', 'tabSize']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['text', 'mode', 'theme', 'tabSize']
       switch key
         when 'text' 
           # keeps the undo manager

@@ -55,12 +55,13 @@ define [
     # Frees DOM listeners
     destroy: ->
       @_element.off()
-      rheia.router.off 'imageLoaded', @_loadCallback if @_loadCallback?
-      $.Widget.prototype.destroy.apply @, arguments
+      $.rheia.baseWidget::destroy.apply @, arguments
 
     # **private**
     # Builds rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       @element.addClass('type-details').empty()
       name = null
       category = @options.model._className
@@ -68,10 +69,10 @@ define [
 
       # load descriptive image.
       img = @options.model.get 'descImage'
-      if img? and category.id isnt 'FieldType'
+      if img? and category isnt 'FieldType'
         @_pendingImage = "/images/#{img}"
-        @_loadCallback = (success, src, img, data) => @_onImageLoaded success, src, img, data
-        rheia.router.on 'imageLoaded', @_loadCallback
+        @_loadCallback = => @_onImageLoaded.apply @, arguments
+        @bindTo rheia.router, 'imageLoaded', @_loadCallback
         rheia.imagesService.load @_pendingImage
 
       switch category
@@ -128,7 +129,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['model']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['model']
       switch key
         when 'model' 
           @options.model = value
@@ -140,9 +141,9 @@ define [
     # @param success [Boolean] true if image loaded, false otherwise
     # @param src [String] original image source url
     # @param img [Image] an Image object, null in case of failure
-    # @param data [String] the image base 64 encoded string, null in case of failure
-    _onImageLoaded: (success, src, img, data) ->
+    _onImageLoaded: (success, src, img) ->
       return unless @_pendingImage is src
-      rheia.router.off 'imageLoaded', @_loadCallback
+      console.log ">>>>>>>>>>> coucou #{@_pendingImage}"
+      @unboundFrom rheia.router, 'imageLoaded'
       @_loadCallback = null
-      @element.find("img").attr 'src', data if success
+      @element.find("img").replaceWith $(img).clone() if success

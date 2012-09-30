@@ -110,8 +110,10 @@ define [
   'html5slider'
   ], (_, $, Backbone, sockets, LoginView, i18n, utils) ->
 
-  class Router extends Backbone.Router
+  version = parseInt $.browser.version
+  return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or ($.browser.webkit and version >= 500)
 
+  class Router extends Backbone.Router
 
     # Object constructor.
     #
@@ -138,6 +140,8 @@ define [
         @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
       @route 'admin', 'admin', =>
         @_showPerspective 'administrationPerspective', 'view/admin/Perspective'
+      @route 'moderation', 'moderation', =>
+        @_showPerspective 'moderationPerspective', 'view/moderation/Perspective'
 
       # general error handler
       @on 'serverError', (err, details) ->

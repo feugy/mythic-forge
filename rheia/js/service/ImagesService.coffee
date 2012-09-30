@@ -20,21 +20,9 @@
 
 define [
   'underscore'
+  'utils/utilities'
   'model/sockets'
-], (_, sockets) ->
-
-  # Gets the base 64 image data from an image
-  #
-  # @param image [Image] concerned Image object
-  # @return the base 64 corresponding image data
-  getImageString = (image) ->
-    canvas = $("<canvas></canvas>")[0]
-    canvas.width = image.width
-    canvas.height = image.height
-    # Copy the image contents to the canvas
-    ctx = canvas.getContext '2d'
-    ctx.drawImage image, 0, 0
-    canvas.toDataURL 'image/png'
+], (_, utils, sockets) ->
 
   # Instanciated as a singleton in `rheia.imagesService` by the Router
   class ImagesService
@@ -61,9 +49,8 @@ define [
       return isLoading unless image?
       # Use cache if available, with a timeout to simulate asynchronous behaviour
       if image of @_cache
-        setTimeout =>
-          rheia.router.trigger 'imageLoaded', true, image, @_cache[image], getImageString @_cache[image]
-        , 0
+        _.defer =>
+          rheia.router.trigger 'imageLoaded', true, image, @_cache[image]
       else unless image in @_pendingImages
         console.log "load image #{image}..."
         @_pendingImages.push image
@@ -163,7 +150,7 @@ define [
       canvas.height = event.target.height
       # Store Image object and emit on the event bus
       @_cache[src] = event.target
-      rheia.router.trigger 'imageLoaded', true, src, event.target, getImageString event.target
+      rheia.router.trigger 'imageLoaded', true, src, event.target
   
     # **private**
     # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.

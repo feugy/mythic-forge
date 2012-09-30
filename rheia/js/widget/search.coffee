@@ -66,21 +66,14 @@ define [
     _showTimeout: null
 
     # **private**
-    # For unbind purposes
-    _changeCallback : null
-    _kindCallback: null
-
-    # **private**
     # Allow to distinguish search triggered by refresh.
     _refresh: false
 
     # Frees DOM listeners
     destroy: ->
-      rheia.router.off 'modelChanged', @_changeCallback
-      rheia.router.off 'kindChanged', @_kindChanged
       @element.unbind()
       @element.find('input, .ui-icon-search').unbind()
-      $.Widget.prototype.destroy.apply @, arguments
+      $.rheia.baseWidget::destroy.apply @, arguments
 
     # Parse the input query, and if correct, trigger the server call.
     #
@@ -112,17 +105,17 @@ define [
     # **private**
     # Builds rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
       # general change handler: refresh search
-      @_changeCallback = => 
+      @bindTo rheia.router, 'modelChanged', => 
         @_refresh = true
         @triggerSearch()
-      rheia.router.on 'modelChanged', @_changeCallback
       
       # Executable kind changed: refresh results
       @_kindChanged = => 
         return unless Array.isArray(@options.results) and @options.results.length
         @_results.typeTree 'option', 'content', @options.results
-      rheia.router.on 'kindChanged', @_kindChanged
+      @bindTo rheia.router, 'kindChanged', @_kindChanged
 
       @element.addClass('search').append """<input type="text"/>
         <div class="ui-icon ui-icon-search"></div>
@@ -157,7 +150,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['results']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['results']
       switch key
         when 'results'
           # checks that results are an array
@@ -176,7 +169,7 @@ define [
           @element.find('.nb-results').html html
 
           # set max height because results are absolutely positionned
-          @_results.css 'max-height', @element.offsetParent().height()*0.8
+          @_results.css 'max-height', @element.offsetParent().height()*0.75
           # update tree content
           @_results.typeTree 'option', 'content', @options.results
 

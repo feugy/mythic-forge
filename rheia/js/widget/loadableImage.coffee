@@ -35,33 +35,40 @@ define [
       # read-only: use `setOption('source')` to modify
       source: null
       
-      # **private**
-      # the image DOM element
-      _image: null
+    # **private**
+    # the image DOM element
+    _image: null
+
+    # **private**
+    # allow subclasses to disable buttons
+    _noButtons: false
 
     # Frees DOM listeners
     destroy: ->
       @element.find('.ui-icon').unbind()
-      $.Widget.prototype.destroy.apply @, arguments
+      $.rheia.baseWidget::destroy.apply @, arguments
 
     # **private**
     # Builds rendering
     _create: ->
+      $.rheia.baseWidget::_create.apply @, arguments
+      
       # encapsulates the image element in a div
       @element.addClass 'loadable'
-      @options._image = $('<img/>').appendTo @element
+      @_image = $('<img/>').appendTo @element
       # loading handler
-      rheia.router.on 'imageLoaded', (success, src, img, data) => 
+      @bindTo rheia.router, 'imageLoaded', (success, src, img) => 
         return unless src is "/images/#{@options.source}"
-        @_onLoaded success, data
+        @_onLoaded success, img
       
-      # add action buttons
-      $("""<div class="ui-icon ui-icon-folder-open">
-            <input type="file" accept="image/*"/>
-          </div>""").appendTo(@element).change (event) => @_onUpload event
+      unless @_noButtons
+        # add action buttons
+        $("""<div class="ui-icon ui-icon-folder-open">
+              <input type="file" accept="image/*"/>
+            </div>""").appendTo(@element).change (event) => @_onUpload event
 
-      $('<span class="ui-icon ui-icon-trash">delete</span>')
-          .appendTo(@element).click (event) => @_onDelete event
+        $('<span class="ui-icon ui-icon-trash">delete</span>')
+            .appendTo(@element).click (event) => @_onDelete event
 
       # reload image
       @_setOption 'source', @options.source
@@ -72,12 +79,12 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.Widget.prototype._setOption.apply @, arguments unless key in ['source']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['source']
       switch key
         when 'source' 
           @options.source = value
           # display alternative text
-          @options._image.removeAttr 'src'
+          @_image.removeAttr 'src'
           @_createAlt()
           # load image from images service
           if @options.source is null 
@@ -111,7 +118,7 @@ define [
       reader = new FileReader()
       reader.onload = (event) =>
         # change the image source
-        @options._image.attr 'src', event.target.result
+        @_image.attr 'src', event.target.result
         @element.find('.alt').remove()
       reader.readAsDataURL file
 
@@ -127,7 +134,7 @@ define [
     # @param event [Event]loading failure event or click event.
     _onDelete: (event) ->
       console.log 'change image: none'
-      @options._image.removeAttr 'src'
+      @_image.removeAttr 'src'
       # now, displays the alternative text
       @_createAlt()
       @options.source = null
@@ -139,10 +146,11 @@ define [
     #
     # @param success [Boolean] indicates wheiter or not loading succeeded
     # @param data [String] if successfule, base64 encoded image data.
-    _onLoaded: (success, data) ->
+    _onLoaded: (success, img) ->
+      @unboundFrom rheia.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
-        @options._image.attr 'src', data
+        @_image = @_image.replaceWith $(img).clone()
         @element.find('.alt').remove()
       else 
         # displays the alternative text

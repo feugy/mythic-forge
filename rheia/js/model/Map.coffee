@@ -90,5 +90,5 @@ define [
         # add them to the collection (Item model will be created)
         console.log "#{items.length} map item(s) received #{@get 'name'}"
         Item.collection.add items
-        console.log "#{fields.length} map item(s) received on #{@get 'name'}"
+        console.log "#{fields.length} map field(s) received on #{@get 'name'}"
         Field.collection.add fields

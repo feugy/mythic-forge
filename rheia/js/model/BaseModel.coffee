@@ -35,6 +35,10 @@ define [
     # **Must be defined by subclasses**
     _className: null
 
+    # **private**
+    # List of attributes that must not be updated
+    _notUpdated: ['_id']
+
     # Collection constructor, that wired on events.
     #
     # @param model [Object] the managed model
@@ -96,7 +100,7 @@ define [
       model = @get changes[@model.prototype.idAttribute]
       return unless model?
       # then, update the local cache.
-      model.set key, value for key, value of changes when key isnt '_id'
+      model.set key, value for key, value of changes unless key in @_notUpdated
 
       # emit a change.
       @trigger 'update', model, @, changes

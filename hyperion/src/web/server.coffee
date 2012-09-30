@@ -88,7 +88,12 @@ activation = (id) ->
 kick = (id, reason) ->
   # gets the corresponding socket
   socket =  io?.sockets?.sockets?[id]
-  return unless socket?
+  return unless socket?  
+  socket.get 'email', (err, email) ->
+    return if err?
+    playerService.getByEmail email, (err, player) ->
+      notifier.notify 'players', 'disconnect', player if player?
+
   logger.info "Kick user #{id} for #{reason}"
   socket.disconnect()
 

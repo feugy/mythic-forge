@@ -24,6 +24,7 @@ define
     editionPerspective: 'Edition du monde'
     authoringPerspective: 'Client de jeu'
     administrationPerspective: "Outils d'administration"
+    moderationPerspective: "Modération du monde"
     removeConfirm: 'Suppression'
     closeConfirm: 'Fermeture'
     external: 'Modification externe'
@@ -43,6 +44,9 @@ define
     orConnect: 'ou'
     fieldSeparator: ' : '
     deployementInProgress: 'déploiement...'
+    zoom: 'Zoom'
+    gridShown: 'Grille'
+    markersShown: 'Graduation'
 
   buttons:
     close: 'Fermer'

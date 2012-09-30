@@ -11,8 +11,18 @@
 
 - Rheia
     - moderation perspective
-        - Players
-            - player CRUD
+        - Maps
+            - items rendering update
+            - items animations (with z-ordering)
+            - item click
+            - item affectation and moves by drag'n drop
+            - contextual menu
+        - Items
+            - CRUD
+            - display and navigates to linked
+            - external updates and removal
+        - Event CRUD
+        - Players CRUD
         - Search
             - input query with help and validation
             - display result and navigates
@@ -182,6 +192,12 @@
         - game client version list 
         - deploy, commit and rollback
         - error handling on AdminService
+    - moderation perspective
+        - Maps
+            - maps list, switch current map
+            - displayal with fields and items
+            - map controls
+            - map moves by drag' drop
 
 - Atlas
     - map displayal
