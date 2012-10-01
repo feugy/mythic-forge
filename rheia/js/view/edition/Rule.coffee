@@ -24,7 +24,7 @@ define [
   'i18n!nls/edition'
   'text!tpl/rule.html'
   'utils/validators'
-  'view/edition/BaseEditionView'
+  'view/BaseEditionView'
   'model/Executable'
   'widget/advEditor'
 ], ($, i18n, i18nEdition, template, validators, BaseEditionView, Executable) ->

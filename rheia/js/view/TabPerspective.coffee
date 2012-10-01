@@ -196,7 +196,7 @@ define [
         # adds the class name to the icon
         tab.prev('.icon').attr 'class', "icon #{view.className}"
         # updates title
-        tab.html _.truncate view.getTitle(), 15
+        tab.html view.getTitle()
 
       # bind close we view ask for it
       view.on 'close', => @tryCloseTab view

@@ -310,6 +310,11 @@ define [
 
       # dimensions depends on the map kind.
       @_computeDimensions()
+      @_tileW *= o.zoom
+      @_tileH *= o.zoom
+      o.lowerCoord =
+        x: @_origin.x+Math.round(@_width/@_tileW)-1
+        y: @_origin.y+Math.round(@_height/(@_tileH*0.75)) # TODO specific iso
 
       @element.css(
         height: @_height

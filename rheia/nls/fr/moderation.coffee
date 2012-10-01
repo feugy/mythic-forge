@@ -18,5 +18,13 @@
 ###
 
 define
+
+  titles:
+    item: '%1$s (%2$s)'
+
   labels: 
     maps: 'Cartes'
+    map: 'Carte'
+    abscissa: 'X'
+    ordinate: 'Y'
+    noMap: 'aucune'

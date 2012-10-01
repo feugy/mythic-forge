@@ -24,7 +24,7 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/editionMap.html'
-  'view/edition/BaseEditionView'
+  'view/BaseEditionView'
   'model/Map'
   'model/Field'
   'model/FieldType'

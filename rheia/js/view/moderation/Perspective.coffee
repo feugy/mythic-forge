@@ -28,9 +28,10 @@ define [
   'model/Map'
   'model/Field'
   'model/Item'
+  'view/moderation/Item'
   'widget/search'
   'widget/moderationMap'
-], ($, TabPerspective, i18n, i18nModeration, template, utils, Map, Field, Item) ->
+], ($, TabPerspective, i18n, i18nModeration, template, utils, Map, Field, Item, ItemView) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
@@ -103,15 +104,18 @@ define [
         tileDim: 75
         verticalTileNum: 12
         horizontalTileNum: 7
-        lowerCoord: {x:0, y:0}
+        # use a small zoom, and 0:0 is visible
+        zoom: 0.75
+        lowerCoord: {x:-3, y:-4}
         displayGrid: true
         displayMarkers: true
         coordChanged: =>
           # reloads map content
           return unless @_map
           @_map.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
-        itemClicked: =>
-          console.dir arguments
+        itemClicked: (event, item) =>
+          # opens the clicked item
+          rheia.router.trigger 'open', 'Item', item.id
       ).data 'moderationMap'
 
       # bind maps commands
@@ -141,6 +145,8 @@ define [
     _constructView: (type, id) =>
       # creates the relevant view
       view = null
+      switch type
+        when 'Item' then view = new ItemView id
       view
 
     # **private**

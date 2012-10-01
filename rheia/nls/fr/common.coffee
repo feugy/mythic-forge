@@ -64,6 +64,10 @@ define
     required: 'la valeur de "%s" est requise'
     spacesNotAllowed: '"%s" ne peut pas contenir d\'espaces'
     unmatch: '"%s" ne correspond pas à la valeur attendue'
+    
+  tips:
+    save: "Enregistrer l'onglet en cours d'édition"
+    remove: "Supprimer l'onglet en cours d'édition"
 
   msgs:
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"

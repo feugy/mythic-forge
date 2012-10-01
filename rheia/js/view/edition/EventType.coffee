@@ -24,7 +24,7 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/EventType.html'
-  'view/edition/BaseEditionView'
+  'view/BaseEditionView'
   'utils/validators'
   'model/EventType'
   'widget/property'

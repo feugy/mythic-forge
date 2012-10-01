@@ -78,6 +78,7 @@ define [
         img = _(@options.images).find (source) -> _(src).endsWith source
         return unless img?
         @element.find("img[data-src='#{img}']").replaceWith $(image).clone()
+        @element.find('img').addClass @options.imageClass
 
       # first displayal
       @_displayImages @options.images

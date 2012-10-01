@@ -112,6 +112,9 @@ define [
 
   version = parseInt $.browser.version
   return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or ($.browser.webkit and version >= 500)
+  
+  # simple flag to avoid loading multiple perspective at the same time
+  perspectiveLoading = false
 
   class Router extends Backbone.Router
 
@@ -165,8 +168,11 @@ define [
     # @param name [String] Name of the perspective, used to store it inside the rheia global object
     # @param path [String] require-js path used to require perspective's files
     _showPerspective: (name, path) =>
+      return if perspectiveLoading
+      perspectiveLoading = true
       # check if we are connected
       if sockets.game is null
+        perspectiveLoading = false
         token = localStorage.getItem 'token'
         return @navigate 'login', trigger:true unless token?
         return @_onLoggedIn token
@@ -176,12 +182,15 @@ define [
 
       rheia.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists
-      return rheia.layoutView.show rheia[name].$el if name of rheia
+      if name of rheia
+        rheia.layoutView.show rheia[name].$el
+        return perspectiveLoading = false
 
       # or requires, instanciate and render the view
       require [path], (Perspective) ->
         rheia[name] = new Perspective()
         rheia.layoutView.show rheia[name].render().$el
+        perspectiveLoading = false
 
     # **private**
     # Display the login view

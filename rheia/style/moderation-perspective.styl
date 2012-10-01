@@ -36,7 +36,44 @@
   .map-widget
     margin 0 0 15px 0
 
+    .map-item
+      cursor pointer
+
   .commands label
     width 100px
     display inline-block
     text-align right
+
+  > .right
+  
+    .ui-tabs.action-bars
+      display inline-block
+      padding 0
+      border none
+      margin-left 20px
+      vertical-align middle
+
+      .ui-tabs-nav
+        display none
+
+      .ui-tabs-panel
+        padding 0
+
+    .ui-tabs-nav 
+
+      li a 
+        padding 0.2em 2em 0.2em 0.5em
+
+      .uid
+        font-size fontSize*0.65
+        margin-right -2em
+
+      .ui-icon-close
+        position: absolute
+        right 0.5em
+        top 0.5em
+
+  .view 
+
+    > table .right > *
+      margin-bottom 0.5em

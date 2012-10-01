@@ -23,12 +23,10 @@ define [
   'underscore'
   'view/BaseView'
   'i18n!nls/common'
-  'i18n!nls/edition'
   'utils/utilities'
   'utils/validators'
-], ($, _, BaseView, i18n, i18nEdition, utilities, validators) ->
-
-  i18n = $.extend true, i18n, i18nEdition
+  'widget/property'
+], ($, _, BaseView, i18n, utilities, validators) ->
 
   # Base class for edition views
   class BaseEditionView extends BaseView
@@ -94,7 +92,7 @@ define [
     # Returns the view's title
     #
     # @return the edited object name.
-    getTitle: => if @_nameWidget? then @_nameWidget.options.value else @model.get @_nameAttribute
+    getTitle: => _.truncate (@_nameWidget?.options.value or @model.get @_nameAttribute), 15
 
     # Returns the view's action bar, and creates it if needed.
     # may be overriden by subclasses to add buttons
@@ -179,7 +177,8 @@ define [
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      @model.set @_nameAttribute, @_nameWidget.options.value unless @_nameAttribute is @model.idAttribute
+      if @_nameWidget?
+        @model.set @_nameAttribute, @_nameWidget.options.value unless @_nameAttribute is @model.idAttribute
       @model.set 'desc', @_descWidget.options.value if @_descWidget?
 
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
@@ -188,7 +187,7 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      @_nameWidget.setOption 'value', @model.get @_nameAttribute
+      @_nameWidget.setOption 'value', @model.get @_nameAttribute if @_nameWidget?
       @_descWidget.setOption 'value', @model.get 'desc' if @_descWidget?
       @_createImages()
       @_onChange()
@@ -203,10 +202,11 @@ define [
     _getComparableFields: =>
       comparable = []
       # adds name and description
-      comparable.push
-        name: 'name'
-        original: @model.get @_nameAttribute
-        current: @_nameWidget.options.value
+      if @_nameWidget?
+        comparable.push
+          name: 'name'
+          original: @model.get @_nameAttribute
+          current: @_nameWidget.options.value
       if @_descWidget?
         comparable.push
           name: 'description'
@@ -239,8 +239,9 @@ define [
       validator.dispose() for validator in @_validators
       @_validators = []
       # adds a validator for name
-      @_validators.push new validators.String {required: true}, i18n.labels.name, 
-        @_nameWidget.element, null, (node) -> node.find('input').val()
+      if @_nameWidget?
+        @_validators.push new validators.String {required: true}, i18n.labels.name, 
+          @_nameWidget.element, null, (node) -> node.find('input').val()
 
     # **private**
     # Allows to compute the rendering's validity.
@@ -270,6 +271,7 @@ define [
       if isValid
         # compares rendering and model values
         comparableFields = @_getComparableFields()
+        console.dir comparableFields # TODO remove
         for field in comparableFields
           hasChanged = !(_.isEqual(field.original, field.current))
           if hasChanged

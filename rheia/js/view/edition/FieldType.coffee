@@ -24,7 +24,7 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/FieldType.html'
-  'view/edition/BaseEditionView'
+  'view/BaseEditionView'
   'model/FieldType'
   'widget/loadableImage'
 ], ($, _, i18n, i18nEdition, template, BaseEditionView, FieldType) ->

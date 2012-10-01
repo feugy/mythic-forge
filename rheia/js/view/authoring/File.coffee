@@ -109,7 +109,7 @@ define [
     # Returns the view's title
     #
     # @return the edited object name.
-    getTitle: => @model.id.substring @model.id.lastIndexOf('\\')+1
+    getTitle: => _.truncate @model.id.substring @model.id.lastIndexOf('\\')+1, 15
 
     # Extension to add special restored state as reason to be saved
     #
