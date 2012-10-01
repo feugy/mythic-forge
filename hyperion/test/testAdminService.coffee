@@ -41,6 +41,7 @@ fieldTypes = []
 executables = []
 maps = []
 fields = []
+items = []
 fsItem = null
 gameClientRoot = utils.confKey 'game.dev'
 
@@ -67,6 +68,7 @@ describe 'AdminService tests', ->
     eventTypes = []
     executables = []
     fieldTypes = []
+    item = []
     maps = []
     testUtils.cleanFolder utils.confKey('executable.source'), -> 
       Executable.resetAll -> 
@@ -158,6 +160,13 @@ describe 'AdminService tests', ->
       assert.equal modelName, 'Map'
       assert.ok maps[0].equals(list[0])
       assert.ok maps[1].equals(list[1])
+      done()
+
+  it 'should list fails on Items', (done) ->
+    # when listing items
+    service.list 'Item', (err, modelName, list) ->
+      # then an error occured
+      assert.equal err, "The Item model can't be listed"
       done()
 
   it 'should list returns fsItems in root', (done) ->
@@ -660,6 +669,72 @@ describe 'AdminService tests', ->
       assert.equal returned.length, 0
       done()
 
+  it 'should save creates new item', (done) ->
+    # given a new item
+    saved = null
+    toBeSaved = type: itemTypes[1].toObject(), map: maps[0].toObject(), x:0, y:0, strength:20
+
+    # then a creation event was issued
+    watcher.on 'change', (operation, className, instance)->
+      assert.equal className, 'Item'
+      assert.equal operation, 'creation'
+      saved = instance
+
+    # when saving two new fields
+    service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
+      throw new Error "Can't save item: #{err}" if err?
+      # then the created values are returned
+      assert.isNotNull returned, 'unexpected returned item'
+      assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
+      assert.ok returned.equals saved
+
+      # then the model exists in DB
+      Item.findById returned._id, (err, obj) ->
+        throw new Error "Can't find field in db #{err}" if err?
+        assert.ok maps[0]._id.equals(obj.get('map')._id), "unexpected map id #{obj.get('map')._id}"
+        assert.ok itemTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
+        assert.equal obj.get('x'), toBeSaved.x
+        assert.equal obj.get('y'), toBeSaved.y
+        assert.equal obj.get('strength'), toBeSaved.strength
+        assert.ok obj.equals returned
+        watcher.removeAllListeners 'change'
+        done()
+
+  it 'should save saved existing item', (done) ->
+    # given an existing item
+    new Item(type: itemTypes[0], map: maps[0], x:0, y:0, strength:20).save (err, item) ->
+      return done err if err?
+
+      awaited = false
+      toBeSaved = item.toObject()
+      toBeSaved.strength = 50
+
+      # then a creation event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Item'
+        assert.equal operation, 'update'
+        assert.ok item.equals instance
+        awaited = true
+
+      # when saving two new fields
+      service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
+        throw new Error "Can't save item: #{err}" if err?
+        # then the created values are returned
+        assert.isNotNull returned, 'unexpected returned item'
+        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+
+        # then the model exists in DB
+        Item.findById returned._id, (err, obj) ->
+          throw new Error "Can't find field in db #{err}" if err?
+          assert.ok maps[0]._id.equals(obj.get('map')._id), "unexpected map id #{obj.get('map')._id}"
+          assert.ok itemTypes[0]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
+          assert.equal obj.get('x'), toBeSaved.x
+          assert.equal obj.get('y'), toBeSaved.y
+          assert.equal obj.get('strength'), toBeSaved.strength
+          assert.ok obj.equals returned
+          watcher.removeAllListeners 'change'
+          done()
+
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when removing unallowed model
@@ -847,6 +922,34 @@ describe 'AdminService tests', ->
               assert.ok returned[1].equals removed[1]
               watcher.removeAllListeners 'change'
               done()
+
+  it 'should remove delete existing item', (done) ->
+    # given an existing item
+    new Item(type: itemTypes[0], map: maps[0], x:0, y:0, strength:20).save (err, item) ->
+      return done err if err?
+      awaited = false
+    
+      # then a deletion event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Item'
+        assert.equal operation, 'deletion'
+        assert.ok item.equals instance
+        awaited = true
+
+      # when removing an existing item
+      service.remove 'Item', item.toObject(), 'admin', (err, modelName, returned) ->
+        throw new Error "Can't remove item: #{err}" if err?
+        # then the created values are returned
+        assert.isNotNull returned, 'unexpected returned item'
+        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        assert.ok returned.equals item
+
+        # then the model exists in DB
+        Item.findById returned._id, (err, obj) ->
+          throw new Error "Can't find field in db #{err}" if err?
+          assert.isNull obj
+          watcher.removeAllListeners 'change'
+          done()
 
   it 'should remove delete existing fsItem', (done) ->
     awaited = false

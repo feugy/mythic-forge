@@ -24,12 +24,13 @@ FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
 Map = require '../model/Map'
 Field = require '../model/Field'
+Item = require '../model/Item'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
 authoringService = require('./AuthoringService').get()
 
-supported = ['Field', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
-listSupported = supported[1..]
+supported = ['Field', 'Item', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
+listSupported = supported[2..]
 
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -77,6 +78,25 @@ class _AdminService
       when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType
       when 'Map' then modelClass = Map
+      when 'Item' 
+        populateTypeAndSave = (model) ->
+          ItemType.findCached model?.get('type')?._id, (err, type) ->
+            return callback "Failed to save item #{values._id}. Error while resolving its type: #{err}" if err?
+            return callback "Failed to save item #{values._id} because there is no type with id #{values?.type?._id}" unless type?    
+            # Do the replacement.
+            model.set 'type', type
+            _save model
+
+        if '_id' of values
+          return Item.findById values._id, (err, model) ->
+            return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or model is null
+            # update values
+            model.set key, value for key, value of values unless key in ['_id', 'type', 'map']
+            populateTypeAndSave model
+        else
+          model = new Item values
+          return populateTypeAndSave model
+
       when 'Field'
         return callback 'Fields must be saved within an array', modelName unless Array.isArray values
         savedFields = []
@@ -192,6 +212,12 @@ class _AdminService
       when 'FieldType' then modelClass = FieldType
       when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
+      when 'Item' 
+        return Item.findById values._id, (err, model) ->
+          return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or model is null
+          # removes item
+          model.remove (err) -> callback err, modelName, model
+
       when 'Field'
         return callback 'Fields must be removed within an array', modelName unless Array.isArray values
         removedFields = []

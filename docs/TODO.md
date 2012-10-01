@@ -49,6 +49,7 @@
     - Field type CRUD
     - Map CRUD
     - Field CRUD
+    - Item CRUD for administrators
     - disabled turn-rules/rules
     - turn-rules ordering rank
     - Event type CRUD
