@@ -21,6 +21,7 @@ define
 
   titles:
     item: '%1$s (%2$s)'
+    chooseType: 'Choix du type'
 
   labels: 
     maps: 'Cartes'
@@ -28,3 +29,8 @@ define
     abscissa: 'X'
     ordinate: 'Y'
     noMap: 'aucune'
+
+  msgs:
+    removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'object <b>%s</b> ?</p>"
+    itemExternalChange: "L'objet à été modifié par ailleur. Ses valeurs ont été mises à jour"
+    chooseItemType: "<p>Choisissez un type d'objet pour le nouvel objet :</p>"

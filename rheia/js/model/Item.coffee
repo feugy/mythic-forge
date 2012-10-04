@@ -48,6 +48,20 @@ define [
 
       super added, options
 
+    # **private**
+    # Callback invoked when a database update is received.
+    # Update the model from the current collection if needed, and fire event 'update'.
+    # Extension to resolve map when needed
+    #
+    # @param className [String] the modified object className
+    # @param changes [Object] new changes for a given model.
+    _onUpdate: (className, changes) =>
+      return unless className is @_className
+      if 'map' of changes and changes.map?._id
+        changes.map = require('model/Map').collection.get changes.map._id
+      # Call inherited merhod
+      super className, changes
+
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections ItemTypes instead
   #
@@ -81,7 +95,7 @@ define [
           # or construct directly
           map = new Map attributes.map
           Map.collection.add map
-          @set 'map', new Map attributes.map
+          @set 'map', map
 
       # Construct an ItemType around the raw type.
       if attributes?.type?

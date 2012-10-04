@@ -59,6 +59,16 @@ define [
     bindTo: (emitter, events, callback) ->
       emitter.on events, callback
       @_bounds.push [emitter, events, callback]
+      
+    # Unbounds a callback of this view from the specified emitter
+    #
+    # @param emitter [Backbone.Event] the emitter on which callback is unbound
+    # @param events [String] event on which the callback is unbound
+    unboundFrom: (emitter, event) ->
+      for spec, i in @_bounds when spec[0] is emitter and spec[1] is event
+        spec[0].off spec[1], spec[2]
+        @_bounds.splice i, 1
+        break
 
     # The destroy method correctly free DOM  and event handlers
     # It must be overloaded by subclasses to unsubsribe events.

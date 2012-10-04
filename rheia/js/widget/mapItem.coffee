@@ -37,18 +37,22 @@ define [
       # the associated map
       map: null
 
-    # **private**
-    # disable buttons
-    _noButtons: true
+      # disable buttons
+      noButtons: true
 
     # **private**
     # model image specification
     _imageSpec: null
 
+    # **private**
+    # current position of the widget in map
+    _coordinates: x:null, y:null
+
     # Frees DOM listeners
     destroy: ->
       @element.off()
       $.rheia.loadableImage::destroy.apply @, arguments
+      @element.remove()
 
     # **private**
     # Builds rendering. Image is computed from the model type image and instance number
@@ -63,27 +67,22 @@ define [
         @_trigger 'clicked', event, @options.model
 
       # bind to model events
-      @bindTo @options.model, 'destroy', =>
-        # on model destruction, destroy the widget
-        @destroy()
-        @element.remove()
+      @bindTo @options.model, 'update', (model) => @_onUpdate model
+      @bindTo @options.model, 'destroy', => @_onDestroy
 
     # **private**
-    # Image loading handler: positionnates the widget inside map
-    #
-    # @param success [Boolean] indicates wheiter or not loading succeeded
-    # @param data [String] if successfule, base64 encoded image data.
-    _onLoaded: (success, data) ->
-      $.rheia.loadableImage::_onLoaded.apply @, arguments
-
-      @element.css
-        width: @_imageSpec.width
-        height: @_imageSpec.height
-
-      # get the widget cell coordinates
-      pos = @options.map.elementOffset 
+    # Places the current widget indise the map widget.
+    # Will be ineffective if position has not changed
+    _positionnate: ->
+      # compute new position, and returns if equal to current position
+      coordinates =
         x: @options.model.get 'x'
         y: @options.model.get 'y'
+      return unless coordinates.x isnt @_coordinates.x or coordinates.y isnt @_coordinates.y
+      @_coordinates = coordinates
+
+      # get the widget cell coordinates
+      pos = @options.map.elementOffset @_coordinates
 
       zoom = @options.map.options.zoom
       
@@ -98,10 +97,6 @@ define [
       pos['-webkit-transform'] = "skewX(#{correction}deg) scale(#{zoom})"
       @element.css pos
 
-      # now display correct sprite
-      @_renderSprite()
-      @_trigger 'loaded', null, {item:@options.mode}
-
     # **private**
     # Shows relevant sprite image regarding the current model animation and current timing
     _renderSprite: ->
@@ -109,3 +104,40 @@ define [
       offsetX = 0
       offsetY = 0
       @_image.css 'background-position': "#{offsetX}px #{offsetY}px"
+
+    # **private**
+    # Image loading handler: positionnates the widget inside map
+    #
+    # @param success [Boolean] indicates wheiter or not loading succeeded
+    # @param src [String] loaded image source
+    # @param img [Image] if successful, loaded image DOM node
+    _onLoaded: (success, src, img) ->
+      $.rheia.loadableImage::_onLoaded.apply @, arguments
+      return unless src is "/images/#{@options.source}"
+      
+      @element.css
+        width: @_imageSpec.width
+        height: @_imageSpec.height
+
+      @_positionnate()
+
+      # now display correct sprite
+      @_renderSprite()
+      @_trigger 'loaded', null, {item:@options.mode}
+
+    # **private**
+    # Updates model inner values
+    #
+    # @param model [Object] new model values
+    _onUpdate: (model) ->
+      @options.model = model
+      # removes if map has changed
+      @_onDestroy() if @options.model?.get('map')?._id isnt @options.map.options.mapId
+
+      # potential move 
+      @_positionnate()
+
+    # **private**
+    # On model destruction, destroy the widget also
+    _onDestroy: ->
+      @destroy()

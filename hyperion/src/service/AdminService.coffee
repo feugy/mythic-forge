@@ -88,11 +88,25 @@ class _AdminService
             _save model
 
         if '_id' of values
+          # resolve type
           return Item.findById values._id, (err, model) ->
             return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or model is null
             # update values
-            model.set key, value for key, value of values unless key in ['_id', 'type', 'map']
-            populateTypeAndSave model
+            for key, value of values
+              model.set key, value unless key in ['_id', 'type', 'map']
+
+            # update map value
+            if model.get('map')?._id isnt values.map?._id
+              if values.map?._id
+                # resolve map
+                return Map.findCached values.map._id, (err, map) ->
+                  return callback "Failed to save item #{values._id}. Error while resolving its map: #{err}" if err?
+                  return callbacl "Failed to save item #{values._id} because there is no map with id #{item.map}" unless map?  
+                  model.set 'map', map
+                  populateTypeAndSave model
+              else
+                model.set 'map', null
+                populateTypeAndSave model
         else
           model = new Item values
           return populateTypeAndSave model

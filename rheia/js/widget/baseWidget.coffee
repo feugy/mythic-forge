@@ -67,3 +67,4 @@ define [
       # automatically remove bound callback
       spec[0].off spec[1], spec[2] for spec in @_bounds
       $.Widget::destroy.apply @, arguments
+      @_trigger 'destroy', null, @

@@ -271,7 +271,6 @@ define [
       if isValid
         # compares rendering and model values
         comparableFields = @_getComparableFields()
-        console.dir comparableFields # TODO remove
         for field in comparableFields
           hasChanged = !(_.isEqual(field.original, field.current))
           if hasChanged

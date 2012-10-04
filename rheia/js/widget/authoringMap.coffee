@@ -356,6 +356,10 @@ define [
       $("""<canvas class="markers" height="#{@_height*3}" width="#{@_width*3}"></canvas>""").appendTo @_container
       $("""<canvas class="hover" height="#{@_height*3}" width="#{@_width*3}"></canvas>""").appendTo @_container
 
+      @_container.find('canvas').css
+        width: "#{@_width*3}px"
+        height: "#{@_height*3}px"
+
       @_drawGrid()
       @_drawMarkers()
 

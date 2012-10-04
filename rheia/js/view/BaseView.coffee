@@ -99,7 +99,7 @@ define [
 
       # bind to server events
       @bindTo @_collection, 'add', @_onCreated
-      @bindTo @_collection, 'update', @_onSaved
+      @bindTo @model, 'update', @_onSaved
       @bindTo @_collection, 'remove', @_onRemoved
       @bindTo rheia.router, 'serverError', @_onServerError
 
@@ -294,8 +294,13 @@ define [
       @trigger 'affectId', oldId, newId
       # just to allow `_onSaved` to perform
       @model.id = created.id
+      # unbound from the old model updates
+      @unboundFrom @model, 'update', @_onSaved
       # now refresh rendering
       @_onSaved created
+      # bind to the new model
+      @bindTo @model, 'update', @_onSaved
+
 
     # **private**
     # Invoked when a model is saved from the server.

@@ -104,6 +104,7 @@ define [
 
       # emit a change.
       @trigger 'update', model, @, changes
+      model.trigger 'update', model, changes
       # propagates changes on collection to global change event
       rheia.router.trigger 'modelChanged'
 

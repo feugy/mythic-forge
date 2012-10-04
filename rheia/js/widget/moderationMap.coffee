@@ -61,9 +61,7 @@ define [
       checkLoadingEnd = =>
         return unless @_loading is 0
         # removes previous widgets
-        for id, widget of @_oldWidgets
-          widget.destroy()
-          widget.element.remove()
+        widget.destroy() for id, widget of @_oldWidgets
         @_oldWidgets = {}
         # all widget are loaded: reset position
         @_itemLayer.css 
@@ -80,6 +78,7 @@ define [
           fields.push obj
         else if obj.constructor.name is 'Item' and o.mapId is obj.get('map')?.id
           @_loading++
+          @_itemWidgets[obj.id] = true
           _.defer =>
             # creates widget for this item
             @_itemWidgets[obj.id] = $('<span></span>').mapItem(
@@ -90,6 +89,10 @@ define [
               loaded: =>
                 @_loading--
                 checkLoadingEnd()
+              destroy: (event, widget) =>
+                # when reloading, it's possible that widget have already be replaced
+                return unless @_itemWidgets[obj.id] is widget
+                delete @_itemWidgets[obj.id]
             ).data 'mapItem'
             # and adds it to item layer
             @_itemLayer.append @_itemWidgets[obj.id].element
@@ -99,14 +102,29 @@ define [
       # let superclass manage fields
       $.rheia.authoringMap::addData.call @, fields if fields.length > 0
 
+    # Checks if the corresponding item is displayed or not
+    # 
+    # @param item [Object] checked item
+    # @return true if the map contains a mapItem widget that displays this item
+    hasItem: (item) ->
+      @_itemWidgets[item?.id]?
+
     # Removes field or itemsfrom map. Will be effective only if the field was displayed.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
     # @param removed [Field] removed data (JSON array). 
     removeData: (removed) ->
-      # TODO
+      # separate fields from items
+      fields = []
+      for obj in removed
+        if obj.constructor.name is 'Field'
+          fields.push obj.toJSON() if @options.mapId is obj.get 'mapId'
+        else if obj.constructor.name is 'Item'
+          # immediately removes corresponding widget
+          @_itemWidgets[obj.id]?.destroy()
+
       # let superclass manage fields
-      $.rheia.authoringMap::removeData.call @, removed
+      $.rheia.authoringMap::removeData.call @, fields if fields.length > 0
 
     # **private**
     # Build rendering
@@ -115,7 +133,7 @@ define [
       $.rheia.authoringMap::_create.apply @, arguments
 
       # adds the item layer.    
-      @_itemLayer = $("<div class='items movable' style='height:#{@_height*3}px; width:#{@_width*3}px '></div>").appendTo @_container
+      @_itemLayer = $("<div class='items movable' style='height:#{@_height*3}px; width:#{@_width*3}px'></div>").appendTo @_container
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
@@ -123,8 +141,9 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      # superclass inherited behaviour
-      $.rheia.authoringMap::_setOption.apply @, arguments
       switch key
         when 'lowerCoord'
           @_oldWidgets = _.clone @_itemWidgets
+
+      # superclass inherited behaviour
+      $.rheia.authoringMap::_setOption.apply @, arguments

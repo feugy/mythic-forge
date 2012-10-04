@@ -40,18 +40,21 @@ define [
     # mustache template rendered
     _template: template
 
-
     # **private**
     # models collection on which the view is bound
     _collection: Item.collection
 
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
-    _confirmRemoveMessage: 'TODO'
+    _confirmRemoveMessage: i18n.msgs.removeItemConfirm
 
     # **private**
     # Item type of this item
     _type: null
+
+    # **private**
+    # Temporary created model
+    _created: null
 
     # **private**
     # select to display current map
@@ -72,8 +75,9 @@ define [
     # The view constructor.
     #
     # @param router [Router] the event bus
-    # @param id [String] the edited object's id, of null for a creation.
-    constructor: (id) ->
+    # @param idOrModel [String] the edited object's id, null for creation
+    # @param @_created [Object] a freshly created model
+    constructor: (id, @_created) ->
       super id, 'item-type'
 
       @_type = @model.get 'type'
@@ -82,7 +86,16 @@ define [
       # TODO closes view if model's map is removed
       @bindTo Map.collection, 'remove', @_onMapListRetrieved
 
+      # Closes external changes warning after 5 seconds
+      @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
+
       console.log "creates item edition view for #{if id? then @model.id else 'a new object'}"
+
+    # **private**
+    # Effectively creates a new model.
+    _createNewModel: => 
+      @model = @_created
+      @_created = null
 
     # Returns the view's title: instance `name` properties, or type's name
     #
@@ -96,11 +109,6 @@ define [
     #
     # @return an object used as template data (this by default)
     _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @_type.get('name'), @model.id
-
-    # **private**
-    # Effectively creates a new model.
-    _createNewModel: =>
-      throw new Error "not implemented yet"
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -153,7 +161,7 @@ define [
       # map ownership
       @model.set 'map', Map.collection.get @_mapList.find('option').filter(':selected').val()
       @model.set 'x', @_xWidget.options.value
-      @model.set 'y', @_xWidget.options.value
+      @model.set 'y', @_yWidget.options.value
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -179,6 +187,8 @@ define [
       comparable = super()
       return comparable unless @_yWidget?
 
+      mapValue =  @_mapList.find('option').filter(':selected').val()
+      mapValue = undefined if mapValue is 'none'
       comparable.push
         # image number
         name: 'imageNum'
@@ -188,7 +198,7 @@ define [
         # map ownership
         name: 'map'
         original: @model.get('map')?.id
-        current: @_mapList.find('option').filter(':selected').val()
+        current: mapValue
       ,
         name: 'x'
         original: @model.get 'x'
@@ -208,3 +218,10 @@ define [
       @_mapList.empty().append maps      
 
       @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected' if @model?.get('map')?
+
+    # **private**
+    # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
+    _notifyExternalChange: () =>
+      @_emptyExternalChange()
+      if @$el.find('.external-change *').length is 0
+        @$el.find('.external-change').append "<p>#{i18n.msgs.itemExternalChange}</p>"

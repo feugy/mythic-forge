@@ -34,14 +34,13 @@ define [
       # image source: a string url
       # read-only: use `setOption('source')` to modify
       source: null
+
+      # allow subclasses to disable buttons
+      noButtons: false
       
     # **private**
     # the image DOM element
     _image: null
-
-    # **private**
-    # allow subclasses to disable buttons
-    _noButtons: false
 
     # Frees DOM listeners
     destroy: ->
@@ -56,12 +55,8 @@ define [
       # encapsulates the image element in a div
       @element.addClass 'loadable'
       @_image = $('<img/>').appendTo @element
-      # loading handler
-      @bindTo rheia.router, 'imageLoaded', (success, src, img) => 
-        return unless src is "/images/#{@options.source}"
-        @_onLoaded success, img
       
-      unless @_noButtons
+      unless @options.noButtons
         # add action buttons
         $("""<div class="ui-icon ui-icon-folder-open">
               <input type="file" accept="image/*"/>
@@ -88,8 +83,10 @@ define [
           @_createAlt()
           # load image from images service
           if @options.source is null 
-            setTimeout (=> @_onLoaded false), 0
+            setTimeout (=> @_onLoaded false, '/images/null'), 0
           else 
+            # loading handler
+            @bindTo rheia.router, 'imageLoaded', => @_onLoaded.apply @, arguments
             rheia.router.trigger 'loadImage', "/images/#{@options.source}"
 
     # **private**
@@ -145,8 +142,10 @@ define [
     # Image loading handler: hides the alternative text if success, or displays it if error.
     #
     # @param success [Boolean] indicates wheiter or not loading succeeded
-    # @param data [String] if successfule, base64 encoded image data.
-    _onLoaded: (success, img) ->
+    # @param src [String] loaded image source
+    # @param img [Image] if successful, loaded image DOM node
+    _onLoaded: (success, src, img) -> 
+      return unless src is "/images/#{@options.source}"
       @unboundFrom rheia.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text

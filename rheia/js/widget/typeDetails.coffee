@@ -41,10 +41,6 @@ define [
       model: null
 
     # **private**
-    # For unbind purposes
-    _loadCallback: null
-
-    # **private**
     # pending image source
     _pendingImage: null
 
@@ -71,8 +67,7 @@ define [
       img = @options.model.get 'descImage'
       if img? and category isnt 'FieldType'
         @_pendingImage = "/images/#{img}"
-        @_loadCallback = => @_onImageLoaded.apply @, arguments
-        @bindTo rheia.router, 'imageLoaded', @_loadCallback
+        @bindTo rheia.router, 'imageLoaded', => @_onImageLoaded.apply @, arguments
         rheia.imagesService.load @_pendingImage
 
       switch category
@@ -143,7 +138,5 @@ define [
     # @param img [Image] an Image object, null in case of failure
     _onImageLoaded: (success, src, img) ->
       return unless @_pendingImage is src
-      console.log ">>>>>>>>>>> coucou #{@_pendingImage}"
       @unboundFrom rheia.router, 'imageLoaded'
-      @_loadCallback = null
       @element.find("img").replaceWith $(img).clone() if success

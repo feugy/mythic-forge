@@ -25,13 +25,15 @@ define [
   'i18n!nls/moderation'
   'text!tpl/moderationPerspective.html'
   'utils/utilities'
+  'model/ItemType'
   'model/Map'
   'model/Field'
   'model/Item'
   'view/moderation/Item'
   'widget/search'
   'widget/moderationMap'
-], ($, TabPerspective, i18n, i18nModeration, template, utils, Map, Field, Item, ItemView) ->
+  'widget/loadableImage'
+], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, Map, Field, Item, ItemView) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
@@ -61,6 +63,10 @@ define [
     # map widget
     _mapWidget: null
 
+    # **private***
+    # type selected to create a new item or event
+    _creationType: null
+
     # The view constructor.
     constructor: ->
       super 'moderation'
@@ -74,6 +80,7 @@ define [
       @bindTo Field.collection, 'add', @_onAddFieldOrItem
       @bindTo Field.collection, 'remove', @_onRemoveFieldOrItem
       @bindTo Item.collection, 'add', @_onAddFieldOrItem
+      @bindTo Item.collection, 'update', @_onUpdateItem
       @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
 
       ###@bindTo rheia.router, 'searchResults', (err, results) =>
@@ -125,6 +132,14 @@ define [
       @$el.find('.toggle-markers').attr 'checked', 'checked' if @_mapWidget.options.displayMarkers
       @$el.find('.zoom').val @_mapWidget.options.zoom
 
+      # bind creation buttons
+      @$el.find(".right .new-item").button(
+        icons:
+          primary: "small new-item"
+        text: false
+      ).attr('title', i18n.tips.newItem
+      ).on 'click', @_onChooseItemType
+
       # for chaining purposes
       @
 
@@ -146,7 +161,12 @@ define [
       # creates the relevant view
       view = null
       switch type
-        when 'Item' then view = new ItemView id
+        when 'Item'
+          if @_creationType?
+            view = new ItemView null, new Item type: @_creationType
+            @_creationType = null
+          else
+            view = new ItemView id
       view
 
     # **private**
@@ -182,6 +202,15 @@ define [
       @_mapWidget?.addData added
 
     # **private**
+    # Handler that updates map content when an item has been changed and need to be displayed
+    #
+    # @param added [Array] array of added items or fields
+    _onUpdateItem: (updated) =>
+      # add item to map if map is is equal and map widget do not display yet the item
+      if updated?.get('map')?.id is @_mapWidget?.options.mapId and !@_mapWidget?.hasItem updated
+        @_mapWidget.addData [updated]
+
+    # **private**
     # Handler that updates map content when a field or an item is removed from collection
     #
     # @param removed [Array] array of removed items or fields
@@ -211,3 +240,36 @@ define [
       unless @_inhibitZoom
         @_mapWidget.setOption 'zoom', $(event.target).val()
       @_inhibitZoom = false
+
+    # **private**
+    # Display a popup to choose an item type before creating a new item
+    #
+    # @param event [Event] canceled button clic event
+    _onChooseItemType: (event) =>
+      event?.preventDefault()
+      listLoaded = =>
+        ItemType.collection.off 'reset', listLoaded
+        popup.find('.loader').remove()
+
+        # Display a loadable image by types
+        for type in ItemType.collection.models
+          $("<div data-id='#{type.id}'></div>").loadableImage(
+            source: type.get('descImage')
+            noButtons:true
+          ).appendTo popup
+
+      # gets type list and display popup while.
+      ItemType.collection.on 'reset', listLoaded
+      ItemType.collection.fetch()
+      popup = utils.popup i18n.titles.chooseType, i18n.msgs.chooseItemType, null, [
+        text: i18n.buttons.ok
+        click: => popup.off 'click .loadable'
+      ]
+      popup.addClass("choose-type").append "<div class='loader'></div>"
+
+      # Type select handler
+      popup.on 'click .loadable', (event) =>
+        @_creationType = ItemType.collection.get $(event.target).closest('.loadable').data 'id'
+        console.log "type #{@_creationType?.id} selected for new item"
+        popup.dialog 'close'
+        rheia.router.trigger 'open', 'Item'

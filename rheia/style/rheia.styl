@@ -97,6 +97,15 @@ select
   min-width 27px
   vertical-align bottom
 
+.action-bar .separator
+  display inline-block
+  height 25px
+  width 2px
+  border 1px solid borderColor
+  background hoverColor
+  border-radius 5px
+  box-shadow: 1px 1px 2px 1px hoverColor
+
 .ui-button-icon-only .ui-button-text
   display none
 
@@ -165,6 +174,11 @@ body
     font-size fontSize*1.5
     margin 0.5em 0
 
+.loader
+  height 16px
+  background url('images/loader.gif')
+  background-repeat no-repeat
+  background-position center top
 
 .layout 
 .login-view
@@ -214,13 +228,6 @@ body
           height 16px
           width 16px
           vertical-align -4ps
-
-
-  .loader
-    height 16px
-    background url('images/loader.gif')
-    background-repeat no-repeat
-    background-position center top
 
   > .container
     box-flex 1

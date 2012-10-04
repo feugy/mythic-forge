@@ -73,7 +73,26 @@
         right 0.5em
         top 0.5em
 
+    .action-bar .separator
+        margin 0 0 2px 9px
+        vertical-align bottom
+
   .view 
 
     > table .right > *
       margin-bottom 0.5em
+
+    > .external-change
+      border-radius radius
+
+      > *
+        padding 0.5em 1em
+      * 
+        color errorColor
+
+.choose-type 
+
+  .loadable
+    cursor pointer
+  .loadable:hover
+    box-shadow: 0 0 10px 5px #AAA
