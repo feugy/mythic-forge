@@ -185,13 +185,15 @@ define [
     _onMapListRetrieved: =>
       select = @$el.find '.maps select'
       maps = ''
+      found = false
       for map in Map.collection.models
+        found = true if map.equals @_map
         maps += "<option value='#{map.id}' #{if map.equals @_map then 'selected="selected"' else ''}>#{map.get 'name'}</option>"
      
       select.empty().append maps
 
       # select first map if needed
-      select.children().first().change() unless @_map?
+      select.children().first().change() unless found
 
     # **private**
     # Handler that updates map content when a field or an item is added to collection

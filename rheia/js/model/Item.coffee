@@ -75,6 +75,7 @@ define [
     _className: 'Item'
 
     # Item constructor.
+    # Will fetch type from server if necessary, and trigger the 'typeFetched' when finished.
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
@@ -124,6 +125,7 @@ define [
         ItemType.collection.off 'add', @_onTypeFetched
         # update the type object
         @set 'type', type
+        @trigger 'typFetched', @
 
     # This method retrieves linked Item in properties.
     # All `object` and `array` properties are resolved. 

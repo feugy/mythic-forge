@@ -78,13 +78,28 @@ define [
     # @param idOrModel [String] the edited object's id, null for creation
     # @param @_created [Object] a freshly created model
     constructor: (id, @_created) ->
+      isNew = @_created?
+      # superclass constructor
       super id, 'item-type'
 
+      # stores type
       @_type = @model.get 'type'
+      unless @_type?
+        onTypeFetched = =>
+          @_model.off 'typeFetched', onTypeFetched
+          @_type = @model.get 'type'
 
+        @model.on 'typeFetched', onTypeFetched
+
+      # bind to map collection events: update map list.
       @bindTo Map.collection, 'add', @_onMapListRetrieved
-      # TODO closes view if model's map is removed
-      @bindTo Map.collection, 'remove', @_onMapListRetrieved
+      @bindTo Map.collection, 'remove', (map) => 
+        if @model.get('map')?.equals map 
+          # the item's map is removed: closes view
+          @_removeInProgress = true
+          @_onRemoved @model
+        else 
+          @_onMapListRetrieved()
 
       # Closes external changes warning after 5 seconds
       @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000

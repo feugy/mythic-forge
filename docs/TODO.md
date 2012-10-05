@@ -10,12 +10,12 @@
 
 - Rheia
   - moderation perspective
-    - Maps
-      - items animations (with z-ordering)
-      - item affectation and moves by drag'n drop
-      - contextual menu
     - Items
       - display and navigates to linked
+    - Maps
+      - item affectation and moves by drag'n drop
+      - contextual menu
+      - items animations (with z-ordering)
     - Event CRUD
     - Players CRUD
     - Search

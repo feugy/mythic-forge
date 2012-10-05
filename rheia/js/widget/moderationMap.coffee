@@ -144,6 +144,13 @@ define [
       switch key
         when 'lowerCoord'
           @_oldWidgets = _.clone @_itemWidgets
+        when 'mapId'
+          if @options.mapId isnt value
+            # reset all rendering: fields and items.
+            canvas = @element.find('.fields')[0]
+            canvas.width = canvas.width
+            widget.destroy() for id, widget of @_itemWidgets
+            @_itemWidgets = {}
 
       # superclass inherited behaviour
       $.rheia.authoringMap::_setOption.apply @, arguments
