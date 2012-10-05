@@ -1,6 +1,7 @@
 # TODO
 
 - Hyperion
+  - **[TODO]** destroy map items and fields when destroying map
   - Rule engine
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
@@ -9,6 +10,7 @@
   - test images for field types and event types
 
 - Rheia
+  - **[TODO]** manage save errors on BaseModel and BaseCollection -> no update to be done if error
   - moderation perspective
     - Items
       - display and navigates to linked
@@ -201,6 +203,7 @@
     - Items
       - CRUD
       - external updates and removal
+      - display and edit dynamic properties, and update rendering when changes detected
 
 - Atlas
   - map displayal

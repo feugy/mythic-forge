@@ -49,10 +49,6 @@ define [
     _confirmRemoveMessage: i18n.msgs.removeItemConfirm
 
     # **private**
-    # Item type of this item
-    _type: null
-
-    # **private**
     # Temporary created model
     _created: null
 
@@ -72,24 +68,18 @@ define [
     # image carousel widget
     _imageWidget: null
 
+    # **private**
+    # array of property widgets
+    _propWidgets: {}
+
     # The view constructor.
     #
     # @param router [Router] the event bus
     # @param idOrModel [String] the edited object's id, null for creation
     # @param @_created [Object] a freshly created model
     constructor: (id, @_created) ->
-      isNew = @_created?
       # superclass constructor
       super id, 'item-type'
-
-      # stores type
-      @_type = @model.get 'type'
-      unless @_type?
-        onTypeFetched = =>
-          @_model.off 'typeFetched', onTypeFetched
-          @_type = @model.get 'type'
-
-        @model.on 'typeFetched', onTypeFetched
 
       # bind to map collection events: update map list.
       @bindTo Map.collection, 'add', @_onMapListRetrieved
@@ -100,6 +90,8 @@ define [
           @_onRemoved @model
         else 
           @_onMapListRetrieved()
+
+      @_propWidgets = {}
 
       # Closes external changes warning after 5 seconds
       @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
@@ -116,14 +108,14 @@ define [
     #
     # @return the edited object name.
     getTitle: => 
-      """#{_.truncate (@model.get('properties')?.name or @_type.get 'name'), 15}
+      """#{_.truncate (@model.get('properties')?.name or @model.get('type').get 'name'), 15}
       <div class='uid'>(#{@model.id})</div>"""
 
     # **protected**
     # This method is intended to by overloaded by subclass to provide template data for rendering
     #
     # @return an object used as template data (this by default)
-    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @_type.get('name'), @model.id
+    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @model.get('type').get('name'), @model.id
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -133,7 +125,7 @@ define [
     _specificRender: =>
       # creates image carousel and map rendering
       @_imageWidget = @$el.find('.left .image').carousel(
-        images: _.pluck @_type.get('images'), 'file'
+        images: _.pluck @model.get('type').get('images'), 'file'
         change: @_onChange
       ).data 'carousel'
 
@@ -177,6 +169,10 @@ define [
       @model.set 'map', Map.collection.get @_mapList.find('option').filter(':selected').val()
       @model.set 'x', @_xWidget.options.value
       @model.set 'y', @_yWidget.options.value
+
+      # item properties
+      for name, widget of @_propWidgets
+        @model.set name, widget.options.value
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -189,6 +185,8 @@ define [
       @_xWidget.setOption 'value', @model.get 'x'
       @_yWidget.setOption 'value', @model.get 'y'
 
+      # resolve linked and draw properties
+      @model.resolve @_onItemResolved
       super()
 
     # **private**
@@ -223,7 +221,21 @@ define [
         original: @model.get 'y'
         current: @_yWidget.options.value
 
+      # item properties
+      for name, widget of @_propWidgets
+        comparable.push 
+          name: name
+          original: @model.get name
+          current: widget.options.value
+
       comparable
+
+    # **private**
+    # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
+    _notifyExternalChange: =>
+      @_emptyExternalChange()
+      if @$el.find('.external-change *').length is 0
+        @$el.find('.external-change').append "<p>#{i18n.msgs.itemExternalChange}</p>"
 
     # **private**
     # Empties and fills the map list.
@@ -235,8 +247,28 @@ define [
       @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected' if @model?.get('map')?
 
     # **private**
-    # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
-    _notifyExternalChange: () =>
-      @_emptyExternalChange()
-      if @$el.find('.external-change *').length is 0
-        @$el.find('.external-change').append "<p>#{i18n.msgs.itemExternalChange}</p>"
+    # Handler invoked when items and events linked to this item where resolved
+    # (Re)Creates the rendering
+    _onItemResolved: =>
+      container = @$el.find '> table'
+
+      # unbinds existing handlers and removes lines
+      widget.destroy() for name, widget of @_propWidgets
+      @_propWidgets = {}
+      container.find('tr.prop').remove()
+
+      # TODO console.dir @model.attributes
+      # TODO console.dir @model.get('type').get('properties')
+
+      # creates a property widget for each type's properties
+      for name, prop of @model.get('type')?.get 'properties'
+        value = @model.get name
+        value = prop.def if value is undefined
+
+        row = $("<tr class='prop'><td class='left'>#{name}#{i18n.labels.fieldSeparator}</td></tr>").appendTo container
+        widget = $('<td class="right"></td>').property(
+          type: prop.type
+          value: value
+        ).appendTo(row).data 'property'
+        @_propWidgets[name] = widget
+        widget.setOption 'change', @_onChange

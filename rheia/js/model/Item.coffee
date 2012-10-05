@@ -19,10 +19,11 @@
 'use strict'
 
 define [
+  'underscore'
   'model/sockets'
   'model/BaseModel'
   'model/ItemType'
-], (sockets, Base, ItemType) ->
+], (_, sockets, Base, ItemType) ->
 
   # Client cache of item types.
   class _Items extends Base.Collection
@@ -59,6 +60,10 @@ define [
       return unless className is @_className
       if 'map' of changes and changes.map?._id
         changes.map = require('model/Map').collection.get changes.map._id
+      # always keep an up-to-date type
+      model = @get changes[@model.prototype.idAttribute]
+      model?.set 'type', ItemType.collection.get model.get('type')?.id
+      
       # Call inherited merhod
       super className, changes
 
@@ -152,7 +157,7 @@ define [
           break
       
       # exit immediately if no resolution needed  
-      return callback null, @ unless needResolution
+      return _.defer (=> callback null, @) unless needResolution
 
       # now that we have the linked ids, get the corresponding items.
       sockets.game.once 'getItems-resp', (err, items) =>

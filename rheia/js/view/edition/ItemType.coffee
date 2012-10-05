@@ -175,7 +175,8 @@ define [
           file: widget.options.source
           width: widget.options.spriteW
           height: widget.options.spriteH
-          sprites: widget.options.sprites
+        unless _.isEmpty widget.options.sprites
+          spec.sprites = widget.options.sprites
         if widget.options.source is null
           if i < length
             spec.oldName = @model.get('images')[i].file

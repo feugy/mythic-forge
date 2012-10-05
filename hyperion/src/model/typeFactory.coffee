@@ -184,6 +184,7 @@ module.exports = (typeName, spec, options = {}) ->
       
       # get type instances
       require("./#{options.instanceClass}").find {type: @_id}, (err, instances) =>
+        return next new Error "Failed to update type instances: #{err}" if err?
         saved = []
         for instance in instances
           # add default value in instances that do not have the added properties yet.

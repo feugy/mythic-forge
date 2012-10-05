@@ -137,6 +137,8 @@ exposeMethods = (service, socket, connected = [], except = []) ->
               # returns the callback arguments
               returnArgs = Array.prototype.slice.call arguments
               returnArgs.splice 0, 0, "#{method}-resp"
+              # expand errors
+              returnArgs[1] = returnArgs[1].message if utils.isA returnArgs?[1], Error
               socket.emit.apply socket, returnArgs
 
             # invoke the service layer with arguments 
