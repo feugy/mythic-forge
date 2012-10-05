@@ -2,36 +2,44 @@
 
 Mythic-forge is an online gaming platform for Web developpers.
 
-It allows you to build from scratch a entire 2D multiplayer turn-based game.
+It allows you to build from scratch a entire 2D multiplayer game.
 
-You need to download and install it on a serveur.Once launched, you can begin to create and play your own game.
-
-
-# Current status
-
-A first version of Mythic-forge is running. It's composed of three parts:
-
-- Chronos, the server, providing a set of REST API for administration and game purposes
-- Prometheus, a administration RIA (Rich Internet App) : your main tool to create and manage your game.
-- A game RIA, used by your gamers, and that you will write and customize with Prometheus. 
-
-Both RIA are written using the last HTML5/Javascript/CSS3 technologies, and relies on Resthub-JS (jQuery   RequireJS).
-You'll need good web skills to write your game client.
-
-Chronos is a Java server, that uses Jersey (JAX-RS), Spring, Hibernate (JPA), Lucene, AspectJ, and a lot of complicated stuff that you don't need to master to use it !
+You'll need to download and install it on a serveur. Once launched, you can begin to create and play your own game.
 
 
-# The near future
+# What kind of games can I make ?
 
-I'm going to totally rewrite it, using a NodeJS brand new server.
-The reasons are multiple:
+- Web-based:
 
-. generate faster games with an isometric system that use the same langage both server and client sides
-. benefit from MongoDB flexibility and rapidity
-. enhance my skills in NodeJS, which I'm already using in my work.
+  It means that your game will be played with a (modern) web browser: Firefox or Chrome (and their respective mobile versions)
 
-Currently, theses sources constitute a prototype that will enforce (or not) these hypotethis.
-Thus, it will not be "industrialized" with complete technical documentation or automated tests. But it will come :)
+- 2D:
+
+  Mythic-forge is based on 2D tiles, which means you can make maps (or levels) with square, diamond or even hexagonal tiles.
+  
+- Multiplayer:
+
+  Many players can simultaneously play on your game. You choose to make them play alone, in groups, all together.
+
+- Centralized:
+
+  Every action is performed on the server, and only the server. It garantees that nobody can break your laws.
+  
+- Real-time:
+
+  Every action done by a player is immediately broadcasted to all connected players: it garantees that all will play in the same universe !
+
+- Turn-based:
+
+  A special feature allows to set regularly planned rules. In a word: a turn. 
+  
+  
+Mythic-forge was designed to make RPGs in the first place. But it's generic enough to powered a large variety of games !
+
+Unfortunately, it does not suit to: 3D games, plateform games, shooters.
+  
+  
+# **Work in progress !**
 
 
 # Other considerations
