@@ -19,6 +19,7 @@
 
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
+Map = require '../src/model/Map'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
@@ -33,7 +34,7 @@ describe 'Item tests', ->
     type = new ItemType({name: 'plain'})
     type.setProperty 'rocks', 'integer', 100
     type.save (err, saved) ->
-      throw new Error err if err?
+      return done err if err?
       Item.collection.drop -> done()
 
   afterEach (end) ->
@@ -53,11 +54,11 @@ describe 'Item tests', ->
     # when saving it
     awaited = false
     item.save (err) ->
-      throw new Error "Can't save item: #{err}" if err?
+      return done "Can't save item: #{err}" if err?
 
       # then it is in mongo
       Item.find {}, (err, docs) ->
-        throw new Error "Can't find item: #{err}" if err?
+        return done "Can't find item: #{err}" if err?
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
@@ -70,7 +71,7 @@ describe 'Item tests', ->
     # when creating an item of this type
     item = new Item {type: type}
     item.save (err)->
-      throw new Error "Can't save item: #{err}" if err?
+      return done "Can't save item: #{err}" if err?
       # then the default value was set
       assert.equal item.get('rocks'), 100
       done()
@@ -95,7 +96,7 @@ describe 'Item tests', ->
 
         # then it's not in mongo anymore
         Item.find {}, (err, docs) ->
-          throw new Error "Can't find item: #{err}" if err?
+          return done "Can't find item: #{err}" if err?
           assert.equal docs.length, 0
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
@@ -115,7 +116,7 @@ describe 'Item tests', ->
       item.save ->
 
         Item.find {}, (err, docs) ->
-          throw new Error "Can't find item: #{err}" if err?
+          return done "Can't find item: #{err}" if err?
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
@@ -139,7 +140,7 @@ describe 'Item tests', ->
       item.save ->
 
         Item.findOne {_id: item._id}, (err, doc) ->
-          throw new Error "Can't find item: #{err}" if err?
+          return done "Can't find item: #{err}" if err?
           # then only the relevant values were modified
           assert.equal doc.get('x'), 150
           assert.equal doc.get('y'), 300
@@ -156,6 +157,36 @@ describe 'Item tests', ->
         assert.ok err?.message.indexOf('unknown property test') isnt -1
         done()
 
+    it 'should item be removed with map', (done) ->
+      # given a map
+      map = new Map(name: 'map1').save (err, map) ->
+        return done err if err?
+        # given a map item
+        new Item(map: map, x: 0, y: 0, type: type).save (err, item2) ->
+          return done err if err?
+          Item.find {map: map._id}, (err, items) ->
+            return done err if err?
+            assert.equal items.length, 1
+
+            changes = []
+            # then only a removal event was issued
+            watcher.on 'change', (operation, className, instance)->
+              changes.push arguments
+
+            # when removing the map
+            map.remove (err) ->
+              return done "Failed to remove map: #{err}" if err?
+
+              # then items are not in mongo anymore
+              Item.find {map: map._id}, (err, items) ->
+                return done err if err?
+                assert.equal items.length, 0
+                assert.equal 1, changes.length, 'watcher wasn\'t invoked'
+                assert.equal changes[0][1], 'Map'
+                assert.equal changes[0][0], 'deletion'
+                watcher.removeAllListeners 'change'
+                done()
+
   describe 'given a type with object properties and several Items', -> 
 
     beforeEach (done) ->
@@ -167,21 +198,21 @@ describe 'Item tests', ->
         Item.collection.drop -> 
           item = new Item {name: 'Rhône', end: null, type: type, affluents:[]}
           item.save (err, saved) ->
-            throw new Error err  if err?
+            return done err  if err?
             item = saved
             item2 = new Item {name: 'Durance', end: item, type: type, affluents:[]}
             item2.save (err, saved) -> 
-              throw new Error err  if err?
+              return done err  if err?
               item2 = saved
               item.set 'affluents', [item2]
               item.save (err) ->
-                throw new Error err  if err?
+                return done err  if err?
                 done()
 
     it 'should id be stored for linked object', (done) ->
       # when retrieving an item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
-        throw new Error "Can't find item: #{err}" if err?
+        return done "Can't find item: #{err}" if err?
         # then linked items are replaced by their ids
         assert.ok item._id.equals doc.get('end')
         done()
@@ -189,7 +220,7 @@ describe 'Item tests', ->
     it 'should ids be stored for linked arrays', (done) ->
       # when resolving an item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
-        throw new Error "Can't find item: #{err}" if err?
+        return done "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
         assert.equal doc.get('affluents').length, 1
         assert.ok item2._id.equals doc.get('affluents')[0]
@@ -198,10 +229,10 @@ describe 'Item tests', ->
     it 'should resolve retrieves linked objects', (done) ->
       # given a unresolved item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
-        throw new Error "Can't find item: #{err}" if err?
+        return done "Can't find item: #{err}" if err?
         # when resolving it
         doc.resolve (err, doc) ->
-          throw new Error "Can't resolve links: #{err}" if err?
+          return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.ok item._id.equals doc.get('end')._id
           assert.equal doc.get('end').get('name'), item.get('name')
@@ -212,10 +243,10 @@ describe 'Item tests', ->
     it 'should resolve retrieves linked arrays', (done) ->
       # given a unresolved item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
-        throw new Error "Can't find item: #{err}" if err?
+        return done "Can't find item: #{err}" if err?
         # when resolving it
         doc.resolve (err, doc) ->
-          throw new Error "Can't resolve links: #{err}" if err?
+          return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.equal doc.get('affluents').length, 1
           linked = doc.get('affluents')[0]
@@ -228,10 +259,10 @@ describe 'Item tests', ->
     it 'should multi-resolve retrieves all properties of all objects', (done) ->
       # given a unresolved items
       Item.where().sort(name:'asc').exec (err, docs) ->
-        throw new Error "Can't find item: #{err}" if err?
+        return done "Can't find item: #{err}" if err?
         # when resolving them
         Item.multiResolve docs, (err, docs) ->
-          throw new Error "Can't resolve links: #{err}" if err?
+          return done "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
           assert.ok item._id.equals docs[0].get('end')._id
           assert.equal docs[0].get('end').get('name'), item.get('name')

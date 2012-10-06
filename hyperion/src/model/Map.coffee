@@ -29,4 +29,18 @@ Map = typeFactory 'Map',
         type: String
         default: 'hexagon'
   , {strict:true, noDesc: true}
+
+
+# pre-save middleware: once map is removed, removes also fields and items on it
+#
+# @param next [Function] function that must be called to proceed with other middleware.
+Map.pre 'remove', (next) ->
+  # performs removal
+  next()
+  # now removes fields and items on it
+  # does not issue messages
+  # does not load models
+  require('./Field').remove(mapId:@_id).exec()
+  require('./Item').remove(map:@_id).exec()
+
 module.exports = conn.model 'map', Map

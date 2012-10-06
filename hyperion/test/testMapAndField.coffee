@@ -33,7 +33,7 @@ describe 'Map and Field tests', ->
   beforeEach (done) ->
     Map.collection.drop -> Field.collection.drop -> FieldType.collection.drop -> 
       new FieldType({name: 'plain'}).save (err, saved) ->
-        throw new Error err if err?
+        return done err if err?
         fieldType = saved
         done()
 
@@ -51,11 +51,11 @@ describe 'Map and Field tests', ->
     # when saving it
     awaited = false
     map.save (err) ->
-      throw new Error "Can't save map: #{err}" if err?
+      return done "Can't save map: #{err}" if err?
 
       # then it is in mongo
       Map.find {}, (err, docs) ->
-        throw new Error "Can't find map: #{err}" if err?
+        return done "Can't find map: #{err}" if err?
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
@@ -113,10 +113,10 @@ describe 'Map and Field tests', ->
       # when creating a field on the map
       field = new Field {mapId:map._id, typeId:fieldType._id, x:0, y:0}
       field.save (err)->
-        throw new Error "Can't save field: #{err}" if err?
+        return done "Can't save field: #{err}" if err?
         # then its retrievable by map
         Field.find {mapId: map._id}, (err, fields) ->
-          throw new Error "Can't find field by map: #{err}" if err?
+          return done "Can't find field by map: #{err}" if err?
           assert.equal fields.length, 1
           assert.ok field.equals fields[0]
           assert.equal fields[0].get('mapId'), map._id
@@ -128,13 +128,13 @@ describe 'Map and Field tests', ->
       # given an exiting a field on the map
       field = new Field {mapId:map._id, typeId:fieldType._id, x:10, y:10}
       field.save (err)->
-        throw new Error "Can't save field: #{err}" if err?
+        return done "Can't save field: #{err}" if err?
         # when removing it
         field.remove (err) ->
-          throw new Error "Can't remove field: #{err}" if err?
+          return done "Can't remove field: #{err}" if err?
           # then it's not in the map anymore
           Field.findOne {_id: field._id}, (err, field) ->
-            throw new Error "Can't find field by id: #{err}" if err?
+            return done "Can't find field by id: #{err}" if err?
             assert.ok field is null
             done()
 
@@ -142,10 +142,39 @@ describe 'Map and Field tests', ->
       # given an exiting a field on the map
       field = new Field {mapId:map._id, typeId:fieldType._id, x:10, y:10}
       field.save (err)->
-        throw new Error "Can't save field: #{err}" if err?
+        return done "Can't save field: #{err}" if err?
         # when updating it
         field.set 'x', 20
         field.save (err) ->
           assert.ok err isnt null
           assert.equal err.message, 'only creations are allowed on fields', "Unexpected error: #{err}"
           done()
+
+    it 'should field be removed with map', (done) ->
+      # given some fields on the map
+      new Field(mapId:map._id, typeId:fieldType._id, x:10, y:10).save (err) ->
+        return done err if err?
+        new Field(mapId:map._id, typeId:fieldType._id, x:5, y:5).save (err) ->
+          return done err if err?
+          Field.find {mapId: map._id}, (err, fields) ->
+            return done err if err?
+            assert.equal fields.length, 2
+
+            changes = []
+            # then only a removal event was issued
+            watcher.on 'change', (operation, className, instance)->
+              changes.push arguments
+
+            # when removing the map
+            map.remove (err) ->
+              return done "Failed to remove map: #{err}" if err?
+
+              # then fields are not in mongo anymore
+              Field.find {mapId: map._id}, (err, fields) ->
+                return done err if err?
+                assert.equal fields.length, 0
+                assert.equal 1, changes.length, 'watcher wasn\'t invoked'
+                assert.equal changes[0][1], 'Map'
+                assert.equal changes[0][0], 'deletion'
+                watcher.removeAllListeners 'change'
+                done()

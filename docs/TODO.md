@@ -1,7 +1,6 @@
 # TODO
 
 - Hyperion
-  - **[TODO]** destroy map items and fields when destroying map
   - Rule engine
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
@@ -47,6 +46,7 @@
   - remove all images when removing a type
   - Field type CRUD
   - Map CRUD
+  - Destroys map items and fields when destroying map
   - Field CRUD
   - Item CRUD for administrators
   - disabled turn-rules/rules
