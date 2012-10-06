@@ -20,10 +20,13 @@
 
 define [
   'jquery'
+  'i18n!nls/common'
   'i18n!nls/widget'
   'widget/baseWidget'
-   # @todo 'widget/instanceList'
-],  ($, i18n) ->
+  'widget/instanceList'
+],  ($, i18n, i18nWidget) ->
+
+  i18n = $.extend true, i18n, i18nWidget
 
   # The property widget allows to display and edit a type's property. 
   # It adapts to the property's own type.
@@ -149,21 +152,18 @@ define [
         when 'object', 'array'  
           if @options.isInstance
             # uses instalceList widget if we're displaying an instance property
-            throw new Error 'not implemented yet'
-            ### todo rendering = $('<ul class="instance"></ul>').instanceList(
+            rendering = $('<ul class="instance"></ul>').instanceList(
               value: @options.value
-              onlyOne: type is 'object'
-              dndType: Constants.INSTANCE_AFFECTATION_DND
-              change: (event) => @_onChange(event)
+              onlyOne: @options.type is 'object'
+              dndType: i18n.constants.instanceAffectation
+              change: (event) => @_onChange event
               tooltipFct: @options.tooltipFct
               accepted: @options.accepted
-              objectEdited: (event, details) =>
-                @_trigger('objectEdited', event, details)
-              objectRemoved: (event, details)
-                @_trigger('objectRemoved', event, details)
-            ).change((event) => @_onChange(event)).appendTo(@element)
+              click: (event, instance) =>
+                @_trigger 'open', event, instance
+            ).appendTo @element
 
-            @options.value = rendering.instanceList('option', 'value')###
+            @options.value = rendering.instanceList 'option', 'value'
 
           else 
             # for type, use a select.

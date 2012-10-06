@@ -275,3 +275,23 @@ define [
         console.log "type #{@_creationType?.id} selected for new item"
         popup.dialog 'close'
         rheia.router.trigger 'open', 'Item'
+
+    # **private**
+    # Handler invoked when a tab was added to the widget. Make tab draggable to affect instance.
+    #
+    # @param event [Event] tab additon event
+    # @param ui [Object] tab container 
+    _onTabAdded: (event, ui) =>
+      # superclass behaviour
+      super event, ui
+
+      id = $(ui.tab).attr('href').replace '#tabs-', ''
+      view = _.find @_views, (view) -> id is md5 view.getId()
+
+      # makes tab draggable
+      $(ui.tab).draggable
+        scope: i18n.constants.instanceAffectation
+        appendTo: 'body'
+        distance: 15
+        cursorAt: top:-5, left:-5
+        helper: -> utils.dragHelper view.model

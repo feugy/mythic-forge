@@ -36,8 +36,8 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   text-align center
 
   img 
-    width imageDim
-    height imageDim
+    width 100%
+    height 100%
 
   img:not([src])
     height 0
@@ -181,8 +181,9 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     position absolute
 
   .thumbnail 
-    height imageDim
     width imageDim
+    height auto
+    vertical-align middle
 
   .thumbnail[data-src='null']
     background-color black
@@ -365,3 +366,61 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   top 0
   left 0
   width auto
+
+// Instance list and details
+.instance-list
+  border 1px solid borderColor
+  border-radius radius
+  margin 0
+  max-height 200px
+  overflow-x hidden
+  overflow-y auto
+
+  .empty
+    color inactiveColor
+    cursor auto
+    padding 0.5em
+
+  > li:last-child
+    border-radius 0 0 radius radius
+  
+  > li:first-child
+    border-radius radius radius 0 0
+
+  > li:nth-child(2n)
+    background-color altColor
+
+  > li
+    cursor pointer
+    padding 2px
+    position relative
+
+    .unbind
+      position absolute
+      right 10px
+      top 10px
+      padding 0
+      height 18px
+      width 18px
+
+.instance-list.drop-hover li
+  background-color hoverColor
+
+.instance-list.drop-possible
+  border 2px solid dropColor
+
+.instance-details
+  
+  .loadable
+    size = 30px
+
+    display inline-block
+    height size
+    width size
+    margin-right 5px
+    vertical-align middle
+
+  span
+    > *
+      font-style normal
+      font-size fontSize*0.75

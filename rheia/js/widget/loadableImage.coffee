@@ -78,9 +78,8 @@ define [
       switch key
         when 'source' 
           @options.source = value
-          # display alternative text
+          # do not display alternative text yet
           @_image.removeAttr 'src'
-          @_createAlt()
           # load image from images service
           if @options.source is null 
             setTimeout (=> @_onLoaded false, '/images/null'), 0
@@ -149,7 +148,8 @@ define [
       @unboundFrom rheia.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
-        @_image = @_image.replaceWith $(img).clone()
+        @_image.replaceWith $(img).clone()
+        @_image = @element.find 'img'
         @element.find('.alt').remove()
       else 
         # displays the alternative text

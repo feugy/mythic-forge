@@ -36,6 +36,8 @@ inactiveColor = darken(#fff, 20%)
 focusColor = #75B9F0
 errorColor = lighten(orange, 20%)
 selectedColor = darken(#EBF8FC, 10%)
+altColor = #EDF1FA
+dropColor = lighten(focusColor, 20%)
 
 // CSS Reset 
 @import 'reset'
@@ -112,7 +114,7 @@ select
 // Icons
 multiIcon(valid invalid cancel warning question help success failure login logout)
 
-multiIcon(save remove open remove-selection upload unlink rename add remove-folder restore, 1)
+multiIcon(save remove open remove-selection upload unbind rename add remove-folder restore, 1)
 
 multiIcon(new-folder new-file add-param add-property new-actor new-item new-event new-player field script, 2)
 
@@ -173,6 +175,12 @@ body
   p, a
     font-size fontSize*1.5
     margin 0.5em 0
+
+.dragged
+  size = 30px
+  .loadable
+    height size
+    width size
 
 .loader
   height 16px
@@ -309,7 +317,7 @@ body
         display inline-block
         cursor: pointer
 
-      li a
+      .ui-tabs-nav li a
         padding: 0.2em 0.5em
         typeIcons '.icon', 25, 0
         

@@ -23,5 +23,6 @@ define
     constants:
       fieldAffectation: 'affectField'
       dateFormat: 'YY/MM/DD HH:mm:ss'
+      instanceAffectation: 'affectInstances'
     TOTRANSLATE: true    
 

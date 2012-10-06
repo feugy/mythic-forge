@@ -21,6 +21,7 @@
 define [
   'jquery'
   'underscore'
+  'utils/utilities'
   'i18n!nls/common'
   'i18n!nls/moderation'
   'text!tpl/item.html'
@@ -29,7 +30,7 @@ define [
   'model/Map'
   'widget/carousel'
   'widget/property'
-], ($, _, i18n, i18nModeration, template, BaseEditionView, Item, Map) ->
+], ($, _, utils, i18n, i18nModeration, template, BaseEditionView, Item, Map) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
@@ -108,8 +109,7 @@ define [
     #
     # @return the edited object name.
     getTitle: => 
-      """#{_.truncate (@model.get('properties')?.name or @model.get('type').get 'name'), 15}
-      <div class='uid'>(#{@model.id})</div>"""
+      "#{_.truncate utils.instanceName(@model), 15}<div class='uid'>(#{@model.id})</div>"
 
     # **protected**
     # This method is intended to by overloaded by subclass to provide template data for rendering
@@ -261,7 +261,8 @@ define [
       # TODO console.dir @model.get('type').get('properties')
 
       # creates a property widget for each type's properties
-      for name, prop of @model.get('type')?.get 'properties'
+      properties = utils.sortAttributes @model.get('type').get 'properties'
+      for name, prop of properties
         value = @model.get name
         value = prop.def if value is undefined
 
@@ -269,6 +270,12 @@ define [
         widget = $('<td class="right"></td>').property(
           type: prop.type
           value: value
+          isInstance: true
+          open: (event, instance) =>
+            # opens players, items, events
+            rheia.router.trigger 'open', instance.constructor.name, instance.id
+          # TODO tooltipFct: null
+          # TODO accepted: []
         ).appendTo(row).data 'property'
         @_propWidgets[name] = widget
         widget.setOption 'change', @_onChange

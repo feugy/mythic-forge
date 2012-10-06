@@ -58,3 +58,10 @@ define
       val:'Field'
       name:'terrains'
     }]
+
+  instanceDetails:
+    name: '%1$s <i>(%2$s)</i>'
+
+  instanceList: 
+    empty: "affectez un objet par drag'n drop"
+    unbind: "délier de l'objet"

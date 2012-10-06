@@ -30,6 +30,9 @@ define [
   generateId = ->
     "#{parseInt(Math.random()*1000000000)}" 
 
+  instanceName = (instance) ->
+    instance?.get('name') or instance?.get('type')?.get 'name'
+
   {
 
     # This method is intended to replace the broken typeof() Javascript operator.
@@ -57,7 +60,6 @@ define [
       names= _.keys(object).sort()
       result[name] = object[name] for name in names
       return result
-
 
     # Displays a popup window, with relevant title, message and buttons.
     # Button handler can be specified
@@ -123,4 +125,29 @@ define [
       ctx = canvas.getContext '2d'
       ctx.drawImage image, 0, 0
       canvas.toDataURL 'image/png'
+
+    # Returns name of an instance. If a 'name' property is available, use it.
+    # Otherwise, use the type name
+    #
+    # @param instance [Object] the concerned instance
+    # @return the instance name if relevant, or null
+    instanceName: instanceName
+
+    # Create an DOM help for instance drag'n drop operations.
+    # Use the instance type description image (if available), and instance name.
+    # Set the instance as 'instance' data of helper node
+    #
+    # @param instance [Object] the concerned instance
+    # @return the helper DOM node
+    dragHelper: (instance) ->
+      # put instance name and type image
+      dragged = $("<span><label>#{instanceName instance}</label></span>")
+      $('<span></span>').loadableImage(
+        source: instance?.get('type')?.get 'descImage'
+        noButtons: true
+      ).prependTo dragged
+
+      dragged.data 'instance', instance
+      dragged.addClass 'dragged'
+      dragged
   }

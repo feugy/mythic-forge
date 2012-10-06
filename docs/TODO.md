@@ -9,10 +9,11 @@
   - test images for field types and event types
 
 - Rheia
-  - **[TODO]** manage save errors on BaseModel and BaseCollection -> no update to be done if error
   - moderation perspective
     - Items
-      - display and navigates to linked
+      - displays, edits and navigates to linked
+      - restrict drop operations on object/array properties
+      - display tooltip on object/array properties
     - Maps
       - item affectation and moves by drag'n drop
       - contextual menu

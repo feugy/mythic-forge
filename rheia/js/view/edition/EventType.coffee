@@ -21,6 +21,7 @@
 define [
   'jquery'
   'underscore'
+  'utils/utilities'
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/EventType.html'
@@ -28,7 +29,7 @@ define [
   'utils/validators'
   'model/EventType'
   'widget/property'
-], ($, _, i18n, i18nEdition, template, BaseEditionView, validators, EventType) ->
+], ($, _, utils, i18n, i18nEdition, template, BaseEditionView, validators, EventType) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -110,6 +111,7 @@ define [
       # keep a copy of edited properties in the view
       @_editedProperties = {}
       $.extend true, @_editedProperties, @model.get 'properties'
+      @_editedProperties = utils.sortAttributes @_editedProperties
       # will trigger _onChange
       @_updateProperties()
 
@@ -232,7 +234,7 @@ define [
           type: newType
           def: row.find('.defaultValue').data('property').options.value
 
-      @_editedProperties = newProperties
+      @_editedProperties = utils.sortAttributes newProperties
       # triggers validation
       @_onChange()
 
