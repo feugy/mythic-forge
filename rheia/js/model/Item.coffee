@@ -148,14 +148,26 @@ define [
       for prop, def of properties
         value = @get prop
         if def.type is 'object' and typeof value is 'string'
-          # Do not resolve objects that were previously resolved
-          needResolution = true
-          break
-        else if def.type is 'array' and value?.length > 0 and typeof value[0] is 'string'
-          # Do not resolve arrays that were previously resolved
-          needResolution = true
-          break
-      
+          # try to get it locally first
+          value = Item.collection.get value
+          if value?
+            @set prop, value
+          else
+            # linked not found: ask to server
+            needResolution = true
+            break
+        else if def.type is 'array' 
+          for linked, i in value when typeof linked is 'string'
+            # try to get it locally first
+            linked = Item.collection.get linked
+            if linked?
+              value[i] = linked
+            else
+              # linked not found: ask to server
+              needResolution = true
+              break
+          break if needResolution
+            
       # exit immediately if no resolution needed  
       return _.defer (=> callback null, @) unless needResolution
 
@@ -163,8 +175,8 @@ define [
       sockets.game.once 'getItems-resp', (err, items) =>
         return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
         # silentely update local cache
-        idx = @collection.indexOf @
-        @collection.add items[0], at:idx, silent: true
+        idx = Item.collection.indexOf @
+        Item.collection.add items[0], at:idx, silent: true
         # end of resolution.
         console.log "linked ids for item #{@id} resolved"
         callback null, items[0]

@@ -153,10 +153,10 @@ checkPropertyType = (value,  property) ->
     err = "#{value} isn't a valid string" unless value is null or 
       typeof value is 'string'
 
-  # object: null or object with a __proto__ that have the good name.    
-  checkObject = (val, isArray) ->
-    err = "#{value} isn't a valid #{property.def}" if val isnt null and 
-      (typeof val isnt 'object' or val?.collection?.name isnt property.def.toLowerCase()+'s')
+  # object: null or string (id) or object with a collection that have the good name.    
+  checkObject = (val) ->
+    err = "#{value} isn't a valid #{property.def}" unless val is null or typeof val is 'string' or
+      (typeof val is 'object' and val?.collection?.name is property.def.toLowerCase()+'s')
 
   switch property.type 
     # integer: null or float = int value of a number/object
@@ -176,7 +176,7 @@ checkPropertyType = (value,  property) ->
     # date : null or typeof is date
     when 'date' then err = "#{value} isn't a valid date" unless value is null or 
       value instanceof Date
-    when 'object' then checkObject(value, false)
+    when 'object' then checkObject value
     # array: array that contains object at each index.
     when 'array'
       if value instanceof Array 

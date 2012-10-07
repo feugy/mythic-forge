@@ -11,7 +11,6 @@
 - Rheia
   - moderation perspective
     - Items
-      - displays, edits and navigates to linked
       - restrict drop operations on object/array properties
       - display tooltip on object/array properties
     - Maps
@@ -205,6 +204,7 @@
       - CRUD
       - external updates and removal
       - display and edit dynamic properties, and update rendering when changes detected
+      - displays, edits and navigates to linked
 
 - Atlas
   - map displayal

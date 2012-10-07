@@ -172,7 +172,14 @@ define [
 
       # item properties
       for name, widget of @_propWidgets
-        @model.set name, widget.options.value
+        value = widget.options.value
+        # stores only linked ids
+        if widget.options.type is 'object'
+          value = value?.id
+        else if widget.options.type is 'array'
+          value = (obj?.id for obj in value)
+
+        @model.set name, value
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -223,10 +230,21 @@ define [
 
       # item properties
       for name, widget of @_propWidgets
+        value = widget.options.value
+        original = @model.get name
+
+        # compare only linked ids
+        if widget.options.type is 'object'
+          value = value?.id
+          original = original?.id
+        else if widget.options.type is 'array'
+          value = (obj?.id for obj in value)
+          original = (obj?.id for obj in original)
+
         comparable.push 
           name: name
-          original: @model.get name
-          current: widget.options.value
+          original: original
+          current: value
 
       comparable
 
