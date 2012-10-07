@@ -18,9 +18,11 @@
 ###
 'use strict'
 
+async = require 'async'
 typeFactory = require './typeFactory'
 conn = require './connection'
 logger = require('../logger').getLogger 'model'
+Item = require './Item'
 
 # Define the schema for map item types
 ItemType = typeFactory 'ItemType', 
@@ -60,6 +62,26 @@ ItemType = typeFactory 'ItemType',
   typeProperties: true
   instanceClass: 'Item'
   hasImages: true
+  middlewares:
+
+    # save middleware: update items quantity when quantifiable state changes
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    save: (next) ->
+      if @isModified 'quantifiable'
+        quantity = if @get 'quantifiable' then quantity = 0 else quantity = null
+        # save type
+        next()
+        # get type instances
+        Item.find {type: @_id}, (err, instances) =>
+          return next new Error "Failed to update type instances: #{err}" if err?
+          # save all the modified instances
+          async.forEach instances, (instance, done) -> 
+            instance.set 'quantity', quantity 
+            instance.save done
+      else
+        # save type
+        next()
 
 # Export the Class.
 module.exports = conn.model 'itemType', ItemType

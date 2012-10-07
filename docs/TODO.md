@@ -127,6 +127,7 @@
   - login page
   - logout button
   - error reporting on network failure, kick and deployement in progress cases
+  - reconnection management, page reloading management
   - authoring perspective
     - reload when changing game client version
     - error handling while saving/moving/removing files (during deployement)
@@ -174,6 +175,7 @@
       - instance images
       - sprites
       - validation
+      - quantity management
     - EventType
     - FieldType
       - static fields and description image
@@ -203,6 +205,7 @@
     - Items
       - CRUD
       - external updates and removal
+      - quantity management
       - display and edit dynamic properties, and update rendering when changes detected
       - displays, edits and navigates to linked
 

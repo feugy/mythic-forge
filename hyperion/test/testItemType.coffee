@@ -134,12 +134,13 @@ describe 'ItemType tests', ->
 
     it 'should type be removed', (done) ->
       # when removing an item
-      type.remove ->
-
-      # then it's in mongo anymore
-      ItemType.find {}, (err, types) ->
-        assert.equal types.length, 0
-        done()
+      type.remove (err) ->
+        return done err if err?
+        # then it's in mongo anymore
+        ItemType.find {}, (err, types) ->
+          return done err if err?
+          assert.equal types.length, 0
+          done()
 
     it 'should type properties be created', (done) ->
       # when adding a property
@@ -216,7 +217,7 @@ describe 'ItemType tests', ->
       # then a modification event was issued
       watcher.on 'change', (operation, className, instance)->
         return if className isnt 'Item'
-        updates.push instance._id+''
+        updates.push instance._id.toString()
         assert.equal operation, 'update'
         assert.equal instance.depth, 30
 
@@ -225,33 +226,72 @@ describe 'ItemType tests', ->
       type.setProperty 'depth', 'integer', defaultDepth
       type.save (err) -> 
         return done err if err?
-        block = ->
+        next = ->
           Item.find {type: type._id}, (err, items) ->
             for item in items
               assert.isDefined item.get 'depth'
               assert.equal item.get('depth'), defaultDepth
-              assert.ok item._id+'' in updates
+              assert.ok item._id.toString() in updates
             done()
-        setTimeout block, 500
+        setTimeout next, 500
 
     it 'should existing items be updated when removing a type property', (done) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation,className, instance)->
+      watcher.on 'change', (operation, className, instance)->
         return if className isnt 'Item'
         assert.equal operation, 'update'
-        updates.push instance._id+''
+        updates.push instance._id.toString()
         assert.ok instance.color is undefined
 
       # when setting a property to a type
       defaultDepth = 30
       type.unsetProperty 'color'
       type.save (err) -> 
-        return done err if err?
-        block = ->
+        next done err if err?
+        next = ->
           Item.find {type: type._id}, (err, items) ->
+            return done err if err?
             for item in items
               assert.ok undefined is item.get('color'), 'color still present'
-              assert.ok item._id+'' in updates
+              assert.ok item._id.toString() in updates
             done()
-        setTimeout block, 50
+        setTimeout next, 50
+
+    it 'should items be updated when modifying quantifiable state', (done) ->
+      updates = []
+      # then a modification event was issued
+      watcher.on 'change', (operation, className, instance)->
+        return if className isnt 'Item'
+        assert.equal operation, 'update'
+        updates.push instance._id.toString()
+        assert.ok instance.color is undefined
+
+      # when setting quantifiable to true
+      type.set 'quantifiable', true
+      type.save (err) -> 
+        return done err if err?
+
+        next = ->
+          Item.find {type: type._id}, (err, items) ->
+            return done err if err?
+            # then all items have their quantity to 0
+            for item in items
+              assert.equal 0, item.get('quantity') , 'quantity not set to 0'
+              assert.ok item._id.toString() in updates
+
+            # when setting quantifiable to false
+            type.set 'quantifiable', false
+            type.save (err) -> 
+              return done err if err?
+              next2 = ->
+                Item.find {type: type._id}, (err, items) ->
+                  # then all
+                  for item in items
+                    assert.isNull item.get('quantity') , 'quantity not set to null'
+                    assert.ok item._id.toString() in updates
+                  done()
+
+              setTimeout next2, 50
+
+        setTimeout next, 50

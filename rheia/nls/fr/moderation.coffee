@@ -29,6 +29,7 @@ define
     abscissa: 'X'
     ordinate: 'Y'
     noMap: 'aucune'
+    quantity: 'Quantité'
 
   msgs:
     removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'object <b>%s</b> ?</p>"

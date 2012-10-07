@@ -20,11 +20,12 @@
 
 define [
   'jquery'
+  'underscore'
   'i18n!nls/widget'
   'utils/validators'
   'widget/loadableImage'
   'widget/property'
-],  ($, i18n, validators) ->
+],  ($, _, i18n, validators) ->
 
 
   # A special loadableImage that allows to input sprite informations.
@@ -115,7 +116,8 @@ define [
 
       @_refreshSprites()
 
-      @element.find('.dimensions input').keyup (event) => @_onDimensionChange event
+      @element.find('.dimensions input').keyup _.debounce ((event) => @_onDimensionChange event), 300
+
       @setOption 'spriteW', @options.spriteW
       @setOption 'spriteH', @options.spriteH
       @options._silent = false

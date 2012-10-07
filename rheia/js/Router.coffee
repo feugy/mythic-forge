@@ -209,9 +209,7 @@ define [
         localStorage.removeItem 'redirect'
         return window.location.pathname = redirect
       # Connects token
-      sockets.connect token, (err) =>
-        return @_onLoginError err.replace('handshake ', '').replace('error ', '') if err?
-
+      sockets.connect token, =>
         # Now require services.
         require [
           'service/ImagesService'
@@ -219,14 +217,19 @@ define [
           'service/AdminService' 
           'view/Layout'
         ], (ImagesService, SearchService, AdminService, LayoutView) =>
-          # instanciates singletons.
-          rheia.imagesService = new ImagesService()
-          rheia.searchService = new SearchService()
-          rheia.adminService = new AdminService()
-          rheia.layoutView = new LayoutView()
+          # removes previous error
+          $('#loginError').dialog 'close'
 
-          # display layout
-          $('body').append rheia.layoutView.render().$el
+          # do not recreates singletons in case of reconnection
+          if $('body > .layout').length is 0
+            # instanciates singletons.
+            rheia.imagesService = new ImagesService()
+            rheia.searchService = new SearchService()
+            rheia.adminService = new AdminService()
+            rheia.layoutView = new LayoutView()
+
+            # display layout
+            $('body').append rheia.layoutView.render().$el
 
           # run current or last-saved perspective
           current = window.location.pathname.replace conf.basePath, ''
@@ -235,6 +238,9 @@ define [
           # reset Backbone.history internal state to allow re-running current route
           Backbone.history.fragment = null
           @navigate current, trigger:true
+      , (err) =>
+        # something goes wrong !
+        @_onLoginError err.replace('handshake ', '').replace('error ', '')
 
     # **private**
     # Invoked when the login mecanism failed. Display details to user and go back to login
@@ -251,8 +257,8 @@ define [
         text: i18n.buttons.ok, 
         icon:'valid'
         click: => 
-          @navigate 'login', trigger:true
-      ]
+          @navigate 'login', trigger:true unless err is 'disconnected'
+      ], 0, 'loginError'
 
     # **private**
     # Invoked when a route that doesn't exists has been run.

@@ -92,7 +92,8 @@ describe 'Item tests', ->
 
       # when removing an item
       awaited = false
-      item.remove ->
+      item.remove (err) ->
+        return done err if err?
 
         # then it's not in mongo anymore
         Item.find {}, (err, docs) ->
@@ -186,6 +187,38 @@ describe 'Item tests', ->
                 assert.equal changes[0][0], 'deletion'
                 watcher.removeAllListeners 'change'
                 done()
+
+    it 'should quantity not be set on unquantifiable type', (done) ->
+      # given a unquantifiable type
+      type.set 'quantifiable', false
+      type.save (err) ->
+        return done err if err?
+        # when setting quantity on item
+        item.set 'quantity', 10
+        item.save (err, saved) ->
+          return done err if err?
+          # then quantity is set to null
+          assert.isNull saved.get 'quantity'
+          done()
+
+    it 'should quantity be set on quantifiable type', (done) ->
+      # given a unquantifiable type
+      type.set 'quantifiable', true
+      type.save (err) ->
+        return done err if err?
+        # when setting quantity on item
+        item.set 'quantity', 10
+        item.save (err, saved) ->
+          return done err if err?
+          # then quantity is set to relevant quantity
+          assert.equal 10, saved.get 'quantity'
+          # when setting quantity to null
+          item.set 'quantity', null
+          item.save (err, saved) ->
+            return done err if err?
+            # then quantity is set to 0
+            assert.equal 0, saved.get 'quantity'
+            done()
 
   describe 'given a type with object properties and several Items', -> 
 

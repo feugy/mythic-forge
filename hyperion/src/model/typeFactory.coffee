@@ -64,6 +64,7 @@ processLinks = (instance, properties) ->
 # @option options instanceProperties [Boolean] wether this type will embed properties
 # @option options typeClass [Object] if this type has instance-properties, the type class name
 # @option options hasImages [Boolean] if this type has images to be removed when type is removed
+# @option options middlewares [Object] type middleware, added before other middlewares
 # @return the created type
 module.exports = (typeName, spec, options = {}) ->
 
@@ -109,6 +110,10 @@ module.exports = (typeName, spec, options = {}) ->
   AbstractType.methods.equals = (object) ->
     return false unless utils.isA(object?._id, ObjectId) or 'string' is utils.type(object?._id) and object._id.length is 24
     @_id.equals object._id
+
+  # Adds custom middleware first
+  if 'object' is utils.type options?.middlewares
+    AbstractType.pre name, middleware for name, middleware of options.middlewares
 
   unless options?.noCache
     # This special finder maintains an in-memory cache of types, to faster type retrieval by ids.

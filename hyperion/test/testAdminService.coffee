@@ -390,6 +390,7 @@ describe 'AdminService tests', ->
       # when saving existing item type
       service.save 'ItemType', values, 'admin', (err, modelName, model) ->
         throw new Error "Can't save itemType: #{err}" if err?
+
         # then the created values are returned
         assert.ok itemTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
         assert.equal model.get('name'), itemTypes[1].get('name')

@@ -91,11 +91,9 @@ kick = (id, reason) ->
   return unless socket?  
   socket.get 'email', (err, email) ->
     return if err?
-    playerService.getByEmail email, (err, player) ->
-      notifier.notify 'players', 'disconnect', player if player?
-
-  logger.info "Kick user #{id} for #{reason}"
-  socket.disconnect()
+    socket.disconnect()
+    logger.info "Kick user #{email} for #{reason}"
+    playerService.disconnect email, (err) ->
 
 # Set a cookie after authentication to grant access on game dev client.
 #

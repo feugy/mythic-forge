@@ -37,7 +37,7 @@ Item = typeFactory 'Item',
     type: Number
     default: 0
   # states give tips to clients for rendering the Item. They allow for exemple to display
-  # som lone-live animation. For example, 'sleep' state while display a snoring animation.
+  # some long-live animation. For example, 'sleep' state while display a snoring animation.
   state: 
     type: String
     default: null
@@ -51,6 +51,10 @@ Item = typeFactory 'Item',
       # force transition to appear in modifiedPath, to allow propagation
       @markModified('transition')
       value
+  # For quantifiable items, available quantity
+  quantity:
+    type: Number
+    default: null
 , 
   noCache: true
   noDesc: true
@@ -58,31 +62,37 @@ Item = typeFactory 'Item',
   instanceProperties: true
   typeClass: 'ItemType'
   strict: false
-        
-# pre-init middleware: retrieve the map corresponding to the stored id.
-#
-# @param item [Item] the initialized item.
-# @param next [Function] function that must be called to proceed with other middleware.
-Item.pre 'init', (next, item) ->
-  return next() unless item.map?
-  # loads the type from local cache
-  Map.findCached item.map, (err, map) ->
-    return next(new Error "Unable to init item #{item._id}. Error while resolving its map: #{err}") if err?
-    return next(new Error "Unable to init item #{item._id} because there is no map with id #{item.map}") unless map?    
-    # Do the replacement.
-    item.map = map
-    next()
+  middlewares:
+    # pre-init middleware: retrieve the map corresponding to the stored id.
+    #
+    # @param item [Item] the initialized item.
+    # @param next [Function] function that must be called to proceed with other middleware.
+    init: (next, item) ->
+      return next() unless item.map?
+      # loads the type from local cache
+      Map.findCached item.map, (err, map) ->
+        return next(new Error "Unable to init item #{item._id}. Error while resolving its map: #{err}") if err?
+        return next(new Error "Unable to init item #{item._id} because there is no map with id #{item.map}") unless map?    
+        # Do the replacement.
+        item.map = map
+        next()
 
-# pre-save middleware: only save the map reference, not the whole object
-#
-# @param next [Function] function that must be called to proceed with other middleware.
-Item.pre 'save', (next) ->
-  # replace map with its id, for storing in Mongo, without using setters.
-  saveMap = @map
-  @_doc.map = saveMap?._id
-  next()
-  # restore save to allow reference reuse.
-  @_doc.map = saveMap
+    # pre-save middleware: only save the map reference, not the whole object
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    save: (next) ->
+      # enforce quantity value regarding the type quantifiable attribute
+      if @get('type').get 'quantifiable'
+        @set 'quantity', 0 unless @get('quantity')?
+      else
+        @set 'quantity', null if @get('quantity')?
+
+      # replace map with its id, for storing in Mongo, without using setters.
+      saveMap = @map
+      @_doc.map = saveMap?._id
+      next()
+      # restore save to allow reference reuse.
+      @_doc.map = saveMap
 
 # Export the Class.
 module.exports = conn.model 'item', Item

@@ -36,8 +36,8 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   text-align center
 
   img 
-    width 100%
-    height 100%
+    max-height imageDim
+    max-width imageDim
 
   img:not([src])
     height 0
@@ -247,6 +247,8 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   img
     height auto
     width auto
+    max-height inherit
+    max-width inherit
 
 // Search
 .search
@@ -419,6 +421,10 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     width size
     margin-right 5px
     vertical-align middle
+
+    img
+      height size
+      width size
 
   span
     > *

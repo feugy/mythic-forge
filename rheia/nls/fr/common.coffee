@@ -83,7 +83,7 @@ define
     wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'
     insufficientRights: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, il va falloir trimer un peu !</p>"
     expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter.</p>'
-    networkFailure: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants avant de vous reconnecter.</p>'
+    networkFailure: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants : dès que le serveur sera joignable, vous serez automatiquement reconnecté.</p>'
     disconnected: '<p>Vous avez été déconnecté du serveur.</p>'
     deploymentInProgress: '<p>Une version est en cours de déploiement.</p><p>Veuillez patienter quelques instants avant de vous reconnecter.</p>'
     clientAccessDenied: '<p>Vous devez être authentifié et disposer des droits suffisants pour accéder à cette resource.</p>'

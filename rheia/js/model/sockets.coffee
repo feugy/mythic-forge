@@ -24,6 +24,11 @@ define [
 ], (io, async) ->
 
   isLoggingOut = false
+  connected = false
+
+  $(window).on 'beforeunload', () ->
+    isLoggingOut = true
+    undefined
 
   # different namespaces that ca be used to communicate qith server
   namespaces =
@@ -34,21 +39,12 @@ define [
     # the connect function will try to connect with server. 
     # 
     # @param token [String] the autorization token, obtained during authentication
-    # @param callback [Function] invoked when all namespaces have been connected, with arguments:
-    # @option callback err [String] the error detailed case, or null if no error occured
-    connect: (token, callback) ->
+    # @param callback [Function] invoked when all namespaces have been connected.
+    # @param errorCallback [Function] invoked when connection cannot be established, or is lost:
+    # @option errorCallback err [String] the error detailed case, or null if no error occured
+    connect: (token, callback, errorCallback) ->
       isLoggingOut = false
-      socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
-      socket.on 'error', callback
-      socket.on 'disconnect', (reason) -> 
-        return if isLoggingOut
-        callback if reason is 'booted' then 'kicked' else 'disconnected'
-
-      # On connection, retrieve current connected player immediately
-      socket.emit 'getConnected', (err, player) =>
-        # stores the token to allow re-connection
-        rheia.player = player
-        localStorage.setItem 'token', player.token
+      connected = true
 
       # wire logout facilities
       rheia.router.on 'logout', => 
@@ -57,14 +53,34 @@ define [
         socket.emit 'logout'
         rheia.router.navigate 'login', trigger: true
 
-      names = Object.keys namespaces
-      names.splice names.indexOf('connect'), 1
+      socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
 
-      async.forEach names, (name, next) ->
-        namespaces[name] = socket.of "/#{name}"
-        namespaces[name].on 'connect', next
-        namespaces[name].on 'connect_failed', next
-      , (err) ->
-        callback err
+      socket.on 'error', (err) ->
+        errorCallback err if connected
+
+      socket.on 'disconnect', (reason) ->
+        connected = false 
+        return if isLoggingOut
+        errorCallback if reason is 'booted' then 'kicked' else 'disconnected'
+
+      socket.on 'connect', -> 
+        # On connection, retrieve current connected player immediately
+        socket.emit 'getConnected', (err, player) =>
+          # stores the token to allow re-connection
+          rheia.player = player
+          localStorage.setItem 'token', player.token
+          # update socket.io query to allow reconnection with new token value
+          socket.socket.options.query = "token=#{player.token}"
+
+        names = Object.keys namespaces
+        names.splice names.indexOf('connect'), 1
+
+        async.forEach names, (name, next) ->
+          namespaces[name] = socket.of "/#{name}"
+          namespaces[name].on 'connect', next
+          namespaces[name].on 'connect_failed', next
+        , (err) ->
+          return errorCallback err if err?
+          callback()
 
   namespaces

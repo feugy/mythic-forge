@@ -70,6 +70,10 @@ define [
     _imageWidget: null
 
     # **private**
+    # widget to manage quantity
+    _quantityWidget: null
+
+    # **private**
     # array of property widgets
     _propWidgets: {}
 
@@ -155,6 +159,16 @@ define [
         change: @_onChange
       ).data 'property' 
 
+      if @model.get('type')?.get 'quantifiable'
+        @_quantityWidget = @$el.find('.quantity.field').property(
+          type: 'float'
+          allowNull: false
+          change: @_onChange
+        ).data 'property'
+      else
+        @_quantityWidget = null
+        @$el.find('.quantity').remove()
+
       super()
 
     # **private**
@@ -169,6 +183,7 @@ define [
       @model.set 'map', Map.collection.get @_mapList.find('option').filter(':selected').val()
       @model.set 'x', @_xWidget.options.value
       @model.set 'y', @_yWidget.options.value
+      @model.set 'quantity', @_quantityWidget.options.value if @_quantityWidget?
 
       # item properties
       for name, widget of @_propWidgets
@@ -191,6 +206,7 @@ define [
       @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected'
       @_xWidget.setOption 'value', @model.get 'x'
       @_yWidget.setOption 'value', @model.get 'y'
+      @_quantityWidget.setOption 'value', @model.get 'quantity' if @_quantityWidget
 
       # resolve linked and draw properties
       @model.resolve @_onItemResolved
@@ -227,6 +243,12 @@ define [
         name: 'y'
         original: @model.get 'y'
         current: @_yWidget.options.value
+
+      if @_quantityWidget
+        comparable.push 
+          name: 'quantity'
+          original: @model.get 'quantity'
+          current: @_quantityWidget.options.value 
 
       # item properties
       for name, widget of @_propWidgets
@@ -275,25 +297,24 @@ define [
       @_propWidgets = {}
       container.find('tr.prop').remove()
 
-      # TODO console.dir @model.attributes
-      # TODO console.dir @model.get('type').get('properties')
-
       # creates a property widget for each type's properties
       properties = utils.sortAttributes @model.get('type').get 'properties'
       for name, prop of properties
         value = @model.get name
         value = prop.def if value is undefined
-
+        accepted = []
+        if (prop.type is 'object' or prop.type is 'array') and prop.def isnt 'Any'
+          accepted = [prop.def]
         row = $("<tr class='prop'><td class='left'>#{name}#{i18n.labels.fieldSeparator}</td></tr>").appendTo container
         widget = $('<td class="right"></td>').property(
           type: prop.type
           value: value
           isInstance: true
+          accepted: accepted
           open: (event, instance) =>
             # opens players, items, events
             rheia.router.trigger 'open', instance.constructor.name, instance.id
           # TODO tooltipFct: null
-          # TODO accepted: []
         ).appendTo(row).data 'property'
         @_propWidgets[name] = widget
         widget.setOption 'change', @_onChange

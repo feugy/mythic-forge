@@ -133,12 +133,13 @@ describe 'EventType tests', ->
 
     it 'should type be removed', (done) ->
       # when removing an event
-      type.remove ->
-
-      # then it's in mongo anymore
-      EventType.find {}, (err, types) ->
-        assert.equal types.length, 0
-        done()
+      type.remove (err) ->
+        return done err if err?
+        # then it's in mongo anymore
+        EventType.find {}, (err, types) ->
+          return done err if err?
+          assert.equal types.length, 0
+          done()
 
     it 'should type properties be created', (done) ->
       # when adding a property

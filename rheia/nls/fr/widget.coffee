@@ -54,9 +54,6 @@ define
     },{
       val:'Event'
       name:'évènements'
-    },{
-      val:'Field'
-      name:'terrains'
     }]
 
   instanceDetails:
