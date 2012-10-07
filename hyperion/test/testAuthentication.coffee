@@ -27,7 +27,7 @@ assert = require('chai').assert
 port = utils.confKey 'server.apiPort'
 rootUrl = "http://localhost:#{port}"
 
-describe.skip 'Authentication tests', ->
+describe 'Authentication tests', ->
 
   before (done) ->
     Player.collection.drop (err)->

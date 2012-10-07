@@ -10,9 +10,6 @@
 
 - Rheia
   - moderation perspective
-    - Items
-      - restrict drop operations on object/array properties
-      - display tooltip on object/array properties
     - Maps
       - item affectation and moves by drag'n drop
       - contextual menu
@@ -208,6 +205,8 @@
       - quantity management
       - display and edit dynamic properties, and update rendering when changes detected
       - displays, edits and navigates to linked
+      - restrict drop operations on object/array properties
+      - display tooltip on object/array properties
 
 - Atlas
   - map displayal

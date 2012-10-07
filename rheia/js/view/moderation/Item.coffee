@@ -54,6 +54,10 @@ define [
     _created: null
 
     # **private**
+    # indicates wether or not this item has quantity
+    _hasQuantity: false
+
+    # **private**
     # select to display current map
     _mapList: null
 
@@ -159,15 +163,11 @@ define [
         change: @_onChange
       ).data 'property' 
 
-      if @model.get('type')?.get 'quantifiable'
-        @_quantityWidget = @$el.find('.quantity.field').property(
-          type: 'float'
-          allowNull: false
-          change: @_onChange
-        ).data 'property'
-      else
-        @_quantityWidget = null
-        @$el.find('.quantity').remove()
+      @_quantityWidget = @$el.find('.quantity.field').property(
+        type: 'float'
+        allowNull: false
+        change: @_onChange
+      ).data 'property'
 
       super()
 
@@ -183,7 +183,7 @@ define [
       @model.set 'map', Map.collection.get @_mapList.find('option').filter(':selected').val()
       @model.set 'x', @_xWidget.options.value
       @model.set 'y', @_yWidget.options.value
-      @model.set 'quantity', @_quantityWidget.options.value if @_quantityWidget?
+      @model.set 'quantity', @_quantityWidget.options.value if @_hasQuantity
 
       # item properties
       for name, widget of @_propWidgets
@@ -199,6 +199,9 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
+      @_hasQuantity = @model.get('type')?.get 'quantifiable'
+      @$el.find('.quantity').toggle @_hasQuantity
+      
       # image number
       @_imageWidget.setOption 'current', @model.get 'imageNum'
 
@@ -206,7 +209,7 @@ define [
       @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected'
       @_xWidget.setOption 'value', @model.get 'x'
       @_yWidget.setOption 'value', @model.get 'y'
-      @_quantityWidget.setOption 'value', @model.get 'quantity' if @_quantityWidget
+      @_quantityWidget.setOption 'value', @model.get 'quantity' if @_hasQuantity
 
       # resolve linked and draw properties
       @model.resolve @_onItemResolved
@@ -244,7 +247,7 @@ define [
         original: @model.get 'y'
         current: @_yWidget.options.value
 
-      if @_quantityWidget
+      if @_hasQuantity
         comparable.push 
           name: 'quantity'
           original: @model.get 'quantity'
@@ -311,10 +314,10 @@ define [
           value: value
           isInstance: true
           accepted: accepted
+          tooltipFct: utils.instanceTooltip
           open: (event, instance) =>
             # opens players, items, events
             rheia.router.trigger 'open', instance.constructor.name, instance.id
-          # TODO tooltipFct: null
         ).appendTo(row).data 'property'
         @_propWidgets[name] = widget
         widget.setOption 'change', @_onChange

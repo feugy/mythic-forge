@@ -108,7 +108,9 @@ define [
       @options.open = false
       @element.off('.toggleable').stop().fadeOut @options.animationSpeed
       $(document).off ".toggleable.#{@_id}"
-      @element.remove() if @options.removeOnClose
+      if @options.destroyOnClose
+        @element.remove() 
+        @destroy()
 
     # Destroyer: free dom handlers
     destroy: ->

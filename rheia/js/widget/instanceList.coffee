@@ -122,7 +122,7 @@ define [
         line = $("<li data-idx='#{i}'></li>").appendTo @element
         $('<span></span>').instanceDetails(
           value: link,
-          tooltipFct: @tooltipFct,
+          tooltipFct: @options.tooltipFct,
           dndType: @options.dndType
         ).appendTo line
         # adds buttons if needed

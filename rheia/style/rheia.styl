@@ -61,6 +61,7 @@ select
 
 // Menus
 .menu
+.tooltip
   position absolute
   background-color bgColor
   border 1px solid borderColor
@@ -68,26 +69,33 @@ select
   margin-top: 2px
   border-radius radius
   padding 0.2em
-  opacity 0
   transition opacity 200ms
+  opacity 0
   z-index -1
 
-  > * 
-    hoverable()
-    padding 0.5em 1em
+.menu > *
+  hoverable()
+  padding 0.5em 1em
+
+.tooltip
+  padding 0.5em
+  background hoverColor
+
+.tooltip > *
+  font-size fontSize*0.8
+  padding 0.25em 0.5em
 
 .menu.open
+.menu.toggleable 
+.tooltip
   z-index 10
   opacity 1
 
-.menu.toggleable 
-  opacity 1
+.menu.toggleable li 
+  font-size fontSize*0.8
 
-  li 
-    font-size fontSize*0.8
-
-    i.ui-icon
-      margin 0 0.5em 0 -0.5em
+  i.ui-icon
+    margin 0 0.5em 0 -0.5em
 
 // Button
 

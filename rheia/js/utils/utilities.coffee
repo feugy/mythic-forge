@@ -21,7 +21,8 @@
 define [
   'jquery'
   'underscore'
-], ($, _) ->
+  'i18n!nls/common'
+], ($, _, i18n) ->
 
   classToType = {}
   for name in 'Boolean Number String Function Array Date RegExp Undefined Null'.split ' '
@@ -150,4 +151,19 @@ define [
       dragged.data 'instance', instance
       dragged.addClass 'dragged'
       dragged
+
+    # Returns the tooltip HTML content for a given instance
+    # 
+    # @param model [Object] the concerned instance.
+    # @return the HTML content of a tooltip
+    instanceTooltip: (model) ->
+      content = ''
+      switch model?.constructor.name
+        when 'Item'
+          content = _.sprintf i18n.tips.item, 
+            if model.get('quantity')? then model.get 'quantity' else i18n.labels.noQuantity,
+            if model.get('map')? then model.get('map').get 'name' else i18n.labels.noMap,
+            if model.get('x')? then model.get 'x' else i18n.labels.noX,
+            if model.get('y')? then model.get 'y' else i18n.labels.noY
+      content
   }

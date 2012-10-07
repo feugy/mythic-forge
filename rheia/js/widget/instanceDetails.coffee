@@ -26,6 +26,7 @@ define [
   'i18n!nls/widget'
   'widget/baseWidget'
   'widget/loadableImage'
+  'widget/toggleable'
 ], ($, _, utils, i18n, i18nWidget) ->
 
   i18n = $.extend true, i18n, i18nWidget
@@ -53,9 +54,18 @@ define [
       
       # Tooltip animations length
       tooltipFade: 250
+
+    # **private**
+    # created tooltip
+    _tooltip: null
+
+    # **private**
+    # simple timeout to delay tooltip opening
+    _tooltipTimeout: null
       
     # destructor: free DOM nodes and handles
     destroy: ->
+      @_tooltip?.remove()
       @element.find('*').unbind()
       $.rheia.baseWidget::destroy.apply @, arguments
 
@@ -84,16 +94,22 @@ define [
         cursorAt: top:-5, left:-5
         helper: => utils.dragHelper @options.value
 
-      # TODO adds a tooltip
-      ###
-      // Tooltip si besoin est
+      # adds a tooltip
       if 'function' is utils.type @options.tooltipFct
-        @element.attr 'title', @options.tooltipFct instance
-        @element.tooltip
-          extraClass: ''
-          fade: @options.tooltipFade
-          showURL: false
-      ###
+        @element.on 'mouseenter', (event) =>
+          clearTimeout @_tooltipTimeout
+          @_tooltipTimeout = setTimeout =>
+            if @_tooltip
+              return if @_tooltip.options.open
+            else
+              @_tooltip = $("<div class='tooltip'>#{@options.tooltipFct @options.value}</div>")
+                .appendTo('body')
+                .toggleable(
+                  firstShowDelay: 1000
+                ).data 'toggleable'
+            @_tooltip.open event.pageX, event.pageY
+          , 750
+        @element.on 'mouseleave', => clearTimeout @_tooltipTimeout
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if value change.
