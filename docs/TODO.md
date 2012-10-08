@@ -11,8 +11,7 @@
 - Rheia
   - moderation perspective
     - Maps
-      - item affectation and moves by drag'n drop
-      - contextual menu
+      - multiple item menu
       - items animations (with z-ordering)
     - Event CRUD
     - Players CRUD
@@ -199,6 +198,7 @@
       - map moves by drag' drop
       - items rendering update
       - item click
+      - item affectation and moves by drag'n drop
     - Items
       - CRUD
       - external updates and removal

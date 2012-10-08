@@ -108,6 +108,7 @@ define [
 
       # instanciate map widget
       @_mapWidget = @$el.find('.map').moderationMap(
+        dndType: i18n.constants.instanceAffectation
         tileDim: 75
         verticalTileNum: 12
         horizontalTileNum: 7
@@ -123,6 +124,8 @@ define [
         itemClicked: (event, item) =>
           # opens the clicked item
           rheia.router.trigger 'open', 'Item', item.id
+        affectInstance: @_onAffect
+
       ).data 'moderationMap'
 
       # bind maps commands
@@ -295,3 +298,21 @@ define [
         distance: 15
         cursorAt: top:-5, left:-5
         helper: -> utils.dragHelper view.model
+
+    # **private**
+    # Instance affectation handler.
+    # Set the map and coordinate of the instance, and save it.
+    #
+    # @param event [Event] the drop event on map widget
+    # @param details [Object] drop details:
+    # @option details instance [Object] the affected instance
+    # @option details mapId [String] the new map id
+    # @option details coord [Object] x and y coordinates of the drop tile
+    _onAffect: (event, details) =>
+      map = Map.collection.get details.mapId
+      return unless map?
+      details.instance.set 'map', map
+      details.instance.set 'x', details.coord.x
+      details.instance.set 'y', details.coord.y
+      # finally, save the instance
+      details.instance.save()

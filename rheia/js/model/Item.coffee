@@ -20,10 +20,11 @@
 
 define [
   'underscore'
+  'utils/utilities'
   'model/sockets'
   'model/BaseModel'
   'model/ItemType'
-], (_, sockets, Base, ItemType) ->
+], (_, utils, sockets, Base, ItemType) ->
 
   # Client cache of item types.
   class _Items extends Base.Collection
@@ -182,3 +183,22 @@ define [
         callback null, items[0]
 
       sockets.game.send 'getItems', [@id]
+
+    # **private** 
+    # Method used to serialize a model when saving and removing it
+    # Only keeps ids in linked properties to avoid recursion, before returning JSON representation 
+    #
+    # @return a serialized version of this model
+    _serialize: => 
+      properties = @get('type').get 'properties'
+      attrs = {}
+      for name, value of @attributes
+        if properties[name]?.type is 'object'
+          attrs[name] = if 'object' is utils.type value then value?.id else value
+        else if properties[name]?.type is 'array'
+          linked = []
+          attrs[name] = ((if 'object' is utils.type obj then obj?.id else obj) for obj in value)
+        else
+          attrs[name] = value
+      # returns the json attributes
+      attrs

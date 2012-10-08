@@ -332,7 +332,8 @@ define [
         left: -@_width
       ).draggable(
         distance: 5
-        helper: => @_container
+        scope: o.dndType
+        helper: (event) => @_mapDragHelper event
         start: (event) => @_onDragStart event
         drag: (event) => @_onDrag event
         stop: (event, details) => @_onDragStop event, details
@@ -341,6 +342,9 @@ define [
       ).on('mousemove', (event) => 
         return unless @_moveJumper++ % 3 is 0
         @_cursor = @getCoord @_mousePos event
+        @_drawCursor()
+      ).on('mouseleave', (event) => 
+        @_cursor = null
         @_drawCursor()
       ).appendTo @element
 
@@ -401,6 +405,15 @@ define [
           @options[key] = value
           # change zoom without triggering the event
           @_zoom @options.zoom, true
+
+    # **private**
+    # Returns the DOM node moved by drag'n drop operation within the map.
+    # Intended to be inherited, this implementation returns the layer container
+    #
+    # @param event [Event] the drag start event
+    # @return the moved DOM node.
+    _mapDragHelper: (event) -> 
+      @_container
 
     # **private**
     # Extracts mouse position from DOM event, regarding the browser.
@@ -552,9 +565,9 @@ define [
     # **private**
     # Redraws cursor on stored position (@_cursor)
     _drawCursor: ->
-      return unless @_cursor
       canvas = @element.find('.hover')[0]
       canvas.width = canvas.width
+      return unless @_cursor
       @_drawTile canvas.getContext('2d'), @_cursor, @options.colors.hover
 
     # **private**
@@ -740,6 +753,7 @@ define [
         for x in [lower.x..higher.x]
           for y in [lower.y..higher.y]
             @_drawTile ctx, {x:x, y:y}, @options.colors.selection
+      true
     
     # **private**
     # Drag'n drop handler that ends selection or move map.

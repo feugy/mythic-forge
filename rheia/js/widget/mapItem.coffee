@@ -40,13 +40,12 @@ define [
       # disable buttons
       noButtons: true
 
+      # current position of the widget in map. Read-only: do not change externally
+      coordinates: x:null, y:null
+
     # **private**
     # model image specification
     _imageSpec: null
-
-    # **private**
-    # current position of the widget in map
-    _coordinates: x:null, y:null
 
     # Frees DOM listeners
     destroy: ->
@@ -78,11 +77,11 @@ define [
       coordinates =
         x: @options.model.get 'x'
         y: @options.model.get 'y'
-      return unless coordinates.x isnt @_coordinates.x or coordinates.y isnt @_coordinates.y
-      @_coordinates = coordinates
+      return unless coordinates.x isnt @options.coordinates.x or coordinates.y isnt @options.coordinates.y
+      @options.coordinates = coordinates
 
       # get the widget cell coordinates
-      pos = @options.map.elementOffset @_coordinates
+      pos = @options.map.elementOffset @options.coordinates
 
       zoom = @options.map.options.zoom
       

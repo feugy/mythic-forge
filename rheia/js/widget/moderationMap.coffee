@@ -21,9 +21,10 @@
 define [
   'jquery'
   'underscore'
+  'utils/utilities'
   'widget/authoringMap'
   'widget/mapItem'
-],  ($, _) ->
+],  ($, _, utils) ->
 
   # Specific map that adds items support to authoring Map, and remove selection features
   # triggers an `itemClicked` event with model as attribute when clicked
@@ -49,6 +50,14 @@ define [
     # **private**
     # Number of pending loading items 
     _loading: 0
+
+    # **private**
+    # Dragged item candidates
+    _dragged: []
+
+    # **private**
+    # Flag to indicate wether the dragged item is inside or outside the widget
+    _draggedInside: false
 
     # Adds field or items to map. Will be effective only if the objects is inside displayed bounds.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
@@ -154,3 +163,100 @@ define [
 
       # superclass inherited behaviour
       $.rheia.authoringMap::_setOption.apply @, arguments
+
+    # **private**
+    # Drag'n drop start handler. Allow to drag items if item selected.
+    #
+    # @param event [Event] drag'n drop start mouse event
+    # @return false to cancel the jQuery drag'n drop operation
+    _onDragStart: (event) ->
+      #  cancels drag if we have multiple dragged target
+      return false if @_dragged.length > 1
+      # reset dragged candidate if needed
+      @_dragged = [] unless @_dragged.length is 1
+      # call inherited method
+      $.rheia.authoringMap::_onDragStart.apply @, arguments
+
+    # **private**
+    # Returns the DOM node moved by drag'n drop operation within the map.
+    # Intended to be inherited, this implementation returns the layer container
+    #
+    # @param event [Event] the drag start event
+    # @return the moved DOM node.
+    _mapDragHelper: (event) ->
+      moved = @_container
+      # move from the map: search for an item wbove position
+      offset = @element.offset()
+      pos = @getCoord x:event.pageX+@_width-offset.left, y:event.pageY+@_height-offset.top
+
+      @_dragged = []
+      for id, widget of @_itemWidgets
+        if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
+          @_dragged.push widget.options.model
+
+      if @_dragged.length is 1
+        console.debug "moves instance #{@_dragged[0].id}"
+        # creates a drag handler inside body
+        moved = utils.dragHelper(@_dragged[0]).appendTo $('body')
+        
+        # set cursor offset of the drag helper, and avoid helper to be bellow cursor
+        @_container.draggable 'option', 'cursorAt',
+          left: (@_tileW*@options.zoom/2)-25
+          top: (@_tileH*@options.zoom/2)-22
+      else
+        # reset the drag helper cursor offset
+        @_container.draggable 'option', 'cursorAt', null
+      moved;
+
+    # **private**
+    # Drag handler, that allows drag operation on items going outside widget bounds
+    #
+    # @param event [Event] drag'n drop mouse event
+    # @return false to cancel the drag'n drop operation
+    _onDrag: (event) ->
+      # call inherited method
+      @_draggedInside = $.rheia.authoringMap::_onDrag.apply @, arguments
+      # always allows item drag operations
+      return true if @_dragged.length is 1
+      # otherwise returns inherited result
+      @_draggedInside
+
+    # **private**
+    # Drag'n drop handler that ends selection or move map. 
+    # If an item is dragged inside map, let the `_onDrop` handler affect new coordinates
+    # If an item is dragged outside map, does nothing.
+    # 
+    # @param event [Event] move/selection end event.
+    # @param details [Object] moved object details:
+    # @option details draggable [Object] operation source
+    # @option details helper [Object] moved object
+    # @option details position [Object] current position of the moved object
+    _onDragStop: (event, details) ->
+      if @_dragged.length is 1
+        # if inside, do drop. otherwise, does nothing
+        if @_draggedInside
+          console.log "dragged item #{@_dragged[0].id} inside map"
+          @_onDrop event, details 
+      else
+       $.rheia.authoringMap::_onDragStop.apply @, arguments
+
+    # **private**
+    # Map drop handler. Triggers affectation of item types.
+    #
+    # @param event [Event] move/selection end event.
+    # @param details [Object] moved object details:
+    # @option details draggable [Object] operation source
+    # @option details helper [Object] moved object
+    # @option details position [Object] current position of the moved object
+    _onDrop: (event, details) ->
+      return unless @_cursor
+      instance = details?.helper?.data 'instance'
+      if instance?
+        console.log "drops instance #{instance.id} at coordinates x:#{@_cursor.x}, y:#{@_cursor.y}"
+        # we dragged an item inside map
+        @_trigger 'affectInstance', event,
+          instance: instance
+          coord: @_cursor,
+          mapId: @options.mapId
+      else
+        $.rheia.authoringMap::_onDrop.apply @, arguments
