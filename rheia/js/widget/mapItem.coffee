@@ -26,7 +26,6 @@ define [
 
   # Widget that renders an item inside a map Item.
   # Manage its position and its animations
-  # triggers an `clicked` event with model as attribute when clicked
   $.widget 'rheia.mapItem', $.rheia.loadableImage, 
 
     options:    
@@ -62,8 +61,6 @@ define [
       $.rheia.loadableImage::_create.apply @, arguments
 
       @element.addClass 'map-item'
-      @element.on 'click', (event) =>
-        @_trigger 'clicked', event, @options.model
 
       # bind to model events
       @bindTo @options.model, 'update', (model) => @_onUpdate model

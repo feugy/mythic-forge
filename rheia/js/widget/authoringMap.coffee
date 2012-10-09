@@ -416,22 +416,16 @@ define [
       @_container
 
     # **private**
-    # Extracts mouse position from DOM event, regarding the browser.
+    # Extracts mouse position from DOM event, regarding the container.
     # @param event [Event] 
     # @return the mouse position
     # @option return x the abscissa position
     # @option return y the ordinate position
     _mousePos: (event) ->
-      offset = top:0, left:0
-      # in some layers, hovered target may be absolutely positionnated
-      parent = $(event.target).offsetParent()
-      unless parent.is @_container 
-        offset = parent.position() 
-        offset.left -= @_tileW
-        offset.top += @_tileH
+      offset = @_container.offset()
       {
-        x: offset.left + if $.browser.webkit then event.offsetX else event.originalEvent.layerX
-        y: offset.top + if $.browser.webkit then event.offsetY else event.originalEvent.layerY
+        x: event.pageX-offset.left
+        y: event.pageY-offset.top
       }
 
     # **private**

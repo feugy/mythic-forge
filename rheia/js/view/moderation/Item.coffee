@@ -304,7 +304,14 @@ define [
       properties = utils.sortAttributes @model.get('type').get 'properties'
       for name, prop of properties
         value = @model.get name
-        value = prop.def if value is undefined
+        if value is undefined
+          if prop.type is 'object'
+            value = null
+          else if prop.type is 'array'
+            value = []
+          else
+            value = prop.def
+
         accepted = []
         if (prop.type is 'object' or prop.type is 'array') and prop.def isnt 'Any'
           accepted = [prop.def]

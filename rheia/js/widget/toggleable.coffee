@@ -91,7 +91,10 @@ define [
       left -= left+dim.w+10 - win.w if left+dim.w > win.w
 
       @options.open = true
-      @element.css(left: left, top: top).stop().fadeIn @options.animationSpeed
+      @element.css(
+        left: left
+        top: top
+      ).stop().fadeIn @options.animationSpeed
               
       if @options.closeOnOut
         # attaches hover handler and automatic close if nothing happens

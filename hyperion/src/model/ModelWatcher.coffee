@@ -57,9 +57,9 @@ class _ModelWatcher extends EventEmitter
     # do not embed the linked map and type for items and fields
     parameter.type = parameter.type?._id if className is 'Item'
 
-    unless modified and 'map' in modified
+    if modified and 'map' in modified and (className is 'Item' or className is 'Field')
       # but send the map if it changed
-      parameter.map = parameter.map?._id if className is 'Item' or className is 'Field'
+      parameter.map = parameter.map?._id if 'object' is utils.type parameter.map and parameter.map._id
 
     if operation is 'update'
       if className isnt 'Executable' and className isnt 'FSItem'

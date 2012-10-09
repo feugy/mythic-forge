@@ -95,7 +95,9 @@ define [
       return unless value >= 0 and value < @options.images.length
       
       # compute the image width for moves
-      imageWidth = @element.find('.container img').outerWidth true
+      parent = @element.parent()
+      imageWidth = @element.appendTo('body').find('.container img').outerWidth true
+      @element.appendTo parent
 
       # set the container total width, in case it hasn't enought space to display
       @element.find('.container').width imageWidth*@options.images.length
@@ -130,7 +132,7 @@ define [
       for image in @options.images
         container.append """<img class="#{@options.imageClass}" data-src="#{image}"/>"""
         rheia.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
-        
+
       # try to keep the current position
       if @options.current < images.length
         @_setCurrent @options.current

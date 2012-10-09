@@ -59,8 +59,9 @@ define [
     # @param changes [Object] new changes for a given model.
     _onUpdate: (className, changes) =>
       return unless className is @_className
-      if 'map' of changes and changes.map?._id
-        changes.map = require('model/Map').collection.get changes.map._id
+      if 'map' of changes and changes.map?
+        id = if 'object' is utils.type changes.map then changes.map._id else changes.map
+        changes.map = require('model/Map').collection.get id
       # always keep an up-to-date type
       model = @get changes[@model.prototype.idAttribute]
       model?.set 'type', ItemType.collection.get model.get('type')?.id
@@ -158,6 +159,7 @@ define [
             needResolution = true
             break
         else if def.type is 'array' 
+          value = [] unless value?
           for linked, i in value when typeof linked is 'string'
             # try to get it locally first
             linked = Item.collection.get linked
@@ -168,7 +170,7 @@ define [
               needResolution = true
               break
           break if needResolution
-            
+      
       # exit immediately if no resolution needed  
       return _.defer (=> callback null, @) unless needResolution
 

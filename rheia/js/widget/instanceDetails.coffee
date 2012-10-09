@@ -65,7 +65,7 @@ define [
       
     # destructor: free DOM nodes and handles
     destroy: ->
-      @_tooltip?.remove()
+      @_tooltip?.element.remove()
       @element.find('*').unbind()
       $.rheia.baseWidget::destroy.apply @, arguments
 

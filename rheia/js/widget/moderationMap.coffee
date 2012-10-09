@@ -22,9 +22,11 @@ define [
   'jquery'
   'underscore'
   'utils/utilities'
+  'i18n!nls/widget'
   'widget/authoringMap'
   'widget/mapItem'
-],  ($, _, utils) ->
+  'widget/toggleable'
+],  ($, _, utils, i18n) ->
 
   # Specific map that adds items support to authoring Map, and remove selection features
   # triggers an `itemClicked` event with model as attribute when clicked
@@ -58,6 +60,10 @@ define [
     # **private**
     # Flag to indicate wether the dragged item is inside or outside the widget
     _draggedInside: false
+
+    # **private**
+    # menu that displays multiple items on the same tile.
+    _popupMenu: null
 
     # Adds field or items to map. Will be effective only if the objects is inside displayed bounds.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
@@ -93,8 +99,6 @@ define [
             @_itemWidgets[obj.id] = $('<span></span>').mapItem(
               model: obj
               map: @
-              clicked: (event, item) =>
-                @_trigger 'itemClicked', event, item
               loaded: =>
                 @_loading--
                 checkLoadingEnd()
@@ -135,6 +139,12 @@ define [
       # let superclass manage fields
       $.rheia.authoringMap::removeData.call @, fields if fields.length > 0
 
+    # Removes created popup menu
+    destroy: =>
+      @_popupMenu?.element.off 'click'
+      @_popupMenu?.element.remove()
+      $.rheia.baseWidget::destroy.call @, arguments
+
     # **private**
     # Build rendering
     _create: ->
@@ -165,19 +175,6 @@ define [
       $.rheia.authoringMap::_setOption.apply @, arguments
 
     # **private**
-    # Drag'n drop start handler. Allow to drag items if item selected.
-    #
-    # @param event [Event] drag'n drop start mouse event
-    # @return false to cancel the jQuery drag'n drop operation
-    _onDragStart: (event) ->
-      #  cancels drag if we have multiple dragged target
-      return false if @_dragged.length > 1
-      # reset dragged candidate if needed
-      @_dragged = [] unless @_dragged.length is 1
-      # call inherited method
-      $.rheia.authoringMap::_onDragStart.apply @, arguments
-
-    # **private**
     # Returns the DOM node moved by drag'n drop operation within the map.
     # Intended to be inherited, this implementation returns the layer container
     #
@@ -190,9 +187,15 @@ define [
       pos = @getCoord x:event.pageX+@_width-offset.left, y:event.pageY+@_height-offset.top
 
       @_dragged = []
-      for id, widget of @_itemWidgets
-        if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
-          @_dragged.push widget.options.model
+      if @_popupMenu?
+        # drag from multiple menu
+        id = $(event.target).closest('li').data 'id'
+        @_dragged.push @_itemWidgets[id].options.model if @_itemWidgets[id]?
+      else
+        # drag from the map
+        for id, widget of @_itemWidgets
+          if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
+            @_dragged.push widget.options.model
 
       if @_dragged.length is 1
         console.debug "moves instance #{@_dragged[0].id}"
@@ -206,7 +209,20 @@ define [
       else
         # reset the drag helper cursor offset
         @_container.draggable 'option', 'cursorAt', null
-      moved;
+      moved
+
+    # **private**
+    # Drag'n drop start handler. Allow to drag items if item selected.
+    #
+    # @param event [Event] drag'n drop start mouse event
+    # @return false to cancel the jQuery drag'n drop operation
+    _onDragStart: (event) ->
+      #  cancels drag if we have multiple dragged target
+      return false if @_dragged.length > 1
+      # reset dragged candidate if needed
+      @_dragged = [] unless @_dragged.length is 1
+      # call inherited method
+      $.rheia.authoringMap::_onDragStart.apply @, arguments
 
     # **private**
     # Drag handler, that allows drag operation on items going outside widget bounds
@@ -260,3 +276,39 @@ define [
           mapId: @options.mapId
       else
         $.rheia.authoringMap::_onDrop.apply @, arguments
+
+    # **private**
+    # Click handler that toggle the clicked tile from selection if the ctrl key is pressed
+    # @param event [Event] click event
+    _onClick: (event) ->
+      pos = @getCoord @_mousePos event
+      @_popupMenu?.element.off 'click'
+      @_popupMenu?.element.remove()
+
+      @_clicked = []
+      for id, widget of @_itemWidgets
+        if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
+          @_clicked.push widget.options.model
+
+      if @_clicked.length is 1
+        # trigger item opening
+        @_trigger 'itemClicked', event, @_clicked[0]
+      else if @_clicked.length > 1
+        # stops event to avoid closing menu immediately
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        content = ''
+        for model in @_clicked
+          content += "<li data-id='#{model.id}'>#{_.sprintf i18n.instanceDetails.name, utils.instanceName(model), model.id}</li>"
+        # opens a contextual menu with possible items
+        @_popupMenu = $("<ul class='menu'>#{content}</ul>").appendTo(@_container).toggleable(
+          destroyOnClose: true
+          destroy: => @_popupMenu = null
+        ).data 'toggleable'
+        @_popupMenu.open event.pageX+5, event.pageY+5
+
+        # adds a click handler inside menu
+        @_popupMenu.element.on 'click', (event) =>
+          id = $(event.target).closest('li').data 'id'
+          return unless id?
+          @_trigger 'itemClicked', event, @_itemWidgets[id].options.model
