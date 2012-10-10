@@ -6,12 +6,12 @@
     - transactional behaviour
   - Security
     - register users from Facebook
+  - cache evinction on inutility and size
   - test images for field types and event types
 
 - Rheia
   - moderation perspective
     - Maps
-      - multiple item menu
       - items animations (with z-ordering)
     - Event CRUD
     - Players CRUD
@@ -48,6 +48,7 @@
   - disabled turn-rules/rules
   - turn-rules ordering rank
   - Event type CRUD
+  - Event CRUD
   - Player CRUD in database
   - Map items and their types
     - CRUD in database (Items, Fields, Maps)
@@ -199,6 +200,7 @@
       - items rendering update
       - item click
       - item affectation and moves by drag'n drop
+      - multiple item menu
     - Items
       - CRUD
       - external updates and removal

@@ -19,6 +19,7 @@
 'use strict'
 
 mongoose = require 'mongoose'
+_ = require 'underscore'
 utils = require '../utils'
 fs = require 'fs'
 path = require 'path'
@@ -58,7 +59,6 @@ processLinks = (instance, properties) ->
 # @param options [Object] Mongoose schema options, and factory custom options:
 # @option options noName [Boolean] wether this type has a name or not.
 # @option options noDesc [Boolean] wether this type has a description or not.
-# @option options noCache [Boolean] wether objects of this type are cached or not.
 # @option options typeProperties [Boolean] wether this type will defined properties for its instances
 # @option options instanceClass [String] if this type has type-properties, the instance class name
 # @option options instanceProperties [Boolean] wether this type will embed properties
@@ -115,24 +115,33 @@ module.exports = (typeName, spec, options = {}) ->
   if 'object' is utils.type options?.middlewares
     AbstractType.pre name, middleware for name, middleware of options.middlewares
 
-  unless options?.noCache
-    # This special finder maintains an in-memory cache of types, to faster type retrieval by ids.
-    # If the id isn't found in cache, search in database.
-    #
-    # @param id [String] the type id.
-    # @param callback [Function] the callback function, that takes two parameters
-    # @option callback err [String] an error string, or null if no error occured
-    # @option callback type [Type] the found type, or null if no type found for the id
-    AbstractType.statics.findCached = (id, callback) ->
-      # first look in the cache
-      return callback null, cache[id] if id of cache
-      # nothing in the cache: search in database
-      @findOne {_id: id}, callback
+  # This special finder maintains an in-memory cache of objects, to faster type retrieval by ids.
+  # If ids aren't found in cache, search in database.
+  #
+  # @param ids [Array] the searched ids.
+  # @param callback [Function] the callback function, that takes two parameters
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback obj [Array] the found types. May be empty.
+  AbstractType.statics.findCached = (ids, callback) ->
+    ids = _.uniq ids;
+    notCached = []
+    cached = []
+    # first look into the cache
+    for id in ids 
+      if id of cache
+        cached.push cache[id]
+      else
+        notCached.push id
+    return setTimeout (-> callback null, cached), 0 if notCached.length is 0
+    # then into the database
+    @find {_id: $in: notCached}, (err, results) =>
+      return callback err if err?
+      callback null, cached.concat results
 
-    # post-init middleware: populate the cache
-    AbstractType.post 'init', ->
-      # store in cache
-      cache[@_id] = @
+  # post-init middleware: populate the cache
+  AbstractType.post 'init', ->
+    # store in cache
+    cache[@_id] = @
   
   # pre-save middleware: store modified path for changes propagation
   AbstractType.pre 'save', (next) ->
@@ -141,7 +150,7 @@ module.exports = (typeName, spec, options = {}) ->
     modifiedPaths = @modifiedPaths().concat()
     next()
     # now that the instance was properly saved, update the cache.
-    cache[@_id] = @ unless options?.noCache
+    cache[@_id] = @
     modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
     
   # post-remove middleware: now that the type was properly removed, update the cache.
@@ -149,7 +158,7 @@ module.exports = (typeName, spec, options = {}) ->
     # do removal
     next()
     # updates the cache
-    delete cache[@_id] unless options?.noCache
+    delete cache[@_id]
     # broadcast deletion
     modelWatcher.change 'deletion', typeName, @
     if options?.hasImages
@@ -229,11 +238,11 @@ module.exports = (typeName, spec, options = {}) ->
     # Calling it with an argument indicates the the validation failed and cancel the instance save.
     AbstractType.pre 'init', (next, instance) ->
       # loads the type from local cache
-      require("./#{options.typeClass}").findCached instance.type, (err, type) ->
+      require("./#{options.typeClass}").findCached [instance.type], (err, types) ->
         return next(new Error "Unable to init instance #{instance._id}. Error while resolving its type: #{err}") if err?
-        return next(new Error "Unable to init instance #{instance._id} because there is no type with id #{instance.type}") unless type?    
+        return next(new Error "Unable to init instance #{instance._id} because there is no type with id #{instance.type}") unless types.length is 1    
         # Do the replacement.
-        instance.type = type
+        instance.type = types[0]
         next()
 
     # This method retrieves linked objects in properties.
@@ -243,21 +252,18 @@ module.exports = (typeName, spec, options = {}) ->
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instance [Object] the root instance on which linked objects were resolved.
-    AbstractType.methods.resolve = (callback) ->
-      AbstractType.statics.multiResolve [this], (err, instances) =>
-        result = null
-        if instances and instances?.length is 1
-          result = instances[0]
-        callback err, result
+    AbstractType.methods.getLinked = (callback) ->
+      AbstractType.statics.getLinked [this], (err, instances) =>
+        callback err, if instances and instances?.length is 1 then instances[0] else null
 
-    # This static version of resolve performs multiple linked objects resolution in one operation.
-    # See resolve() for more information.
+    # This static version of `getLinked` performs multiple linked objects resolution in one operation.
+    # See `getLinked()` for more information.
     #
     # @param instances [Array<Object>] an array that contains instances which are resoluved.
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instances [Array<Object>] the instances on which linked objects were resolved.
-    AbstractType.statics.multiResolve = (instances, callback) ->
+    AbstractType.statics.getLinked = (instances, callback) ->
       ids = []
       # identify each linked properties 
       for instance in instances
@@ -281,7 +287,8 @@ module.exports = (typeName, spec, options = {}) ->
       # resolve in both items and events
       linked = []
       async.forEach [require('./Item'), require('./Event')], (clazz, end) ->
-        clazz.find {_id: {$in: ids}}, (err, results) ->
+        # do NOT use findCached: triggers a max call stack exceeded
+        clazz.find _id: $in:ids, (err, results) ->
           return callback("Unable to resolve linked on #{instances}. Error while retrieving linked: #{err}") if err?
           linked = linked.concat results
           end()

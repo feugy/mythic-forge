@@ -56,7 +56,6 @@ Item = typeFactory 'Item',
     type: Number
     default: null
 , 
-  noCache: true
   noDesc: true
   noName: true
   instanceProperties: true
@@ -70,11 +69,11 @@ Item = typeFactory 'Item',
     init: (next, item) ->
       return next() unless item.map?
       # loads the type from local cache
-      Map.findCached item.map, (err, map) ->
+      Map.findCached [item.map], (err, maps) ->
         return next(new Error "Unable to init item #{item._id}. Error while resolving its map: #{err}") if err?
-        return next(new Error "Unable to init item #{item._id} because there is no map with id #{item.map}") unless map?    
+        return next(new Error "Unable to init item #{item._id} because there is no map with id #{item.map}") unless maps.length is 1    
         # Do the replacement.
-        item.map = map
+        item.map = maps[0]
         next()
 
     # pre-save middleware: only save the map reference, not the whole object

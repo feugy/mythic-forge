@@ -80,11 +80,11 @@ class _AdminService
       when 'Map' then modelClass = Map
       when 'Item' 
         populateTypeAndSave = (model) ->
-          ItemType.findCached model?.get('type')?._id, (err, type) ->
+          ItemType.findCached [model?.get('type')?._id], (err, types) ->
             return callback "Failed to save item #{values._id}. Error while resolving its type: #{err}" if err?
-            return callback "Failed to save item #{values._id} because there is no type with id #{values?.type?._id}" unless type?    
+            return callback "Failed to save item #{values._id} because there is no type with id #{values?.type?._id}" unless types.length is 1    
             # Do the replacement.
-            model.set 'type', type
+            model.set 'type', types[0]
             _save model
 
         if '_id' of values
@@ -99,10 +99,10 @@ class _AdminService
             if model.get('map')?._id isnt values.map?._id
               if values.map?._id
                 # resolve map
-                return Map.findCached values.map._id, (err, map) ->
+                return Map.findCached [values.map._id], (err, maps) ->
                   return callback "Failed to save item #{values._id}. Error while resolving its map: #{err}" if err?
-                  return callbacl "Failed to save item #{values._id} because there is no map with id #{item.map}" unless map?  
-                  model.set 'map', map
+                  return callbacl "Failed to save item #{values._id} because there is no map with id #{item.map}" unless maps.length is 1  
+                  model.set 'map', maps[0]
                   populateTypeAndSave model
               else
                 model.set 'map', null
@@ -131,8 +131,8 @@ class _AdminService
 
       when 'Executable' 
         # special behaviour for Executables: save only works with new Executbales
-        return Executable.findCached values._id, (err, model) ->
-          return callback "Id #{values._id} already used", modelName unless model is null
+        return Executable.findCached [values._id], (err, models) ->
+          return callback "Id #{values._id} already used", modelName unless models.length is 0
           # create new if not found
           model = new Executable values 
           return _save model
@@ -146,8 +146,10 @@ class _AdminService
 
     # get existing values
     if '_id' of values
-      modelClass.findCached values._id, (err, model) ->
-        return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err? or model is null
+      modelClass.findCached [values._id], (err, models) ->
+        return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err? or models.length is 0
+        model = models[0]
+
         for key, value of values
           model.set key, value unless key is '_id' or key is 'properties'
           # manually set and unset properties
@@ -184,16 +186,17 @@ class _AdminService
   saveAndRename: (values, newId, callback) =>
     # checks that executable exists
     previousId = values._id
-    Executable.findCached previousId, (err, executable) ->
-      return callback "Unexisting Executable with id #{previousId}" if err? or !(executable?)
+    Executable.findCached [previousId], (err, executables) ->
+      return callback "Unexisting Executable with id #{previousId}" if err? or executables.length is 0
+      executable = executables[0]
 
       _save = (executable) ->
         executable.save (err, saved) -> callback err, previousId, saved
 
       if newId
         # check that newId is free
-        Executable.findCached newId, (err, existing) ->
-          return callback "Id #{newId} already used" unless existing is null
+        Executable.findCached [newId], (err, existings) ->
+          return callback "Id #{newId} already used" unless existings.length is 0
           # remove old value
           executable.remove (err) -> 
             # and save new one after changing the id
@@ -227,10 +230,10 @@ class _AdminService
       when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
       when 'Item' 
-        return Item.findById values._id, (err, model) ->
-          return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or model is null
+        return Item.findCached [values._id], (err, models) ->
+          return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or models.length is 0
           # removes item
-          model.remove (err) -> callback err, modelName, model
+          models[0].remove (err) -> callback err, modelName, models[0]
 
       when 'Field'
         return callback 'Fields must be removed within an array', modelName unless Array.isArray values
@@ -254,10 +257,10 @@ class _AdminService
         return authoringService.remove values, email, (err, removed) -> callback err, modelName, removed
 
     # get existing values
-    modelClass.findCached values._id, (err, model) ->
-      return callback "Unexisting #{modelName} with id #{values._id}", modelName if err? or !(model?)
+    modelClass.findCached [values._id], (err, models) ->
+      return callback "Unexisting #{modelName} with id #{values._id}", modelName if err? or models.length is 0
       # and removes them
-      model.remove (err) -> callback err, modelName, model
+      models[0].remove (err) -> callback err, modelName, models[0]
 
 _instance = undefined
 class AdminService

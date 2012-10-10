@@ -60,10 +60,10 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 3'
           canExecute: (actor, target, callback) =>
-            target.resolve ->
+            target.getLinked ->
               callback null, target.get('pilot').equals actor
           execute: (actor, target, callback) =>
-            target.resolve ->
+            target.getLinked ->
               target.x++
               target.get('pilot').x++
               callback null, 'driven left'
@@ -207,7 +207,7 @@ describe 'RuleService tests', ->
                   Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
                     return done "Item not created" if err?
 
-                    existing.resolve ->
+                    existing.getLinked ->
                       assert.equal 1, existing.get('stock').length
                       assert.equal null, existing.get('stock')[0]
                       done()

@@ -150,21 +150,21 @@ class _PlayerService
   # Retrieve a player by its email, with its characters resolved.
   #
   # @param email [String] the player email
-  # @param resolve [Boolean] true to resolve character, false otherwise. True by default
+  # @param withLinked [Boolean] true to resolve characters links, false otherwise. True by default
   # @param callback [Function] callback executed when player was retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
-  getByEmail: (email, resolve, callback) =>
-    if 'function' is utils.type resolve
-      callback = resolve
-      resolve = true
+  getByEmail: (email, withLinked, callback) =>
+    if 'function' is utils.type withLinked
+      callback = withLinked
+      withLinked = true
     logger.debug "consult player by email: #{email}"
     Player.findOne {email: email}, (err, player) =>
       return callback err, null if err?
-      if player? and player.get('characters').length isnt 0 and resolve
+      if player? and player.get('characters').length isnt 0 and withLinked
         logger.debug 'resolves its character'
         # resolve the character
-        Item.multiResolve player.get('characters'), (err, instances) =>
+        Item.getLinked player.get('characters'), (err, instances) =>
           return callback err, null if err?
           player.set 'characters', instances
           callback null, player

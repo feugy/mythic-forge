@@ -51,7 +51,7 @@ class _GameService
     logger.debug "Consult items with ids: #{ids}"
     Item.find {_id: {$in: ids}}, (err, items) ->
       return callback err, null if err?
-      Item.multiResolve items, callback
+      Item.getLinked items, callback
 
   # Retrieve all items that belongs to a map within given coordinates.
   #

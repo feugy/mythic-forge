@@ -205,12 +205,12 @@ class Executable
 
   # Find existing executable by id, from the cache.
   #
-  # @param id [String] the executable id
+  # @param ids [Array] the executable ids
   # @param callback [Function] invoked when all executables were retrieved
   # @option callback err [String] an error message if an error occured. null otherwise
-  # @option callback executable [Executable] the corresponding executable, of null if id doesn't match any executable
-  @findCached: (id, callback) ->
-    callback null, if id of executables then executables[id] else null
+  # @option callback executables [Executable] list of corresponding executable, may be empty
+  @findCached: (ids, callback) ->
+    callback null, (executables[id] for id in ids when id of executables)
 
   # The unic file name of the executable, which is also its id.
   _id: null

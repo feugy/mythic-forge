@@ -259,12 +259,12 @@ describe 'Item tests', ->
         assert.ok item2._id.equals doc.get('affluents')[0]
         done()
 
-    it 'should resolve retrieves linked objects', (done) ->
+    it 'should getLinked retrieves linked objects', (done) ->
       # given a unresolved item
       Item.findOne {name: item2.get 'name'}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # when resolving it
-        doc.resolve (err, doc) ->
+        doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.ok item._id.equals doc.get('end')._id
@@ -273,12 +273,12 @@ describe 'Item tests', ->
           assert.equal doc.get('end').get('affluents')[0], item.get('affluents')[0]
           done()
 
-    it 'should resolve retrieves linked arrays', (done) ->
+    it 'should getLinked retrieves linked arrays', (done) ->
       # given a unresolved item
       Item.findOne {name: item.get 'name'}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # when resolving it
-        doc.resolve (err, doc) ->
+        doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.equal doc.get('affluents').length, 1
@@ -289,12 +289,12 @@ describe 'Item tests', ->
           assert.equal linked.get('affluents').length, 0
           done()
 
-    it 'should multi-resolve retrieves all properties of all objects', (done) ->
+    it 'should getLinked retrieves all properties of all objects', (done) ->
       # given a unresolved items
       Item.where().sort(name:'asc').exec (err, docs) ->
         return done "Can't find item: #{err}" if err?
         # when resolving them
-        Item.multiResolve docs, (err, docs) ->
+        Item.getLinked docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
           assert.ok item._id.equals docs[0].get('end')._id

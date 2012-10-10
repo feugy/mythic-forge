@@ -301,9 +301,10 @@ describe 'AdminService tests', ->
       assert.equal model.content, values.content
 
       # then the model exists in cache
-      Executable.findCached model._id, (err, obj) ->
+      Executable.findCached [model._id], (err, objs) ->
         throw new Error "Can't find executable #{err}" if err?
-        assert.deepEqual obj, model
+        assert.equal objs.length, 1
+        assert.deepEqual objs[0], model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -861,8 +862,8 @@ describe 'AdminService tests', ->
       assert.equal executables[1]._id, model._id
 
       # then the model do not exists anymore in DB
-      Executable.findCached model._id, (err, obj) ->
-        assert.ok obj is null
+      Executable.findCached [model._id], (err, objs) ->
+        assert.equal objs.length , 0
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -1054,9 +1055,9 @@ describe 'AdminService tests', ->
       assert.equal model.content, executables[0].content
 
       # then the old model id do not exists in cache
-      Executable.findCached oldId, (err, obj) ->
+      Executable.findCached [oldId], (err, objs) ->
         throw new Error "Can't find executable #{err}" if err?
-        assert.equal obj, null
+        assert.equal objs.length, 0
         assert.ok deletionReceived, 'watcher wasn\'t invoked for deletion'
         assert.ok creationReceived, 'watcher wasn\'t invoked for creation'
         watcher.removeAllListeners 'change'
@@ -1084,9 +1085,10 @@ describe 'AdminService tests', ->
       assert.equal model.content, 'console.log("hello world 4");'
 
       # then the model exists in DB
-      Executable.findCached model._id, (err, obj) ->
+      Executable.findCached [model._id], (err, objs) ->
         throw new Error "Can't find executable in db #{err}" if err?
-        assert.deepEqual obj, model
+        assert.equal objs.length, 1
+        assert.deepEqual objs[0], model
         done()
 
   it 'should saveAndRename failed on unknown executable', (done) ->

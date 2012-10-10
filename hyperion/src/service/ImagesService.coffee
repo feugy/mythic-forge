@@ -78,8 +78,9 @@ class _ImagesService
       when 'EventType' then modelClass = EventType
 
     # gets the concerned model
-    modelClass.findCached id, (err, model) ->
-      return callback "Unexisting #{modelName} with id #{id}: #{err}" if err?
+    modelClass.findCached [id], (err, models) ->
+      return callback "Unexisting #{modelName} with id #{id}: #{err}" if err? or models.length is 0
+      model = models[0]
 
       switch args.length
         when 1 
@@ -161,8 +162,9 @@ class _ImagesService
       when 'EventType' then modelClass = EventType
 
     # gets the concerned model
-    modelClass.findCached id, (err, model) ->
-      return callback "Unexisting #{modelName} with id #{id}: #{err}" if err?
+    modelClass.findCached [id], (err, models) ->
+      return callback "Unexisting #{modelName} with id #{id}: #{err}" if err? or models.length is 0
+      model = models[0]
 
       switch args.length
         when 1 

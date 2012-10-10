@@ -19,15 +19,46 @@
 'use strict'
 
 typeFactory = require './typeFactory'
+Item = require './Item'
 conn = require './connection'
 
 # Define the schema for map event: no name or desc, and properties
-Event = typeFactory 'Event', {}, 
-  noCache: true
+Event = typeFactory 'Event', 
+  # Item that originate the event. 
+  from: 
+    type: {}
+    default: -> null # use a function to force instance variable
+, 
   noDesc: true
   noName: true
   instanceProperties: true
   typeClass: 'EventType'
   strict: false
+  middlewares:
+
+    # pre-init middleware: retrieve the Item corresponding to the stored from id.
+    #
+    # @param item [Item] the initialized item.
+    # @param next [Function] function that must be called to proceed with other middleware.
+    init: (next, event) ->
+      return next() unless event.from?
+      # loads the type from local cache
+      Item.findCached [event.from], (err, items) ->
+        return next(new Error "Unable to init event #{event._id}. Error while resolving its from: #{err}") if err?
+        return next(new Error "Unable to init event #{event._id} because there is no from with id #{event.from}") unless items.length is 1    
+        # Do the replacement.
+        event.from = items[0]
+        next()
+
+    # pre-save middleware: only save the from reference, not the whole object
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    save: (next) ->
+      # replace from with its id, for storing in Mongo, without using setters.
+      saveFrom = @from
+      @_doc.from = saveFrom?._id
+      next()
+      # restore save to allow reference reuse.
+      @_doc.from = saveFrom
 
 module.exports = conn.model 'event', Event

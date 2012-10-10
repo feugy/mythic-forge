@@ -434,13 +434,13 @@ class _RuleService
                     
           # resolve items, but not fields
           if target instanceof Item
-            target.resolve process2
+            target.getLinked process2
           else 
             process2 null
 
       # resolve actor, but not player
       if actor instanceof Item
-        actor.resolve process
+        actor.getLinked process
       else 
         process null
 
