@@ -54,8 +54,8 @@ class _ModelWatcher extends EventEmitter
 
     delete parameter.__v # added by mongoose to store version
 
-    # do not embed the linked map and type for items and fields
-    parameter.type = parameter.type?._id if className is 'Item'
+    # do not embed the linked map and type for items, events and fields
+    parameter.type = parameter.type?._id if className is 'Item' or className is 'Event'
 
     if modified and 'map' in modified and (className is 'Item' or className is 'Field')
       # but send the map if it changed

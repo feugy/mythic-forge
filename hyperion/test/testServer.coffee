@@ -20,9 +20,11 @@
 pathUtils = require 'path'
 server = require '../src/web/server'
 socketClient = require 'socket.io-client'
-Item = require '../src/model/Item'
 Map = require '../src/model/Map'
+Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
+Event = require '../src/model/Event'
+EventType = require '../src/model/EventType'
 Executable = require '../src/model/Executable'
 FSItem = require '../src/model/FSItem'
 utils = require '../src/utils'
@@ -39,6 +41,9 @@ jack = null
 john = null
 script = null
 map = null
+life = null
+birth = null
+death = null
 
 describe 'server tests', ->
 
@@ -54,7 +59,7 @@ describe 'server tests', ->
 
     it 'should the server be responding', (done) ->
       request "#{rootUrl}/konami", (err, res, body) ->
-        throw new Error err if err?
+        return done err if err?
         assert.equal res.statusCode, 200
         assert.equal body, '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
         done()
@@ -65,13 +70,13 @@ describe 'server tests', ->
 
       # given a file with binary content
       fs.readFile './hyperion/test/fixtures/image1.png', (err, imgData) ->
-        throw new Error err if err?
+        return done err if err?
         root = utils.confKey 'game.dev'
         # given a clean root
         fs.remove pathUtils.dirname(root), (err) ->
-          throw new Error err if err?
+          return done err if err?
           authoringService.init (err) ->
-            throw new Error err if err?
+            return done err if err?
             
             file = 
               path: pathUtils.join 'images', 'image1.png'
@@ -82,7 +87,7 @@ describe 'server tests', ->
             
             # then the saved fsItem is returned
             socket.once 'save-resp', (err, modelName, saved) ->
-              throw new Error err if err?
+              return done err if err?
               assert.equal modelName, 'FSItem'
               assert.isNotNull saved
               assert.isFalse saved.isFolder
@@ -91,7 +96,7 @@ describe 'server tests', ->
 
               # then the read fsItem is returned with valid content
               socket.once 'read-resp', (err, read) ->
-                throw new Error err if err?
+                return done err if err?
                 assert.isNotNull read
                 assert.isFalse read.isFolder
                 assert.equal read.path, file.path
@@ -99,7 +104,7 @@ describe 'server tests', ->
 
                 # then the moved fsItem is returned with valid content
                 socket.once 'move-resp', (err, moved) ->
-                  throw new Error err if err?
+                  return done err if err?
                   assert.isNotNull moved
                   assert.isFalse moved.isFolder
                   assert.equal moved.path, newPath
@@ -107,7 +112,7 @@ describe 'server tests', ->
 
                   # then the fsItem was removed
                   socket.once 'remove-resp', (err, modelName, removed) ->
-                    throw new Error err if err?
+                    return done err if err?
                     assert.equal modelName, 'FSItem'
                     assert.isNotNull removed
                     assert.isFalse removed.isFolder
@@ -127,27 +132,40 @@ describe 'server tests', ->
             # when saving a new file
             socket.emit 'save', 'FSItem', file
 
-    describe 'given a map, a type and two characters', ->
+    describe 'given a map, an item type, two characters, an event type and two events', ->
 
       beforeEach (done) ->
         # given a clean ItemTypes and Items collections
         ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop ->
           new Map({name: 'server-test'}).save (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             map = saved
             character = new ItemType {name: 'character'}
             character.setProperty 'name', 'string', ''
             character.save (err, saved) ->
-              throw new Error err if err?
+              return done err if err?
               character = saved
               # given two characters, jack and john
-              new Item({map: map, type: character, name: 'Jack', x:0, y:0}).save (err, saved) ->
-                throw new Error err if err?
+              new Item(map: map, type: character, name: 'Jack', x:0, y:0).save (err, saved) ->
+                return done err if err?
                 jack = saved
-                new Item({map: map, type: character, name: 'John', x:10, y:10}).save (err, saved) ->
-                  throw new Error err if err?
+                new Item(map: map, type: character, name: 'John', x:10, y:10).save (err, saved) ->
+                  return done err if err?
                   john = saved
-                  done()
+                  life = new EventType {name: 'life'}
+                  life.setProperty 'step', 'string', 'birth'
+                  life.setProperty 'concerns', 'object', 'Item'
+                  life.save (err, saved) ->
+                    return done err if err?
+                    life = saved
+                    # given two characters, jack and john
+                    new Event(type: life, concerns: jack).save (err, saved) ->
+                      return done err if err?
+                      birth = saved
+                      new Event(type: life, step: 'death', concerns: john).save (err, saved) ->
+                        return done err if err?
+                        death = saved
+                        done()
 
       it 'should the consultMap be invoked', (done) ->
         # given a connected socket.io client
@@ -155,7 +173,7 @@ describe 'server tests', ->
 
         # then john and jack are returned
         socket.once 'consultMap-resp', (err, items, fields) ->
-          throw new Error err if err?
+          return done err if err?
           assert.equal items.length, 2
           assert.ok jack.equals items[0]
           assert.equal items[0].name, 'Jack'
@@ -172,7 +190,7 @@ describe 'server tests', ->
 
         # then the character type is retrieved
         socket.once 'getTypes-resp', (err, types) ->
-          throw new Error err if err?
+          return done err if err?
           assert.equal types.length, 1
           assert.ok character.get('_id').equals types[0]._id
           assert.equal types[0]._name.default, character.get('name')
@@ -189,7 +207,7 @@ describe 'server tests', ->
 
         # then the items are retrieved with their types
         socket.once 'getItems-resp', (err, items) ->
-          throw new Error err if err?
+          return done err if err?
           assert.equal items.length, 2
           assert.ok jack.equals items[0]
           assert.equal items[0].name, 'Jack'
@@ -206,6 +224,36 @@ describe 'server tests', ->
 
         # when retrieving items by ids
         socket.emit 'getItems', [jack._id, john._id]
+
+      it 'should events be retrieved', (done) ->
+        # given a connected socket.io client
+        socket = socketClient.connect "#{rootUrl}/game"
+
+        # then the events are retrieved with their types
+        socket.once 'getEvents-resp', (err, events) ->
+          return done err if err?
+          assert.equal events.length, 2
+          assert.ok birth.equals events[0]
+          assert.equal events[0].step, 'birth'
+          assert.ok death.equals events[1]
+          assert.equal events[1].step, 'death'
+          assert.ok life._id.equals events[0].type._id
+          assert.ok 'concerns' of events[0].type.properties
+          assert.equal events[0].type.properties.concerns.type, life.get('properties').concerns.type
+          assert.ok life._id.equals events[1].type._id
+          assert.ok 'concerns' of events[1].type.properties
+          assert.equal events[1].type.properties.concerns.type, life.get('properties').concerns.type
+          # then their links where resolved
+          assert.ok jack.equals events[0].concerns
+          assert.ok character.equals events[0].concerns.type
+          assert.equal events[0].concerns.name, 'Jack'
+          assert.ok john.equals events[1].concerns
+          assert.ok character.equals events[1].concerns.type
+          assert.equal events[1].concerns.name, 'John'
+          done()
+
+        # when retrieving events by ids
+        socket.emit 'getEvents', [birth._id, death._id]
 
       describe 'given a rule', ->
 
@@ -231,7 +279,7 @@ describe 'server tests', ->
                   )()"""
 
               script.save (err) ->
-                throw new Error err if err?
+                return done err if err?
                 done()
 
         it 'should types be searchable', (done) ->
@@ -240,7 +288,7 @@ describe 'server tests', ->
 
           # then the item type and rule were found
           socket.once 'searchTypes-resp', (err, results) ->
-            throw new Error err if err?
+            return done err if err?
             assert.equal results.length, 2
             tmp = results.filter (obj) -> map.equals obj
             assert.ok tmp.length is 1, 'map was not found'
@@ -257,7 +305,7 @@ describe 'server tests', ->
 
           # then the items are retrieved with their types
           socket.once 'getExecutables-resp', (err, executables) ->
-            throw new Error err if err?
+            return done err if err?
             assert.equal executables.length, 1
             assert.equal executables[0]._id, script._id
             assert.equal executables[0].content, script.content
@@ -273,7 +321,7 @@ describe 'server tests', ->
 
           # then the rename rule is returned
           socket.once 'resolveRules-resp', (err, results) ->
-            throw new Error err if err?
+            return done err if err?
             assert.ok jack._id of results
             assert.equal results[jack._id][0].name, 'rename'
 
@@ -282,7 +330,7 @@ describe 'server tests', ->
             updated = false
             # then john is renamed in joe
             socket.once 'executeRule-resp', (err, result) ->
-              throw new Error err if err?
+              return done err if err?
               assert.equal result, 'target renamed'
               setTimeout ->
                 assert.ok deleted, 'watcher wasn\'t invoked for deletion'
@@ -321,7 +369,7 @@ describe 'server tests', ->
       before (done) ->
         ItemType.collection.drop -> testUtils.cleanFolder utils.confKey('images.store'), ->
           new ItemType({name: 'character'}).save (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             character = saved
             done()
 
@@ -331,7 +379,7 @@ describe 'server tests', ->
 
         # then john and jack are returned
         socket.once 'list-resp', (err, modelName, list) ->
-          throw new Error err if err?
+          return done err if err?
           assert.equal list.length, 1
           assert.equal modelName, 'ItemType'
           assert.ok character.equals list[0]
@@ -346,11 +394,11 @@ describe 'server tests', ->
 
         # given an image
         fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
-          throw new Error err if err?
+          return done err if err?
 
           # then the character type was updated
           socket.once 'uploadImage-resp', (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             # then the description image is updated in model
             assert.equal saved.descImage, "#{character._id}-type.png"
             # then the file exists and is equal to the original file
@@ -360,7 +408,7 @@ describe 'server tests', ->
 
             # then the character type was updated
             socket.once 'removeImage-resp', (err, saved) ->
-              throw new Error err if err?
+              return done err if err?
               # then the type image is updated in model
               assert.equal saved.descImage, null
               # then the file do not exists anymore
@@ -379,11 +427,11 @@ describe 'server tests', ->
 
         # given an image
         fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
-          throw new Error err if err?
+          return done err if err?
 
           # then the character type was updated
           socket.once 'uploadImage-resp', (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             # then the instance image is updated in model for rank 0
             assert.equal saved.images.length, 1
             assert.equal saved.images[0].file, "#{character._id}-0.png"
@@ -396,7 +444,7 @@ describe 'server tests', ->
 
             # then the character type was updated
             socket.once 'removeImage-resp', (err, saved) ->
-              throw new Error err if err?
+              return done err if err?
               # then the instance image is updated in model for rank 0
               assert.equal saved.images.length, 0
               # then the file do not exists anymore

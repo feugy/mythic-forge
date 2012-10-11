@@ -19,6 +19,7 @@
 'use strict'
 
 Item = require '../model/Item'
+Event = require '../model/Event'
 Field = require '../model/Field'
 ItemType = require '../model/ItemType'
 Executable = require '../model/Executable'
@@ -41,17 +42,29 @@ class _GameService
     logger.debug "Consult types with ids: #{ids}"
     ItemType.find {_id: {$in: ids}}, callback
 
-  # Retrieve Items by their ids. Each item links are resolved.
+  # Retrieve Items by their ids. Each linked objects are resolved.
   #
   # @param ids [Array<String>] array of ids
   # @param callback [Function] callback executed when items where retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
-  # @option callback types [Array<Item>] list of retrieved items. May be empty.
+  # @option callback events [Array<Item>] list of retrieved items. May be empty.
   getItems: (ids, callback) =>
     logger.debug "Consult items with ids: #{ids}"
     Item.find {_id: {$in: ids}}, (err, items) ->
       return callback err, null if err?
       Item.getLinked items, callback
+
+  # Retrieve Events by their ids. Each linked objects are resolved.
+  #
+  # @param ids [Array<String>] array of ids
+  # @param callback [Function] callback executed when items where retrieved. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback events [Array<Event>] list of retrieved events. May be empty.
+  getEvents: (ids, callback) =>
+    logger.debug "Consult events with ids: #{ids}"
+    Event.find {_id: {$in: ids}}, (err, events) ->
+      return callback err, null if err?
+      Event.getLinked events, callback
 
   # Retrieve all items that belongs to a map within given coordinates.
   #
