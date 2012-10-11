@@ -84,6 +84,8 @@ describe 'Event tests', ->
         # then it's values were saved
         assert.equal docs[0].get('content'), 'hello !'
         assert.ok item.equals docs[0].get 'from'
+        assert.closeTo docs[0].get('created').getTime(), new Date().getTime(), 500
+        assert.equal docs[0].get('created').getTime(), docs[0].get('updated').getTime()
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -114,18 +116,23 @@ describe 'Event tests', ->
       # when removing an event
       awaited = false
       event.set 'from', null
-      event.save (err) ->
-        return done "Failed to save event: #{err}" if err?
-        
+      # use timeout to avoid saving during same millis than creation
+      setTimeout ->
+        event.save (err) ->
+          return done "Failed to save event: #{err}" if err?
+          
 
-        Event.find {}, (err, docs) ->
-          return done "Can't find event: #{err}" if err?
-          # then it's the only one document
-          assert.equal docs.length, 1
-          # then only the relevant values were modified
-          assert.isNull docs[0].get 'from'
-          assert.ok awaited, 'watcher wasn\'t invoked'
-          done()
+          Event.find {}, (err, docs) ->
+            return done "Can't find event: #{err}" if err?
+            # then it's the only one document
+            assert.equal docs.length, 1
+            # then only the relevant values were modified
+            assert.isNull docs[0].get 'from'
+            assert.closeTo docs[0].get('updated').getTime(), new Date().getTime(), 500
+            assert.notEqual docs[0].get('created').getTime(), docs[0].get('updated').getTime()
+            assert.ok awaited, 'watcher wasn\'t invoked'
+            done()
+      , 10
 
     it 'should event be removed', (done) ->
       # then a removal event was issued
@@ -177,7 +184,15 @@ describe 'Event tests', ->
       event.save (err)->
         # then an error is raised
         assert.fail 'An error must be raised when saving event with unknown property' if !err
-        assert.ok err?.message.indexOf('unknown property test') isnt -1
+        assert.include err?.message, 'unknown property test'
+        done()
+
+    it 'should save failed if creation date were modified', (done) ->
+      event.set 'created', new Date()
+      event.save (err) ->
+        # then an error is raised
+        assert.fail 'An error must be raised when saving event with modified creation date' if !err
+        assert.include err?.message, 'creation date cannot be modified'
         done()
 
   describe 'given a type with object properties and several Events', -> 

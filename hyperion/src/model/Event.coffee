@@ -24,6 +24,17 @@ conn = require './connection'
 
 # Define the schema for map event: no name or desc, and properties
 Event = typeFactory 'Event', 
+
+  # creation date. May not be modified
+  created:
+    type: Date
+    default: -> new Date()
+
+  # last modification date. Automatically modified when saving
+  updated:
+    type: Date
+    default: -> new Date()
+
   # Item that originate the event. 
   from: 
     type: {}
@@ -54,6 +65,10 @@ Event = typeFactory 'Event',
     #
     # @param next [Function] function that must be called to proceed with other middleware.
     save: (next) ->
+      # check that creation date has not been modified, and update update date.
+      return next new Error 'creation date cannot be modified for an Event' if @isModified 'created'
+      @set 'updated', new Date()
+
       # replace from with its id, for storing in Mongo, without using setters.
       saveFrom = @from
       @_doc.from = saveFrom?._id

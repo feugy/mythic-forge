@@ -48,7 +48,7 @@
   - disabled turn-rules/rules
   - turn-rules ordering rank
   - Event type CRUD
-  - Event CRUD
+  - Event CRUD with link to from, creation and update dates
   - Player CRUD in database
   - Map items and their types
     - CRUD in database (Items, Fields, Maps)
