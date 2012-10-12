@@ -26,14 +26,17 @@ define [
   'text!tpl/moderationPerspective.html'
   'utils/utilities'
   'model/ItemType'
+  'model/EventType'
   'model/Map'
   'model/Field'
   'model/Item'
+  'model/Event'
   'view/moderation/Item'
+  'view/moderation/Event'
   'widget/search'
   'widget/moderationMap'
   'widget/loadableImage'
-], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, Map, Field, Item, ItemView) ->
+], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, EventType, Map, Field, Item, Event, ItemView, EventView) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
@@ -143,6 +146,13 @@ define [
       ).attr('title', i18n.tips.newItem
       ).on 'click', @_onChooseItemType
 
+      @$el.find(".right .new-event").button(
+        icons:
+          primary: "small new-event"
+        text: false
+      ).attr('title', i18n.tips.newEvent
+      ).on 'click', @_onChooseEventType
+
       # for chaining purposes
       @
 
@@ -170,6 +180,12 @@ define [
             @_creationType = null
           else
             view = new ItemView id
+        when 'Event'
+          if @_creationType?
+            view = new EventView null, new Event type: @_creationType
+            @_creationType = null
+          else
+            view = new EventView id
       view
 
     # **private**
@@ -280,6 +296,39 @@ define [
         rheia.router.trigger 'open', 'Item'
 
     # **private**
+    # Display a popup to choose an event type before creating a new event
+    #
+    # @param event [Event] canceled button clic event
+    _onChooseEventType: (event) =>
+      event?.preventDefault()
+      listLoaded = =>
+        EventType.collection.off 'reset', listLoaded
+        popup.find('.loader').remove()
+
+        # Display a loadable image by types
+        for type in EventType.collection.models
+          $("<div data-id='#{type.id}'></div>").loadableImage(
+            source: type.get('descImage')
+            noButtons:true
+          ).appendTo popup
+
+      # gets type list and display popup while.
+      EventType.collection.on 'reset', listLoaded
+      EventType.collection.fetch()
+      popup = utils.popup i18n.titles.chooseType, i18n.msgs.chooseEventType, null, [
+        text: i18n.buttons.ok
+        click: => popup.off 'click .loadable'
+      ]
+      popup.addClass("choose-type").append "<div class='loader'></div>"
+
+      # Type select handler
+      popup.on 'click .loadable', (event) =>
+        @_creationType = EventType.collection.get $(event.target).closest('.loadable').data 'id'
+        console.log "type #{@_creationType?.id} selected for new event"
+        popup.dialog 'close'
+        rheia.router.trigger 'open', 'Event'
+
+    # **private**
     # Handler invoked when a tab was added to the widget. Make tab draggable to affect instance.
     #
     # @param event [Event] tab additon event
@@ -297,11 +346,15 @@ define [
         appendTo: 'body'
         distance: 15
         cursorAt: top:-5, left:-5
+        drag: -> 
+          # do not drag instances that do not have id yet
+          false unless view.model.id
         helper: -> utils.dragHelper view.model
 
     # **private**
     # Instance affectation handler.
     # Set the map and coordinate of the instance, and save it.
+    # Ignore if dropped instance is not an item.
     #
     # @param event [Event] the drop event on map widget
     # @param details [Object] drop details:
@@ -309,6 +362,8 @@ define [
     # @option details mapId [String] the new map id
     # @option details coord [Object] x and y coordinates of the drop tile
     _onAffect: (event, details) =>
+      # only accepts Items
+      return unless details.instance?.constructor.name is 'Item'
       map = Map.collection.get details.mapId
       return unless map?
       details.instance.set 'map', map

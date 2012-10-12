@@ -176,7 +176,9 @@ checkPropertyType = (value,  property) ->
     # date : null or typeof is date
     when 'date' 
       if value isnt null
-        if ('string' is type value and isNaN new Date(value).getTime()) or 'date' isnt type value
+        if 'string' is type value 
+          err = "#{value} isn't a valid date" if isNaN new Date(value).getTime()
+        else if 'date' isnt type value
           err = "#{value} isn't a valid date" 
     when 'object' then checkObject value
     # array: array that contains object at each index.

@@ -20,11 +20,12 @@
 
 define [
   'jquery'
+  'moment'
   'i18n!nls/common'
   'i18n!nls/widget'
   'widget/baseWidget'
   'widget/instanceList'
-],  ($, i18n, i18nWidget) ->
+],  ($, moment, i18n, i18nWidget) ->
 
   i18n = $.extend true, i18n, i18nWidget
 
@@ -177,8 +178,9 @@ define [
         when 'date'
           rendering = $("""<input type="text" #{if isNull then 'disabled="disabled"'}/>""").datetimepicker(
             showSecond: true
-            dateFormat: 'yy/mm/dd'
-            timeFormat: 'hh:mm:ss'
+            # unfortunately, moment and jquery datetimepiker do not share their formats...
+            dateFormat: i18n.constants.dateFormat.toLowerCase()
+            timeFormat: i18n.constants.timeFormat.toLowerCase()
           ).appendTo(@element).change (event) => @_onChange event
 
           rendering.datetimepicker 'setDate', new Date @options.value unless isNull
@@ -205,9 +207,7 @@ define [
           # null and timestamp values are not modified.
           if @options.value isnt null and isNaN @options.value
             # date and string values will be converted to timestamp
-            @options.value = Date.parse @options.value
-            # or take the current date if something goes wrong.
-            @options.value = new Date().getTime() if isNaN @options.value
+            @options.value = moment(@options.value).toDate().toISOString()
 
     # **private**
     # Content change handler. Update the current value and trigger event `change`
@@ -244,7 +244,7 @@ define [
             else 
               target.prev('.boolean-value').find('input').removeAttr 'disabled'
               newValue = target.prev('.boolean-value').find('input:checked').val()
-
+        
           else # date, string, text
             if isNull
               input.attr('disabled', 'disabled').val ''
@@ -252,6 +252,8 @@ define [
             else 
               input.removeAttr 'disabled'
               newValue = input.val()
+              if @options.type is 'date'
+                newValue = moment(newValue, "#{i18n.constants.dateFormat} #{i18n.constants.timeFormat}").toDate().toISOString()
         
       else if target.hasClass 'instance'
         # special case of arrays and objects of instances

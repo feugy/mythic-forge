@@ -19,15 +19,16 @@
 'use strict'
 
 define [
-  'underscore'
   'utils/utilities'
-  'model/sockets'
   'model/BaseModel'
   'model/ItemType'
-], (_, utils, sockets, Base, ItemType) ->
+], (utils, Base, ItemType) ->
 
-  # Client cache of item types.
-  class _Items extends Base.Collection
+  # Client cache of items.
+  class _Items extends Base.LinkedCollection
+
+    # Class of the type of this model.
+    @typeClass: ItemType
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -37,7 +38,7 @@ define [
     # List of not upadated attributes
     _notUpdated: ['_id', 'type', 'map']
 
-    # Enhance Backone method to allow existing modesl to be re-added.
+    # Enhance Backone method to allow existing models to be re-added.
     # Needed because map will add retrieved items when content returned from server, and `add` event needs
     # to be fired from collection
     add: (added, options) =>
@@ -62,20 +63,22 @@ define [
       if 'map' of changes and changes.map?
         id = if 'object' is utils.type changes.map then changes.map._id else changes.map
         changes.map = require('model/Map').collection.get id
-      # always keep an up-to-date type
-      model = @get changes[@model.prototype.idAttribute]
-      model?.set 'type', ItemType.collection.get model.get('type')?.id
-      
+
       # Call inherited merhod
       super className, changes
 
-  # Modelisation of a single Item Type.
-  # Not wired to the server : use collections ItemTypes instead
-  #
-  class Item extends Base.Model
+  # Modelisation of a single Item.
+  # Not wired to the server : use collections Items instead
+  class Item extends Base.LinkedModel
 
     # Local cache for models.
     @collection: new _Items @
+
+    # Class of the type of this model.
+    @typeClass: ItemType
+
+    # Array of path of classes in which linked objects are searched.
+    @linkedCandidateClasses: ['./Event']
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -104,103 +107,3 @@ define [
           map = new Map attributes.map
           Map.collection.add map
           @set 'map', map
-
-      # Construct an ItemType around the raw type.
-      if attributes?.type?
-        if typeof attributes.type is 'string'
-          # resolve by id
-          type = ItemType.collection.get attributes.type
-          # not found on client: get it from server
-          unless type?
-            ItemType.collection.on 'add', @_onTypeFetched
-            ItemType.collection.fetch attributes.type
-          else 
-            @set 'type', type
-        else 
-          # contruct with all data.
-          type = new ItemType attributes.type
-          ItemType.collection.add type
-          @set 'type', type
-
-    # Handler of type retrieval. Updates the current type with last values
-    #
-    # @param type [ItemType] an added type.      
-    _onTypeFetched: (type) =>
-      if type.id is @get 'type'
-        console.log "type #{type.id} successfully fetched from server for item #{@id}"
-        # remove handler
-        ItemType.collection.off 'add', @_onTypeFetched
-        # update the type object
-        @set 'type', type
-        @trigger 'typFetched', @
-
-    # This method retrieves linked Item in properties.
-    # All `object` and `array` properties are resolved. 
-    # Properties that aims at unexisting items are reset to null.
-    #
-    # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
-    # @option callback err [String] an error message if an error occured.
-    # @option callback item [Item] the root item on which linked items were resolved.
-    resolve: (callback) =>
-      needResolution = false
-      # identify each linked properties 
-      console.log "search linked ids in item #{@id}"
-      # gets the corresponding properties definitions
-      properties = @get('type').get 'properties'
-      for prop, def of properties
-        value = @get prop
-        if def.type is 'object' and typeof value is 'string'
-          # try to get it locally first
-          value = Item.collection.get value
-          if value?
-            @set prop, value
-          else
-            # linked not found: ask to server
-            needResolution = true
-            break
-        else if def.type is 'array' 
-          value = [] unless value?
-          for linked, i in value when typeof linked is 'string'
-            # try to get it locally first
-            linked = Item.collection.get linked
-            if linked?
-              value[i] = linked
-            else
-              # linked not found: ask to server
-              needResolution = true
-              break
-          break if needResolution
-      
-      # exit immediately if no resolution needed  
-      return _.defer (=> callback null, @) unless needResolution
-
-      # now that we have the linked ids, get the corresponding items.
-      sockets.game.once 'getItems-resp', (err, items) =>
-        return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
-        # silentely update local cache
-        idx = Item.collection.indexOf @
-        Item.collection.add items[0], at:idx, silent: true
-        # end of resolution.
-        console.log "linked ids for item #{@id} resolved"
-        callback null, items[0]
-
-      sockets.game.send 'getItems', [@id]
-
-    # **private** 
-    # Method used to serialize a model when saving and removing it
-    # Only keeps ids in linked properties to avoid recursion, before returning JSON representation 
-    #
-    # @return a serialized version of this model
-    _serialize: => 
-      properties = @get('type').get 'properties'
-      attrs = {}
-      for name, value of @attributes
-        if properties[name]?.type is 'object'
-          attrs[name] = if 'object' is utils.type value then value?.id else value
-        else if properties[name]?.type is 'array'
-          linked = []
-          attrs[name] = ((if 'object' is utils.type obj then obj?.id else obj) for obj in value)
-        else
-          attrs[name] = value
-      # returns the json attributes
-      attrs

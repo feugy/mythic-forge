@@ -110,8 +110,9 @@ define [
 
     # Returns the view's title
     #
+    # @param confirm [Boolean] true to get the version of the title for confirm popups. Default to false.
     # @return the edited object name.
-    getTitle: => throw new Error 'getTitle() must be implemented'
+    getTitle: (confirm = false) => throw new Error 'getTitle() must be implemented'
 
     # Indicates wether or not this object can be removed.
     # When status changed, a `change` event is triggered on the view.
@@ -130,7 +131,7 @@ define [
     canClose: =>
       # allow if we are closing, or if no change found
       return true if @_isClosing or !@canSave()
-      utils.popup i18n.titles.closeConfirm, _.sprintf(@_confirmCloseMessage, @model.get(@_nameAttribute)), 'question', [
+      utils.popup i18n.titles.closeConfirm, _.sprintf(@_confirmCloseMessage, @getTitle true), 'question', [
         text: i18n.buttons.yes
         icon: 'valid'
         click: =>
@@ -173,7 +174,7 @@ define [
     removeModel: (event = null) =>
       event?.preventDefault()
       return unless @canRemove()
-      utils.popup i18n.titles.removeConfirm, _.sprintf(@_confirmRemoveMessage, @model.get(@_nameAttribute)), 'question', [
+      utils.popup i18n.titles.removeConfirm, _.sprintf(@_confirmRemoveMessage, @getTitle true), 'question', [
         text: i18n.buttons.no
         icon: 'invalid'
       ,

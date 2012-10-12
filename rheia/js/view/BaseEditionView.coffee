@@ -70,8 +70,8 @@ define [
 
     # The view constructor.
     #
-    # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
+    # @param className [String] rendering root node Css class.
     constructor: (id, className) ->
       super id, className
 
@@ -91,8 +91,11 @@ define [
 
     # Returns the view's title
     #
+    # @param confirm [Boolean] true to get the version of the title for confirm popups. Default to false.
     # @return the edited object name.
-    getTitle: => _.truncate (@_nameWidget?.options.value or @model.get @_nameAttribute), 15
+    getTitle: (confirm = false) => 
+      return @_nameWidget?.options.value or @model.get @_nameAttribute if confirm
+      _.truncate (@_nameWidget?.options.value or @model.get @_nameAttribute), 15
 
     # Returns the view's action bar, and creates it if needed.
     # may be overriden by subclasses to add buttons

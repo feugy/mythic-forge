@@ -431,7 +431,7 @@ define [
       @_historyList.empty()
       html = ""
       for commit in file.history
-        date = moment(commit.date).format i18n.constants.dateFormat
+        date = moment(commit.date).format i18n.constants.dateTimeFormat
         html += "<option value='#{commit.id}'>#{_.sprintf i18n.labels.commitDetails, date, commit.author, commit.message}</option>" 
       @_historyList.append html
 

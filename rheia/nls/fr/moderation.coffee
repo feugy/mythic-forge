@@ -21,6 +21,7 @@ define
 
   titles:
     item: '%1$s (%2$s)'
+    event: '%1$s (%2$s)'
     chooseType: 'Choix du type'
 
   labels: 
@@ -30,8 +31,19 @@ define
     ordinate: 'Y'
     noMap: 'aucune'
     quantity: 'Quantité'
+    from: 'Par'
+    noFrom: 'personne'
+    creationDate: 'Créé le'
+    updateDate: 'Modifié le'
+
+  tips:
+    newItem: 'Créer un nouvel objet'
+    newEvent: 'Créer un nouvel évènement'
 
   msgs:
     removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'object <b>%s</b> ?</p>"
+    removeEventConfirm: "<p>Voulez-vous vraiment supprimer l'évènement <b>%s</b> ?</p>"
     itemExternalChange: "L'objet à été modifié par ailleur. Ses valeurs ont été mises à jour"
+    eventExternalChange: "L'évènement à été modifié par ailleur. Ses valeurs ont été mises à jour"
     chooseItemType: "<p>Choisissez un type d'objet pour le nouvel objet :</p>"
+    chooseEventType: "<p>Choisissez un type d'objet pour le nouvel évènement :</p>"

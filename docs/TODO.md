@@ -13,7 +13,6 @@
   - moderation perspective
     - Maps
       - items animations (with z-ordering)
-    - Event CRUD
     - Players CRUD
     - Search
       - input query with help and validation
@@ -28,7 +27,6 @@
     - ItemType
       - categories ?
       - playable status ?
-  - use localStorage token on reconnect attempts
 
 - Atlas
   - dynamic properties resolution
@@ -209,6 +207,7 @@
       - displays, edits and navigates to linked
       - restrict drop operations on object/array properties
       - display tooltip on object/array properties
+    - Events CRUD
 
 - Atlas
   - map displayal
@@ -230,4 +229,5 @@
   - event-kind properties
   - date-kind properties
   - connect with Google, Twitter
-  - FSItem history management
+  - FSItem history management, with revert to previous and restore
+  - Drop from Item/Event/Player tabs

@@ -20,8 +20,10 @@
 
 define [
   'backbone'
+  'underscore'
+  'utils/utilities'
   'model/sockets'
-], (Backbone, sockets) ->
+], (Backbone, _, utils, sockets) ->
 
   # BaseCollection provides common behaviour for model collections.
   #
@@ -122,6 +124,31 @@ define [
       # propagates changes on collection to global change event
       rheia.router.trigger 'modelChanged'
 
+  # BaseLinkedCollection provides common behaviour for model wih linked objects collections.
+  #
+  # Reconstruct the type when updates found
+  class BaseLinkedCollection extends BaseCollection
+
+    # Class of the type of this model.
+    # **Must be defined by subclasses**
+    @typeClass: null
+
+    # **private**
+    # Callback invoked when a database update is received.
+    # Update the model from the current collection if needed, and fire event 'update'.
+    # Extension to resolve type when needed
+    #
+    # @param className [String] the modified object className
+    # @param changes [Object] new changes for a given model.
+    _onUpdate: (className, changes) =>
+      return unless className is @_className
+      # always keep an up-to-date type
+      model = @get changes[@model.prototype.idAttribute]
+      model?.set 'type', @constructor.typeClass.collection.get model.get('type')?.id
+      
+      # Call inherited merhod
+      super className, changes
+
   # BaseModel provides common behaviour for model.
   #
   # The `sync` method is wired to server Api `save` and  `remove` when creating, updating and destroying models.
@@ -208,7 +235,145 @@ define [
     equals: (other) =>
       @.id is other?.id
 
+  # BaseLinkedModel provides common behaviour for model with linked properties.
+  # 
+  # It resolve type during construction (and trigger `typeFetched` when finished if type was not available).
+  # It adds a `getLinked` instance method to resolve linked properties
+  class BaseLinkedModel extends BaseModel
+
+    # Class of the type of this model.
+    # **Must be defined by subclasses**
+    @typeClass: null
+
+    # Array of path of classes in which linked objects are searched.
+    # **Must be defined by subclasses**
+    @linkedCandidateClasses: []
+
+    # LinkedModel constructor.
+    # Will fetch type from server if necessary, and trigger the `typeFetched` when finished.
+    #
+    # @param attributes [Object] raw attributes of the created instance.
+    constructor: (attributes) ->
+      super attributes
+
+      # Construct an type around the raw type.
+      if attributes?.type?
+        typeId = attributes.type
+        if typeof attributes.type is 'object'
+          typeId = attributes.type[@idAttribute]
+
+        # resolve by id
+        type = @constructor.typeClass.collection.get typeId
+        # not found on client
+        unless type?
+          if typeof attributes.type is 'object'
+            # we have all informations: just adds it to collection
+            type = new @constructor.typeClass attributes.type
+            @constructor.typeClass.collection.add type
+            @set 'type', type
+            @trigger 'typFetched', @
+          else
+            # get it from server
+            @constructor.typeClass.collection.on 'add', @_onTypeFetched
+            @constructor.typeClass.collection.fetch attributes.type
+        else 
+          @set 'type', type
+          @trigger 'typFetched', @
+
+    # Handler of type retrieval. Updates the current type with last values
+    #
+    # @param type [Type] an added type.      
+    _onTypeFetched: (type) =>
+      if type.id is @get 'type'
+        console.log "type #{type.id} successfully fetched from server for #{@_className.toLowerCase()} #{@id}"
+        # remove handler
+        @constructor.typeClass.collection.off 'add', @_onTypeFetched
+        # update the type object
+        @set 'type', type
+        @trigger 'typFetched', @
+
+    # This method retrieves linked Event in properties.
+    # All `object` and `array` properties are resolved. 
+    # Properties that aims at unexisting linked are reset to null.
+    #
+    # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
+    # @option callback err [String] an error message if an error occured.
+    # @option callback instance [BaseLinkedModel] the root instance on which linked were resolved.
+    getLinked: (callback) =>
+      needResolution = false
+      # identify each linked properties 
+      console.log "search linked ids in #{@_className.toLowerCase()} #{@id}"
+      # gets the corresponding properties definitions
+      properties = @get('type').get 'properties'
+      for prop, def of properties
+        value = @get prop
+        if def.type is 'object' and typeof value is 'string'
+          # try to get it locally first in same class and in other candidate classes
+          value = @constructor.collection.get value
+          unless value?
+            for candidateScript in @constructor.linkedCandidateClasses
+              value = require(candidateScript).collection.get value
+              break if value?
+          if value?
+            @set prop, value
+          else
+            # linked not found: ask to server
+            needResolution = true
+            break
+        else if def.type is 'array' 
+          value = [] unless value?
+          for linked, i in value when typeof linked is 'string'
+            # try to get it locally first in same class and in other candidate classes
+            linked = @constructor.collection.get linked
+            unless linked?
+              for candidateScript in @constructor.linkedCandidateClasses
+                linked = require(candidateScript).collection.get linked
+                break if linked?
+            if linked?
+              value[i] = linked
+            else
+              # linked not found: ask to server
+              needResolution = true
+              break
+          break if needResolution
+      
+      # exit immediately if no resolution needed  
+      return _.defer (=> callback null, @) unless needResolution
+
+      # now that we have the linked ids, get the corresponding instances.
+      sockets.game.once "get#{@_className}s-resp", (err, instances) =>
+        return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
+        # silentely update local cache
+        idx = @constructor.collection.indexOf @
+        @constructor.collection.add instances[0], at:idx, silent: true
+        # end of resolution.
+        console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
+        callback null, instances[0]
+
+      sockets.game.send "get#{@_className}s", [@id]
+
+    # **private** 
+    # Method used to serialize a model when saving and removing it
+    # Only keeps ids in linked properties to avoid recursion, before returning JSON representation 
+    #
+    # @return a serialized version of this model
+    _serialize: => 
+      properties = @get('type').get 'properties'
+      attrs = {}
+      for name, value of @attributes
+        if properties[name]?.type is 'object'
+          attrs[name] = if 'object' is utils.type value then value?.id else value
+        else if properties[name]?.type is 'array'
+          linked = []
+          attrs[name] = ((if 'object' is utils.type obj then obj?.id else obj) for obj in value)
+        else
+          attrs[name] = value
+      # returns the json attributes
+      attrs
+
   {
     Collection: BaseCollection
     Model: BaseModel
+    LinkedCollection: BaseLinkedCollection
+    LinkedModel: BaseLinkedModel
   }
