@@ -42,6 +42,7 @@ executables = []
 maps = []
 fields = []
 items = []
+events = []
 fsItem = null
 gameClientRoot = utils.confKey 'game.dev'
 
@@ -70,6 +71,7 @@ describe 'AdminService tests', ->
     fieldTypes = []
     item = []
     maps = []
+    event = []
     testUtils.cleanFolder utils.confKey('executable.source'), -> 
       Executable.resetAll -> 
         ItemType.collection.drop -> Item.collection.drop ->
@@ -92,7 +94,7 @@ describe 'AdminService tests', ->
                 create = (def) ->
                   return done() unless def?
                   new def.clazz(def.args).save (err, saved) ->
-                    throw new Error err if err?
+                    return done err if err?
                     def.store.push saved
                     create created.pop()
 
@@ -110,7 +112,7 @@ describe 'AdminService tests', ->
   it 'should list returns item types', (done) ->
     # when listing all item types
     service.list 'ItemType', (err, modelName, list) ->
-      throw new Error "Can't list itemTypes: #{err}" if err?
+      return done "Can't list itemTypes: #{err}" if err?
       # then the two created types are retrieved
       assert.equal list.length, 2
       assert.equal modelName, 'ItemType'
@@ -121,7 +123,7 @@ describe 'AdminService tests', ->
   it 'should list returns event types', (done) ->
     # when listing all event types
     service.list 'EventType', (err, modelName, list) ->
-      throw new Error "Can't list eventTypes: #{err}" if err?
+      return done "Can't list eventTypes: #{err}" if err?
       # then the two created types are retrieved
       assert.equal list.length, 2
       assert.equal modelName, 'EventType'
@@ -132,7 +134,7 @@ describe 'AdminService tests', ->
   it 'should list returns field types', (done) ->
     # when listing all field types
     service.list 'FieldType', (err, modelName, list) ->
-      throw new Error "Can't list fieldTypes: #{err}" if err?
+      return done "Can't list fieldTypes: #{err}" if err?
       # then the two created types are retrieved
       assert.equal list.length, 2
       assert.equal modelName, 'FieldType'
@@ -143,7 +145,7 @@ describe 'AdminService tests', ->
   it 'should list returns executables', (done) ->
     # when listing all item types
     service.list 'Executable', (err, modelName, list) ->
-      throw new Error "Can't list executables: #{err}" if err?
+      return done "Can't list executables: #{err}" if err?
       # then the two created executables are retrieved
       assert.equal list.length, 2
       assert.equal modelName, 'Executable'
@@ -154,7 +156,7 @@ describe 'AdminService tests', ->
   it 'should list returns maps', (done) ->
     # when listing all item types
     service.list 'Map', (err, modelName, list) ->
-      throw new Error "Can't list maps: #{err}" if err?
+      return done "Can't list maps: #{err}" if err?
       # then the two created executables are retrieved
       assert.equal list.length, 2
       assert.equal modelName, 'Map'
@@ -172,15 +174,15 @@ describe 'AdminService tests', ->
   it 'should list returns fsItems in root', (done) ->
     # given a clean empty folder root
     initializedFSRoot (err)->
-      throw new Error err if err?
+      return done err if err?
       
       # when reading the root
       authoringService.readRoot (err, expected) ->
-        throw new Error err if err?
+        return done err if err?
 
         # when listing all fs items
         service.list 'FSItem', (err, modelName, list) ->
-          throw new Error "Can't list root FSItems: #{err}" if err?
+          return done "Can't list root FSItems: #{err}" if err?
           # then the authoring service result were returned
           assert.equal modelName, 'FSItem'
           assert.equal list.length, expected.content.length
@@ -211,7 +213,7 @@ describe 'AdminService tests', ->
 
     # when saving new item type
     service.save 'ItemType', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save itemType: #{err}" if err?
+      return done "Can't save itemType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
@@ -220,7 +222,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       ItemType.findById model._id, (err, obj) ->
-        throw new Error "Can't find itemType in db #{err}" if err?
+        return done "Can't find itemType in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -239,7 +241,7 @@ describe 'AdminService tests', ->
 
     # when saving new event type
     service.save 'EventType', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save eventType: #{err}" if err?
+      return done "Can't save eventType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
@@ -248,7 +250,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       EventType.findById model._id, (err, obj) ->
-        throw new Error "Can't find eventType in db #{err}" if err?
+        return done "Can't find eventType in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -267,7 +269,7 @@ describe 'AdminService tests', ->
 
     # when saving new field type
     service.save 'FieldType', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save fieldType: #{err}" if err?
+      return done "Can't save fieldType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
@@ -275,7 +277,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       FieldType.findById model._id, (err, obj) ->
-        throw new Error "Can't find fieldType in db #{err}" if err?
+        return done "Can't find fieldType in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -294,7 +296,7 @@ describe 'AdminService tests', ->
 
     # when saving new executable
     service.save 'Executable', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save executable: #{err}" if err?
+      return done "Can't save executable: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.equal model._id, values._id
@@ -302,7 +304,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in cache
       Executable.findCached [model._id], (err, objs) ->
-        throw new Error "Can't find executable #{err}" if err?
+        return done "Can't find executable #{err}" if err?
         assert.equal objs.length, 1
         assert.deepEqual objs[0], model
         assert.ok awaited, 'watcher wasn\'t invoked'
@@ -323,7 +325,7 @@ describe 'AdminService tests', ->
 
     # when saving new map
     service.save 'Map', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save map: #{err}" if err?
+      return done "Can't save map: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
@@ -332,7 +334,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       Map.findById model._id, (err, obj) ->
-        throw new Error "Can't find map in db #{err}" if err?
+        return done "Can't find map in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -353,7 +355,7 @@ describe 'AdminService tests', ->
 
     # when saving new fsitem
     service.save 'FSItem', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save fsitem: #{err}" if err?
+      return done "Can't save fsitem: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.equal model.path, values.path
@@ -362,7 +364,7 @@ describe 'AdminService tests', ->
 
       # then the authoring servce serve this fsitem
       authoringService.read model, (err, obj) ->
-        throw new Error "Can't find fsitem with authoring servce #{err}" if err?
+        return done "Can't find fsitem with authoring servce #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -373,7 +375,7 @@ describe 'AdminService tests', ->
 
     # given an item for this type
     new Item({type: itemTypes[1]}).save (err, item) ->
-      throw new Error "Can't save item: #{err}" if err?
+      return done "Can't save item: #{err}" if err?
       assert.equal item.get('strength'), 10
         
       # given a property raw change
@@ -390,7 +392,7 @@ describe 'AdminService tests', ->
 
       # when saving existing item type
       service.save 'ItemType', values, 'admin', (err, modelName, model) ->
-        throw new Error "Can't save itemType: #{err}" if err?
+        return done "Can't save itemType: #{err}" if err?
 
         # then the created values are returned
         assert.ok itemTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
@@ -401,18 +403,18 @@ describe 'AdminService tests', ->
 
         # then the model exists in DB
         ItemType.findById model._id, (err, obj) ->
-          throw new Error "Can't find itemType in db #{err}" if err?
+          return done "Can't find itemType in db #{err}" if err?
           assert.ok obj.equals model, 'ItemType cannot be found in DB'
 
           # then the model was updated, not created in DB
           ItemType.find {}, (err, list) ->
-            throw new Error "Can't find itemTypes in db #{err}" if err?
+            return done "Can't find itemTypes in db #{err}" if err?
             assert.equal list.length, 2
             assert.ok awaited, 'watcher wasn\'t invoked'
 
             # then the instance has has only property property desc
             Item.findById item._id, (err, item) ->
-              throw new Error "Can't get item from db #{err}" if err?
+              return done "Can't get item from db #{err}" if err?
               assert.equal 'to be defined', item.get('desc')
               assert.ok item.get('strength') is undefined, 'Item still has strength property'
               watcher.removeAllListeners 'change'
@@ -424,7 +426,7 @@ describe 'AdminService tests', ->
 
     # given an event for this type
     new Event({type: eventTypes[1]}).save (err, event) ->
-      throw new Error "Can't save event: #{err}" if err?
+      return done "Can't save event: #{err}" if err?
       assert.equal event.get('content'), 'hello'
         
       # given a property raw change
@@ -441,7 +443,7 @@ describe 'AdminService tests', ->
 
       # when saving existing event type
       service.save 'EventType', values, 'admin', (err, modelName, model) ->
-        throw new Error "Can't save eventType: #{err}" if err?
+        return done "Can't save eventType: #{err}" if err?
         # then the created values are returned
         assert.ok eventTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
         assert.equal model.get('name'), eventTypes[1].get('name')
@@ -451,18 +453,18 @@ describe 'AdminService tests', ->
 
         # then the model exists in DB
         EventType.findById model._id, (err, obj) ->
-          throw new Error "Can't find eventType in db #{err}" if err?
+          return done "Can't find eventType in db #{err}" if err?
           assert.ok obj.equals model, 'EventType cannot be found in DB'
 
           # then the model was updated, not created in DB
           EventType.find {}, (err, list) ->
-            throw new Error "Can't find eventTypes in db #{err}" if err?
+            return done "Can't find eventTypes in db #{err}" if err?
             assert.equal list.length, 2
             assert.ok awaited, 'watcher wasn\'t invoked'
 
             # then the instance has has only property property desc
             Event.findById event._id, (err, event) ->
-              throw new Error "Can't get event from db #{err}" if err?
+              return done "Can't get event from db #{err}" if err?
               assert.equal 'to be defined', event.get('desc')
               assert.ok event.get('content') is undefined, 'Event still has content property'
               watcher.removeAllListeners 'change'
@@ -483,7 +485,7 @@ describe 'AdminService tests', ->
 
     # when saving existing field type
     service.save 'FieldType', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save fieldType: #{err}" if err?
+      return done "Can't save fieldType: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.ok fieldTypes[1]._id.equals model._id
@@ -492,12 +494,12 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       FieldType.findById model._id, (err, obj) ->
-        throw new Error "Can't find fieldType in db #{err}" if err?
+        return done "Can't find fieldType in db #{err}" if err?
         assert.ok obj.equals model
 
         # then the model was updated, not created in DB
         FieldType.find {}, (err, list) ->
-          throw new Error "Can't find fieldTypes in db #{err}" if err?
+          return done "Can't find fieldTypes in db #{err}" if err?
           assert.equal list.length, 2
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
@@ -525,7 +527,7 @@ describe 'AdminService tests', ->
 
     # when saving existing map
     service.save 'Map', values, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save map: #{err}" if err?
+      return done "Can't save map: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.ok maps[0]._id.equals model._id
@@ -534,12 +536,12 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       Map.findById model._id, (err, obj) ->
-        throw new Error "Can't find map in db #{err}" if err?
+        return done "Can't find map in db #{err}" if err?
         assert.ok obj.equals model
 
         # then the model was updated, not created in DB
         Map.find {}, (err, list) ->
-          throw new Error "Can't find maps in db #{err}" if err?
+          return done "Can't find maps in db #{err}" if err?
           assert.equal list.length, 2
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
@@ -560,7 +562,7 @@ describe 'AdminService tests', ->
 
     # when saving existing fsitem
     service.save 'FSItem', fsItem, 'admin', (err, modelName, model) ->
-      throw new Error "Can't save fsitem: #{err}" if err?
+      return done "Can't save fsitem: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.equal model.path, fsItem.path
@@ -569,7 +571,7 @@ describe 'AdminService tests', ->
 
       # then the authoring servce serve this fsitem
       authoringService.read fsItem, (err, obj) ->
-        throw new Error "Can't find fsitem with authoring servce #{err}" if err?
+        return done "Can't find fsitem with authoring servce #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         assert.equal obj.content, newContent
@@ -591,14 +593,14 @@ describe 'AdminService tests', ->
 
     # when saving two new fields
     service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
-      throw new Error "Can't save fields: #{err}" if err?
+      return done "Can't save fields: #{err}" if err?
       # then the created values are returned
       assert.equal returned?.length, 2, 'unexpected returned fields'
       assert.equal saved.length, 2, 'watcher was not as many times invoked as awaited'
 
       # then the model exists in DB
       Field.findById returned[0]._id, (err, obj) ->
-        throw new Error "Can't find field in db #{err}" if err?
+        return done "Can't find field in db #{err}" if err?
         assert.equal obj.get('mapId'), toBeSaved[1].mapId
         assert.equal obj.get('typeId'), toBeSaved[1].typeId
         assert.equal obj.get('x'), toBeSaved[1].x
@@ -606,7 +608,7 @@ describe 'AdminService tests', ->
         assert.ok returned[0].equals obj
         # then the model exists in DB
         Field.findById returned[1]._id, (err, obj) ->
-          throw new Error "Can't find field in db #{err}" if err?
+          return done "Can't find field in db #{err}" if err?
           assert.equal obj.get('mapId'), toBeSaved[0].mapId
           assert.equal obj.get('typeId'), toBeSaved[0].typeId
           assert.equal obj.get('x'), toBeSaved[0].x
@@ -628,7 +630,7 @@ describe 'AdminService tests', ->
   it 'should save fails on existing fields', (done) ->
     # given an existing field
     new Field({mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}).save (err, field) ->
-      throw new Error "Can't save field: #{err}" if err?
+      return done "Can't save field: #{err}" if err?
 
       # given another new field
       saved = []
@@ -653,7 +655,7 @@ describe 'AdminService tests', ->
 
         # then the model exists in DB
         Field.findById returned[0]._id, (err, obj) ->
-          throw new Error "Can't find field in db #{err}" if err?
+          return done "Can't find field in db #{err}" if err?
           assert.equal obj.get('mapId'), toBeSaved[1].mapId
           assert.equal obj.get('typeId'), toBeSaved[1].typeId
           assert.equal obj.get('x'), toBeSaved[1].x
@@ -666,7 +668,7 @@ describe 'AdminService tests', ->
     # when saving field with empty array
     service.save 'Field', [], 'admin', (err, modelName, returned) ->
       # then nothing was saved
-      throw new Error "Unexpected error while saving fields: #{err}" if err?
+      return done "Unexpected error while saving fields: #{err}" if err?
       assert.equal modelName, 'Field'
       assert.equal returned.length, 0
       done()
@@ -682,9 +684,9 @@ describe 'AdminService tests', ->
       assert.equal operation, 'creation'
       saved = instance
 
-    # when saving two new fields
+    # when saving the new item
     service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
-      throw new Error "Can't save item: #{err}" if err?
+      return done "Can't save item: #{err}" if err?
       # then the created values are returned
       assert.isNotNull returned, 'unexpected returned item'
       assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
@@ -692,7 +694,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       Item.findById returned._id, (err, obj) ->
-        throw new Error "Can't find field in db #{err}" if err?
+        return done "Can't find item in db #{err}" if err?
         assert.ok maps[0]._id.equals(obj.get('map')._id), "unexpected map id #{obj.get('map')._id}"
         assert.ok itemTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
         assert.equal obj.get('x'), toBeSaved.x
@@ -711,28 +713,88 @@ describe 'AdminService tests', ->
       toBeSaved = item.toObject()
       toBeSaved.strength = 50
 
-      # then a creation event was issued
+      # then a update event was issued
       watcher.on 'change', (operation, className, instance)->
         assert.equal className, 'Item'
         assert.equal operation, 'update'
         assert.ok item.equals instance
         awaited = true
 
-      # when saving two new fields
+      # when saving the existing item
       service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
-        throw new Error "Can't save item: #{err}" if err?
+        return done "Can't save item: #{err}" if err?
         # then the created values are returned
         assert.isNotNull returned, 'unexpected returned item'
         assert.ok awaited, 'watcher was not as many times invoked as awaited'
 
         # then the model exists in DB
         Item.findById returned._id, (err, obj) ->
-          throw new Error "Can't find field in db #{err}" if err?
+          return done "Can't find item in db #{err}" if err?
           assert.ok maps[0]._id.equals(obj.get('map')._id), "unexpected map id #{obj.get('map')._id}"
           assert.ok itemTypes[0]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
           assert.equal obj.get('x'), toBeSaved.x
           assert.equal obj.get('y'), toBeSaved.y
           assert.equal obj.get('strength'), toBeSaved.strength
+          assert.ok obj.equals returned
+          watcher.removeAllListeners 'change'
+          done()
+
+  it 'should save creates new event', (done) ->
+    # given a new event
+    saved = null
+    toBeSaved = type: eventTypes[1].toObject(), content:'yaha'
+
+    # then a creation event was issued
+    watcher.on 'change', (operation, className, instance)->
+      assert.equal className, 'Event'
+      assert.equal operation, 'creation'
+      saved = instance
+
+    # when saving the new event
+    service.save 'Event', toBeSaved, 'admin', (err, modelName, returned) ->
+      return done "Can't save event: #{err}" if err?
+      # then the created values are returned
+      assert.isNotNull returned, 'unexpected returned event'
+      assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
+      assert.ok returned.equals saved
+
+      # then the model exists in DB
+      Event.findById returned._id, (err, obj) ->
+        return done "Can't find event in db #{err}" if err?
+        assert.ok eventTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
+        assert.equal obj.get('content'), toBeSaved.content
+        assert.ok obj.equals returned
+        watcher.removeAllListeners 'change'
+        done()
+
+  it 'should save saved existing event', (done) ->
+    # given an existing event
+    new Event(type: eventTypes[1], content:'yaha').save (err, event) ->
+      return done err if err?
+
+      awaited = false
+      toBeSaved = event.toObject()
+      toBeSaved.content = 'hohoho'
+
+      # then a update event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Event'
+        assert.equal operation, 'update'
+        assert.ok event.equals instance
+        awaited = true
+
+      # when saving the existing event
+      service.save 'Event', toBeSaved, 'admin', (err, modelName, returned) ->
+        return done "Can't save event: #{err}" if err?
+        # then the created values are returned
+        assert.isNotNull returned, 'unexpected returned event'
+        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+
+        # then the model exists in DB
+        Event.findById returned._id, (err, obj) ->
+          return done "Can't find event in db #{err}" if err?
+          assert.ok eventTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
+          assert.equal obj.get('content'), toBeSaved.content
           assert.ok obj.equals returned
           watcher.removeAllListeners 'change'
           done()
@@ -790,7 +852,7 @@ describe 'AdminService tests', ->
 
     # when removing existing item type
     service.remove 'ItemType', itemTypes[1], 'admin', (err, modelName, model) ->
-      throw new Error "Can't remove itemType: #{err}" if err?
+      return done "Can't remove itemType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.ok itemTypes[1]._id.equals model._id
@@ -812,7 +874,7 @@ describe 'AdminService tests', ->
 
     # when removing existing item type
     service.remove 'EventType', eventTypes[1], 'admin', (err, modelName, model) ->
-      throw new Error "Can't remove eventType: #{err}" if err?
+      return done "Can't remove eventType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.ok eventTypes[1]._id.equals model._id
@@ -834,7 +896,7 @@ describe 'AdminService tests', ->
 
     # when removing existing field type
     service.remove 'FieldType', fieldTypes[1], 'admin', (err, modelName, model) ->
-      throw new Error "Can't remove fieldType: #{err}" if err?
+      return done "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.ok fieldTypes[1]._id.equals model._id
@@ -856,7 +918,7 @@ describe 'AdminService tests', ->
 
     # when removing existing executable
     service.remove 'Executable', executables[1], 'admin', (err, modelName, model) ->
-      throw new Error "Can't remove executable: #{err}" if err?
+      return done "Can't remove executable: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.equal executables[1]._id, model._id
@@ -878,7 +940,7 @@ describe 'AdminService tests', ->
 
     # when removing existing map
     service.remove 'Map', maps[1], 'admin', (err, modelName, model) ->
-      throw new Error "Can't remove map: #{err}" if err?
+      return done "Can't remove map: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.ok maps[1]._id.equals model._id
@@ -892,9 +954,9 @@ describe 'AdminService tests', ->
   it 'should remove removes existing fields', (done) ->
     # given two existing field
     new Field({mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}).save (err, field1) ->
-      throw new Error "Can't save field: #{err}" if err?
+      return done "Can't save field: #{err}" if err?
       new Field({mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}).save (err, field2) ->
-        throw new Error "Can't save field: #{err}" if err?
+        return done "Can't save field: #{err}" if err?
         removed = []
 
         # then a deletion event was issued
@@ -905,7 +967,7 @@ describe 'AdminService tests', ->
 
         # when removing two existing fields
         service.remove 'Field', [field1, field2], 'admin', (err, modelName, returned) ->
-          throw new Error "Can't remove fields: #{err}" if err?
+          return done "Can't remove fields: #{err}" if err?
           # then the created values are returned
           assert.equal returned?.length, 2, 'unexpected returned fields'
           assert.ok returned[0].equals field2
@@ -913,10 +975,10 @@ describe 'AdminService tests', ->
 
           # then the model does exist in DB anymore
           Field.findById field1._id, (err, obj) ->
-            throw new Error "Can't find field in db #{err}" if err?
+            return done "Can't find field in db #{err}" if err?
             assert.isNull obj
             Field.findById field2._id, (err, obj) ->
-              throw new Error "Can't find field in db #{err}" if err?
+              return done "Can't find field in db #{err}" if err?
               assert.isNull obj
               # then the watcher was properly invoked
               assert.equal removed.length, 2, 'watcher was not as many times invoked as awaited'
@@ -940,7 +1002,7 @@ describe 'AdminService tests', ->
 
       # when removing an existing item
       service.remove 'Item', item.toObject(), 'admin', (err, modelName, returned) ->
-        throw new Error "Can't remove item: #{err}" if err?
+        return done "Can't remove item: #{err}" if err?
         # then the created values are returned
         assert.isNotNull returned, 'unexpected returned item'
         assert.ok awaited, 'watcher was not as many times invoked as awaited'
@@ -948,7 +1010,35 @@ describe 'AdminService tests', ->
 
         # then the model exists in DB
         Item.findById returned._id, (err, obj) ->
-          throw new Error "Can't find field in db #{err}" if err?
+          return done "Can't find item in db #{err}" if err?
+          assert.isNull obj
+          watcher.removeAllListeners 'change'
+          done()
+
+  it 'should remove delete existing event', (done) ->
+    # given an existing event
+    new Event(type: eventTypes[0], content: 'héhé').save (err, event) ->
+      return done err if err?
+      awaited = false
+    
+      # then a deletion event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Event'
+        assert.equal operation, 'deletion'
+        assert.ok event.equals instance
+        awaited = true
+
+      # when removing an existing event
+      service.remove 'Event', event.toObject(), 'admin', (err, modelName, returned) ->
+        return done "Can't remove event: #{err}" if err?
+        # then the created values are returned
+        assert.isNotNull returned, 'unexpected returned event'
+        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        assert.ok returned.equals event
+
+        # then the model exists in DB
+        Event.findById returned._id, (err, obj) ->
+          return done "Can't find event in db #{err}" if err?
           assert.isNull obj
           watcher.removeAllListeners 'change'
           done()
@@ -964,7 +1054,7 @@ describe 'AdminService tests', ->
 
     # when removing existing fsItem
     service.remove 'FSItem', fsItem, 'admin', (err, modelName, model) ->
-      throw new Error "Can't remove fieldType: #{err}" if err?
+      return done "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
       assert.ok model?
       assert.ok fsItem.equals model
@@ -989,7 +1079,7 @@ describe 'AdminService tests', ->
   it 'should remove fails on unexisting fields', (done) ->
     # given an existing field
     new Field({mapId: maps[0]._id, typeId: fieldTypes[0]._id, x:0, y:0}).save (err, field) ->
-      throw new Error "Can't save field: #{err}" if err?
+      return done "Can't save field: #{err}" if err?
       
       removed = []
 
@@ -1011,7 +1101,7 @@ describe 'AdminService tests', ->
 
         # then the model does exist in DB anymore
         Field.findById field._id, (err, obj) ->
-          throw new Error "Can't find field in db #{err}" if err?
+          return done "Can't find field in db #{err}" if err?
           assert.isNull obj
           # then the watcher was properly invoked
           assert.equal removed.length, 1, 'watcher was not as many times invoked as awaited'
@@ -1023,7 +1113,7 @@ describe 'AdminService tests', ->
     # when removing field with empty array
     service.remove 'Field', [], 'admin', (err, modelName, returned) ->
       # then nothing was saved
-      throw new Error "Unexpected error while saving fields: #{err}" if err?
+      return done "Unexpected error while saving fields: #{err}" if err?
       assert.equal modelName, 'Field'
       assert.equal returned.length, 0
       done()
@@ -1048,7 +1138,7 @@ describe 'AdminService tests', ->
     newId = 'rule 4'
     oldId = executables[0]._id
     service.saveAndRename executables[0], newId, (err, oldId, model) ->
-      throw new Error "Can't save and rename executable: #{err}" if err?
+      return done "Can't save and rename executable: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.equal model._id, newId
@@ -1056,7 +1146,7 @@ describe 'AdminService tests', ->
 
       # then the old model id do not exists in cache
       Executable.findCached [oldId], (err, objs) ->
-        throw new Error "Can't find executable #{err}" if err?
+        return done "Can't find executable #{err}" if err?
         assert.equal objs.length, 0
         assert.ok deletionReceived, 'watcher wasn\'t invoked for deletion'
         assert.ok creationReceived, 'watcher wasn\'t invoked for creation'
@@ -1078,7 +1168,7 @@ describe 'AdminService tests', ->
 
     # when saving existing item types
     service.saveAndRename values, null, (err, oldId, model) ->
-      throw new Error "Can't save and rename executable: #{err}" if err?
+      return done "Can't save and rename executable: #{err}" if err?
       # then the created values are returned
       assert.ok model?
       assert.equal executables[1]._id, model._id
@@ -1086,7 +1176,7 @@ describe 'AdminService tests', ->
 
       # then the model exists in DB
       Executable.findCached [model._id], (err, objs) ->
-        throw new Error "Can't find executable in db #{err}" if err?
+        return done "Can't find executable in db #{err}" if err?
         assert.equal objs.length, 1
         assert.deepEqual objs[0], model
         done()

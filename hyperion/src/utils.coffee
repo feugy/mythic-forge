@@ -174,12 +174,14 @@ checkPropertyType = (value,  property) ->
         (typeof value is 'string' or 
         (strVal isnt 'true' and strVal isnt 'false'))
     # date : null or typeof is date
-    when 'date' then err = "#{value} isn't a valid date" unless value is null or 
-      value instanceof Date
+    when 'date' 
+      if value isnt null
+        if ('string' is type value and isNaN new Date(value).getTime()) or 'date' isnt type value
+          err = "#{value} isn't a valid date" 
     when 'object' then checkObject value
     # array: array that contains object at each index.
     when 'array'
-      if value instanceof Array 
+      if Array.isArray value
         checkObject obj for obj in value
       else 
         err = "#{value} isn't a valid array of #{property.def}"

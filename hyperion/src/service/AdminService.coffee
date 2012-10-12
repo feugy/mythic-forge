@@ -25,12 +25,13 @@ EventType = require '../model/EventType'
 Map = require '../model/Map'
 Field = require '../model/Field'
 Item = require '../model/Item'
+Event = require '../model/Event'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
 authoringService = require('./AuthoringService').get()
 
-supported = ['Field', 'Item', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
-listSupported = supported[2..]
+supported = ['Field', 'Item', 'Event', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
+listSupported = supported[3..]
 
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -89,8 +90,10 @@ class _AdminService
 
         if '_id' of values
           # resolve type
-          return Item.findById values._id, (err, model) ->
-            return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or model is null
+          return Item.findCached [values._id], (err, models) ->
+            return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or models.length is 0
+            model = models[0]
+
             # update values
             for key, value of values
               model.set key, value unless key in ['_id', 'type', 'map']
@@ -107,8 +110,47 @@ class _AdminService
               else
                 model.set 'map', null
                 populateTypeAndSave model
+            else
+              populateTypeAndSave model
         else
           model = new Item values
+          return populateTypeAndSave model
+
+      when 'Event' 
+        populateTypeAndSave = (model) ->
+          EventType.findCached [model?.get('type')?._id], (err, types) ->
+            return callback "Failed to save event #{values._id}. Error while resolving its type: #{err}" if err?
+            return callback "Failed to save event #{values._id} because there is no type with id #{values?.type?._id}" unless types.length is 1    
+            # Do the replacement.
+            model.set 'type', types[0]
+            _save model
+
+        if '_id' of values
+          # resolve type
+          return Event.findCached [values._id], (err, models) ->
+            return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or models.length is 0
+            model = models[0]
+
+            # update values
+            for key, value of values
+              model.set key, value unless key in ['_id', 'type']
+
+            # update from value
+            if model.get('from')?._id isnt values.from?._id
+              if values.from?._id
+                # resolve map
+                return Item.findCached [values.from._id], (err, froms) ->
+                  return callback "Failed to save event #{values._id}. Error while resolving its from: #{err}" if err?
+                  return callbacl "Failed to save event #{values._id} because there is no from with id #{item.from}" unless froms.length is 1  
+                  model.set 'from', froms[0]
+                  populateTypeAndSave model
+              else
+                model.set 'from', null
+                populateTypeAndSave model
+            else
+              populateTypeAndSave model
+        else
+          model = new Event values
           return populateTypeAndSave model
 
       when 'Field'
@@ -229,12 +271,8 @@ class _AdminService
       when 'FieldType' then modelClass = FieldType
       when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
-      when 'Item' 
-        return Item.findCached [values._id], (err, models) ->
-          return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or models.length is 0
-          # removes item
-          models[0].remove (err) -> callback err, modelName, models[0]
-
+      when 'Item' then modelClass = Item
+      when 'Event' then modelClass = Event
       when 'Field'
         return callback 'Fields must be removed within an array', modelName unless Array.isArray values
         removedFields = []

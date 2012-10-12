@@ -118,6 +118,73 @@ describe 'ItemType tests', ->
           assert.equal types[0].get('desc'), descFr
           done()
 
+  it 'should date property always be stores as Date', (done) -> 
+    # given a new ItemType with a null time property
+    type = new ItemType()
+    name = 'test-date'
+    type.setProperty 'time', 'date', null
+    # when saving it
+    type.save (err, saved) ->
+      return done err if err?
+
+      # then the default time value is null
+      assert.property saved.get('properties'), 'time'
+      assert.isNull saved.get('properties').time.def
+      type = saved
+          
+      # then a saved instance will have a null default value
+      new Item(type: type).save (err, saved) ->
+        return done err if err?
+
+        assert.isNull saved.get 'time'
+
+        # when setting the default value to a valid string
+        type.setProperty 'time', 'date', "2012-10-12T08:00:00.000Z"
+        type.save (err, saved) ->
+          return done err if err?
+
+          # then the default value is a date
+          assert.instanceOf saved.get('properties').time.def, Date 
+          assert.deepEqual saved.get('properties').time.def, new Date("2012-10-12T08:00:00.000Z")
+          type = saved
+
+           # then a saved instance will have a date default value
+          new Item(type: type).save (err, saved) ->
+            return done err if err?
+
+            assert.instanceOf saved.get('time'), Date
+            assert.deepEqual saved.get('time'), new Date("2012-10-12T08:00:00.000Z")
+
+            # when setting the default value to a valid date
+            time = new Date()
+            type.setProperty 'time', 'date', time
+            type.save (err, saved) ->
+              return done err if err?
+
+              # then the default value is a date
+              assert.instanceOf saved.get('properties').time.def, Date 
+              assert.deepEqual saved.get('properties').time.def, time
+              type = saved
+
+              # then a saved instance will have a date default value
+              new Item(type: type).save (err, saved) ->
+                return done err if err? 
+
+                assert.instanceOf saved.get('time'), Date
+                assert.deepEqual saved.get('time'), time
+
+                # when saving an instance with an invalid date
+                new Item(type: type, time: "invalid").save (err) ->
+                  # then an error is raised
+                  assert.include err, 'not a valid date'
+
+                  # when saving the type property instance with an invalid date
+                  type.setProperty 'time', 'date', "true"
+                  type.save (err, saved) ->
+                    # then an error is raised
+                    assert.include err, 'not a valid date'
+                    done()
+
   describe 'given a type with a property', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.

@@ -30,7 +30,7 @@ generateTest = (type, def, specs) ->
       property.def = def
       done()
   
-    for spec in specs
+    specs.forEach (spec) ->
       it "should #{spec.name} be #{spec.status}", ->
         err = utils.checkPropertyType spec.value, property
         if 'accepted' is spec.status
@@ -165,8 +165,7 @@ describe 'Dynamic properties check tests', ->
     {name: 'an integer', value: 4, status: 'rejected'}
     {name: 'zero', value: 0, status: 'rejected'}
     {name: 'a float', value: -0.4, status: 'rejected'}
-    {name: 'a string', value: 'hi !', status: 'rejected'}
-    {name: 'an empty string', value: '', status: 'rejected'}
+    {name: 'a string', value: 'hi !', status: 'accepted'}
     {name: 'true', value: true, status: 'rejected'}
     {name: 'false', value: false, status: 'rejected'}
     {name: 'a date', value: new Date(), status: 'rejected'}

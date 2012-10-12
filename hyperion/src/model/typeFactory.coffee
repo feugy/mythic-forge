@@ -176,6 +176,8 @@ module.exports = (typeName, spec, options = {}) ->
     # @param type [String] primitive type of the property's values. Could be: string, text, boolean, integer, float, date, array or object
     # @param def [Object] default value affected to the type instances.
     AbstractType.methods.setProperty = (name, type, def) ->
+      # Do not store strings, store dates instead
+      def = new Date def if type is 'date' and 'string' is utils.type def
       @get('properties')[name] = {type: type, def: def}
       @markModified 'properties'
       @_updatedProps = [] unless @_updatedProps?
@@ -343,6 +345,9 @@ module.exports = (typeName, spec, options = {}) ->
       for prop, value of @type.get 'properties'
         if undefined is @get prop
           @set prop, if value.type is 'array' then [] else if value.type is 'object' then null else value.def
+        # Do not store strings, store dates instead
+        if value.type is 'date' and 'string' is utils.type @get prop
+          @set prop, new Date @get prop
 
       # replace links by them _ids
       processLinks this, properties
