@@ -77,14 +77,15 @@ define [
   # Not wired to the server : use collections Events instead
   class Event extends Base.LinkedModel
 
-    # Local cache for models.
-    @collection: new _Events @
-
     # Class of the type of this model.
     @typeClass: EventType
 
     # Array of path of classes in which linked objects are searched.
-    @linkedCandidateClasses: ['./Item']
+    @linkedCandidateClasses: ['model/Item']
+
+    # Local cache for models.
+    # **Caution** must be defined after @linkedCandidateClasses to allow loading
+    @collection: new _Events @
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes

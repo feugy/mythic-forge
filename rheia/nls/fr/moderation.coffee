@@ -32,7 +32,6 @@ define
     noMap: 'aucune'
     quantity: 'Quantité'
     from: 'Par'
-    noFrom: 'personne'
     creationDate: 'Créé le'
     updateDate: 'Modifié le'
 

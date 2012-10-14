@@ -133,6 +133,13 @@ define [
     # **Must be defined by subclasses**
     @typeClass: null
 
+    # Constructor.
+    # Requires at least candidate classes
+    constructor: (@model, @options) ->
+      super @model, options
+      # require linked cnadidate if needed
+      require @model.linkedCandidateClassesScript
+
     # **private**
     # Callback invoked when a database update is received.
     # Update the model from the current collection if needed, and fire event 'update'.
@@ -145,7 +152,7 @@ define [
       # always keep an up-to-date type
       model = @get changes[@model.prototype.idAttribute]
       model?.set 'type', @constructor.typeClass.collection.get model.get('type')?.id
-      
+
       # Call inherited merhod
       super className, changes
 
@@ -254,6 +261,7 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
+      delete attributes.className
       super attributes
 
       # Construct an type around the raw type.
@@ -309,13 +317,13 @@ define [
         value = @get prop
         if def.type is 'object' and typeof value is 'string'
           # try to get it locally first in same class and in other candidate classes
-          value = @constructor.collection.get value
-          unless value?
+          objValue = @constructor.collection.get value
+          unless objValue?
             for candidateScript in @constructor.linkedCandidateClasses
-              value = require(candidateScript).collection.get value
-              break if value?
-          if value?
-            @set prop, value
+              objValue = require(candidateScript).collection.get value
+              break if objValue?
+          if objValue?
+            @set prop, objValue
           else
             # linked not found: ask to server
             needResolution = true
@@ -324,13 +332,13 @@ define [
           value = [] unless value?
           for linked, i in value when typeof linked is 'string'
             # try to get it locally first in same class and in other candidate classes
-            linked = @constructor.collection.get linked
-            unless linked?
+            objLinked = @constructor.collection.get linked
+            unless objLinked?
               for candidateScript in @constructor.linkedCandidateClasses
-                linked = require(candidateScript).collection.get linked
-                break if linked?
-            if linked?
-              value[i] = linked
+                objLinked = require(candidateScript).collection.get linked
+                break if objLinked?
+            if objLinked?
+              value[i] = objLinked
             else
               # linked not found: ask to server
               needResolution = true
@@ -338,19 +346,49 @@ define [
           break if needResolution
       
       # exit immediately if no resolution needed  
-      return _.defer (=> callback null, @) unless needResolution
+      unless needResolution
+        return _.defer => 
+          console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved from cache"
+          callback null, @ 
 
       # now that we have the linked ids, get the corresponding instances.
       sockets.game.once "get#{@_className}s-resp", (err, instances) =>
         return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
-        # silentely update local cache
-        idx = @constructor.collection.indexOf @
-        @constructor.collection.add instances[0], at:idx, silent: true
+        instance = instances[0]
+
+        # update each properties
+        properties = @get('type').get 'properties'
+        for prop, def of properties
+          value = instance[prop]
+          if def.type is 'object'
+            if value isnt null
+              # construct a backbone model around linked object
+              clazz = @constructor
+              for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{value.className}"
+                clazz = require(candidateScript)
+              obj = new clazz value
+              clazz.collection.add obj
+            else
+              obj = null
+            # update current object
+            @set prop, obj
+          else if def.type is 'array' 
+            value = [] unless value?
+            for val, i in value
+              # construct a backbone model around linked object
+              clazz = @constructor
+              for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val.className}"
+                clazz = require(candidateScript)
+              obj = new clazz val
+              clazz.collection.add obj
+              # update current object
+              @get(prop)[i] = obj
+
         # end of resolution.
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
-        callback null, instances[0]
+        callback null, @
 
-      sockets.game.send "get#{@_className}s", [@id]
+      sockets.game.emit "get#{@_className}s", [@id]
 
     # **private** 
     # Method used to serialize a model when saving and removing it

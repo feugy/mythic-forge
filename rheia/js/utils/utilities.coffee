@@ -165,5 +165,9 @@ define [
             if model.get('map')? then model.get('map').get 'name' else i18n.labels.noMap,
             if model.get('x')? then model.get 'x' else i18n.labels.noX,
             if model.get('y')? then model.get 'y' else i18n.labels.noY
+        when 'Event'
+          content = _.sprintf i18n.tips.event, 
+            moment(model.get('updated')).format(i18n.constants.dateTimeFormat),
+            if model.get('from')? then instanceName(model.get 'from') else i18n.labels.noFrom
       content
   }

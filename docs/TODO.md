@@ -207,7 +207,10 @@
       - displays, edits and navigates to linked
       - restrict drop operations on object/array properties
       - display tooltip on object/array properties
-    - Events CRUD
+    - Events 
+      - CRUD
+      - sort event by update date in properties
+      - display tooltip on object/array properties
 
 - Atlas
   - map displayal

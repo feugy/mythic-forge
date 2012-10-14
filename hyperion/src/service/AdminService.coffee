@@ -99,12 +99,12 @@ class _AdminService
               model.set key, value unless key in ['_id', 'type', 'map']
 
             # update map value
-            if model.get('map')?._id isnt values.map?._id
+            if model.get('map')?._id?.toString() isnt values.map?._id
               if values.map?._id
                 # resolve map
                 return Map.findCached [values.map._id], (err, maps) ->
                   return callback "Failed to save item #{values._id}. Error while resolving its map: #{err}" if err?
-                  return callbacl "Failed to save item #{values._id} because there is no map with id #{item.map}" unless maps.length is 1  
+                  return callback "Failed to save item #{values._id} because there is no map with id #{item.map}" unless maps.length is 1  
                   model.set 'map', maps[0]
                   populateTypeAndSave model
               else
@@ -207,6 +207,10 @@ class _AdminService
               else
                 # property already exists: do not unset
                 unset.splice idx, 1
+                # and update values if necessary
+                if model.get('properties')[name].type isnt prop.type or model.get('properties')[name].def isnt prop.def
+                  set.push([name, prop.type, prop.def])
+                
             # at last, add new properties
             model.setProperty.apply model, args for args in set
             # and delete removed ones

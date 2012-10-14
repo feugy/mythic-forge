@@ -51,6 +51,7 @@ define
     noY: '~'
     noMap: 'aucune'
     noQuantity: '~'
+    noFrom: 'personne'
 
   buttons:
     close: 'Fermer'
@@ -73,6 +74,7 @@ define
     save: "Enregistrer l'onglet en cours d'édition"
     remove: "Supprimer l'onglet en cours d'édition"
     item: "<div>Carte : %2$s</div><div>X : %3$s</div><div>Y : %4$s</div><div>Quantité : %1$s</div>"
+    event: "<div>Par : %2$s</div><div>Mise à jour : %1$s</div>"
 
   msgs:
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"

@@ -116,7 +116,10 @@ define [
           original = original?.id
         else if widget.options.type is 'array'
           value = (obj?.id for obj in value)
-          original = (obj?.id for obj in original)
+          if Array.isArray original
+            original = (obj?.id for obj in original)
+          else 
+            original = []
 
         comparable.push 
           name: name
@@ -165,6 +168,10 @@ define [
             value = []
           else
             value = prop.def
+
+        # sort linked arrays by update date
+        if prop.type is 'array'
+          value = _(value).sortBy((obj) -> obj?.get 'updated').reverse()
 
         accepted = []
         if (prop.type is 'object' or prop.type is 'array') and prop.def isnt 'Any'

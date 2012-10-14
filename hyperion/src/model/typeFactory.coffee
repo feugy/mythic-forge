@@ -45,6 +45,15 @@ processLinks = (instance, properties) ->
         for linked, i in value
           value[i] = if typeof linked is 'object' and '_id' of linked then linked._id.toString() else linked
 
+# Extends original Mongoose toObject method to add className when requireing json.
+originalToObject = mongoose.Document.prototype.toObject
+
+mongoose.Document.prototype.toObject = (options) ->
+  obj = originalToObject.call @, options
+  if options?.json
+    obj.className = @className
+  obj
+
 # Factory that creates an abstract type.
 # Provides:
 # - `name` and `desc` i18n attributes
@@ -55,7 +64,7 @@ processLinks = (instance, properties) ->
 # - properties management, for type or instances
 #
 # @param typeName [String] name of the build type, used for changes propagations
-# @param attrs [Object] attributes of the created type.
+# @param spec [Object] attributes of the created type.
 # @param options [Object] Mongoose schema options, and factory custom options:
 # @option options noName [Boolean] wether this type has a name or not.
 # @option options noDesc [Boolean] wether this type has a description or not.
@@ -101,6 +110,10 @@ module.exports = (typeName, spec, options = {}) ->
   unless options?.noDesc
     # Adds an i18n `desc` field
     utils.addI18n AbstractType, 'desc'
+
+  # Define a virtual getter on model's class name.
+  # Handy when models have been serialized to distinguish them
+  AbstractType.virtual('className').get -> typeName
 
   # Override the equals() method defined in Document, to check correctly the equality between _ids, 
   # with their `equals()` method and not with the strict equality operator.
