@@ -75,8 +75,8 @@ class _ModelWatcher extends EventEmitter
 
     # Do not propagate password nor tokens of Players
     if className is 'Player'
-      delete parameter.password
-      delete parameter.token 
+      require('../model/Player').purge parameter
+      return if Object.keys(parameter).length is 0
       
     logger.debug "change propagation: #{operation} of instance #{parameter._id or parameter.path}"
     @emit 'change', operation, className, parameter

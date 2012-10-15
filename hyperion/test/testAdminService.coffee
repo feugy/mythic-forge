@@ -26,6 +26,7 @@ Event = require '../src/model/Event'
 Executable = require '../src/model/Executable'
 Map = require '../src/model/Map'
 FSItem = require '../src/model/FSItem'
+Player = require '../src/model/Player'
 authoringService = require('../src/service/AuthoringService').get()
 service = require('../src/service/AdminService').get()
 watcher = require('../src/model/ModelWatcher').get()
@@ -799,6 +800,69 @@ describe 'AdminService tests', ->
           watcher.removeAllListeners 'change'
           done()
 
+  it 'should save creates new player', (done) ->
+    # given a new player
+    saved = null
+    toBeSaved = email: 'caracol', provider:'Google', isAdmin: true
+
+    # then a creation event was issued
+    watcher.on 'change', (operation, className, instance)->
+      assert.equal className, 'Player'
+      assert.equal operation, 'creation'
+      saved = instance
+
+    # when saving the new player
+    service.save 'Player', toBeSaved, 'admin', (err, modelName, returned) ->
+      return done "Can't save player: #{err}" if err?
+      # then the created values are returned
+      assert.isNotNull returned, 'unexpected returned player'
+      assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
+      assert.ok returned.equals saved
+
+      # then the model exists in DB
+      Player.findById returned._id, (err, obj) ->
+        return done "Can't find player in db #{err}" if err?
+        assert.equal obj.email, toBeSaved.email
+        assert.equal obj.provider, toBeSaved.provider
+        assert.equal obj.isAdmin, toBeSaved.isAdmin
+        assert.ok obj.equals returned
+        watcher.removeAllListeners 'change'
+        done()
+
+  it 'should save saved existing player', (done) ->
+    # given an existing player
+    new Player(email: 'caracol', provider:'Google', isAdmin: true).save (err, player) ->
+      return done err if err?
+
+      awaited = false
+      toBeSaved = player.toObject()
+      toBeSaved.provider = null
+      toBeSaved.password = 'toto'
+
+      # then a update event was issued
+      watcher.on 'change', (operation, className, instance)->
+        assert.equal className, 'Player'
+        assert.equal operation, 'update'
+        assert.ok player.equals instance
+        awaited = true
+
+      # when saving the existing player
+      service.save 'Player', toBeSaved, 'admin', (err, modelName, returned) ->
+        return done "Can't save player: #{err}" if err?
+        # then the created values are returned
+        assert.isNotNull returned, 'unexpected returned player'
+        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+
+        # then the model exists in DB
+        Player.findById returned._id, (err, obj) ->
+          return done "Can't find player in db #{err}" if err?
+          assert.equal obj.email, toBeSaved.email
+          assert.equal obj.provider, toBeSaved.provider
+          assert.equal obj.isAdmin, toBeSaved.isAdmin
+          assert.ok obj.equals returned
+          watcher.removeAllListeners 'change'
+          done()
+
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when removing unallowed model
@@ -1039,6 +1103,34 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Event.findById returned._id, (err, obj) ->
           return done "Can't find event in db #{err}" if err?
+          assert.isNull obj
+          watcher.removeAllListeners 'change'
+          done()
+
+  it 'should remove delete existing player', (done) ->
+    # given an existing player
+    new Player(email: 'jack', provider: null, password: 'yep').save (err, player) ->
+      return done err if err?
+      awaited = false
+    
+      # then a deletion event was issued
+      watcher.on 'change', (operation, className, instance)->
+        return unless operation is 'deletion'
+        assert.equal className, 'Player'
+        assert.ok player.equals instance
+        awaited = true
+
+      # when removing an existing player
+      service.remove 'Player', player.toObject(), 'admin', (err, modelName, returned) ->
+        return done "Can't remove player: #{err}" if err?
+        # then the created values are returned
+        assert.isNotNull returned, 'unexpected returned player'
+        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        assert.ok returned.equals player
+
+        # then the model exists in DB
+        Player.findById returned._id, (err, obj) ->
+          return done "Can't find player in db #{err}" if err?
           assert.isNull obj
           watcher.removeAllListeners 'change'
           done()

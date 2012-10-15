@@ -26,12 +26,14 @@ Map = require '../model/Map'
 Field = require '../model/Field'
 Item = require '../model/Item'
 Event = require '../model/Event'
+Player = require '../model/Player'
 Executable = require '../model/Executable'
 logger = require('../logger').getLogger 'service'
+playerService = require('./PlayerService').get()
 authoringService = require('./AuthoringService').get()
 
-supported = ['Field', 'Item', 'Event', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
-listSupported = supported[3..]
+supported = ['Field', 'Item', 'Event', 'Player', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
+listSupported = supported[4..]
 
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -69,9 +71,9 @@ class _AdminService
   # @option callback model [Object] saved model
   save: (modelName, values, email, callback) =>
     return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
-    
+
     _save = (model) ->
-      model.save (err, saved) -> callback err, modelName, saved
+      model.save (err, saved) -> callback err, modelName, if modelName is 'Player' then Player.purge saved else saved
 
     modelClass = null
     switch modelName
@@ -79,6 +81,7 @@ class _AdminService
       when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType
       when 'Map' then modelClass = Map
+      when 'Player' then modelClass = Player
       when 'Item' 
         populateTypeAndSave = (model) ->
           ItemType.findCached [model?.get('type')?._id], (err, types) ->
@@ -277,6 +280,7 @@ class _AdminService
       when 'Map' then modelClass = Map
       when 'Item' then modelClass = Item
       when 'Event' then modelClass = Event
+      when 'Player' then modelClass = Player
       when 'Field'
         return callback 'Fields must be removed within an array', modelName unless Array.isArray values
         removedFields = []
@@ -301,8 +305,14 @@ class _AdminService
     # get existing values
     modelClass.findCached [values._id], (err, models) ->
       return callback "Unexisting #{modelName} with id #{values._id}", modelName if err? or models.length is 0
-      # and removes them
-      models[0].remove (err) -> callback err, modelName, models[0]
+      # special player case: purge and disconnect before removing
+      if modelName is 'Player'
+        playerService.disconnect models[0].get('email'), 'removal', (err) ->
+          return callback err, modelName if err?
+          models[0].remove (err) -> callback err, modelName, Player.purge models[0] 
+      else
+        # and removes them
+        models[0].remove (err) -> callback err, modelName, models[0]
 
 _instance = undefined
 class AdminService

@@ -64,7 +64,7 @@ class _PlayerService
       return callback "Email #{email} is already used", null if player?
       new Player({email: email, password:password}).save (err, newPlayer) ->
         logger.info "New player (#{newPlayer.id}) registered with email: #{email}"
-        callback err, newPlayer
+        callback err, Player.purge newPlayer
 
   # Authenticate a manually created account. 
   # Usable with passport-local
@@ -187,12 +187,12 @@ class _PlayerService
       return callback 'Deployment in progress', null if deployementService.deployedVersion()? and !player.get 'isAdmin'
 
       # check expiration date
-      if player.get('lastConnection')+expiration*1000 < new Date().getTime()
+      if player.get('lastConnection').getTime()+expiration*1000 < new Date().getTime()
         # expired token: set it to null
         player.set 'token', null
         player.save (err, saved) =>
           return callback "Failed to reset player's expired token: #{err}" if err?
-          notifier.notify 'players', 'disconnect', saved
+          notifier.notify 'players', 'disconnect', saved, 'expired'
           callback "Expired token"
       else 
         # change token for security reason
@@ -204,10 +204,11 @@ class _PlayerService
   # Disconnect a player by its email. Token will be set to null.
   #
   # @param token [String] the concerned token
+  # @param reason [String] disconnection reason
   # @param callback [Function] callback executed when player was disconnected. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the disconnected player.
-  disconnect: (email, callback) =>
+  disconnect: (email, reason, callback) =>
     Player.findOne {email: email}, (err, player) =>
       return callback err if err?
       return callback "No player with email #{email} found" unless player?
@@ -216,7 +217,7 @@ class _PlayerService
       player.save (err, saved) =>
         return callback "Failed to reset player's token: #{err}" if err?
         # send disconnection event
-        notifier.notify 'players', 'disconnect', saved
+        notifier.notify 'players', 'disconnect', saved, reason
         callback null, saved
 
 # Mutualize authentication mecanism last part: generate a token and save player. 
@@ -231,7 +232,10 @@ setTokens = (player, provider, callback) ->
   # update the saved token and last connection date
   token = utils.generateToken 24
   player.set 'token', token
-  player.set 'lastConnection', new Date().getTime()
+  # avoid milliseconds to simplify usage
+  now = new Date()
+  now.setMilliseconds 0
+  player.set 'lastConnection', now
   player.save (err, newPlayer) ->
     return callback "Failed to update player: #{err}" if err?
     logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.get 'email'}"

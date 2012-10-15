@@ -95,7 +95,7 @@ describe 'PlayerService tests', ->
   describe 'given an existing player', ->
 
     token = utils.generateToken 24
-    date = new Date().getTime()
+    date = new Date()
     expiration = utils.confKey 'authentication.tokenLifeTime'
     expiredDate = new Date().getTime() - (expiration + 1)*1000
 
@@ -156,7 +156,7 @@ describe 'PlayerService tests', ->
         assert.ok player.equals account
         # then token changed
         assert.notEqual token, account.get 'token'
-        assert.equal date, account.get 'lastConnection'
+        assert.equal date.getTime(), account.get('lastConnection').getTime()
         token = account.get 'token'
         done()
 
@@ -184,7 +184,7 @@ describe 'PlayerService tests', ->
 
     it 'should disconnect failed on unknown email', (done) ->
       # when retrieving the player by token
-      service.disconnect 'toto', (err, account) ->
+      service.disconnect 'toto', '', (err, account) ->
         # then an error is send
         assert.isNotNull err
         assert.equal 'No player with email toto found', err
@@ -192,7 +192,7 @@ describe 'PlayerService tests', ->
 
     it 'should disconnect reset token to null', (done) ->
       # when disconneting the player
-      service.disconnect player.get('email'), (err, account) ->
+      service.disconnect player.get('email'), '', (err, account) ->
         return done "Can't disconnect: #{err}" if err?
         # then the player was returned without token
         assert.isNotNull account

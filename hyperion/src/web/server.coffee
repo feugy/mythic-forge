@@ -38,6 +38,8 @@ deployementService = require('../service/DeployementService').get()
 watcher = require('../model/ModelWatcher').get()
 notifier = require('../service/Notifier').get()
 
+connectedList = []
+
 # If an ssl certificate is found, use it.
 app = null
 certPath = utils.confKey 'ssl.certificate', null
@@ -76,24 +78,25 @@ inactivityTime = 1000 * utils.confKey 'authentication.inactivityTime'
 
 # Invoked when some socket has activity. It reset its inactivity timer
 #
-# @param id [String] socket id
-activation = (id) ->
+# @param id [String] socket's id
+# @param email [String] socket corresponding player's email 
+activation = (id, email) ->
   clearTimeout inactivity[id]
-  inactivity[id] = setTimeout (-> kick id, 'inactivity'), inactivityTime
+  inactivity[id] = setTimeout (-> playerService.disconnect email, 'inactivity', ->), inactivityTime
 
 # Kick a user
 # 
 # @param id [String] the kicked socket id
+# @param email [String] socket corresponding player's email 
 # @param reason [String] kicking explanation
-kick = (id, reason) ->
+closeSocket = (id, email, reason) ->
   # gets the corresponding socket
   socket =  io?.sockets?.sockets?[id]
   return unless socket?  
-  socket.get 'email', (err, email) ->
-    return if err?
-    socket.disconnect()
-    logger.info "Kick user #{email} for #{reason}"
-    playerService.disconnect email, (err) ->
+  socket.disconnect()
+  logger.info "Kick user #{email} for #{reason}"
+  idx = connectedList.indexOf email
+  connectedList.splice idx, 1 if idx isnt -1
 
 # Set a cookie after authentication to grant access on game dev client.
 #
@@ -122,7 +125,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
         do(method) ->
           socket.on method, ->
             # reset inactivity
-            activation socket.id
+            activation socket.id, email
             originalArgs = Array.prototype.slice.call arguments
             args = originalArgs.concat()
             
@@ -232,9 +235,20 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
   exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback']
 
-notifier.on notifier.NOTIFICATION, (event, details...) ->
-  logger.debug "broadcast of #{event}"
-  adminNS.emit.apply adminNS, [event].concat details
+  # do not expose all playerService methods, but just disconnection with the 'kick' message
+  socket.on 'kick', (email) ->
+    playerService.disconnect email, 'kicked', ->
+
+  # add a message to returns connected list
+  socket.on 'connectedList', ->
+    socket.emit 'connectedList-resp', connectedList
+
+notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
+  if event is 'disconnect'
+    # close socket of disconnected user.
+    closeSocket details[0].get('socketId'), details[0].get('email'), details[1] 
+  logger.debug "broadcast of #{scope}:#{event}"
+  adminNS.emit.apply adminNS, [scope, event].concat details
 
 # socket.io `updates` namespace 
 #
@@ -300,11 +314,21 @@ unless noSecurity
 
   # When a client connects, returns it immediately its token
   io.on 'connection', (socket) ->
+    email = socket.manager.handshaken[socket.id]?.playerEmail
+
     # set inactivity
-    activation socket.id
+    activation socket.id, email
 
     # retrieve the player email set during autorization phase, and stores it.
-    socket.set 'email', socket.manager.handshaken[socket.id]?.playerEmail
+    socket.set 'email', email
+
+    # set socket id to player
+    playerService.getByEmail email, (err, player) ->
+      return logger.warn "Failed to retrieve player #{email} to set its socket id: #{err or 'no player found'}" if err? or player is null
+      player.set 'socketId', socket.id
+      player.save (err) ->
+        return logger.warn "Failed to set socket id of player #{email}: #{err}" if err?
+        connectedList.push email unless email in connectedList
 
     # message to get connected player
     socket.on 'getConnected', (callback) ->
@@ -316,8 +340,7 @@ unless noSecurity
     socket.on 'logout', ->
       socket.get 'email', (err, value) ->
         return callback err if err?
-        socket.disconnect()
-        playerService.disconnect value, ->
+        playerService.disconnect value, 'logout', ->
 
 # `GET /konami`
 #

@@ -23,10 +23,12 @@ encryptor = require 'password-hash'
 conn = require './connection'
 Item = require './Item'
 typeFactory = require './typeFactory'
+utils = require '../utils'
 logger = require('../logger').getLogger 'model'
 
 # Define the schema for players
 Player = typeFactory 'Player', 
+
   # email as login
   email: 
     type: String 
@@ -37,13 +39,8 @@ Player = typeFactory 'Player',
     type: String
     default: null
 
-  # password, only used for manually provided accounts
-  password: 
-    type: String
-    default: null
-
   # last Connection date (timestamp), used to compute token validity
-  lastConnection: Number
+  lastConnection: Date
 
   # player informations
   firstName: String
@@ -54,16 +51,33 @@ Player = typeFactory 'Player',
     type: Boolean
     default: false
 
-  # token used during authentication
-  token: String
-
-  # cookie used to access game developpment zone
-  cookie: String
-
   # link to characters.
   characters:
     type: []
     default: -> [] # use a function to force instance variable
+
+  # player's preference: plain json.
+  prefs:
+    type: {}
+    default: -> {} # use a function to force instance variable
+
+  # token used during authentication. 
+  # **Not propagated by modelWatcher nor returned by AdminService**
+  token: String
+
+  # id of the current socket used.
+  # **Not propagated by modelWatcher nor returned by AdminService**
+  socketId: String
+
+  # cookie used to access game developpment zone 
+  # **Not propagated by modelWatcher nor returned by AdminService**
+  cookie: String
+
+  # password, only used for manually provided accounts
+  # **Not propagated by modelWatcher nor returned by AdminService**
+  password: 
+    type: String
+    default: null
 , 
   strict: true 
   noDesc: true
@@ -75,6 +89,26 @@ Player = typeFactory 'Player',
 # @return true if passwords matched, false otherwise
 Player.methods.checkPassword = (clearPassword) ->
   encryptor.verify clearPassword, @password
+
+# Simple utility method that removes from passed parameter attirbutes that must be kept on server
+#
+# @param player [Object] purged Mongoose model or plain object
+# @return the purged player.
+Player.statics.purge = (player) ->
+  return player unless 'object' is utils.type player
+  if '_doc' of player
+    # Mongoose proxy
+    delete player._doc.password
+    delete player._doc.token 
+    delete player._doc.cookie
+    delete player._doc.socketId
+  else 
+    # plain raw object
+    delete player.password
+    delete player.token 
+    delete player.cookie
+    delete player.socketId
+  player
 
 # Pre-init middleware: retrieve the characters corresponding to the stored ids.
 #
@@ -95,17 +129,25 @@ Player.pre 'init', (next, player) ->
 #
 # @param next [Function] function that must be called to proceed with other middleware.
 Player.pre 'save', (next) ->
-  return next new Error "Cannot save manually provided account without password" if @provider is null and !@password
+  process = =>
+    # If clear password provided, encrypt it before storing it.
+    if @password?
+      @password = encryptor.generate @password unless encryptor.isHashed @password
 
-  # If clear password provided, encrypt it before storing it.
-  if @password?
-    @password = encryptor.generate @password unless encryptor.isHashed @password
+    # replace characters with their id, for storing in Mongo, without using setters.
+    saveCharacters = @characters
+    @_doc.characters[i] = character._id for character, i in saveCharacters
+    next()
+    # restore save to allow reference reuse.
+    @_doc.characters = saveCharacters
 
-  # replace characters with their id, for storing in Mongo, without using setters.
-  saveCharacters = @characters
-  @_doc.characters[i] = character._id for character, i in saveCharacters
-  next()
-  # restore save to allow reference reuse.
-  @_doc.characters = saveCharacters
+  if @provider is null and !@password
+    # before accepting saves without password, check that we have passord inside DB
+    @constructor.findOne _id:@_id, (err, player) ->
+      return next new Error "Cannot check password existence in db for player #{@_id}: #{err}" if err?
+      return next new Error "Cannot save manually provided account without password" unless player?.get('password')?
+      process()
+  else 
+    process()
 
 module.exports = conn.model 'player', Player
