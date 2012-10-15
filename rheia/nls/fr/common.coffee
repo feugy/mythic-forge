@@ -38,6 +38,7 @@ define
     login: 'Rheia - Connexion'
       
   labels:
+    newType: 'nouveau'
     enterLogin: 'Identifiant : '
     enterPassword: 'Mot de passe : '
     connectWith: 'Connectez vous avec :'
@@ -69,6 +70,7 @@ define
     required: 'la valeur de "%s" est requise'
     spacesNotAllowed: '"%s" ne peut pas contenir d\'espaces'
     unmatch: '"%s" ne correspond pas à la valeur attendue'
+    invalidHandler: 'valeur incorrecte'
     
   tips:
     save: "Enregistrer l'onglet en cours d'édition"

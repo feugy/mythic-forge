@@ -47,7 +47,6 @@ define
     newEventType: "Type d'évènements"
 
   labels:
-    newType: '(nouveau)'
     descImage: 'Type'
     images: 'Instances'
     category: 'Catégorie'

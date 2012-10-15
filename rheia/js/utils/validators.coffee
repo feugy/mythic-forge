@@ -67,7 +67,6 @@ define [
       @errors = []
 
       @_node.on @eventName, @validate if @eventName?
-        
     
     # Triggers validation. Could be invoked manually or on node change.
     # 
@@ -142,11 +141,36 @@ define [
         
       results
 
+  # HandlerValidator class allows to apply arbitrary function to check value.
+  # This arbitrary function must be passed inside the constructor first argument as 'handler' 
+  class HandlerValidator extends BaseValidator
+
+    # Applied handler. 
+    # Must returns null when value is accepted, or an error string 
+    # By default return an error string for any values
+    handler: (value) -> i18n.validator.invalidHandler
+
+    # **private**
+    # Validate the value's presence, and the use of spaces inside it
+    _doValidation: (value) =>
+      results = []
+
+      # invoke handler
+      message = @handler value
+
+      if message?
+        results.push
+          error: 'invalid'
+          msg: message
+      
+      results
+
   # exports to outer world
   {
     Base: BaseValidator
     String: StringValidator
     Regexp: RegexpValidator
+    Handler: HandlerValidator
   }
 
   

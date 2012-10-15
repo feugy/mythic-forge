@@ -22,6 +22,7 @@ define
   titles:
     item: '%1$s (%2$s)'
     event: '%1$s (%2$s)'
+    player: '%1$s (%2$s)'
     chooseType: 'Choix du type'
 
   labels: 
@@ -34,15 +35,39 @@ define
     from: 'Par'
     creationDate: 'Créé le'
     updateDate: 'Modifié le'
+    newEmail: 'Login/E-mail'
+    email: 'Login'
+    isAdmin: 'Administrateur'
+    provider: 'Origine'
+    providers: [
+      value: 'Google', label: 'Google'
+    ,
+      value: 'Twitter', label: 'Twitter'
+    ,
+      value: null, label: 'Manuel'
+    ]
+    password: 'Mot de passe'
+    characters: 'Personnages'
+    firstName: 'Prénom'
+    lastName: 'Nom'
+    lastConnection: 'Connexion le'
+    prefs: 'Préférences'
+
+  buttons:
+    kick: 'Kickass !'
 
   tips:
     newItem: 'Créer un nouvel objet'
     newEvent: 'Créer un nouvel évènement'
+    newPlayer: 'Créer un nouvel compte joueur'
 
   msgs:
     removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'object <b>%s</b> ?</p>"
     removeEventConfirm: "<p>Voulez-vous vraiment supprimer l'évènement <b>%s</b> ?</p>"
+    removePlayerConfirm: "<p>Voulez-vous vraiment supprimer le joueur <b>%s</b> ?</p>"
     itemExternalChange: "L'objet à été modifié par ailleur. Ses valeurs ont été mises à jour"
     eventExternalChange: "L'évènement à été modifié par ailleur. Ses valeurs ont été mises à jour"
+    playerExternalChange: "Le joueur à été modifié par ailleur. Ses valeurs ont été mises à jour"
     chooseItemType: "<p>Choisissez un type d'objet pour le nouvel objet :</p>"
     chooseEventType: "<p>Choisissez un type d'objet pour le nouvel évènement :</p>"
+    invalidPrefs: 'Préférences : erreur de syntaxe JSON'

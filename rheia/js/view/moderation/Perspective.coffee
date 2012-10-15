@@ -31,12 +31,15 @@ define [
   'model/Field'
   'model/Item'
   'model/Event'
+  'model/Player'
   'view/moderation/Item'
   'view/moderation/Event'
+  'view/moderation/Player'
   'widget/search'
   'widget/moderationMap'
   'widget/loadableImage'
-], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, EventType, Map, Field, Item, Event, ItemView, EventView) ->
+], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, EventType, 
+  Map, Field, Item, Event, Player, ItemView, EventView, PlayerView) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
@@ -153,6 +156,13 @@ define [
       ).attr('title', i18n.tips.newEvent
       ).on 'click', @_onChooseEventType
 
+      @$el.find(".right .new-player").button(
+        icons:
+          primary: "small new-player"
+        text: false
+      ).attr('title', i18n.tips.newPlayer
+      ).on 'click', => @_onOpenElement 'Player'
+
       # for chaining purposes
       @
 
@@ -186,6 +196,8 @@ define [
             @_creationType = null
           else
             view = new EventView id
+        when 'Player'
+          view = new PlayerView id
       view
 
     # **private**

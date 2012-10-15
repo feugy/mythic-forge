@@ -19,6 +19,16 @@
 
 .moderation.perspective
 
+  > .left 
+    display box
+    box-orient vertical
+
+    .map-container
+      box-flex 1
+      overflow-y auto
+      overflow-x hidden
+      height 1px // Firefox bug: must have an height to overflow
+
   .toolbar
 
     .search
@@ -98,6 +108,7 @@
         color errorColor
 
   .view.event
+  .view.player
 
     > table td.left
       padding-top 0.5em
@@ -108,6 +119,27 @@
     .creation-date
       padding 0.5em 0
       color disabledColor
+
+  .view.player
+
+    .kick
+      position absolute
+      right 1.3em
+      top 2px
+
+    .prefs
+      height 150px
+      position relative
+
+      .field
+        border 1px solid borderColor
+        takeSpace 0
+        width auto
+
+        *
+          font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
+          font-size 12px
+          line-height 16px
 
 .choose-type 
 

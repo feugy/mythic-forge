@@ -19,9 +19,10 @@
 'use strict'
 
 define [
+  'jquery'
   'socket.io'
   'async'
-], (io, async) ->
+], ($, io, async) ->
 
   isLoggingOut = false
   connected = false

@@ -37,6 +37,11 @@ define [
     _nameAttribute: 'name'
 
     # **private**
+    # Error display name for fields that holds model's name.
+    # **May be defined by subclasses**
+    _nameDisplayLabel: i18n.labels.name
+
+    # **private**
     # arrays of validators.
     _validators: []
 
@@ -140,7 +145,7 @@ define [
     # Creates validator and instanciate widgets
     _specificRender: =>
       # creates property for name and description
-      @_nameWidget = @$el.find('.name.field').property(
+      @_nameWidget = @$el.find(".#{@_nameAttribute}.field").property(
         type: 'string'
         allowNull: false
         change: @_onChange
@@ -207,7 +212,7 @@ define [
       # adds name and description
       if @_nameWidget?
         comparable.push
-          name: 'name'
+          name: @_nameAttribute
           original: @model.get @_nameAttribute
           current: @_nameWidget.options.value
       if @_descWidget?
@@ -243,7 +248,7 @@ define [
       @_validators = []
       # adds a validator for name
       if @_nameWidget?
-        @_validators.push new validators.String {required: true}, i18n.labels.name, 
+        @_validators.push new validators.String {required: true}, @_nameDisplayLabel, 
           @_nameWidget.element, null, (node) -> node.find('input').val()
 
     # **private**

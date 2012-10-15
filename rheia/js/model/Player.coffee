@@ -19,55 +19,84 @@
 'use strict'
 
 define [
-  'backbone'
+  'model/BaseModel'
   'model/Item'
-], (Backbone, Item) ->
+  'utils/utilities'
+  'model/sockets'
+], (Base, Item, utils, sockets) ->
 
   # Client cache of players.
   # Wired to the server through socket.io
-  class _Players extends Backbone.Collection
+  class _Players extends Base.Collection
 
-    constructor: (@model, @options) ->
-      super options
+    # List of connected players's email. 
+    # Read only: automatically updated by _onPlayerEvent.
+    # Event `connectedPlayersChanged` is triggered when the list has changed.
+    # Newly connected player emails is passed as first parameter, disconnected player emails as second.
+    connected: []
 
-    # Provide a custom sync method to wire Items to the server.
-    # Disabled.
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'Player'
+
+    # Collection constructor, that wired on events.
     #
-    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
-    # @param collection [Items] the current collection
-    # @param args [Object] arguments
-    sync: (method, instance, args) =>
-      throw new Error "Unsupported #{method} operation on Players"
+    # @param model [Object] the managed model
+    # @param options [Object] unused
+    constructor: (@model, @options) ->
+      super @model, @options
+      @connected = []
+
+      sockets.admin.on 'players', @_onPlayerEvent
+
+      # initialize the connected list
+      sockets.admin.once 'connectedList-resp', (list) =>
+        @connected = list
+        @trigger 'connectedPlayersChanged', @connected, []
+      sockets.admin.emit 'connectedList'
+
+    # Method to arbitrary kick a user. 
+    # No callback, but an event will be received if kick was effective, and the list of connected players will be updated
+    #
+    # @param email [String] email of kicked player
+    kick: (email) =>
+      sockets.admin.emit 'kick', email
+
+    # **private**
+    # Handler of (dis)connected player account
+    # a `connectedPlayersChanged` event is triggered at the end of the list update
+    _onPlayerEvent: (event, player) =>
+      switch event
+        when 'connect'
+          @connected.push player.email
+          @trigger 'connectedPlayersChanged', [player.email], []
+        when 'disconnect'
+          idx = @connected.indexOf player.email
+          @connected.splice idx, 1 if idx isnt -1
+          @trigger 'connectedPlayersChanged', [], [player.email]
 
   # Player account.
-  class Player extends Backbone.Model
+  class Player extends Base.Model
 
-    # player local cache.
-    # A Backbone.Collection subclass
+    # Local cache for models.
     @collection: new _Players @
+
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'Player'
 
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
-
-    # Player account login.
-    login: null
-
-    # The associated character. Null if no character associated yet.
-    character: null
 
     # Player constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes
-      # constructs an Item for the corresponding character
-      if attributes?.character?
-        @set 'character', new Item attributes.character
 
-
-    # An equality method that tests ids.
-    #
-    # @param other [Object] the object against which the current field is tested
-    # @return true if both object have the samge ids, and false otherwise.
-    equals: (other) =>
-      @.id is other?.id
+      # constructs Items for the corresponding characters
+      if attributes?.characters?
+        for character, i in attributes.characters
+          # we got an object: adds it
+          Item.collection.add character
+          attributes.characters[i] = Item.collection.get character._id

@@ -13,9 +13,8 @@
   - moderation perspective
     - Maps
       - items animations (with z-ordering)
-    - Players CRUD
     - Search
-      - input query with help and validation
+      - input query with help and validation (use regexp by default with leading/trailing .* unless found ^ or $)
       - display result and navigates
   - authoring perspective
     - multiple file search & replace
@@ -27,6 +26,7 @@
     - ItemType
       - categories ?
       - playable status ?
+  - display connected count in top bar
 
 - Atlas
   - dynamic properties resolution
@@ -47,7 +47,10 @@
   - turn-rules ordering rank
   - Event type CRUD
   - Event CRUD with link to from, creation and update dates
-  - Player CRUD in database
+  - Players 
+    - CRUD with AdminService
+    - password management and protection for manually provided accounts
+    - kick player: disconnect socket when disconnecting
   - Map items and their types
     - CRUD in database (Items, Fields, Maps)
     - Dynamic properties
@@ -211,6 +214,10 @@
       - CRUD
       - sort event by update date in properties
       - display tooltip on object/array properties
+    - Players 
+      - CRUD (email, firstName, lastName, prefs, characters, isAdmin, lastConnection)
+      - providers and password management
+      - kick
 
 - Atlas
   - map displayal
