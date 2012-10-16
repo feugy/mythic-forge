@@ -1,35 +1,33 @@
 # TODO
 
 - Hyperion
+  - Search in Events, Items and Players
+  - cache evinction on inutility and size
+  - test images for field types and event types
   - Rule engine
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
   - Security
     - register users from Facebook
-  - cache evinction on inutility and size
-  - test images for field types and event types
 
 - Rheia
   - moderation perspective
-    - Maps
-      - items animations (with z-ordering)
     - Search
       - input query with help and validation (use regexp by default with leading/trailing .* unless found ^ or $)
       - display result and navigates
-  - authoring perspective
-    - multiple file search & replace
-    - single file search & replace
+    - Maps
+      - items animations (with z-ordering)
+  - display connected count in top bar
   - edition perspective
     - Maps
       - diamond map widget
       - square map widget
-    - ItemType
-      - categories ?
-      - playable status ?
-  - display connected count in top bar
+  - authoring perspective
+    - multiple file search & replace
+    - single file search & replace
 
 - Atlas
-  - dynamic properties resolution
+  - created and automate tests
 
 # Done
 
@@ -58,7 +56,7 @@
       - type-checking
       - links resolution at server side
     - Modifications propagation
-  - Search service
+  - Search service for types
     - (item, event, field, map, rule, turn-rule) search by id (val is string)
     - (item, event, field, map, rule, turn-rule) search 'val' (as string/regex) in name (locale is parametrized)
     - (item, event, field) search 'val' (as string/regex) in name (locale is parametrized)
@@ -68,6 +66,25 @@
     - (rule) search 'val' (as string/regexp) in category
     - (turn-rule) search 'val' (as number) in rank
     - (rule, turn-rule) search 'val' (as string/regexp) in body
+  - Search service for instances
+    - (item, event, player) search by id (val is string)
+    - (item, event) search property 'p' existence
+    - (item, event) search property 'p' containing value 'val' (val is anything)
+    - (item, event) search property 'p.sp' where linked object has a property 'sp'
+    - (item, event) search property 'p.sp' where linked object contains property 'sp' with value 'val' (val is anything)
+    - (item, event) search type by id (val is string)
+    - (item, event) search type where property 'p' exists
+    - (item, event) search type where property 'p' has value 'val' (val is anything)
+    - (item) search map by id (val is string)
+    - (item) search map exists
+    - (item) search map where property 'p' has value 'val' (val is anything)
+    - (item) search by quantity (val is number)
+    - (player) search by characters existence
+    - (player) search by characters id (val is string)
+    - (player) search by characters where property 'p' exists
+    - (player) search by characters where property 'p' has value 'val' (val is anything)
+    - (player) search by preference content
+    - (player) search by email, firstName, lastName
   - Authoring service and FSItem
     - get FSItem
     - save FSItem
@@ -241,3 +258,7 @@
   - connect with Google, Twitter
   - FSItem history management, with revert to previous and restore
   - Drop from Item/Event/Player tabs
+  - Sprite management for animations and transition
+  - Rules in CoffeeScript
+  - Isomorphic rules: can partially be executed on client to increase reactivity
+  - WebSocket everywhere: increase speed

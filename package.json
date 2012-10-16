@@ -25,7 +25,8 @@
     "passport-facebook": "0.1.4",
     "passport-twitter": "0.1.4",
     "passport-local": "0.1.6",
-    "password-hash": "1.2.1"
+    "password-hash": "1.2.1",
+    "moment": "1.7.0"
   },
   "devDependencies": {
     "request": "2.9.202",
