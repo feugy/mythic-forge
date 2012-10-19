@@ -256,9 +256,9 @@ define [
       # superclass handles description image, name and description 
       comparable = super()
 
-      perfs = {}
+      prefs = {}
       try 
-        perfs = JSON.parse @_charactersWidget.options.text
+        prefs = JSON.parse @_prefsEditor.options.text
       catch err
 
       comparable.push
@@ -286,9 +286,9 @@ define [
         original: @model.get 'characters'
         current: @_charactersWidget.options.value
       ,
-        name: 'perfs'
+        name: 'prefs'
         original: @model.get 'prefs'
-        current: perfs
+        current: prefs
 
       if @_passwordChanged
         comparable.push

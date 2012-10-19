@@ -89,12 +89,13 @@ define [
       @bindTo Item.collection, 'update', @_onUpdateItem
       @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
 
-      ###@bindTo rheia.router, 'searchResults', (err, results) =>
+      @bindTo rheia.router, 'searchResults', (err, instances, results) =>
+        return unless instances is true
         if err?
           # displays an error
           @_searchWidget.setOption 'results', []
           return utils.popup i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [text: i18n.buttons.ok]
-        @_searchWidget.setOption 'results', results###
+        @_searchWidget.setOption 'results', results
 
       # retrieve map list
       Map.collection.fetch()
@@ -106,10 +107,13 @@ define [
       
       # creates a search widget
       @_searchWidget = @$el.find('> .left .search').search(
-        #helpTip: i18n.tips.searchTypes
-        #search: (event, query) -> rheia.searchService.searchTypes query
-        #openElement: (event, details) -> rheia.router.trigger 'open', details.category, details.id
-        #removeElement: (event, details) -> rheia.router.trigger 'remove', details.category, details.id
+        helpTip: i18n.tips.searchInstances
+        isType: false,
+        dndType: i18n.constants.instanceAffectation
+        tooltipFct: utils.instanceTooltip
+        search: (event, query) -> rheia.searchService.searchInstances query
+        openElement: (event, details) -> rheia.router.trigger 'open', details.category, details.id
+        removeElement: (event, details) -> rheia.router.trigger 'remove', details.category, details.id
       ).data 'search'
 
       # instanciate map widget

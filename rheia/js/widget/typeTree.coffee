@@ -26,27 +26,6 @@ define [
   'widget/typeDetails'
 ], ($, utils, i18n) ->
 
-  # list of displayed categories
-  categories = [
-    name: i18n.titles.categories.maps
-    id: 'Map'
-  ,
-    name: i18n.titles.categories.fields
-    id: 'FieldType'
-  ,
-    name: i18n.titles.categories.items
-    id: 'ItemType'
-  ,
-    name: i18n.titles.categories.events
-    id: 'EventType'
-  ,
-    name: i18n.titles.categories.rules
-    id: 'Rule'
-  ,
-    name: i18n.titles.categories.turnRules
-    id: 'TurnRule'
-  ]
-
   # A tree that displays type models.
   # Organize models in categories.
   # Triggers `open` event when opening a category (with category in parameter)
@@ -67,6 +46,28 @@ define [
       # when first displayed, categories may be opened or not
       openAtStart: false
 
+    # **private**
+    # list of displayed categories
+    _categories: [
+      name: i18n.titles.categories.maps
+      id: 'Map'
+    ,
+      name: i18n.titles.categories.fields
+      id: 'FieldType'
+    ,
+      name: i18n.titles.categories.items
+      id: 'ItemType'
+    ,
+      name: i18n.titles.categories.events
+      id: 'EventType'
+    ,
+      name: i18n.titles.categories.rules
+      id: 'Rule'
+    ,
+      name: i18n.titles.categories.turnRules
+      id: 'TurnRule'
+    ]
+
     # Frees DOM listeners
     destroy: ->
       @element.off 'click'
@@ -78,13 +79,13 @@ define [
       $.rheia.baseWidget::_create.apply @, arguments
       
       @element.on 'click', 'dt', (event) => @_onToggleCategory event
-      @element.on 'click', 'dd > div', (event) => @_onOpenElement event
+      @element.on 'click', 'dd > *', (event) => @_onOpenElement event
       @element.on 'click', 'dd .menu .open', (event) => @_onOpenElement event
       @element.on 'click', 'dd .menu .remove', (event) => @_onRemoveElement event
 
       @element.addClass('type-tree').empty()
       # creates categories, and fill with relevant models
-      for category in categories
+      for category in @_categories
         content = @options.content.filter (model) -> model?._className is category.id or model?.kind is category.id
         # discard category unless there is content or were told not to do
         continue unless content.length > 0 or !@options.hideEmpty
@@ -97,7 +98,16 @@ define [
         container = @element.find "dd.#{categoryClass}"
         container.hide() unless @options.openAtStart
 
-        $('<div></div>').typeDetails({model:model}).appendTo container for model in content 
+        @_renderModels content, container, category.id
+    
+    # **private**
+    # Render models of a single category. 
+    #
+    # @param content [Array] models contained in a given category
+    # @param container [Object] DOM node that will display the category content
+    # @param category [String] the displayed category id
+    _renderModels: (content, container, category) =>
+      $('<div></div>').typeDetails(model:model).appendTo container for model in content
           
     # **private**
     # Method invoked when the widget options are set. Update rendering if `model` is changed.
@@ -127,26 +137,26 @@ define [
         @_trigger 'open', event, title.next('dd').data 'category'
 
     # **private**
-    # Open the element clicked by issuing an event on the bus.
+    # Open the element clicked by triggering the `openElement` event.
     #
     # @param event [Event] the click cancelled event
     _onOpenElement: (event) ->
       event?.preventDefault()
       event?.stopImmediatePropagation()
-      element = $(event.target).closest '.type-details'
+      element = $(event.target).closest 'dd > *'
       return unless element?
       @_trigger 'openElement', event, 
         category: element.data 'category'
         id: element.data 'id'
 
     # **private**
-    # Removed the element clicked by issuing an event on the bus.
+    # Removed the element clicked by triggering the `removeElement` event.
     #
     # @param event [Event] the click cancelled event
     _onRemoveElement: (event) ->
       event?.preventDefault()
       event?.stopImmediatePropagation()
-      element = $(event.target).closest '.type-details'
+      element = $(event.target).closest 'dd > *'
       return unless element?
       $(event.target).closest('.menu').remove()
       @_trigger 'removeElement', event, 

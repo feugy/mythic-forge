@@ -60,7 +60,37 @@ define
     newItem: 'Créer un nouvel objet'
     newEvent: 'Créer un nouvel évènement'
     newPlayer: 'Créer un nouvel compte joueur'
+    searchInstances: """Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateur (or, and) et groupé avec des parenthèses.
 
+        Les champs suivants de recherche suivants sont disponibles :
+        - `id: *val*` objets, évènements et joueurs par id
+        - `*prop*:'!'` objets et évènements possédant la propriété *prop*
+        - `*prop*:*val*` objets et évènements dont la propriété *prop* à la valeur *val*
+        - `*prop*.*subprop*:'!'` objets et évènements dont la propriété *prop* est un objet ou évènement possède une popriété *subprop*
+        - `*prop*.*subprop*:*val*` objets et évènements dont la propriété *prop* est un objet ou évènement dont la popriété *subprop* à la valeur *val*
+        - `type:*val*` objets et évènements dont le type à pour id *val*
+        - `type.*prop*:'!'` objets et évènements dont le type possède une propriété *prop*
+        - `type.*prop*:*val*` objets et évènements dont le type possède une propriété *prop* à la valeur *val*
+        - `map:'!'` objets ayant une carte
+        - `map:*val*` objets dont la carte à pour id *val*
+        - `map.name:*val*` objets dont la carte à pour nom *val* (dépend de la locale courante)
+        - `map.kind:*val*` objets dont la carte est de type *val*
+        - `quantity:*val*` objets dont la quantité est *val*
+        - `from:*val*' évènement dont l'initiateur à pour id *val*
+        - `from.*prop*:'!'` évènement dont l'initiateur possède la propriété *prop*
+        - `from.*prop*:*val*` évènement dont l'initiateur à la propriété *prop* à la valeur *val*
+        - `characters:'!'` joueurs ayant des personnages
+        - `characters:*val*` joueurs ayant des personnages d'id *val*
+        - `characters.*prop*:'!'` joueur ayant des personnages qui possède la propriété *prop*
+        - `characters.*prop*:*val*` joueur ayant des personnages dont la propriété *prop* à la valeur *val*
+        - `provider:*val*` joueurs dont le provider est *val*
+        - `email:*val*` joueurs dont l'identifiant/email est *val*
+        - `firstName:*val*` joueurs dont le prénom est *val*
+        - `lastName:*val*` joueurs dont le nom de famille est *val*
+        - `prefs.*path*:*val*` joueur dont les préférences dont la valeur pointée par le chemin JSON *path* est *val*
+        
+        Les valeur peuvent être des chaînes de caractères, des nombres, des booléens ou des expression régulières"""
+        
   msgs:
     removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'object <b>%s</b> ?</p>"
     removeEventConfirm: "<p>Voulez-vous vraiment supprimer l'évènement <b>%s</b> ?</p>"

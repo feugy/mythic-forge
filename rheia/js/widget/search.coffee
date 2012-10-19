@@ -26,6 +26,7 @@ define [
   'utils/utilities'
   'widget/baseWidget'
   'widget/typeTree'
+  'widget/instanceTree'
 ], ($, _, i18n, parser, utils) ->
   
   # The search widget displays a search field, a line for results number, and a popup
@@ -41,6 +42,17 @@ define [
 
       # Displayed results. Read-only: use setOption('results') to change.
       results: []
+
+      # True to display types, false to display instances
+      isType: true
+        
+      # Tooltip generator used inside results (instance only). 
+      # This function takes displayed object as parameter, and must return a string, used as tooltip.
+      # If null is returned, no tooltip displayed
+      tooltipFct: null
+      
+      # Used scope for instance drag'n drop operations. Null to disable drop outside widget
+      dndType: null
 
       # duration of result toggle animations
       animDuration: 250
@@ -68,6 +80,10 @@ define [
     # **private**
     # Allow to distinguish search triggered by refresh.
     _refresh: false
+
+    # **private**
+    # Stores the name of the tree widget used
+    _treeWidget: null
 
     # Frees DOM listeners
     destroy: ->
@@ -106,6 +122,9 @@ define [
     # Builds rendering
     _create: ->
       $.rheia.baseWidget::_create.apply @, arguments
+
+      @_treeWidget = if @options.isType then 'typeTree' else 'instanceTree'
+
       # general change handler: refresh search
       @bindTo rheia.router, 'modelChanged', => 
         @_refresh = true
@@ -114,7 +133,7 @@ define [
       # Executable kind changed: refresh results
       @_kindChanged = => 
         return unless Array.isArray(@options.results) and @options.results.length
-        @_results.typeTree 'option', 'content', @options.results
+        @_results[@_treeWidget] 'option', 'content', @options.results
       @bindTo rheia.router, 'kindChanged', @_kindChanged
 
       @element.addClass('search').append """<input type="text"/>
@@ -130,9 +149,11 @@ define [
       # bind on input changes and click events
       @element.find('input').keyup (event) => @_onChange event
       @element.find('.ui-icon-search').click (event) => @triggerSearch()
-      @_results = @element.find('.results').hide().typeTree
+      @_results = @element.find('.results').hide()[@_treeWidget]
         openAtStart: true
         hideEmpty: true
+        tooltipFct: @options.tooltipFct
+        dndType: @options.dndType
         openElement: (event, category, id) => @_trigger 'openElement', event, category, id
         removeElement: (event, category, id) => @_trigger 'removeElement', event, category, id
       
@@ -171,7 +192,7 @@ define [
           # set max height because results are absolutely positionned
           @_results.css 'max-height', @element.offsetParent().height()*0.75
           # update tree content
-          @_results.typeTree 'option', 'content', @options.results
+          @_results[@_treeWidget] 'option', 'content', @options.results
 
           @_onShowResults() unless @_refresh
           @_refresh = false

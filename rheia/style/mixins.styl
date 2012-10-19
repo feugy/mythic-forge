@@ -144,8 +144,9 @@ typeIcons(selector, size, margin = 0)
   for icon, i in map event-type _ field-type item-type player rule turn-rule
     {selector}.{icon}
       background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
-
-
+  for icon, i in _ event _ _ item
+    {selector}.{icon}
+      background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
 
 // Generate selectors for the 5 size of icons: 'x-small', 'small', '', 'big' and 'x-big'.
 // Selector also inside elements 'a' and 'button'

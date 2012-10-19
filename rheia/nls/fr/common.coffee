@@ -35,6 +35,7 @@ define
       rules: 'Règles'
       turnRules: 'Règles de tour'
       fields: 'Terrains'
+      players: 'Joueurs'
     login: 'Rheia - Connexion'
       
   labels:
@@ -75,8 +76,10 @@ define
   tips:
     save: "Enregistrer l'onglet en cours d'édition"
     remove: "Supprimer l'onglet en cours d'édition"
-    item: "<div>Carte : %2$s</div><div>X : %3$s</div><div>Y : %4$s</div><div>Quantité : %1$s</div>"
-    event: "<div>Par : %2$s</div><div>Mise à jour : %1$s</div>"
+    item: '<div>Carte : %2$s</div><div>X : %3$s</div><div>Y : %4$s</div><div>Quantité : %1$s</div>'
+    event: '<div>Par : %2$s</div><div>Mise à jour : %1$s</div>'
+    player: '<div>%1$s %2$s</div><div>Personnages:<ul>%3$s</ul></div>'
+    playerCharacter: '<li>%s</li>'
 
   msgs:
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"

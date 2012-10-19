@@ -34,7 +34,7 @@ requirejs.config
     'socket.io': 'lib/socket.io-0.9.10-min'
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.3.3-min'
-    'queryparser': 'lib/queryparser-1.0.0-min'
+    'queryparser': 'lib/queryparser-1.1.0-min'
     'md5': 'lib/md5-2.2-min'
     'html5slider': 'lib/html5slider-min'
     'hogan': 'lib/hogan-2.0.0-min'

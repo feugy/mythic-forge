@@ -81,8 +81,49 @@ Player = typeFactory 'Player',
 , 
   strict: true 
   noDesc: true
-  noName: true
+  noName: true,
+  middlewares:
 
+    # retrieve the characters corresponding to the stored ids.
+    #
+    # @param item [Item] the initialized item.
+    # @param next [Function] function that must be called to proceed with other middleware.
+    init: (next, player) ->
+      return next() if player.characters.length is 0 
+      # loads the character from database
+      Item.find {_id: {$in: player.characters}}, (err, characters) ->
+        return next(new Error "Unable to init item #{player._id}. Error while resolving its character: #{err}") if err?
+        return next(new Error "Unable to init item #{player._id} because there is no item with id #{player.character}") unless characters.length is player.characters.length
+        # Do the replacement.
+        player.characters = characters
+        next()
+
+    # For manually provided accounts, check password existence.
+    # Manages also associated characters, to only store their ids inside Mongo.
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    save: (next) ->
+      process = =>
+        # If clear password provided, encrypt it before storing it.
+        if @password?
+          @password = encryptor.generate @password unless encryptor.isHashed @password
+
+        # replace characters with their id, for storing in Mongo, without using setters.
+        saveCharacters = @characters.concat()
+        @_doc.characters[i] = character._id for character, i in saveCharacters
+        next()
+        # restore save to allow reference reuse.
+        @_doc.characters = saveCharacters
+
+      if @provider is null and !@password
+        # before accepting saves without password, check that we have passord inside DB
+        @constructor.findOne _id:@_id, (err, player) ->
+          return next new Error "Cannot check password existence in db for player #{@_id}: #{err}" if err?
+          return next new Error "Cannot save manually provided account without password" unless player?.get('password')?
+          process()
+      else 
+        process()
+        
 # Simple utility method the test a clear password against the hashed stored one.
 # 
 # @param clearPassword [String] the clear tested value
@@ -109,45 +150,5 @@ Player.statics.purge = (player) ->
     delete player.cookie
     delete player.socketId
   player
-
-# Pre-init middleware: retrieve the characters corresponding to the stored ids.
-#
-# @param item [Item] the initialized item.
-# @param next [Function] function that must be called to proceed with other middleware.
-Player.pre 'init', (next, player) ->
-  return next() if player.characters.length is 0 
-  # loads the character from database
-  Item.find {_id: {$in: player.characters}}, (err, characters) ->
-    return next(new Error "Unable to init item #{player._id}. Error while resolving its character: #{err}") if err?
-    return next(new Error "Unable to init item #{player._id} because there is no item with id #{player.character}") unless characters.length is player.characters.length
-    # Do the replacement.
-    player.characters = characters
-    next()
-
-# Pre-save middleware: for manually provided accounts, check password existence.
-# Manages also associated characters, to only store their ids inside Mongo.
-#
-# @param next [Function] function that must be called to proceed with other middleware.
-Player.pre 'save', (next) ->
-  process = =>
-    # If clear password provided, encrypt it before storing it.
-    if @password?
-      @password = encryptor.generate @password unless encryptor.isHashed @password
-
-    # replace characters with their id, for storing in Mongo, without using setters.
-    saveCharacters = @characters
-    @_doc.characters[i] = character._id for character, i in saveCharacters
-    next()
-    # restore save to allow reference reuse.
-    @_doc.characters = saveCharacters
-
-  if @provider is null and !@password
-    # before accepting saves without password, check that we have passord inside DB
-    @constructor.findOne _id:@_id, (err, player) ->
-      return next new Error "Cannot check password existence in db for player #{@_id}: #{err}" if err?
-      return next new Error "Cannot save manually provided account without password" unless player?.get('password')?
-      process()
-  else 
-    process()
 
 module.exports = conn.model 'player', Player

@@ -45,7 +45,6 @@ class _ModelWatcher extends EventEmitter
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, className, instance, modified) =>
-
     parameter = {}
     if '_doc' of instance
       parameter[key] = value for own key,value of instance._doc
@@ -78,7 +77,7 @@ class _ModelWatcher extends EventEmitter
       require('../model/Player').purge parameter
       return if Object.keys(parameter).length is 0
       
-    logger.debug "change propagation: #{operation} of instance #{parameter._id or parameter.path}"
+    logger.debug "change propagation: #{operation} of instance #{parameter._id or parameter.path} (#{className})"
     @emit 'change', operation, className, parameter
 
 class ModelWatcher

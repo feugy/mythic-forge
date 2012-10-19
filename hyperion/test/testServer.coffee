@@ -210,10 +210,10 @@ describe 'server tests', ->
           return done err if err?
           assert.equal items.length, 2
           assert.ok jack.equals items[0]
-          assert.equal items[0].className, 'Item'
+          assert.equal items[0]._className, 'Item'
           assert.equal items[0].name, 'Jack'
           assert.ok john.equals items[1]
-          assert.equal items[1].className, 'Item'
+          assert.equal items[1]._className, 'Item'
           assert.equal items[1].name, 'John'
           assert.ok character._id.equals items[0].type._id
           assert.ok 'name' of items[0].type.properties
@@ -236,10 +236,10 @@ describe 'server tests', ->
           return done err if err?
           assert.equal events.length, 2
           assert.ok birth.equals events[0]
-          assert.equal events[0].className, 'Event'
+          assert.equal events[0]._className, 'Event'
           assert.equal events[0].step, 'birth'
           assert.ok death.equals events[1]
-          assert.equal events[1].className, 'Event'
+          assert.equal events[1]._className, 'Event'
           assert.equal events[1].step, 'death'
           assert.ok life._id.equals events[0].type._id
           assert.ok 'concerns' of events[0].type.properties
@@ -248,11 +248,11 @@ describe 'server tests', ->
           assert.ok 'concerns' of events[1].type.properties
           assert.equal events[1].type.properties.concerns.type, life.get('properties').concerns.type
           # then their links where resolved
-          assert.equal events[0].concerns.className, 'Item'
+          assert.equal events[0].concerns._className, 'Item'
           assert.ok jack.equals events[0].concerns
           assert.ok character.equals events[0].concerns.type
           assert.equal events[0].concerns.name, 'Jack'
-          assert.equal events[1].concerns.className, 'Item'
+          assert.equal events[1].concerns._className, 'Item'
           assert.ok john.equals events[1].concerns
           assert.ok character.equals events[1].concerns.type
           assert.equal events[1].concerns.name, 'John'

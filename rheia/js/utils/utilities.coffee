@@ -32,6 +32,7 @@ define [
     "#{parseInt(Math.random()*1000000000)}" 
 
   instanceName = (instance) ->
+    return instance.get 'email' if instance._className is 'Player'
     instance?.get('name') or instance?.get('type')?.get 'name'
 
   {
@@ -169,5 +170,8 @@ define [
           content = _.sprintf i18n.tips.event, 
             moment(model.get('updated')).format(i18n.constants.dateTimeFormat),
             if model.get('from')? then instanceName(model.get 'from') else i18n.labels.noFrom
+        when 'Player'
+          content = _.sprintf i18n.tips.player, model.get('firstName'), model.get('lastName'),
+            (_.sprintf i18n.tips.playerCharacter, instanceName character for character in model.get 'characters')
       content
   }

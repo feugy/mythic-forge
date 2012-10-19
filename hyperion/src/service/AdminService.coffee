@@ -19,6 +19,7 @@
 'use strict'
 
 _ = require 'underscore'
+ObjectId = require('mongodb').BSONPure.ObjectID
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
@@ -28,10 +29,10 @@ Item = require '../model/Item'
 Event = require '../model/Event'
 Player = require '../model/Player'
 Executable = require '../model/Executable'
+utils = require '../utils'
 logger = require('../logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 authoringService = require('./AuthoringService').get()
-
 supported = ['Field', 'Item', 'Event', 'Player', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
 listSupported = supported[4..]
 
@@ -91,6 +92,10 @@ class _AdminService
             model.set 'type', types[0]
             _save model
 
+        # Do not store maps with string ids
+        if 'string' is utils.type values?._id
+          values._id = new ObjectId values._id
+
         if '_id' of values
           # resolve type
           return Item.findCached [values._id], (err, models) ->
@@ -102,7 +107,7 @@ class _AdminService
               model.set key, value unless key in ['_id', 'type', 'map']
 
             # update map value
-            if model.get('map')?._id?.toString() isnt values.map?._id
+            if model.get('map')?._id?.toString() isnt values.map?._id?.toString()
               if values.map?._id
                 # resolve map
                 return Map.findCached [values.map._id], (err, maps) ->
@@ -196,11 +201,11 @@ class _AdminService
         model = models[0]
 
         for key, value of values
-          model.set key, value unless key is '_id' or key is 'properties'
+          model.set key, value unless key in ['_id', 'properties', 'characters']
           # manually set and unset properties
           if key is 'properties'
             # at the begining, all existing properties may be unset
-            unset = _(model.get('properties')).keys()
+            unset = _(model.get 'properties').keys()
             set = []
             for name, prop of value
               idx = unset.indexOf(name)
@@ -213,11 +218,19 @@ class _AdminService
                 # and update values if necessary
                 if model.get('properties')[name].type isnt prop.type or model.get('properties')[name].def isnt prop.def
                   set.push([name, prop.type, prop.def])
-                
+
             # at last, add new properties
             model.setProperty.apply model, args for args in set
             # and delete removed ones
             model.unsetProperty name for name in unset
+
+          else if key is 'characters'
+            # manually mark characters as modified if needed
+            previous = _.pluck model.get('characters'), '_id'
+            newly = _.pluck value, '_id'
+            if _.difference(newly, previous).length isnt 0
+              model.set 'characters', value
+              model.markModified 'characters'
 
         _save model
     else 

@@ -260,7 +260,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     background white
     padding 16px
     overflow auto
-    width 200px
+    min-width 200px
     box-shadow 0 3px 5px shadowColor
     z-index 1
 
@@ -412,10 +412,10 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   border 2px solid dropColor
 
 .instance-details
+  size = 30px
+  white-space nowrap
   
   .loadable
-    size = 30px
-
     display inline-block
     height size
     width size
@@ -427,6 +427,12 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
       width size
 
   span
+    vertical-align middle
+    display inline-block
+
     > *
       font-style normal
       font-size fontSize*0.75
+
+.instance-details.no-image span
+  padding 0.5em 1em

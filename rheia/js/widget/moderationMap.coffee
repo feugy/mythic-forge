@@ -248,6 +248,8 @@ define [
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
     _onDragStop: (event, details) ->
+      @_popupMenu?.element.off 'click'
+      @_popupMenu?.element.remove()
       if @_dragged.length is 1
         # if inside, do drop. otherwise, does nothing
         if @_draggedInside

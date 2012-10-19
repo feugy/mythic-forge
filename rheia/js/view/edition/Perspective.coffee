@@ -65,7 +65,8 @@ define [
       @_explorer = new Explorer()
 
       # bind to global events
-      @bindTo rheia.router, 'searchResults', (err, results) =>
+      @bindTo rheia.router, 'searchResults', (err, instances, results) =>
+        return if instances is true
         if err?
           # displays an error
           @_searchWidget.setOption 'results', []

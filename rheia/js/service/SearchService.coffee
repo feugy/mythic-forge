@@ -26,8 +26,11 @@ define [
   'model/ItemType'
   'model/EventType'
   'model/FieldType'
+  'model/Item'
+  'model/Event'
+  'model/Player'
   'model/Map'
-], (_, utils, sockets, Executable, ItemType, EventType, FieldType, Map) ->
+], (_, utils, sockets, Executable, ItemType, EventType, FieldType, Item, Event, Player, Map) ->
 
   # Simple utility method that replace regexp value by a text equivalent.
   #
@@ -54,8 +57,10 @@ define [
     constructor: () ->
       # bind to server responses
       sockets.admin.on 'searchTypes-resp', @_onSearchTypesResults
+      sockets.admin.on 'searchInstances-resp', @_onSearchInstancesResults
 
-    # Performs a type search. At the end, triggers a `searchResults` event with error and results in parameter.
+    # Performs a type search. At the end, triggers a `searchResults` event with error and results in parameter
+    # (and false as `instances` second parameter).
     #  
     # @param query [Object] the search query, modelized with objects and arrays.
     searchTypes: (query) ->
@@ -65,21 +70,33 @@ define [
       console.log "triggers new search on type with query: #{query}"
       sockets.admin.emit 'searchTypes', query
     
+    # Performs an instance search. At the end, triggers a `searchResults` event with error and results in parameter
+    # (and true as `instances` second parameter).
+    #  
+    # @param query [Object] the search query, modelized with objects and arrays.
+    searchInstances: (query) ->
+      # transforms the object query to JSON string.
+      parseQuery query
+      query = JSON.stringify query
+      console.log "triggers new search on instances with query: #{query}"
+      sockets.admin.emit 'searchInstances', query
+
     # **private**
     # Type search results handler. 
     # Parse returned types, dispatch them to their corresponding collection, and trigger the
-    # `searchResults` event with parsed models
+    # `searchResults` event with parsed models (and false as `instances` second parameter).
     #
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched types
     _onSearchTypesResults: (err, results) =>
-      return rheia.router.trigger 'searchResults', err, [] if err?
+      return rheia.router.trigger 'searchResults', err, false, [] if err?
 
       models = []
       for result in results
         # parse returned models
         modelClass = null
 
+        # TODO use _className instead
         if 'content' of result 
           modelClass = Executable
         else if 'quantifiable' of result
@@ -99,4 +116,34 @@ define [
           # keep the parse model for results
           models.push model
 
-      rheia.router.trigger 'searchResults', null, models
+      rheia.router.trigger 'searchResults', null, false, models
+
+    # **private**
+    # Type search instances handler. 
+    # Parse returned instance, dispatch them to their corresponding collection, and trigger the
+    # `searchResults` event with parsed models (and false as `instances` second parameter).
+    #
+    # @param err [String] the server error string, null it no error occured
+    # @param results [Array] raw representation of searched instances
+    _onSearchInstancesResults: (err, results) =>
+      return rheia.router.trigger 'searchResults', err, true, [] if err?
+
+      models = []
+      for result in results
+        # parse returned models
+        modelClass = null
+
+        switch result._className
+          when 'Item' then modelClass = Item
+          when 'Event' then modelClass = Event
+          else 
+            modelClass = Player
+
+        if modelClass?
+          # construct the relevant Backbone.Model
+          model = new modelClass result
+          modelClass.collection.add model
+          # keep the parse model for results
+          models.push model
+
+      rheia.router.trigger 'searchResults', null, true, models

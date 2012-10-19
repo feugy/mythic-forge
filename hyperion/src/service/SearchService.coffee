@@ -134,7 +134,8 @@ class _SearchService
       # special case of regexp strings that must be transformed
       if 'string' is utils.type value
         match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
-        value = new RegExp match[1], match[2], match[3] if match?
+        query[attr] = new RegExp match[1], match[2], match[3] if match?
+
       switch attr
         when 'and', 'or'
           delete query[attr]

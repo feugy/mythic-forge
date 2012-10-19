@@ -33,10 +33,6 @@ define [
 
   # This widget displays a list of linked instances, using instanceDetails for rendergin.
   # The size list could be limited to 1, and any modification will remplace the previous value.
-  #
-  # Triggers event `objectEdited` when an item is clicked.
-  # Triggers event `objectRemoved` when an item is removed with relevant button. 
-  # Triggers event `objectUnlinked` when an item is unlinked with relevant button.
   $.widget 'rheia.instanceDetails', $.rheia.baseWidget,
 
     options:
@@ -44,8 +40,8 @@ define [
       # Currently displayed object
       value: null
       
-      # Scope used to drag objects from widget
-      dndType: ''
+      # Scope used to drag objects from widget. Null to disable
+      dndType: null
       
       # Tooltip generator. 
       # This function takes displayed object as parameter, and must return a string, used as tooltip.
@@ -83,16 +79,19 @@ define [
           img = instance.get('type').get 'descImage'
 
           $('<div></div>').loadableImage(source: img, noButtons:true).appendTo @element if img?
+        else
+          @element.addClass 'no-image'
 
         # displays label with name
         @element.append "<span>#{_.sprintf i18n.instanceDetails.name, utils.instanceName(instance), instance.id}</span>"
       
-      @element.draggable
-        scope: @options.dndType
-        appendTo: 'body'
-        distance: 15
-        cursorAt: top:-5, left:-5
-        helper: => utils.dragHelper @options.value
+      if @options.dndType?
+        @element.draggable
+          scope: @options.dndType
+          appendTo: 'body'
+          distance: 15
+          cursorAt: top:-5, left:-5
+          helper: => utils.dragHelper @options.value
 
       # adds a tooltip
       if 'function' is utils.type @options.tooltipFct

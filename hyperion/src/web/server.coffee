@@ -260,7 +260,7 @@ notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
 updateNS = io.of('/updates')
 
 watcher.on 'change', (operation, className, instance) ->
-  logger.debug "broadcast of #{operation} on #{instance._id}"
+  logger.debug "broadcast of #{operation} on #{instance._id} (#{className})"
   updateNS.emit operation, className, instance
 
 # Authentication: 

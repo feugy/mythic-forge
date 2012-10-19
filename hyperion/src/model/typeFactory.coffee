@@ -51,7 +51,10 @@ originalToObject = mongoose.Document.prototype.toObject
 mongoose.Document.prototype.toObject = (options) ->
   obj = originalToObject.call @, options
   if options?.json
-    obj.className = @className
+    obj._className = @_className
+    # special case of plain json property that is ignored by mongoose.utils.clone()
+    if @_className is 'Player'
+      obj.prefs = @prefs
   obj
 
 # Factory that creates an abstract type.
@@ -80,6 +83,8 @@ module.exports = (typeName, spec, options = {}) ->
   # Local cache
   cache = {}
 
+  spec.versionKey = false
+  
   if options?.typeProperties
     # event properties definition, stored by names
     # @example property definition include
@@ -113,7 +118,7 @@ module.exports = (typeName, spec, options = {}) ->
 
   # Define a virtual getter on model's class name.
   # Handy when models have been serialized to distinguish them
-  AbstractType.virtual('className').get -> typeName
+  AbstractType.virtual('_className').get -> typeName
 
   # Override the equals() method defined in Document, to check correctly the equality between _ids, 
   # with their `equals()` method and not with the strict equality operator.

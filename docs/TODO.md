@@ -1,7 +1,6 @@
 # TODO
 
 - Hyperion
-  - Search in Events, Items and Players
   - cache evinction on inutility and size
   - test images for field types and event types
   - Rule engine
@@ -12,12 +11,12 @@
 
 - Rheia
   - moderation perspective
-    - Search
-      - input query with help and validation (use regexp by default with leading/trailing .* unless found ^ or $)
-      - display result and navigates
     - Maps
       - items animations (with z-ordering)
   - display connected count in top bar
+  - administration perspective
+    - report last executed turn
+    - trigger turn execution
   - edition perspective
     - Maps
       - diamond map widget
@@ -34,6 +33,7 @@
 - Hyperion
   - bugs
     - remove item type property does not update existing items
+    - bug with map value when retrieving items with search
   - ImageService to upload and associate images to types
   - remove all images when removing a type
   - Field type CRUD
@@ -235,6 +235,10 @@
       - CRUD (email, firstName, lastName, prefs, characters, isAdmin, lastConnection)
       - providers and password management
       - kick
+    - Search
+      - input query with help and validation (use : for regexp and = for string)
+      - display result and navigates
+      - display tooltip and affect by drag'n drop
 
 - Atlas
   - map displayal
