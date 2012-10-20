@@ -22,7 +22,7 @@ define [
   'jquery'
   'underscore'
   'i18n!nls/widget'
-  'widget/BaseWidget'
+  'widget/baseWidget'
 ],  ($, _, i18n) ->
 
   # Displays and navigate along several images, with two nav buttons.

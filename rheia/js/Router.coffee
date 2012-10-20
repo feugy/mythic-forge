@@ -26,6 +26,7 @@ requirejs.config
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
     'jquery-ui': 'lib/jquery-ui-1.8.21-min'
+    'jquery-punch': 'lib/jquery-punch-0.2.2-min'
     'transit': 'lib/jquery-transit-0.1.4-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
@@ -39,7 +40,7 @@ requirejs.config
     'html5slider': 'lib/html5slider-min'
     'hogan': 'lib/hogan-2.0.0-min'
     'moment': 'lib/moment-1.7.0-min'
-    'ace': 'lib/ace'
+    'ace': 'lib/ace-1.0-min'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
     'nls': '../nls'
@@ -59,6 +60,8 @@ requirejs.config
       deps: ['jquery']
     'jquery-ui':
       deps: ['jquery']
+    'jquery-punch':
+      deps: ['jquery']
     'transit':
       deps: ['jquery']
     'hotkeys':
@@ -75,6 +78,8 @@ requirejs.config
       exports: 'QueryParser'
     'moment':
       exports: 'moment'
+    'ace/ace':
+      exports: 'ace'
 
 # initialize rheia global namespace
 window.rheia = {}
@@ -100,7 +105,8 @@ define [
   'utils/utilities'
   # unwired dependencies
   'utils/extensions'
-  'jquery-ui' 
+  'jquery-ui'
+  'jquery-punch' 
   'numeric' 
   'transit'
   'timepicker'

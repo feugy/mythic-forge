@@ -67,6 +67,18 @@ Associate your project with it, and hit one time `Ctrl+B`: the src files will be
 If you edit the `Preferences > Package Settings > SublimeOnSaveBuild ` user settings, you'll be able to launch build on 
 `.coffee` file save.
 
+# Ace Editor
+
+Rheia uses a lot the famouse Ace Editor.
+Unfortunately, he's very difficult to bundle with requireJS (in contrary to what the official site pretends).
+
+If you want to change or upgrade the ace editor version, download the ace code on [github](https://github.com/ajaxorg/ace) and make your own distribution:
+
+    > npm install
+    > node ./Makefile.dryice.js --nc -m --target ../ace-builds
+
+Then copy the content of ace-builds/src-noconflict-min into rheia/js/lib/ace-x.x.x-min folder, and update the requirejs path into router.js
+
 # Running tests
 
 Simply enter at the project root:

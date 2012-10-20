@@ -22,7 +22,7 @@ define [
   'jquery'
   'underscore'
   'utils/utilities'
-  'widget/BaseWidget'
+  'widget/baseWidget'
   'mousewheel'
 ],  ($, _, utils) ->
 

@@ -23,7 +23,7 @@ define [
   'underscore'
   'i18n!nls/common'
   'i18n!nls/edition'
-  'text!tpl/FieldType.html'
+  'text!tpl/fieldType.html'
   'view/BaseEditionView'
   'model/FieldType'
   'widget/loadableImage'

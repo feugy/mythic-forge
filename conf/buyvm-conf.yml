@@ -13,8 +13,8 @@ server:
 
 # Authentication details
 authentication:
-  success: 'http://www.mythic-forge/rheia/login?'
-  error: 'http://www.mythic-forge/rheia/login?'  
+  success: 'http://www.mythic-forge.com/rheia/login?'
+  error: 'http://www.mythic-forge.com/rheia/login?'  
   tokenLifeTime: 900 # number of seconds during wich tokens are valid
   inactivityTime: 900 # number of seconds of inactivity before kicking user
   # Key usable on mythic-forge.com domain with SSL
@@ -27,9 +27,9 @@ authentication:
 
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
-  certificate: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.crt
-  key: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.key
-  ca: /home/damien/workspace/mythic-forge/hyperion/conf/ssl/www.mythic-forge.com.ca
+  certificate: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.crt
+  key: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.key
+  ca: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.ca
 
 # MongoDB connection
 mongo:
