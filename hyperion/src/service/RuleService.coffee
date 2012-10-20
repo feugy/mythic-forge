@@ -277,7 +277,7 @@ class _RuleService
       for executable in executables
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
-        obj = require '.\\'+ path.relative module.filename, executable.compiledPath
+        obj = require path.relative __dirname, executable.compiledPath
         rules.push obj if obj? and utils.isA(obj, TurnRule)
 
       # sort rules by rank
@@ -396,7 +396,7 @@ class _RuleService
       for executable in executables
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
-        obj = require '.\\'+ path.relative module.filename, executable.compiledPath
+        obj = require path.relative __dirname, executable.compiledPath
         rules.push obj if obj? and(utils.isA obj, Rule) and obj.active
 
       logger.debug "#{rules.length} candidate rules"

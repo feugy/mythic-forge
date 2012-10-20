@@ -8,3 +8,6 @@ hyperion/lib/
 
 # assets needed for easydoc
 docs/_assets/
+
+# compilation results
+rheia-min/
