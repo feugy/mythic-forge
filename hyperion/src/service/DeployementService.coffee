@@ -94,7 +94,7 @@ class _DeployementService
   #
   # Then the deployement is stopped and must be finished with `commit()` or `rollback()`
   #
-  # @param version [String] name of the deployed version.
+  # @param version [String] name of the deployed version. Null to disabled version checking
   # @param email [String] the author email, that must be an existing player email
   # @param callback [Function] invoked when deployement is done, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
@@ -371,7 +371,7 @@ compileStylus = (sheet, callback) ->
   parent = pathUtils.dirname sheet
   name = pathUtils.basename sheet
   destination = pathUtils.join parent, name.replace /\.styl(us)?$/i, '.css'
-  logger.debug "compiles stylus sheet #{sheet}"
+  logger.debug "compiles stylus sheet #{sheet} with parent #{parent}"
   # read the sheet
   fs.readFile sheet, (err, content) =>
     return callback "failed to read content for #{sheet}: #{err}" if err?
@@ -424,7 +424,8 @@ optimize = (folder, callback) ->
   folderOut = "#{folder}.out"
 
   # search main entry point
-  requireMatcher = /<script[^>]*data-main\s*=\s*(["'])(.*(?=\1))/i
+  requireMatcher = /<script[^>]*data-main\s*=\s*(["'])(.*)(?=\1)/i
+
   utils.find folder, /^.*\.html$/i, requireMatcher, (err, results) ->
     return callback "failed to identify html page including requirejs: #{err}" if err?
     return callback 'no html page including requirej found' if results.length is 0
@@ -435,6 +436,12 @@ optimize = (folder, callback) ->
     fs.readFile main, (err, content) ->
       extract = content.toString().match requireMatcher
       mainFile = extract?[2]
+
+      # it's possible that we took too large because of the regexp lookahead
+      idx = mainFile.indexOf '"'
+      idx = mainFile.indexOf "'" if idx is -1
+      mainFile = mainFile.slice 0, idx unless idx is -1
+
       idx = mainFile.lastIndexOf '/'
       if idx isnt -1
         mainFile = mainFile.substring idx+1

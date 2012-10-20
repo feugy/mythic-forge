@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+var fs = require('fs-extra');
+var utils = require('../lib/utils');
+var moment = require('moment');
+
+// Specific configuration for deployement
+process.env.NODE_ENV = 'deploy';
+
+// Get the deployement service instance
+var service = require('../lib/service/DeployementService').get();
+
+var start = moment();
+
+// First, save previous version
+fs.rename(utils.confKey('game.production'), utils.confKey('game.save'));
+
+// Deploy rheia administration client
+console.info('Optimization in progress, please wait a few seconds...');
+
+service.deploy(null, 'automatic', function(err, path) {
+  if (err) {
+    console.error(err);
+    // Something goes wrong: restore previous version
+    console.info('Optimization failed, previous files were restored');
+    fs.rename(utils.confKey('game.save'), utils.confKey('game.production'));
+    return process.exit(1);
+  }
+
+  // Every thing works fine !
+  console.info('Optimization finished in '+moment().diff(start, 'seconds')+' seconds !');
+  fs.removeSync(utils.confKey('game.save'));
+  process.exit(0);
+});

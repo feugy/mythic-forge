@@ -40,7 +40,8 @@
     "postinstall": "coffee --bare --compile --output hyperion/lib hyperion/src"
   },
   "bin": {
-    "hyperion": "./hyperion/bin/hyperion"
+    "mf-start": "./hyperion/bin/start",
+    "mf-deploy": "./hyperion/bin/deploy"
   },
   "licence": "LGPL v3",
   "engine": {
