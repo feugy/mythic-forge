@@ -80,7 +80,7 @@ registerConf = (base) ->
 # @param rootFolder [String] path to the local folder that contains the RIA files.
 # @param isStatic [Boolean] No coffee or stylus compilation provided. Default to false.
 # @param secured [Boolean] Access to this RIA is secured and need authentication. Default to false.
-configureRIA = (base, rootFolder, isStatic = false secured = false) ->
+configureRIA = (base, rootFolder, isStatic = false, secured = false) ->
 
   if secured
     # if RIA is secured, register first a security filter
