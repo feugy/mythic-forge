@@ -86,12 +86,12 @@ define [
       # separate fields from items
       fields = []
       for obj in added
-        if obj.constructor.name is 'Field'
-          fields.push obj.toJSON() if o.mapId is obj.get 'mapId'
-        else if obj.constructor.name is 'Object'
+        if !(obj.get?)
           # zoom case: reinject existing fields
           fields.push obj
-        else if obj.constructor.name is 'Item' and o.mapId is obj.get('map')?.id
+        else if !(obj._className?)
+          fields.push obj.toJSON() if o.mapId is obj.get 'mapId'
+        else if obj._className is 'Item' and o.mapId is obj.get('map')?.id
           @_loading++
           @_itemWidgets[obj.id] = true
           _.defer =>
@@ -130,9 +130,9 @@ define [
       # separate fields from items
       fields = []
       for obj in removed
-        if obj.constructor.name is 'Field'
+        if obj._className is 'Item'
           fields.push obj.toJSON() if @options.mapId is obj.get 'mapId'
-        else if obj.constructor.name is 'Item'
+        else unless obj._className?
           # immediately removes corresponding widget
           @_itemWidgets[obj.id]?.destroy()
 

@@ -77,28 +77,29 @@ define [
     constructor: ->
       super 'moderation'
 
-      # bind to global events
-      @bindTo Map.collection, 'reset', @_onMapListRetrieved
-      @bindTo Map.collection, 'add', @_onMapListRetrieved
-      @bindTo Map.collection, 'remove', @_onMapListRetrieved
+      utils.onRouterReady =>
+        # bind to global events
+        @bindTo Map.collection, 'reset', @_onMapListRetrieved
+        @bindTo Map.collection, 'add', @_onMapListRetrieved
+        @bindTo Map.collection, 'remove', @_onMapListRetrieved
 
-      # register on fields and items to update map
-      @bindTo Field.collection, 'add', @_onAddFieldOrItem
-      @bindTo Field.collection, 'remove', @_onRemoveFieldOrItem
-      @bindTo Item.collection, 'add', @_onAddFieldOrItem
-      @bindTo Item.collection, 'update', @_onUpdateItem
-      @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
+        # register on fields and items to update map
+        @bindTo Field.collection, 'add', @_onAddFieldOrItem
+        @bindTo Field.collection, 'remove', @_onRemoveFieldOrItem
+        @bindTo Item.collection, 'add', @_onAddFieldOrItem
+        @bindTo Item.collection, 'update', @_onUpdateItem
+        @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
 
-      @bindTo rheia.router, 'searchResults', (err, instances, results) =>
-        return unless instances is true
-        if err?
-          # displays an error
-          @_searchWidget.setOption 'results', []
-          return utils.popup i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [text: i18n.buttons.ok]
-        @_searchWidget.setOption 'results', results
+        @bindTo rheia.router, 'searchResults', (err, instances, results) =>
+          return unless instances is true
+          if err?
+            # displays an error
+            @_searchWidget.setOption 'results', []
+            return utils.popup i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [text: i18n.buttons.ok]
+          @_searchWidget.setOption 'results', results
 
-      # retrieve map list
-      Map.collection.fetch()
+        # retrieve map list
+        Map.collection.fetch()
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # Draws the login form.
@@ -379,7 +380,7 @@ define [
     # @option details coord [Object] x and y coordinates of the drop tile
     _onAffect: (event, details) =>
       # only accepts Items
-      return unless details.instance?.constructor.name is 'Item'
+      return unless details.instance?._className is 'Item'
       map = Map.collection.get details.mapId
       return unless map?
       details.instance.set 'map', map

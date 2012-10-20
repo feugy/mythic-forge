@@ -20,8 +20,7 @@
 
 define [
   'backbone'
-  'model/sockets'
-], (Backbone, sockets) ->
+], (Backbone) ->
 
   # The administration service is wired to server features not related to a model.
   # For example, it triggers game client deployement
@@ -57,10 +56,10 @@ define [
     # Service constructor
     constructor: ->
       # first, ask for deployement state
-      sockets.admin.emit 'deployementState'
-      sockets.admin.on 'deployement', @_onDeployementState
+      rheia.sockets.admin.emit 'deployementState'
+      rheia.sockets.admin.on 'deployement', @_onDeployementState
 
-      sockets.admin.on 'deployementState-resp',  (err, state) =>
+      rheia.sockets.admin.on 'deployementState-resp',  (err, state) =>
         return rheia.router.trigger 'serverError', err, method:"AdminService.deployementState" if err?
         @_state = state
         @initialized = true
@@ -71,10 +70,10 @@ define [
         AdminService::[method] = (args...) =>
           console.info "#{method} #{args.join ' '}..."
           args.splice 0, 0, method
-          sockets.admin.emit.apply sockets.admin, args
+          rheia.sockets.admin.emit.apply rheia.sockets.admin, args
 
         # register an error callback
-        sockets.admin.on "#{method}-resp", (err) =>
+        rheia.sockets.admin.on "#{method}-resp", (err) =>
           rheia.router.trigger 'serverError', err, method:"AdminService.#{method}" if err?
 
       proxyMethod method for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']

@@ -24,6 +24,12 @@ define [
   'widget/baseWidget'
 ],  ($, ace) ->
 
+  # set path to avoid problems after optimization
+  path = requirejs.s.contexts._.config.baseUrl+requirejs.s.contexts._.config.paths.ace
+  ace.config.set 'modePath', path
+  ace.config.set 'themePath', path
+  ace.config.set 'workerPath', path
+
   # Widget that encapsulate the Ace editor to expose a more jQuery-ui compliant interface
   # Triggers a `change`event when necessary.
   $.widget 'rheia.advEditor', $.rheia.baseWidget,

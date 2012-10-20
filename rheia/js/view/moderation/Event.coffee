@@ -84,7 +84,7 @@ define [
         tooltipFct: utils.instanceTooltip
         open: (event, instance) =>
           # opens players, items, events
-          rheia.router.trigger 'open', instance.constructor.name, instance.id
+          rheia.router.trigger 'open', instance._className, instance.id
       ).data 'property'
 
       super()

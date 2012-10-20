@@ -22,8 +22,7 @@ define [
   'model/BaseModel'
   'model/Item'
   'utils/utilities'
-  'model/sockets'
-], (Base, Item, utils, sockets) ->
+], (Base, Item, utils) ->
 
   # Client cache of players.
   # Wired to the server through socket.io
@@ -47,20 +46,21 @@ define [
       super @model, @options
       @connected = []
 
-      sockets.admin.on 'players', @_onPlayerEvent
+      utils.onRouterReady =>
+        rheia.sockets.admin.on 'players', @_onPlayerEvent
 
-      # initialize the connected list
-      sockets.admin.once 'connectedList-resp', (list) =>
-        @connected = list
-        @trigger 'connectedPlayersChanged', @connected, []
-      sockets.admin.emit 'connectedList'
+        # initialize the connected list
+        rheia.sockets.admin.once 'connectedList-resp', (list) =>
+          @connected = list
+          @trigger 'connectedPlayersChanged', @connected, []
+        rheia.sockets.admin.emit 'connectedList'
 
     # Method to arbitrary kick a user. 
     # No callback, but an event will be received if kick was effective, and the list of connected players will be updated
     #
     # @param email [String] email of kicked player
     kick: (email) =>
-      sockets.admin.emit 'kick', email
+      rheia.sockets.admin.emit 'kick', email
 
     # **private**
     # Callback invoked when a database update is received.

@@ -21,8 +21,8 @@
 define [
   'underscore'
   'backbone'
-  'model/sockets'
-], (_, Backbone, sockets) ->
+  'utils/utilities'
+], (_, Backbone, utils) ->
 
   # Field collection to handle multiple operaions on fields.
   # Do not provide any local cache, nor allows field retrival. Use `Map.consult()` method instead.
@@ -36,26 +36,27 @@ define [
     constructor: (@model, @options) ->
       super options
       # bind updates
-      sockets.updates.on 'creation', @_onAdd
-      sockets.updates.on 'deletion', @_onRemove
+      utils.onRouterReady =>
+        rheia.sockets.updates.on 'creation', @_onAdd
+        rheia.sockets.updates.on 'deletion', @_onRemove
 
     # Allow multiple saves on fields. Update is not permitted.
     #
     # @param fields [Array<Field>] saved fields
     save: (fields) =>
-      sockets.admin.once 'save-resp', (err) =>
+      rheia.sockets.admin.once 'save-resp', (err) =>
         rheia.router.trigger 'serverError', err, method:'Fields.save', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      sockets.admin.emit 'save', 'Field', fields
+      rheia.sockets.admin.emit 'save', 'Field', fields
 
     # Allow multiple removes on fields
     #
     # @param fields [Array<Field>] removed fields
     destroy: (fields) =>
-      sockets.admin.once 'remove-resp', (err) =>
+      rheia.sockets.admin.once 'remove-resp', (err) =>
         rheia.router.trigger 'serverError', err, method:'Fields.remove', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      sockets.admin.emit 'remove', 'Field', fields
+      rheia.sockets.admin.emit 'remove', 'Field', fields
 
     # Provide a custom sync method to wire model to the server.
     # No operation supported.

@@ -82,7 +82,7 @@ inactivityTime = 1000 * utils.confKey 'authentication.inactivityTime'
 # @param email [String] socket corresponding player's email 
 activation = (id, email) ->
   clearTimeout inactivity[id]
-  inactivity[id] = setTimeout (-> playerService.disconnect email, 'inactivity', ->), inactivityTime
+  # TODO does not work properly inactivity[id] = setTimeout (-> playerService.disconnect email, 'inactivity', ->), inactivityTime
 
 # Kick a user
 # 

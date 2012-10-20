@@ -21,8 +21,7 @@
 define [
   'underscore'
   'utils/utilities'
-  'model/sockets'
-], (_, utils, sockets) ->
+], (_, utils) ->
 
   # Instanciated as a singleton in `rheia.imagesService` by the Router
   class ImagesService
@@ -87,7 +86,7 @@ define [
         delete @_cache[src]
 
         # wait for server response
-        sockets.admin.once 'uploadImage-resp', (err, saved) =>
+        rheia.sockets.admin.once 'uploadImage-resp', (err, saved) =>
           throw new Error "Failed to upload image for model #{modelName} #{id}: #{err}" if err?
           # populate cache
           @load src
@@ -99,9 +98,9 @@ define [
         console.log "upload new image #{src}..."
         # upload data to server
         if idx?
-          sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
+          rheia.sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
         else 
-          sockets.admin.emit 'uploadImage', modelName, id, ext, data
+          rheia.sockets.admin.emit 'uploadImage', modelName, id, ext, data
 
       # read data from file
       reader.readAsDataURL file
@@ -120,7 +119,7 @@ define [
       delete @_cache[src]
 
       # wait for server response
-      sockets.admin.once 'removeImage-resp', (err, saved) =>
+      rheia.sockets.admin.once 'removeImage-resp', (err, saved) =>
         throw new Error "Failed to remove image for model #{modelName} #{id}: #{err}" if err?
         console.log "image #{src} removed"
         # trigger end of upload
@@ -129,9 +128,9 @@ define [
       console.log "removes new image #{src}..."
       # remove image from server
       if idx?
-        sockets.admin.emit 'removeImage', modelName, id, idx
+        rheia.sockets.admin.emit 'removeImage', modelName, id, idx
       else 
-        sockets.admin.emit 'removeImage', modelName, id
+        rheia.sockets.admin.emit 'removeImage', modelName, id
 
     # **private**
     # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
