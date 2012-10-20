@@ -20,7 +20,7 @@
 
 define [
   'jquery'
-  'widget/BaseWidget'
+  'widget/baseWidget'
 ],  ($) ->
 
   # The toggleable widget pops-up at screen to display something, and then hides

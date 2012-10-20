@@ -24,7 +24,7 @@ define [
   'utils/utilities'
   'i18n!nls/common'
   'i18n!nls/edition'
-  'text!tpl/EventType.html'
+  'text!tpl/eventType.html'
   'view/BaseEditionView'
   'utils/validators'
   'model/EventType'

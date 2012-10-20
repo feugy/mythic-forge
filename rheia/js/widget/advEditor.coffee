@@ -24,7 +24,6 @@ define [
   'widget/baseWidget'
 ],  ($, ace) ->
 
-
   # Widget that encapsulate the Ace editor to expose a more jQuery-ui compliant interface
   # Triggers a `change`event when necessary.
   $.widget 'rheia.advEditor', $.rheia.baseWidget,
@@ -104,8 +103,8 @@ define [
           @options._editor.getSession().setTabSize value
         when 'theme'
           @options.theme = value
-          require ["ace/theme/#{value}"], => @options._editor.setTheme "ace/theme/#{value}"
+          @options._editor.setTheme "ace/theme/#{value}"
         when 'mode'
           @options.mode = value
-          require ["ace/mode/#{value}"], => @options._editor.getSession().setMode "ace/mode/#{value}"
+          @options._editor.getSession().setMode "ace/mode/#{value}"
     
