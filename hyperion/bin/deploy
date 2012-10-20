@@ -15,7 +15,7 @@ var start = moment();
 fs.rename(utils.confKey('game.production'), utils.confKey('game.save'));
 
 // Deploy rheia administration client
-console.info('Optimization in progress, please wait a few seconds...');
+console.info('Optimization in progress, please wait a few minutes...');
 
 service.deploy(null, 'automatic', function(err, path) {
   if (err) {
@@ -27,7 +27,7 @@ service.deploy(null, 'automatic', function(err, path) {
   }
 
   // Every thing works fine !
-  console.info('Optimization finished in '+moment().diff(start, 'seconds')+' seconds !');
+  console.info('Optimization finished in '+moment.duration(moment().diff(start)).humanize());
   fs.removeSync(utils.confKey('game.save'));
   process.exit(0);
 });

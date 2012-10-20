@@ -470,6 +470,7 @@ optimize = (folder, callback) ->
           modules: [
             name: mainFile
           ]
+
         # at least, performs optimization
         try
           start = new Date().getTime()

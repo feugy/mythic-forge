@@ -37,6 +37,16 @@ define [
 
   {
 
+    # Used to execute some behaviour when router is fully operationnal.
+    # A must used when dealing with sockets. It guarantees that sockets are wired
+    #
+    # @param callback [Function] asynchronously executed callback, when router is ready
+    onRouterReady: (callback) ->
+      if rheia?.adminService?
+        _.defer callback
+      else
+        $(window).on 'connected', callback 
+
     # This method is intended to replace the broken typeof() Javascript operator.
     #
     # @param obj [Object] any check object

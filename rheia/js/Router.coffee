@@ -98,11 +98,20 @@ errorMapping =
 define [
   'underscore'
   'jquery' 
+  'socket.io'
+  'async'
   'backbone'
-  'model/sockets'
   'view/Login'
   'i18n!nls/common'
   'utils/utilities'
+  'service/ImagesService'
+  'service/SearchService' 
+  'service/AdminService' 
+  'view/admin/Perspective'
+  'view/edition/Perspective'
+  'view/authoring/Perspective'
+  'view/moderation/Perspective'
+  'view/Layout'
   # unwired dependencies
   'utils/extensions'
   'jquery-ui'
@@ -114,13 +123,73 @@ define [
   'mousewheel'
   'md5'
   'html5slider'
-  ], (_, $, Backbone, sockets, LoginView, i18n, utils) ->
+
+], (_, $, io, async, Backbone, LoginView, i18n, utils, ImagesService, SearchService, AdminService, 
+  AdminPerspective, EditionPerspective, AuthoringPerspective, ModerationPerspective, LayoutView) ->
 
   version = parseInt $.browser.version
   return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or ($.browser.webkit and version >= 500)
   
   # simple flag to avoid loading multiple perspective at the same time
   perspectiveLoading = false
+  isLoggingOut = false
+  connected = false
+
+  $(window).on 'beforeunload', () ->
+    isLoggingOut = true
+    undefined
+
+  # different namespaces that ca be used to communicate qith server
+  rheia.sockets =
+    game: null
+    admin: null
+    updates: null
+
+  # the connect function will try to connect with server. 
+  # 
+  # @param token [String] the autorization token, obtained during authentication
+  # @param callback [Function] invoked when all namespaces have been connected.
+  # @param errorCallback [Function] invoked when connection cannot be established, or is lost:
+  # @option errorCallback err [String] the error detailed case, or null if no error occured
+  connect = (token, callback, errorCallback) ->
+    isLoggingOut = false
+    connected = true
+
+    # wire logout facilities
+    rheia.router.on 'logout', => 
+      localStorage.removeItem 'token'
+      isLoggingOut = true
+      socket.emit 'logout'
+      rheia.router.navigate 'login', trigger: true
+
+    socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
+
+    socket.on 'error', (err) ->
+      errorCallback err if connected
+
+    socket.on 'disconnect', (reason) ->
+      connected = false 
+      return if isLoggingOut
+      errorCallback if reason is 'booted' then 'kicked' else 'disconnected'
+
+    socket.on 'connect', -> 
+      # On connection, retrieve current connected player immediately
+      socket.emit 'getConnected', (err, player) =>
+        # stores the token to allow re-connection
+        rheia.player = player
+        localStorage.setItem 'token', player.token
+        # update socket.io query to allow reconnection with new token value
+        socket.socket.options.query = "token=#{player.token}"
+
+      names = Object.keys rheia.sockets
+
+      async.forEach names, (name, next) ->
+        rheia.sockets[name] = socket.of "/#{name}"
+        rheia.sockets[name].on 'connect', next
+        rheia.sockets[name].on 'connect_failed', next
+      , (err) ->
+        return errorCallback err if err?
+        callback()
 
   class Router extends Backbone.Router
 
@@ -135,6 +204,8 @@ define [
       # global router instance
       rheia.router = @
 
+      rheia.imagesService = new ImagesService()
+
       # Define some URL routes (order is significant: evaluated from last to first)
       @route '*route', '_onNotFound'
       @route 'login', '_onDisplayLogin'
@@ -144,13 +215,13 @@ define [
         localStorage.setItem 'redirect', decodeURIComponent redirect
         @_onDisplayLogin()
       @route 'edition', 'edition', =>
-        @_showPerspective 'editionPerspective', 'view/edition/Perspective'
+        @_showPerspective 'editionPerspective', EditionPerspective
       @route 'authoring', 'authoring', =>
-        @_showPerspective 'authoringPerspective', 'view/authoring/Perspective'
+        @_showPerspective 'authoringPerspective', AuthoringPerspective
       @route 'admin', 'admin', =>
-        @_showPerspective 'administrationPerspective', 'view/admin/Perspective'
+        @_showPerspective 'administrationPerspective', AdminPerspective
       @route 'moderation', 'moderation', =>
-        @_showPerspective 'moderationPerspective', 'view/moderation/Perspective'
+        @_showPerspective 'moderationPerspective', ModerationPerspective
 
       # general error handler
       @on 'serverError', (err, details) ->
@@ -172,12 +243,12 @@ define [
     # Show a perspective inside the wrapper. First check the connected status.
     #
     # @param name [String] Name of the perspective, used to store it inside the rheia global object
-    # @param path [String] require-js path used to require perspective's files
-    _showPerspective: (name, path) =>
+    # @param Perspective [Class] the Perspective class
+    _showPerspective: (name, Perspective) =>
       return if perspectiveLoading
       perspectiveLoading = true
       # check if we are connected
-      if sockets.game is null
+      if rheia.sockets.game is null
         perspectiveLoading = false
         token = localStorage.getItem 'token'
         return @navigate 'login', trigger:true unless token?
@@ -193,10 +264,9 @@ define [
         return perspectiveLoading = false
 
       # or requires, instanciate and render the view
-      require [path], (Perspective) ->
-        rheia[name] = new Perspective()
-        rheia.layoutView.show rheia[name].render().$el
-        perspectiveLoading = false
+      rheia[name] = new Perspective()
+      rheia.layoutView.show rheia[name].render().$el
+      perspectiveLoading = false
 
     # **private**
     # Display the login view
@@ -215,35 +285,30 @@ define [
         localStorage.removeItem 'redirect'
         return window.location.pathname = redirect
       # Connects token
-      sockets.connect token, =>
-        # Now require services.
-        require [
-          'service/ImagesService'
-          'service/SearchService' 
-          'service/AdminService' 
-          'view/Layout'
-        ], (ImagesService, SearchService, AdminService, LayoutView) =>
-          # removes previous error
-          $('#loginError').dialog 'close'
+      connect token, =>
+        # removes previous error
+        $('#loginError').dialog 'close'
 
-          # do not recreates singletons in case of reconnection
-          if $('body > .layout').length is 0
-            # instanciates singletons.
-            rheia.imagesService = new ImagesService()
-            rheia.searchService = new SearchService()
-            rheia.adminService = new AdminService()
-            rheia.layoutView = new LayoutView()
+        # do not recreates singletons in case of reconnection
+        if $('body > .layout').length is 0
+          # instanciates singletons.
+          rheia.searchService = new SearchService()
+          rheia.adminService = new AdminService()
+          rheia.layoutView = new LayoutView()
 
-            # display layout
-            $('body').append rheia.layoutView.render().$el
+          # display layout
+          $('body').append rheia.layoutView.render().$el
 
-          # run current or last-saved perspective
-          current = window.location.pathname.replace conf.basePath, ''
-          current = localStorage.getItem 'lastPerspective' if current is 'login'
-          current = 'edition' unless current?
-          # reset Backbone.history internal state to allow re-running current route
-          Backbone.history.fragment = null
-          @navigate current, trigger:true
+        # allow other part to wire to updates
+        $(window).trigger 'connected'
+
+        # run current or last-saved perspective
+        current = window.location.pathname.replace conf.basePath, ''
+        current = localStorage.getItem 'lastPerspective' if current is 'login'
+        current = 'edition' unless current?
+        # reset Backbone.history internal state to allow re-running current route
+        Backbone.history.fragment = null
+        @navigate current, trigger:true
       , (err) =>
         # something goes wrong !
         @_onLoginError err.replace('handshake ', '').replace('error ', '')

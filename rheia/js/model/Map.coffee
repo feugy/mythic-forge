@@ -20,10 +20,10 @@
 
 define [
   'model/BaseModel'
-  'model/sockets'
-  './Field'
-  './Item'
-], (Base, sockets, Field, Item) ->
+  'model/Field'
+  'model/Item'
+  'utils/utilities'
+], (Base, Field, Item, utils) ->
 
   # Client cache of maps.
   class _Maps extends Base.Collection
@@ -59,8 +59,10 @@ define [
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes
-      # connect server response callbacks
-      sockets.game.on 'consultMap-resp', @_onConsult
+
+      utils.onRouterReady =>
+        # connect server response callbacks
+        rheia.sockets.game.on 'consultMap-resp', @_onConsult
 
     # Allows to retrieve items and fields on this map by coordinates, in a given rectangle.
     #
@@ -75,7 +77,7 @@ define [
       @_consultRunning = true
       console.log "Consult map #{@get 'name'} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
       # emit the message on the socket.
-      sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
+      rheia.sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
 
     # **private**
     # Return callback of consultMap server operation.

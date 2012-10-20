@@ -347,7 +347,7 @@ define [
     #
     # @param removed [Object] the removed model
     _onServerError: (err, details) =>
-      return unless _(details.method).startsWith "#{@model.constructor.name}.sync"
+      return unless _(details.method).startsWith "#{@model._className}.sync"
       
       # the current operation failed
       if (details.id is @getId() or @_tempId?) and (@_saveInProgress or @_removeInProgress)

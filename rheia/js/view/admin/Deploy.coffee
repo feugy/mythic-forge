@@ -44,23 +44,27 @@ define [
 
     # **private**
     # Simple shortcut to rheia administration service singleton
-    _service: rheia.adminService
+    _service: null
 
     # The view constructor.
     #
     # @param className [String] css ClassName, set by subclasses
     constructor: (className) ->
       super tagName: 'div', className:'deploy view'
-      @bindTo @_service, 'initialized', @render # re-render all when state changed
-      @bindTo @_service, 'versionChanged', @_onRefreshVersions
-      @bindTo @_service, 'progress', @_onStateChanged
-      for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
-        @bindTo @_service, method, @_onError
+
+      utils.onRouterReady =>  
+        @_service = rheia.adminService
+        @bindTo @_service, 'initialized', @render # re-render all when state changed
+        @bindTo @_service, 'versionChanged', @_onRefreshVersions
+        @bindTo @_service, 'progress', @_onStateChanged
+        for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
+          @bindTo @_service, method, @_onError
+        @render()
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
       super()
-      return @ unless @_service.initialized
+      return @ unless @_service?.initialized
 
       # creates buttons
       @$el.find('a.deploy').button(

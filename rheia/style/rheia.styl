@@ -155,6 +155,9 @@ html
 body
   height 100%
 
+  > .loader
+    margin-top 20%
+
 .disclaimer
   background-image url('images/myth-logo-text.png')
   background-position 50% 15%
@@ -480,6 +483,10 @@ body
         
     connect-button '.connect.google', 0
     connect-button '.connect.twitter', 2
+
+input[type='range']
+  vertical-align top
+  margin-top  -2px
 
 // Overridable imports
 @import 'edition-perspective'

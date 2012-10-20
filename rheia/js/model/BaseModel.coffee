@@ -22,8 +22,7 @@ define [
   'backbone'
   'underscore'
   'utils/utilities'
-  'model/sockets'
-], (Backbone, _, utils, sockets) ->
+], (Backbone, _, utils) ->
 
   # BaseCollection provides common behaviour for model collections.
   #
@@ -47,13 +46,15 @@ define [
     # @param options [Object] unused
     constructor: (@model, @options) ->
       super options
-      # bind _onGetList response
-      sockets.admin.on 'list-resp', @_onGetList
 
-      # bind updates
-      sockets.updates.on 'creation', @_onAdd
-      sockets.updates.on 'update', @_onUpdate
-      sockets.updates.on 'deletion', @_onRemove
+      utils.onRouterReady =>
+        # bind _onGetList response
+        rheia.sockets.admin.on 'list-resp', @_onGetList
+
+        # bind updates
+        rheia.sockets.updates.on 'creation', @_onAdd
+        rheia.sockets.updates.on 'update', @_onUpdate
+        rheia.sockets.updates.on 'deletion', @_onRemove
 
     # Provide a custom sync method to wire model to the server.
     # Only read operation is supported.
@@ -63,7 +64,7 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       throw new Error "Unsupported #{method} operation on #{@_className}" unless method is 'read'
-      sockets.admin.emit 'list', @_className
+      rheia.sockets.admin.emit 'list', @_className
 
     # **private**
     # Return handler of `list` server method.
@@ -213,13 +214,13 @@ define [
     sync: (method, collection, args) =>
       switch method 
         when 'create', 'update' 
-          sockets.admin.once 'save-resp', (err) =>
+          rheia.sockets.admin.once 'save-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          sockets.admin.emit 'save', @_className, @_serialize()
+          rheia.sockets.admin.emit 'save', @_className, @_serialize()
         when 'delete' 
-          sockets.admin.once 'remove-resp', (err) =>
+          rheia.sockets.admin.once 'remove-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          sockets.admin.emit 'remove', @_className, @_serialize()
+          rheia.sockets.admin.emit 'remove', @_className, @_serialize()
         else throw new Error "Unsupported #{method} operation on #{@_className}"
 
     # Enhance destroy method to force server response before triggering `destroy` event
@@ -352,7 +353,7 @@ define [
           callback null, @ 
 
       # now that we have the linked ids, get the corresponding instances.
-      sockets.game.once "get#{@_className}s-resp", (err, instances) =>
+      rheia.sockets.game.once "get#{@_className}s-resp", (err, instances) =>
         return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
         instance = instances[0]
 
@@ -388,7 +389,7 @@ define [
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
         callback null, @
 
-      sockets.game.emit "get#{@_className}s", [@id]
+      rheia.sockets.game.emit "get#{@_className}s", [@id]
 
     # **private** 
     # Method used to serialize a model when saving and removing it

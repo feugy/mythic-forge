@@ -154,7 +154,7 @@ app.use '/images', express.static utils.confKey 'images.store'
 configureRIA '/game', utils.confKey 'game.production', true
 configureRIA '/gamedev', utils.confKey('game.dev'), false, true
 
-if process.NODE_ENV is 'buyvm'
+if process.env.NODE_ENV is 'buyvm'
   configureRIA '/rheia', './rheia-min', true
 else
   configureRIA '/rheia', './rheia'

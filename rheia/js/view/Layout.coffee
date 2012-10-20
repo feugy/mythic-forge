@@ -48,6 +48,7 @@ define [
 
     # the render method, which use the specified template
     render: =>
+      $('body > .loader').remove()
       super()
       @_container = @$el.find '.container'
       @$el.find('header a').each -> 

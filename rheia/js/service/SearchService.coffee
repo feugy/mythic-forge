@@ -21,7 +21,6 @@
 define [
   'underscore'
   'utils/utilities'
-  'model/sockets'
   'model/Executable'
   'model/ItemType'
   'model/EventType'
@@ -30,7 +29,7 @@ define [
   'model/Event'
   'model/Player'
   'model/Map'
-], (_, utils, sockets, Executable, ItemType, EventType, FieldType, Item, Event, Player, Map) ->
+], (_, utils, Executable, ItemType, EventType, FieldType, Item, Event, Player, Map) ->
 
   # Simple utility method that replace regexp value by a text equivalent.
   #
@@ -56,8 +55,8 @@ define [
     # Service constructor
     constructor: () ->
       # bind to server responses
-      sockets.admin.on 'searchTypes-resp', @_onSearchTypesResults
-      sockets.admin.on 'searchInstances-resp', @_onSearchInstancesResults
+      rheia.sockets.admin.on 'searchTypes-resp', @_onSearchTypesResults
+      rheia.sockets.admin.on 'searchInstances-resp', @_onSearchInstancesResults
 
     # Performs a type search. At the end, triggers a `searchResults` event with error and results in parameter
     # (and false as `instances` second parameter).
@@ -68,7 +67,7 @@ define [
       parseQuery query
       query = JSON.stringify query
       console.log "triggers new search on type with query: #{query}"
-      sockets.admin.emit 'searchTypes', query
+      rheia.sockets.admin.emit 'searchTypes', query
     
     # Performs an instance search. At the end, triggers a `searchResults` event with error and results in parameter
     # (and true as `instances` second parameter).
@@ -79,7 +78,7 @@ define [
       parseQuery query
       query = JSON.stringify query
       console.log "triggers new search on instances with query: #{query}"
-      sockets.admin.emit 'searchInstances', query
+      rheia.sockets.admin.emit 'searchInstances', query
 
     # **private**
     # Type search results handler. 

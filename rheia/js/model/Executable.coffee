@@ -20,12 +20,11 @@
 
 define [
   'model/BaseModel'
-  'model/sockets'
   'coffeescript'
   'utils/utilities'
   'model/TurnRule'
   'model/Rule'
-], (Base, sockets, coffee, utils, TurnRule, Rule) ->
+], (Base, coffee, utils, TurnRule, Rule) ->
 
   # Compiles and requires the executable content.
   # First, NodeJS requires are transformed into their RequireJS equivalent,
@@ -136,9 +135,9 @@ define [
       switch method 
         when 'update' 
           # for update, we do not use 'save' method, but the 'saveAndRename' one.
-          sockets.admin.once 'saveAndRename-resp', (err) =>
+          rheia.sockets.admin.once 'saveAndRename-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:'Executable.sync', details:method, id:@id if err?
-          sockets.admin.emit 'saveAndRename', @toJSON(), args.newId
+          rheia.sockets.admin.emit 'saveAndRename', @toJSON(), args.newId
         else super method, collection, args
 
     # Overload inherited setter to recompile when content changed.
