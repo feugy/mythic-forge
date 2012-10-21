@@ -10,13 +10,12 @@
     - register users from Facebook
 
 - Rheia
-  - moderation perspective
-    - Maps
-      - items animations (with z-ordering)
-  - display connected count in top bar
   - administration perspective
     - report last executed turn
     - trigger turn execution
+  - moderation perspective
+    - Maps
+      - items animations (with z-ordering)
   - edition perspective
     - Maps
       - diamond map widget
@@ -143,6 +142,7 @@
   - logout button
   - error reporting on network failure, kick and deployement in progress cases
   - reconnection management, page reloading management
+  - display connected count in top bar
   - authoring perspective
     - reload when changing game client version
     - error handling while saving/moving/removing files (during deployement)
