@@ -130,7 +130,7 @@ configureRIA = (base, rootFolder, isStatic = false, secured = false) ->
           res.send css
          
   # SPA root need to be treaten differently, because of pushState. Must be after compilation middleware.
-  app.get new RegExp("^#{base}"), (req, res, next) ->
+  app.get new RegExp("^#{base}(/.*)?$"), (req, res, next) ->
     # redirects with trailing slash to avoid relative path errors from browser
     return res.redirect "#{base}/" if req.url is "#{base}"
 
@@ -152,7 +152,7 @@ app.use '/images', express.static utils.confKey 'images.store'
 
 # configure a game RIA and the administration RIA 
 configureRIA '/game', utils.confKey 'game.production', true
-configureRIA '/gamedev', utils.confKey('game.dev'), false, true
+configureRIA '/dev', utils.confKey('game.dev'), false, true
 
 if process.env.NODE_ENV is 'buyvm'
   configureRIA '/rheia', './rheia-min', true
