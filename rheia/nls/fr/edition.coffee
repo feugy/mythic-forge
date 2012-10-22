@@ -34,7 +34,7 @@ define
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
     invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
-    invalidExecutableNameError: "le nom d'un executable ne peut contenir que des caractères alphanumeriques"
+    invalidExecutableNameError: "l'identifiant d'un executable ne peut contenir que des caractères alphanumeriques"
     multipleAffectation: 'Choisisez les images que vous aller affecter dans la séléction (l\'ordre est significatif)'
 
   buttons:
@@ -47,6 +47,7 @@ define
     newEventType: "Type d'évènements"
 
   labels:
+    id: 'Identifiant'
     descImage: 'Type'
     images: 'Instances'
     category: 'Catégorie'

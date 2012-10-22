@@ -35,6 +35,7 @@ imagesService = require('../service/ImagesService').get()
 searchService = require('../service/SearchService').get()
 authoringService = require('../service/AuthoringService').get()
 deployementService = require('../service/DeployementService').get()
+ruleService = require('../service/RuleService').get()
 watcher = require('../model/ModelWatcher').get()
 notifier = require('../service/Notifier').get()
 
@@ -234,6 +235,7 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
   exposeMethods searchService, socket
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
   exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback']
+  exposeMethods ruleService, socket, ['export', 'resolve', 'execute']
 
   # do not expose all playerService methods, but just disconnection with the 'kick' message
   socket.on 'kick', (email) ->

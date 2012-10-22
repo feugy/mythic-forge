@@ -83,6 +83,9 @@ define [
     # **private**
     # Handler of (dis)connected player account
     # a `connectedPlayersChanged` event is triggered at the end of the list update
+    #
+    # @param event [String] event name. `connected` and `disconnected` event are handled
+    # @param player [Object] player concerned by the event
     _onPlayerEvent: (event, player) =>
       switch event
         when 'connect'

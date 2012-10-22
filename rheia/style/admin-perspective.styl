@@ -38,6 +38,9 @@
   > .left
     box-flex inherit
 
+  > .right
+    min-width 600px
+
   .view
     border 1px solid borderColor
     border-radius 5px
@@ -78,3 +81,34 @@
         margin 0 1em
         width 210px
 
+  .turns.view
+
+    .list
+      margin 1em 0
+
+      > *
+        padding 0.2em 0
+
+      input
+        margin-right 0.3em
+        vertical-align -2px
+
+    .progress
+      color dropColor
+    .progress:after
+      content '...'
+
+    .success
+      color successColor
+    .success:after
+      content '- ok'
+      padding-left 0.5em
+
+    .failure
+      color: errorColor
+    .failure:after
+      content '- ko'
+      padding-left 0.5em
+
+    .fatal
+      background-color red

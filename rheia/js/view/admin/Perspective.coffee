@@ -25,7 +25,8 @@ define [
   'i18n!nls/administration'
   'text!tpl/administrationPerspective.html'
   'view/admin/Deploy'
-], ($, Backbone, i18n, i18nAdmin, template, DeployView) ->
+  'view/admin/Turns'
+], ($, Backbone, i18n, i18nAdmin, template, DeployView, TurnsView) ->
 
   i18n = $.extend true, i18n, i18nAdmin
 
@@ -48,8 +49,8 @@ define [
     render: =>
       super()
       # creates the views
-      deployView = new DeployView()
-      @$el.find('.right').append deployView.render().$el
+      @$el.find('.right').append new DeployView().render().$el
+      @$el.find('.left').append new TurnsView().render().$el
 
       # for chaining purposes
       @

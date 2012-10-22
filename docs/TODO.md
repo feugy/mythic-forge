@@ -10,6 +10,7 @@
     - register users from Facebook
 
 - Rheia
+  - **[TODO]** handle rule requires
   - administration perspective
     - report last executed turn
     - trigger turn execution
@@ -125,6 +126,8 @@
     - items creation and removal
     - items updates
     - turn rules
+    - turns notifications on success and error cases
+    - handle require error cases on executables
   - Web layer
     - map items CRUD invokation
     - rule engine invokation

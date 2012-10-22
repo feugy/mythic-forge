@@ -17,6 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+async = require 'async'
 testUtils = require './utils/testUtils'
 Executable = require '../src/model/Executable'
 Item = require '../src/model/Item'
@@ -26,6 +27,7 @@ Player = require '../src/model/Player'
 ItemType = require '../src/model/ItemType'
 FieldType = require '../src/model/FieldType'
 service = require('../src/service/RuleService').get()
+notifier = require('../src/service/Notifier').get()
 utils = require '../src/utils'
 assert = require('chai').assert
  
@@ -38,10 +40,16 @@ item2= null
 item3= null
 field1= null
 script= null
+notifications = []
 
 describe 'RuleService tests', ->
-
+  
   beforeEach (done) ->
+    notifications = []           
+    # given a registered notification listener
+    notifier.on notifier.NOTIFICATION, (event, args...) ->
+      return unless event is 'turns'
+      notifications.push args
     ItemType.collection.drop -> Item.collection.drop ->
       # Empties the compilation and source folders content
       testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
@@ -50,6 +58,11 @@ describe 'RuleService tests', ->
             Map.collection.drop ->
               map = new Map {name: 'map-Test'}
               map.save -> done()
+
+  afterEach (done) ->
+    # remove notifier listeners
+    notifier.removeAllListeners notifier.NOTIFICATION
+    done()
 
   it 'should linked object be modified and saved by a rule', (done) ->
     # given a rule that need links resolution
@@ -480,9 +493,7 @@ describe 'RuleService tests', ->
 
     it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
-      script = new Executable
-        _id:'rule6', 
-        content: """TurnRule = require '../model/TurnRule'
+      script = new Executable _id:'rule6', content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
           ObjectId = require('mongodb').BSONPure.ObjectID
 
@@ -512,30 +523,25 @@ describe 'RuleService tests', ->
               done()
 
     it 'should turn rule be executed in right order', (done) ->
-      # given a first turn rule on lassie with rank 10
-      script = new Executable
-        _id:'rule7', 
-        content: """TurnRule = require '../model/TurnRule'
-          Item = require '../model/Item'
+      async.forEach [
+        # given a first turn rule on lassie with rank 10
+        new Executable _id:'rule7', content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
 
-          module.exports = new (class Dumb extends TurnRule
-            constructor: ->
-              @name= 'rule 7'
-              @rank= 10
-            select: (callback) =>
-              Item.find {name: 'lassie'}, callback
-            execute: (target, callback) =>
-              target.set 'fed', 1
-              target.set 'execution', target.get('execution')+','+@name
-              callback null
-          )()"""
-      script.save (err) ->
-        return done err if err?
-
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 7'
+                @rank= 10
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                target.set 'fed', 1
+                target.set 'execution', target.get('execution')+','+@name
+                callback null
+            )()"""
+      ,
         # given a another turn rule on lassie with rank 1
-        script = new Executable
-          _id:'rule8', 
-          content: """TurnRule = require '../model/TurnRule'
+        new Executable _id:'rule8', content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
@@ -549,19 +555,253 @@ describe 'RuleService tests', ->
                 target.set 'execution', target.get('execution')+','+@name
                 callback null
             )()"""
-        script.save (err) ->
-          return done err if err?
+      ], (script, next) ->
+        script.save next
+      , (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
 
-          # when executing a trurn
-          service.triggerTurn (err)->
-            return done "Unable to trigger turn: #{err}" if err?
+          # then notifications where received in right order
+          assert.equal 6, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'rule'
+          assert.equal notifications[1][1], 'rule 8'
+          assert.equal notifications[2][0], 'success'
+          assert.equal notifications[2][1], 'rule 8'
+          assert.equal notifications[3][0], 'rule'
+          assert.equal notifications[3][1], 'rule 7'
+          assert.equal notifications[4][0], 'success'
+          assert.equal notifications[4][1], 'rule 7'
+          assert.equal notifications[5][0], 'end'
+        
+          # then lassie fed status was reseted, and execution order is correct
+          Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+            return done "Unable to find item: #{err}" if err?
+            assert.equal ',rule 8,rule 7', existing.get('execution'), 'wrong execution order'
+            assert.equal 1, existing.get('fed'), 'lassie was fed'
+            done()
 
-            # then lassie fed status was reseted, and execution order is correct
-            Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
-              return done "Unable to find item: #{err}" if err?
-              assert.equal ',rule 8,rule 7', existing.get('execution'), 'wrong execution order'
-              assert.equal 1, existing.get('fed'), 'lassie was fed'
-              done()
+    it 'should turn selection failure be reported', (done) ->
+      async.forEach [
+        # given a turn rule with broken select 
+        new Executable
+          _id:'rule12'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 12'
+              select: (callback) =>
+                callback "selection failure"
+              execute: (target, callback) =>
+                callback null
+            )()"""
+      ,
+        # given a correct dumb rule on lassie
+        new Executable
+          _id:'rule13'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 13'
+                @rank= 2
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                callback null
+            )()"""
+      ], (script, next) ->
+        script.save next
+      , (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
+
+          # then notifications where received in right order
+          assert.equal 6, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'rule'
+          assert.equal notifications[1][1], 'rule 12'
+          assert.equal notifications[2][0], 'failure'
+          assert.equal notifications[2][1], 'rule 12'
+          assert.include notifications[2][2], 'selection failure'
+          assert.equal notifications[3][0], 'rule'
+          assert.equal notifications[3][1], 'rule 13'
+          assert.equal notifications[4][0], 'success'
+          assert.equal notifications[4][1], 'rule 13'
+          assert.equal notifications[5][0], 'end'
+          done()
+
+    it 'should turn execution failure be reported', (done) ->
+      async.forEach [
+        # given a turn rule with broken execute 
+        new Executable
+          _id:'rule14'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 14'
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                callback 'execution failure'
+            )()"""
+      ,
+        # given a correct dumb rule on lassie
+        new Executable
+          _id:'rule15'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 15'
+                @rank= 2
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                callback null
+            )()"""
+      ], (script, next) ->
+        script.save next
+      , (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
+
+          # then notifications where received in right order
+          assert.equal 6, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'rule'
+          assert.equal notifications[1][1], 'rule 14'
+          assert.equal notifications[2][0], 'failure'
+          assert.equal notifications[2][1], 'rule 14'
+          assert.include notifications[2][2], 'execution failure'
+          assert.equal notifications[3][0], 'rule'
+          assert.equal notifications[3][1], 'rule 15'
+          assert.equal notifications[4][0], 'success'
+          assert.equal notifications[4][1], 'rule 15'
+          assert.equal notifications[5][0], 'end'
+          done()
+          
+    it 'should turn update failure be reported', (done) ->
+      async.forEach [
+        # given a turn rule with broken update 
+        new Executable
+          _id:'rule16'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 16'
+              select: (callback) =>
+                Item.find {name: 'medor'}, callback
+              execute: (target, callback) =>
+                target.set 'fed', 18
+                target.save = (cb) -> cb new Error 'update failure'
+                callback null
+            )()"""
+      ,
+        # given a correct dumb rule on lassie
+        new Executable
+          _id:'rule17'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 17'
+                @rank= 2
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                callback null
+            )()"""
+      ], (script, next) ->
+        script.save next
+      , (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
+
+          # then notifications where received in right order
+          assert.equal 6, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'rule'
+          assert.equal notifications[1][1], 'rule 16'
+          assert.equal notifications[2][0], 'failure'
+          assert.equal notifications[2][1], 'rule 16'
+          assert.include notifications[2][2], 'update failure'
+          assert.equal notifications[3][0], 'rule'
+          assert.equal notifications[3][1], 'rule 17'
+          assert.equal notifications[4][0], 'success'
+          assert.equal notifications[4][1], 'rule 17'
+          assert.equal notifications[5][0], 'end'
+          done()
+
+    it 'should turn compilation failure be reported', (done) ->
+      async.forEach [
+        # given a turn rule with broken require
+        new Executable
+          _id:'rule18'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../unknown'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 18'
+              select: (callback) =>
+                callback null
+              execute: (target, callback) =>
+                callback null
+            )()"""
+      ,
+        # given a correct dumb rule on lassie
+        new Executable
+          _id:'rule19'
+          content: """TurnRule = require '../model/TurnRule'
+            Item = require '../model/Item'
+
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @name= 'rule 19'
+                @rank= 2
+              select: (callback) =>
+                Item.find {name: 'lassie'}, callback
+              execute: (target, callback) =>
+                callback null
+            )()"""
+      ], (script, next) ->
+        script.save next
+      , (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
+
+          # then notifications where received in right order
+          assert.equal 5, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'error'
+          assert.equal notifications[1][1], 'rule18'
+          assert.include notifications[1][2], 'failed to require'
+          assert.equal notifications[2][0], 'rule'
+          assert.equal notifications[2][1], 'rule 19'
+          assert.equal notifications[3][0], 'success'
+          assert.equal notifications[3][1], 'rule 19'
+          assert.equal notifications[4][0], 'end'
+          done()
 
     it 'should disabled turn rule not be executed', (done) ->
       # given a disabled turn rule on lassie
@@ -650,3 +890,51 @@ describe 'RuleService tests', ->
         for key of rules
           assert.fail 'no rules may have been returned'
         done()
+
+    it 'should failling rule not be resolved', (done) ->
+      # Creates a dumb rule that always match
+      script = new Executable 
+        _id:'rule20', 
+        content: """Rule = require '../model/Rule'
+          require '../unknown'
+          
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 20'
+            canExecute: (actor, target, callback) =>
+              callback null, true
+            execute: (actor, target, callback) =>
+              callback null
+          )()"""
+      script.save (err) ->
+        # Creates a type
+        return done err if err?
+        # when resolving rule
+        service.resolve item1._id, item1._id, (err) ->
+          # then the error is reported
+          assert.include err, 'failed to require'
+          done()
+
+    it 'should failling rule not be executed', (done) ->
+      # Creates a dumb rule that always match
+      script = new Executable 
+        _id:'rule21', 
+        content: """Rule = require '../model/Rule'
+          require '../unknown'
+          
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 21'
+            canExecute: (actor, target, callback) =>
+              callback null, true
+            execute: (actor, target, callback) =>
+              callback null
+          )()"""
+      script.save (err) ->
+        # Creates a type
+        return done err if err?
+        # when executing rule
+        service.execute 'rule 21', item1._id, item1._id, (err, results) ->
+          # then the error is reported
+          assert.include err, 'failed to require'
+          done()

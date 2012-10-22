@@ -311,6 +311,27 @@ describe 'AdminService tests', ->
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
+  it 'should save report executable compilation failure', (done) ->
+    # given new values
+    values = {_id: 'rule 6', content:'console. "hello world 3"'}
+   
+    awaited = false
+    # then no creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      awaited = true
+
+    # when saving new executable
+    service.save 'Executable', values, 'admin', (err) ->
+      # then the compilation error is reported
+      assert.include err, "Unexpected 'STRING'"
+
+      # then the model does not exist in cache
+      Executable.findCached [values._id], (err, objs) ->
+        return done "Can't find executable #{err}" if err?
+        assert.equal objs.length, 0
+        assert.isFalse awaited, 'watcher was invoked'
+        done()
+
   it 'should save create new map', (done) ->
     # given new values
     values = {name: 'map 3'}

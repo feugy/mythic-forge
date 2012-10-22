@@ -31,8 +31,8 @@ define [
 
   i18n = $.extend true, i18n, i18nAdmin
 
-  # The deploy view displays a set of tools relative to the game client deployement
-  class Perspective extends Backbone.View
+  # The deploy view shows game client known versions, and commands to deploy/commit/rollback a new version in production
+  class Deploy extends Backbone.View
     
     # **private**
     # mustache template rendered
