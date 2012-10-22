@@ -20,6 +20,7 @@
 define
   titles:
     deployView: 'Client de jeu'
+    turnView: 'Passage de tour'
     createVersion: 'Nouvelle version'
     confirmDeploy: 'Déploiement en production'
     deployed: 'Déploiement terminé'
@@ -46,6 +47,7 @@ define
     createVersion: 'Créer'
     commit: 'Confirmer'
     rollback: 'Retour en arrière'
+    triggerTurn: 'Déclencher le tour'
 
   msgs: 
     confirmDeploy: """<p>Vous allez déployer en production le client de jeu actuellement en développement.</p>

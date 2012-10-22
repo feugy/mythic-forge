@@ -33,9 +33,9 @@ describe 'Executable tests', ->
   beforeEach (done) ->
     # Empty the source and compilation folders content
     testUtils.cleanFolder root, (err) -> 
-      throw new Error err if err?
+      return done err if err?
       Executable.resetAll (err) -> 
-        throw new Error err if err?
+        return done err if err?
         done()
       
   it 'should executable be created', (done) -> 
@@ -46,11 +46,11 @@ describe 'Executable tests', ->
     
     # when saving it
     executable.save (err) ->
-      throw new Error "Can't save executable: #{err}" if err?
+      return done "Can't save executable: #{err}" if err?
 
       # then it is in the file system
       Executable.find (err, executables) ->
-        throw new Error "Can't find executable: #{err}" if err?
+        return done "Can't find executable: #{err}" if err?
 
         # then it's the only one executable
         assert.equal executables.length, 1
@@ -58,7 +58,26 @@ describe 'Executable tests', ->
         assert.equal executables[0]._id, name
         assert.equal executables[0].content, content
         done()
+      
+  it 'should executable compilation error be reported', (done) -> 
+    # given a new executable with compilation error
+    content = 'console. "hello world"'
+    name = 'test3'
+    executable = new Executable {_id: name, content: content}
+    
+    # when saving it
+    executable.save (err) ->
+      # then an error is reported
+      assert.include err, "Unexpected 'STRING'"
 
+      # then it's not on the file system
+      Executable.find (err, executables) ->
+        return done "Can't find executable: #{err}" if err?
+
+        # then no executables found
+        assert.equal executables.length, 0
+        done()
+      
   describe 'given an executable', -> 
 
     beforeEach (done) ->
@@ -71,7 +90,7 @@ describe 'Executable tests', ->
       executable.remove ->
         # then it's in the folder anymore
         Executable.find (err, executables) -> 
-          throw new Error "Can't find executable file: #{err}" if err?
+          return done "Can't find executable file: #{err}" if err?
           assert.equal executables.length, 0
           done()
 
@@ -81,7 +100,7 @@ describe 'Executable tests', ->
       executable.content = newContent
       executable.save ->
         Executable.find (err, executables) ->
-          throw new Error "Can't find executable file: #{err}" if err?
+          return done "Can't find executable file: #{err}" if err?
           # then it's the only one executable
           assert.equal executables.length, 1
           # then only the relevant values were modified

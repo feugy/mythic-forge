@@ -65,6 +65,10 @@ define [
     # menu that displays multiple items on the same tile.
     _popupMenu: null
 
+    # **private**
+    # stores widget to be destroy when refreshing displayed items
+    _oldWidgets: {}
+
     # Adds field or items to map. Will be effective only if the objects is inside displayed bounds.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
@@ -93,10 +97,12 @@ define [
           fields.push obj.toJSON() if o.mapId is obj.get 'mapId'
         else if obj._className is 'Item' and o.mapId is obj.get('map')?.id
           @_loading++
-          @_itemWidgets[obj.id] = true
+          id = obj.id
+          @_oldWidgets[id] = @_itemWidgets[id] if id of @_itemWidgets and !(id of @_oldWidgets)
+          @_itemWidgets[id] = true
           _.defer =>
             # creates widget for this item
-            @_itemWidgets[obj.id] = $('<span></span>').mapItem(
+            @_itemWidgets[id] = $('<span></span>').mapItem(
               model: obj
               map: @
               loaded: =>
@@ -104,11 +110,11 @@ define [
                 checkLoadingEnd()
               destroy: (event, widget) =>
                 # when reloading, it's possible that widget have already be replaced
-                return unless @_itemWidgets[obj.id] is widget
-                delete @_itemWidgets[obj.id]
+                return unless @_itemWidgets[id] is widget
+                delete @_itemWidgets[id]
             ).data 'mapItem'
             # and adds it to item layer
-            @_itemLayer.append @_itemWidgets[obj.id].element
+            @_itemLayer.append @_itemWidgets[id].element
 
       checkLoadingEnd()
       
@@ -131,10 +137,10 @@ define [
       fields = []
       for obj in removed
         if obj._className is 'Item'
-          fields.push obj.toJSON() if @options.mapId is obj.get 'mapId'
-        else unless obj._className?
           # immediately removes corresponding widget
           @_itemWidgets[obj.id]?.destroy()
+        else unless obj._className?
+          fields.push obj.toJSON() if @options.mapId is obj.get 'mapId'
 
       # let superclass manage fields
       $.rheia.authoringMap::removeData.call @, fields if fields.length > 0
@@ -163,6 +169,8 @@ define [
       switch key
         when 'lowerCoord'
           @_oldWidgets = _.clone @_itemWidgets
+          console.log ">>> clone widgets"
+          console.log id for id of @_oldWidgets
         when 'mapId'
           if @options.mapId isnt value
             # reset all rendering: fields and items.

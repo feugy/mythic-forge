@@ -71,6 +71,9 @@ define [
       requirejs.onError = (err) =>
         console.error err unless silent
         delete requirejs.onError
+        unless silent
+          console.log content
+          console.error err
         callback err, null
 
       # require the exported content
@@ -105,6 +108,12 @@ define [
     # the exported object present inside the executable's content.
     exported: null
 
+    # The rule's name, present inside the executable's content.
+    name: null
+
+    # last compilation error
+    error: null
+
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Executable'
@@ -124,6 +133,10 @@ define [
     # **private**
     # the old value of exported turn rule's active status.
     _oldActive: null
+
+    # **private**
+    # the old value of exported turn rule's name.
+    _oldName: null
 
     # Provide a custom sync method to wire Types to the server.
     # Customize the update behaviour to rename if necessary.
@@ -148,8 +161,15 @@ define [
       if key is 'content' or typeof key is 'object' and 'content' of key
         @kind = 'Rule' if @get('content')?.indexOf 'extends Rule' isnt -1
         @kind = 'TurnRule' if @get('content')?.indexOf 'extends TurnRule' isnt -1
+        @error = null
         # recompiles content and store exported
         compile @, (err, exported) => 
+          if err?
+            # reset internal state as if rule was new
+            @exported = null
+            @error = err
+            console.log 'coucou'
+            return @trigger 'change:error', @
           @exported = exported
           oldKind = @kind
 
@@ -171,6 +191,10 @@ define [
             @_oldActive = @exported?.active
             @trigger 'change:active', @
 
+          if @exported?.name isnt @_oldName
+            @_oldName = @exported?.name
+            @trigger 'change:name', @
+
           # we missed the kind when constructing the model. Indicates to other parts
           rheia.router.trigger 'kindChanged', @ if oldKind isnt @kind
 
@@ -181,4 +205,5 @@ define [
         when 'category' then @exported?.category
         when 'rank' then @exported?.rank
         when 'active' then @exported?.active
+        when 'name' then @exported?.name
         else super key

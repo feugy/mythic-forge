@@ -28,6 +28,7 @@ Player = require '../model/Player'
 utils = require '../utils'
 path = require 'path'
 fs = require 'fs'
+notifier = require('../service/Notifier').get()
 logger = require('../logger').getLogger 'service'
 
 # frequency, in seconds.
@@ -38,6 +39,113 @@ frequency = utils.confKey 'turn.frequency'
 # @return number of milliseconds before the next turn.
 nextTurn= () ->
   (frequency-new Date().getSeconds()%frequency)*1000-(new Date().getMilliseconds())
+
+
+# Populate the `modified` parameter array with models that have been modified.
+# For items, recursively check linked items.
+# Can also handle Fields and Players
+#
+# @param item [Object] root model that begins the analysis
+# @param modified [Array] array of already modified object, concatenated with found modified objects
+filterModified = (item, modified) ->
+  # do not process if already known
+  return if item in modified 
+  # will be save if at least one path is modified
+  modified.push(item) if item?.isModified()
+  # do not go further if not an item
+  return unless item instanceof Item
+  properties = item.type.get('properties')
+  for prop, def of properties
+    if def.type is 'object'
+      value = item.get prop
+      # recurse if needed on linked object that are resolved
+      filterModified(value, modified) if value? and (typeof value) isnt 'string'
+    else if def.type is 'array'
+      values = item.get prop
+      if values
+        for value, i in values
+          # recurse if needed on linked object that are resolved
+          filterModified(value, modified) if value? and (typeof value) isnt 'string'
+
+# Effectively resolve the applicable rules of the given actor at the specified coordinate.
+#
+# @param actor [Object] the concerned actor or Player
+# @param targets [Array<Item>] array of targets the targeted item
+# @param callback [Function] callback executed when rules where determined. Called with parameters:
+# @option callback err [String] an error string, or null if no error occured
+# @option callback rules [Object] applicable rules, stored in array and indexed with the target'id on which they apply
+resolve = (actor, targets, callback) ->
+  results = {} 
+  remainingTargets = 0
+  
+  # function called at the end of a target resolution.
+  # if no target remains, the final callback is invoked.
+  resolutionEnd = ->
+    remainingTargets--
+    callback null, results unless remainingTargets > 0
+
+  # read all existing executables. @todo: use cached rules.
+  Executable.find (err, executables) ->
+    throw new Error "Cannot collect rules: #{err}" if err?
+
+    rules = []
+    # and for each of them, extract their rule.
+    for executable in executables
+      try 
+        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+        # and singleton (like ModuleWatcher) will be broken.
+        obj = require path.relative __dirname, executable.compiledPath
+        rules.push obj if obj? and(utils.isA obj, Rule) and obj.active
+      catch err
+        # report require errors
+        err = "failed to require executable #{executable._id}: #{err}"
+        logger.warn err
+        return callback err
+
+    logger.debug "#{rules.length} candidate rules"
+    # evaluates the number of target. No targets ? leave immediately.
+    remainingTargets = targets.length
+    return callback null, results unless remainingTargets > 0
+
+    # second part of the resolution, after the actor was resolved
+    process = (err) ->
+      return callback "Cannot resolve rule because actor's (#{actor._id}) linked item cannot be resolve: #{err}" if err?
+
+      # process all targets in parallel.
+      for target in targets
+        # third part of the resolution, after target have been resolved
+        process2 = (err) ->
+          return callback "Cannot resolve rule because target's (#{target._id}) linked item cannot be resolve: #{err}" if err?
+          results[target._id] = []
+
+          # function applied to filter rules that apply to the current target.
+          filterRule = (rule, end) ->
+            try
+              rule.canExecute actor, target, (err, isApplicable) ->
+                # exit at the first resolution error
+                return callback "Failed to resolve rule #{rule.name}: #{err}" if err?
+                if isApplicable
+                  logger.debug "rule #{rule.name} applies"
+                  results[target._id].push(rule) 
+                end() 
+            catch err
+              # exit at the first resolution error
+              return callback "Failed to resolve rule #{rule.name}. Received exception #{err}"
+          
+          # resolve all rules for this target.
+          async.forEach rules, filterRule, resolutionEnd
+                  
+        # resolve items, but not fields
+        if target instanceof Item
+          target.getLinked process2
+        else 
+          process2 null
+
+    # resolve actor, but not player
+    if actor instanceof Item
+      actor.getLinked process
+    else 
+      process null
 
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
@@ -132,7 +240,7 @@ class _RuleService
         return callback "No player with id #{playerId}" unless player?
         # at last, resolve rules.
         logger.debug "resolve rules for player #{playerId}"
-        @_resolve player, [player], callback
+        resolve player, [player], callback
     else if args.length is 2
       # actorId and targetId are specified. Retrieve corresponding items
       actorId = args[0]
@@ -145,7 +253,7 @@ class _RuleService
         return callback "No target with id #{targetId}" unless target?
         # at last, resolve rules.
         logger.debug "resolve rules for actor #{actorId} and #{targetId}"
-        @_resolve actor, [target], callback
+        resolve actor, [target], callback
     else if args.length is 3 
       actorId = args[0]
       x = args[1]
@@ -166,7 +274,7 @@ class _RuleService
           return callback "Cannot resolve rules. Failed to retrieve field at position x:#{x} y:#{y}: #{err}" if err?
           results.splice 0, 0, field if field?
           logger.debug "resolve rules for actor #{actorId} at x:#{x} y:#{y}"
-          @_resolve actor, results, callback
+          resolve actor, results, callback
     else 
       throw new Error "resolve() must be call with player id or actor and target ids, or actor id and coordinates"
 
@@ -194,7 +302,7 @@ class _RuleService
     process = =>
       logger.debug "execute rule #{ruleName} of #{actor._id} for #{target._id}"
       # then resolve rules
-      @_resolve actor, [target], (err, rules) =>
+      resolve actor, [target], (err, rules) =>
         # if the rule does not apply, leave right now
         return callback "Cannot resolve rule #{ruleName}: #{err}" if err?
         rule = rule for rule in rules[target._id] when rule.name is ruleName
@@ -216,8 +324,8 @@ class _RuleService
               # adds new objects to be saved
               saved = saved.concat rule.created
               # looks for modified linked objects
-              @_filterModified actor, saved
-              @_filterModified target, saved
+              filterModified actor, saved
+              filterModified target, saved
               # saves the whole in MongoDB
               logger.debug "save modified model #{item._id}" for item in saved
               async.forEach saved, ((item, end) -> item.save (err)-> end err), (err) => 
@@ -267,6 +375,7 @@ class _RuleService
   # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
   triggerTurn: (callback, _auto = false) =>
     logger.debug 'triggers turn rules...'
+    notifier.notify 'turns', 'begin'
     
     # read all existing executables. @todo: use cached rules.
     Executable.find (err, executables) =>
@@ -275,42 +384,57 @@ class _RuleService
       rules = []
       # and for each of them, extract their turn rule.
       for executable in executables
-        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
-        # and singleton (like ModuleWatcher) will be broken.
-        obj = require path.relative __dirname, executable.compiledPath
-        rules.push obj if obj? and utils.isA(obj, TurnRule)
+        try
+          # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+          # and singleton (like ModuleWatcher) will be broken.
+          obj = require path.relative __dirname, executable.compiledPath
+          rules.push obj if obj? and utils.isA(obj, TurnRule)
+        catch err
+          # report require errors
+          err = "failed to require executable #{executable._id}: #{err}"
+          logger.warn err
+          notifier.notify 'turns', 'error', executable._id, err
 
       # sort rules by rank
       rules.sort (a, b) -> a.rank - b.rank
 
       # function that updates dbs with rule's modifications
-      updateDb = (saved, removed, end) =>
+      updateDb = (rule, saved, removed, end) =>
         # at the end, save and remove modified items
         removeModel = (target, removeEnd) =>
           logger.debug "remove model #{target.get '_id'}"
           target.remove (err) =>
             # stop a first execution error.
-            return callback "Failed to remove model #{target.get '_id'} at the end of the turn: #{err}" if err?
-            removeEnd()
+            removeEnd if err? then "Failed to remove model #{target.get '_id'} at the end of the turn: #{err}" else undefined
         # first removals
         async.forEach removed, removeModel, => 
           saveModel = (target, saveEnd) =>
             logger.debug "save model #{target.get '_id'}"
             target.save (err) =>
               # stop a first execution error.
-              return callback "Failed to save model #{target.get '_id'} at the end of the turn: #{err}" if err?
-              saveEnd()
+              saveEnd if err? then "Failed to save model #{target.get '_id'} at the end of the turn: #{err}" else undefined
           # then saves
-          async.forEach saved, saveModel, end
+          async.forEach saved, saveModel, (err) =>
+            if err?
+              logger.warn err
+              notifier.notify 'turns', 'failure', rule.name, err
+              return end()
+            notifier.notify 'turns', 'success', rule.name
+            end()
 
       # function that select target of a rule and execute it on them
       selectAndExecute = (rule, end) =>
         # ignore disabled rules
         return end() unless rule.active
+        notifier.notify 'turns', 'rule', rule.name
 
         rule.select (err, targets) =>
-          # stop a first selection error.
-          return callback "Failed to select targets for rule #{rule.name}: #{err}" if err?
+          # Do not emit an error, but stops this rule a first selection error.
+          if err?
+            err = "failed to select targets for rule #{rule.name}: #{err}"
+            logger.warn err
+            notifier.notify 'turns', 'failure', rule.name, err
+            return end()
           return end() unless Array.isArray(targets)
           logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
           # arrays of modified objects
@@ -321,129 +445,30 @@ class _RuleService
           execute = (target, executeEnd) =>
             rule.execute target, (err) =>
               # stop a first execution error.
-              return callback "Failed to execute rule #{rule.name} on target #{target.get '_id'}: #{err}" if err?
+              return executeEnd "failed to execute rule #{rule.name} on target #{target.get '_id'}: #{err}" if err?
               # store modified object for later
               saved.push obj for obj in rule.created
-              @_filterModified target, saved
+              filterModified target, saved
               removed.push obj for obj in rule.removed
               executeEnd()
 
           # execute on each target and leave at the end.
-          async.forEach targets, execute, =>
+          async.forEach targets, execute, (err) =>
+            if err?
+              logger.warn err
+              notifier.notify 'turns', 'failure', rule.name, err
+              return end()
             # save all modified and removed object after the rule has executed
-            updateDb saved, removed, end
+            updateDb rule, saved, removed, end
 
       # select and execute each turn rule, NOT in parallel !
       async.forEachSeries rules, selectAndExecute, => 
         logger.debug 'end of turn'
+        notifier.notify 'turns', 'end'
         # trigger the next turn
         setTimeout @triggerTurn, nextTurn(), callback, true if _auto
         # return callback
         callback null
-
-  # **private**
-  # Populate the `modified` parameter array with models that have been modified.
-  # For items, recursively check linked items.
-  # Can also handle Fields and Players
-  #
-  # @param item [Object] root model that begins the analysis
-  # @param modified [Array] array of already modified object, concatenated with found modified objects
-  _filterModified: (item, modified) =>
-    # do not process if already known
-    return if item in modified 
-    # will be save if at least one path is modified
-    modified.push(item) if item?.isModified()
-    # do not go further if not an item
-    return unless item instanceof Item
-    properties = item.type.get('properties')
-    for prop, def of properties
-      if def.type is 'object'
-        value = item.get prop
-        # recurse if needed on linked object that are resolved
-        @_filterModified(value, modified) if value? and (typeof value) isnt 'string'
-      else if def.type is 'array'
-        values = item.get prop
-        if values
-          for value, i in values
-            # recurse if needed on linked object that are resolved
-            @_filterModified(value, modified) if value? and (typeof value) isnt 'string'
-
-
-  # **private**
-  # Effectively resolve the applicable rules of the given actor at the specified coordinate.
-  #
-  # @param actor [Object] the concerned actor or Player
-  # @param targets [Array<Item>] array of targets the targeted item
-  # @param callback [Function] callback executed when rules where determined. Called with parameters:
-  # @option callback err [String] an error string, or null if no error occured
-  # @option callback rules [Object] applicable rules, stored in array and indexed with the target'id on which they apply
-  _resolve: (actor, targets, callback) =>
-    results = {} 
-    remainingTargets = 0
-    
-    # function called at the end of a target resolution.
-    # if no target remains, the final callback is invoked.
-    resolutionEnd = ->
-      remainingTargets--
-      callback null, results unless remainingTargets > 0
-
-    # read all existing executables. @todo: use cached rules.
-    Executable.find (err, executables) ->
-      throw new Error "Cannot collect rules: #{err}" if err?
-
-      rules = []
-      # and for each of them, extract their rule.
-      for executable in executables
-        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
-        # and singleton (like ModuleWatcher) will be broken.
-        obj = require path.relative __dirname, executable.compiledPath
-        rules.push obj if obj? and(utils.isA obj, Rule) and obj.active
-
-      logger.debug "#{rules.length} candidate rules"
-      # evaluates the number of target. No targets ? leave immediately.
-      remainingTargets = targets.length
-      return callback null, results unless remainingTargets > 0
-
-      # second part of the resolution, after the actor was resolved
-      process = (err) =>
-        return callback "Cannot resolve rule because actor's (#{actor._id}) linked item cannot be resolve: #{err}" if err?
- 
-        # process all targets in parallel.
-        for target in targets
-          # third part of the resolution, after target have been resolved
-          process2 = (err) =>
-            return callback "Cannot resolve rule because target's (#{target._id}) linked item cannot be resolve: #{err}" if err?
-            results[target._id] = []
-
-            # function applied to filter rules that apply to the current target.
-            filterRule = (rule, end) ->
-              try
-                rule.canExecute actor, target, (err, isApplicable) ->
-                  # exit at the first resolution error
-                  return callback "Failed to resolve rule #{rule.name}: #{err}" if err?
-                  if isApplicable
-                    logger.debug "rule #{rule.name} applies"
-                    results[target._id].push(rule) 
-                  end() 
-              catch err
-                # exit at the first resolution error
-                return callback "Failed to resolve rule #{rule.name}. Received exception #{err}"
-            
-            # resolve all rules for this target.
-            async.forEach rules, filterRule, resolutionEnd
-                    
-          # resolve items, but not fields
-          if target instanceof Item
-            target.getLinked process2
-          else 
-            process2 null
-
-      # resolve actor, but not player
-      if actor instanceof Item
-        actor.getLinked process
-      else 
-        process null
-
 
 class RuleService
   _instance = undefined

@@ -54,6 +54,7 @@ define
     noMap: 'aucune'
     noQuantity: '~'
     noFrom: 'personne'
+    connectedNumber: 'connectés'
 
   buttons:
     close: 'Fermer'

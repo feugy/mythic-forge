@@ -10,13 +10,13 @@
     - register users from Facebook
 
 - Rheia
-  - moderation perspective
-    - Maps
-      - items animations (with z-ordering)
-  - display connected count in top bar
+  - **[TODO]** handle rule requires
   - administration perspective
     - report last executed turn
     - trigger turn execution
+  - moderation perspective
+    - Maps
+      - items animations (with z-ordering)
   - edition perspective
     - Maps
       - diamond map widget
@@ -126,6 +126,8 @@
     - items creation and removal
     - items updates
     - turn rules
+    - turns notifications on success and error cases
+    - handle require error cases on executables
   - Web layer
     - map items CRUD invokation
     - rule engine invokation
@@ -143,6 +145,7 @@
   - logout button
   - error reporting on network failure, kick and deployement in progress cases
   - reconnection management, page reloading management
+  - display connected count in top bar
   - authoring perspective
     - reload when changing game client version
     - error handling while saving/moving/removing files (during deployement)

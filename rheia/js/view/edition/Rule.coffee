@@ -63,6 +63,7 @@ define [
       # on content changes, displays category and active status
       @model.on 'change:category', @_onCategoryChange
       @model.on 'change:active', @_onActiveChange
+      @model.on 'change:error', @_onCompilationError
       console.log "creates rule edition view for #{if id? then @model.id else 'a new rule'}"
 
     # **private**
@@ -86,7 +87,7 @@ define [
       @_onCategoryChange()
       @_onActiveChange()
       @_onChange()
-
+      @_onCompilationError() if @model.error?
 
     # **private**
     # Extends inherited method to add a regular expression for Executable names
@@ -105,6 +106,8 @@ define [
     # @return optionnal attributes that may be specificaly saved. Null or undefined to save all model
     _specificSave: =>
       super()
+      # clean compilation error
+      @$el.find('.errors > .compilation').remove()
       if @_tempId?
         @model.set '_id', @_nameWidget.options.value
         # we need to unset id because it allows Backbone to differentiate creation from update
@@ -158,3 +161,9 @@ define [
     # Refresh active displayal when the model's content changed.
     _onActiveChange: =>
       @$el.toggleClass 'inactive', !@model.get 'active'
+
+    # **private**
+    # Displays the detected compilation errors.
+    _onCompilationError: =>
+      @$el.find('.errors > .compilation').remove()
+      @$el.find('.errors').append "<div class='compilation'>#{@model.error}</div>"

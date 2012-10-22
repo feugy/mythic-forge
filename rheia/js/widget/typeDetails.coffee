@@ -73,7 +73,7 @@ define [
       switch category
         when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.get 'name'
         when 'Executable' 
-          name = @options.model.id
+          name = @options.model.get 'name'
           # for opening behaviour, when need to distinguish Rules from TurnRules
           category = @options.model.kind
           categoryClass = utils.dashSeparated category

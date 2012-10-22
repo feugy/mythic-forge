@@ -21,9 +21,10 @@
 define [
   'jquery'
   'backbone'
+  'model/Player'
   'i18n!nls/common'
   'text!tpl/layout.html'
-], ($, Backbone, i18n, template) ->
+], ($, Backbone, Player, i18n, template) ->
 
   # The edition perspective manages types, rules and maps
   class Layout extends Backbone.View
@@ -40,6 +41,7 @@ define [
     constructor: () ->
       super tagName: 'div', className:'layout'
       @bindTo Backbone.history, 'route', @_onRoute
+      @bindTo Player.collection, 'connectedPlayersChanged', @_onConnectedPlayersChanged
       @bindTo rheia.adminService, 'progress', @_onDeployementStateChanged
       @bindTo rheia.adminService, 'state', =>
         # a deployement is in progress
@@ -100,7 +102,6 @@ define [
     _onRoute: (history, handler) =>
       @$el.find('header a').removeClass('active').filter("[data-route='/#{handler}']").addClass 'active'
 
-
     # **private**
     # Deployement state change handler. Displays de "deployement in progress indicator", until commit end or rollback
     #
@@ -111,3 +112,8 @@ define [
           @$el.find('.deployement').css 'visibility', 'visible'
         when 'COMMIT_END', 'ROLLBACK_END', 'DEPLOY_FAILED'
           @$el.find('.deployement').css 'visibility', 'hidden'
+
+    # **private**
+    # Handler that updates rendering when players are joining or leaving.
+    _onConnectedPlayersChanged: =>
+      @$el.find('.connected i').html Player.collection.connected.length
