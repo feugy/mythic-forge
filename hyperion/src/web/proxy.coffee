@@ -142,8 +142,8 @@ configureRIA = (base, rootFolder, isStatic = false, secured = false) ->
       fs.createReadStream(path.join(rootFolder, 'index.html')).on('error', => res.send 404).pipe res
       res.header 'Content-Type', 'text/html; charset=UTF-8'
 
-  # last resort: serve static files
-  app.use "#{base}", express.static rootFolder
+  # last resort: serve static files: cache for 3 weeks if static
+  app.use "#{base}", express.static rootFolder, maxAge: if isStatic then 1814400000 else 0
 
 # serve commun static assets
 app.use express.cookieParser utils.confKey 'server.cookieSecret'

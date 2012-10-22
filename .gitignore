@@ -11,3 +11,7 @@ docs/_assets/
 
 # compilation results
 rheia-min/
+
+# games
+game/
+proto-game/
