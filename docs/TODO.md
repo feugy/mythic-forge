@@ -11,9 +11,6 @@
 
 - Rheia
   - **[TODO]** handle rule requires
-  - administration perspective
-    - report last executed turn
-    - trigger turn execution
   - moderation perspective
     - Maps
       - items animations (with z-ordering)
@@ -212,6 +209,8 @@
     - game client version list 
     - deploy, commit and rollback
     - error handling on AdminService
+    - report last executed turn
+    - trigger turn execution
   - moderation perspective
     - Maps
       - maps list, switch current map

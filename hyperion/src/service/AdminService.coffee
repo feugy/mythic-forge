@@ -93,8 +93,8 @@ class _AdminService
             _save model
 
         # Do not store maps with string ids
-        if 'string' is utils.type values?._id
-          values._id = new ObjectId values._id
+        if 'string' is utils.type values?.map?._id
+          values.map._id = new ObjectId values.map._id
 
         if '_id' of values
           # resolve type

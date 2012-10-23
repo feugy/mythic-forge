@@ -99,7 +99,6 @@ define [
           @_loading++
           id = obj.id
           @_oldWidgets[id] = @_itemWidgets[id] if id of @_itemWidgets and !(id of @_oldWidgets)
-          @_itemWidgets[id] = true
           _.defer =>
             # creates widget for this item
             @_itemWidgets[id] = $('<span></span>').mapItem(
@@ -169,8 +168,6 @@ define [
       switch key
         when 'lowerCoord'
           @_oldWidgets = _.clone @_itemWidgets
-          console.log ">>> clone widgets"
-          console.log id for id of @_oldWidgets
         when 'mapId'
           if @options.mapId isnt value
             # reset all rendering: fields and items.

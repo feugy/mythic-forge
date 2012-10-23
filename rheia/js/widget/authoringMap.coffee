@@ -210,7 +210,8 @@ define [
             o.data.splice i, 1
             break
 
-    # Compute the display position of a given object, relatively to the map origin
+    # Compute the display position of a given object, relatively to the map origin.
+    # Set Also the z-index
     # TODO specific iso
     #
     # @param coord [Object] object containing x and y coordinates
@@ -219,12 +220,14 @@ define [
     # @return an object containing:
     # @option return left [Number] the object's left offset, relative to the map origin
     # @option return top [Number] the object's top offset, relative to the map origin
+    # @option return z-index [Number] the object's z-index
     elementOffset: (obj) ->
       coeff = Math.abs(obj.y+@_origin.y)%2
       shift = (Math.abs(obj.y)+1)%2 * Math.abs(@_origin.y%2)
       {
         left: (obj.x-@_origin.x-shift) * @_tileW + coeff * 0.5 * @_tileW
         top: (obj.y-@_origin.y) * @_tileH * 0.75
+        'z-index': obj.y*2 + obj.x 
       }
 
     # Returns the tile size in pixels, with zoom applied
