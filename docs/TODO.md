@@ -11,9 +11,6 @@
 
 - Rheia
   - **[TODO]** handle rule requires
-  - moderation perspective
-    - Maps
-      - items animations (with z-ordering)
   - edition perspective
     - Maps
       - diamond map widget
@@ -221,6 +218,7 @@
       - item click
       - item affectation and moves by drag'n drop
       - multiple item menu
+      - items animations (with z-ordering)
     - Items
       - CRUD
       - external updates and removal

@@ -98,3 +98,15 @@ define [
     #
     # @return an object used as template data (this by default)
     _getRenderData: -> @
+
+  # getter for document visibility
+  prefix = if $.browser.webkit or $.browser.chrome then 'webkit' else 'moz'
+
+  # define a getter for page visibility
+  Object.defineProperty document, 'hidden', 
+    get: () ->
+      document[prefix+'Hidden']
+
+  # use same name for animation frames facilities
+  window.requestAnimationFrame = window[prefix+'RequestAnimationFrame']
+  window.cancelAnimationFrame = window[prefix+'CancelAnimationFrame']

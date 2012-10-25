@@ -52,6 +52,8 @@ define
     lastName: 'Nom'
     lastConnection: 'Connexion le'
     prefs: 'Préférences'
+    transition: 'Transition'
+    noTransition: 'aucune'
 
   buttons:
     kick: 'Kickass !'

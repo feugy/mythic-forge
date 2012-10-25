@@ -21,7 +21,7 @@
 # configure requireJs
 requirejs.config  
   paths:
-    'backbone': 'lib/backbone-0.9.2-min'
+    'backbone': 'lib/backbone-0.9.2'
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'

@@ -26,21 +26,26 @@ Map = require './Map'
 Item = typeFactory 'Item', 
   # link to map
   map: {}
+  
   x: 
     type: Number
     default: null
+
   y: 
     type: Number
     default: null
+
   # image number in the images array of the corresponding item type.
   imageNum: 
     type: Number
     default: 0
+
   # states give tips to clients for rendering the Item. They allow for exemple to display
   # some long-live animation. For example, 'sleep' state while display a snoring animation.
   state: 
     type: String
     default: null
+
   # transition are special actions that lives during the update of the item rendering.
   # for exemple, it reflects the move animation while updating the map position
   # client will reset it to null after the rendering was updated.
@@ -49,8 +54,9 @@ Item = typeFactory 'Item',
     default: null
     set: (value) ->
       # force transition to appear in modifiedPath, to allow propagation
-      @markModified('transition')
+      @markModified 'transition'
       value
+
   # For quantifiable items, available quantity
   quantity:
     type: Number

@@ -74,6 +74,10 @@ define [
     # widget to manage quantity
     _quantityWidget: null
 
+    # **private**
+    # select that displays possible transitions
+    _transitionList: null
+
     # The view constructor.
     #
     # @param id [String] the edited object's id, null for creation
@@ -91,6 +95,15 @@ define [
           @_onRemoved @model
         else 
           @_onMapListRetrieved()
+
+      # special case of items, that can be re-added when map is consulted
+      # we need to unbound from previous model, and bound for new one
+      @bindTo Item.collection, 'readd', (previous, added) =>
+        return unless previous.id is @model.id
+        @unboundFrom previous, 'update', @_onSaved
+        @model = added
+        @bindTo added, 'update', @_onSaved
+
       console.log "creates item edition view for #{if id? then @model.id else 'a new object'}"
 
     # **protected**
@@ -108,7 +121,10 @@ define [
       # creates image carousel and map rendering
       @_imageWidget = @$el.find('.left .image').carousel(
         images: _.pluck @model.get('type').get('images'), 'file'
-        change: @_onChange
+        change: =>
+          # image changed: transition list also
+          @_onTransitionListChanged() if @_transitionList?
+          @_onChange()
       ).data 'carousel'
 
       @_mapList = @$el.find '.map.field'
@@ -143,6 +159,11 @@ define [
         change: @_onChange
       ).data 'property'
 
+      @_transitionList = @$el.find '.transition.field'
+      @_transitionList.on 'change', => @_onChange()
+
+      @_onTransitionListChanged()
+
       super()
 
     # **private**
@@ -158,6 +179,11 @@ define [
       @model.set 'x', @_xWidget.options.value
       @model.set 'y', @_yWidget.options.value
       @model.set 'quantity', @_quantityWidget.options.value if @_hasQuantity
+
+      # transition
+      transition = @_transitionList.find('option').filter(':selected').val()
+      transition = null if transition is 'none'
+      @model.set 'transition', transition
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -169,10 +195,16 @@ define [
       @_imageWidget.setOption 'current', @model.get 'imageNum'
 
       # map ownership
+      @_mapList.find("[value]").removeAttr 'selected'
       @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected'
       @_xWidget.setOption 'value', @model.get 'x'
       @_yWidget.setOption 'value', @model.get 'y'
+
+      # quantity
       @_quantityWidget.setOption 'value', @model.get 'quantity' if @_hasQuantity
+
+      # transition: never an option selected, because transition to not continue.
+      @_transitionList.find("[value]").removeAttr 'selected'
 
       super()
 
@@ -185,10 +217,15 @@ define [
     # @return the comparable fields array
     _getComparableFields: =>
       comparable = super()
-      return comparable unless @_yWidget?
+      # transitionList is the last constructed widget
+      return comparable unless @_transitionList?
 
       mapValue =  @_mapList.find('option').filter(':selected').val()
       mapValue = undefined if mapValue is 'none'
+
+      transition = @_transitionList.find('option').filter(':selected').val()
+      transition = null if transition is 'none'
+
       comparable.push
         # image number
         name: 'imageNum'
@@ -207,6 +244,11 @@ define [
         name: 'y'
         original: @model.get 'y'
         current: @_yWidget.options.value
+      ,
+        name: 'transition'
+        # transition never continue: change detected once we set any value
+        original: null
+        current: transition
 
       if @_hasQuantity
         comparable.push 
@@ -224,3 +266,15 @@ define [
       @_mapList.empty().append maps      
 
       @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected' if @model?.get('map')?
+
+
+    # **private**
+    # Empties and fills the transition list.
+    _onTransitionListChanged: =>
+      transitions = "<option value='none'>#{i18n.labels.noTransition}</option>"
+      # use image widget value instead of model's image to reflext changes
+      for name of @model.get('type').get('images')?[@_imageWidget.options.current]?.sprites
+        transitions += "<option value='#{name}'>#{name}</option>" 
+      @_transitionList.empty().append transitions      
+
+      @_transitionList.find("[value='#{@model.get 'transition'}']").attr 'selected', 'selected' if @model?.get('transition')?
