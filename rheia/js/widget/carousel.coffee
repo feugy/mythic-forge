@@ -62,16 +62,16 @@ define [
           disabled: true
         ).click (event) =>
           event.preventDefault()
+          event.stopImmediatePropagation()
           @_setCurrent @options.current+1
-          return false
 
       @element.find('.previous').button(
           text: false
           disabled: true
         ).click (event) =>
           event.preventDefault()
+          event.stopImmediatePropagation()
           @_setCurrent @options.current-1
-          return false
 
       # loading handler
       @bindTo rheia.router, 'imageLoaded', (success, src, image) => 
@@ -80,8 +80,8 @@ define [
         @element.find("img[data-src='#{img}']").replaceWith $(image).clone()
         @element.find('img').addClass @options.imageClass
 
-      # first displayal
-      @_displayImages @options.images
+      # first displayal, when dom is attached
+      _.defer => @_displayImages @options.images
 
     # **private**
     # Updates the current displayed image, with navigation animation.
@@ -93,17 +93,16 @@ define [
     _setCurrent: (value) ->
       # first check the value
       return unless value >= 0 and value < @options.images.length
-      
-      # compute the image width for moves
-      parent = @element.parent()
-      imageWidth = @element.appendTo('body').find('.container img').outerWidth true
-      @element.appendTo parent
+      container = @element.find '.container'
+
+      # compute the image width for moves: we need to be attached to body
+      imageWidth = container.children().outerWidth true
 
       # set the container total width, in case it hasn't enought space to display
-      @element.find('.container').width imageWidth*@options.images.length
-          
+      container.width imageWidth*@options.images.length
+        
       # moves the image container
-      @element.find('.container').stop().animate
+      container.stop().animate
         left: -imageWidth * value
       , @options.speed
 
@@ -124,7 +123,7 @@ define [
     # @param images [Array<String>] the new image array (contains url strings)
     _displayImages: (images) ->
       # removes previous images
-      @element.find('.container td').remove()
+      @element.find('.container').empty()
       @options.images = if Array.isArray images then images else []
 
       # displays new ones

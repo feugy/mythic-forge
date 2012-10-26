@@ -88,12 +88,14 @@ define [
       if category is 'FieldType'
         $('<div></div>').carousel(
           images: @options.model.get 'images'
-        ).draggable(
+        ).prependTo @element
+
+        @element.draggable(
           scope: i18n.constants.fieldAffectation
           appendTo: 'body'
           cursorAt: top:-5, left:-5
           helper: (event) ->
-            carousel = $(this)
+            carousel = $(event.target).closest('.type-details').find '.carousel'
             # extract the current displayed image from the carousel
             idx = carousel.data('carousel').options.current
             dragged = carousel.find("img:nth-child(#{idx+1})").clone()
@@ -102,7 +104,7 @@ define [
             dragged.data 'id', carousel.closest(".#{categoryClass}").data 'id'
             dragged.addClass 'dragged'
             dragged
-        ).prependTo @element
+        )
       else
         @element.prepend "<img/>" if category in ['ItemType', 'EventType']
         @element.toggleClass 'inactive', !@options.model.get 'active' if category in ['TurnRule', 'Rule']

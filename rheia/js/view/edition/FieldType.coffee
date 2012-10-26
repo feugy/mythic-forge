@@ -176,9 +176,13 @@ define [
     #
     # @param event [Event] image change event.
     _onImageChange: (event) =>
-      # remove from images widget if it's the last widget
-      widget = $(event.target).closest('.loadable').data 'loadableImage'
-      if widget.options.source is null and @_imageWidgets.indexOf(widget) is @_imageWidgets.length-1
-        @_imageWidgets.splice @_imageWidgets.length-1, 1
-        widget.element.remove()
+      # search for empty images widget from the last one
+      removed = []
+      for widget, i in @_imageWidgets
+        if widget.options.source is null
+          removed.push i
+        else 
+          removed = []
+      # Destroy the found widgets
+      @_imageWidgets.splice(i, 1)[0].element.remove() for i in removed.reverse()
       @_onChange event
