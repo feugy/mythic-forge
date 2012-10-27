@@ -25,6 +25,8 @@ requirejs.config
       exports: '_'
     'jquery-ui':
       deps: ['jquery']
+    'hogan':
+      exports: 'Hogan'
     'jquery': 
       exports: '$'
 
@@ -38,9 +40,9 @@ define [
   'utils/utilities'
   'text!tpl/login.html'
   'utils/extensions'
-  'jquery-ui' 
-  ], (_, $, Backbone, i18n, utils, template) ->
-
+  'jquery-ui'
+], (_, $, Backbone, i18n, utils, template) ->
+    
   class Router extends Backbone.Router
 
     constructor: ->

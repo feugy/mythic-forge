@@ -1,0 +1,91 @@
+<section>
+  <h1>In a few words</h1>
+  <p>Mythic-Forge is an online game engine to create 2D, multi-player, turn-based games.</p>
+  <p>A limpid explanation, isn't it ? No it's not. So let's have a deeper look :)</p>
+</section>
+<section>
+  <h1>From the peaks</h1>
+  <p>So it's a game engine: you'll play the Game Designer part. Mythic-Forge which will allow you to create games, and is not a game itself.</p>
+  <p>Then it's online: it's composed of a server and a game client (a Web application), usable by your players with a r(d)ecent browser.</p>
+  <p>Please hover the scheme to detailled it.</p>
+  <aside id="server-details">
+    <h1>Hyperion: the server</h1>
+    <p>The server hosts and manages game's items (maps, characters, events...) and a complete set of game rules.</p>
+    <p>Theses rules will govern what players can do, and how the system will react.</p>
+  </aside>
+  <aside id="clients-details">
+    <h1>The game client</h1>
+    <p>It provides players with rendering and interaction mecanisms.</p>
+    <p>You will have total control on the game client: it's up to you to define its visual identity, to explain its rules, to add a blog, a forum, and anything you'll need to animate your community.</p>
+  </aside>
+  <div id="scheme1" class="scheme">
+  </div>
+</section>
+<section>
+  <h1>Let's dig a  little further</h1>
+  <p>Now that you've catch the general idea, let's see how to use Mythic-Forge.</p>
+  <p>Another web application is provided: it's the central tool to manage the whole system.</p>
+  <p>With this application, you'll handle all the server items, as well as the game client code.</p>
+  <p>Keyword is "live". No need to recompile anything. No need to manually restart or redeploy stuff. Just modify or add something, and you can use it immediately. Everything is live.</p>
+  <aside id="admin-details">
+    <h1>Rheia: the administration application</h1>
+    <p>As Game Developper/Designer, it will allow you to:</p>
+    <ul>
+      <li>Create and model your world. You'll set fields, items, characters properties. You'll design maps.</li>
+      <li>Write game rules. The rule engine gives you total control on how the system will act.</li>
+      <li>Code the game client. From a generic jumpstart code, you'll personalize your game client to gave it a unic and immersive behaviour.</li>
+      <li>Manage the running game. Once online, you can see and modify any item inside the world. Modifications are applied in real time. Omniscience and omnipresence !</li>
+    </ul>
+  </aside>
+  <div id="scheme2" class="scheme"></div>
+</section>
+<section>
+  <h1>Under the hood</h1>
+  <p>Still here ? So you're really interested :)</p>
+  <p>Let's see the technologies involved.</p>
+  <p>Within Mythic-Forge, almost everything is in JavaScript. This language offers four significant advantages:
+    <ol>
+      <li>Portability: implemented in all browsers worthy of the name, it allows playing on PC, smart-phones, tables an even Tv !</li>
+      <li>Flexibility : interpreted and loosely typed, it offers the needed flexibility of a game that evolve continually.</li>
+      <li>Runs on server and client: a single language for rules on server and game client. Less efforts to learn it, and possibility to share code on both sides, without sacrificing security.</li>
+      <li>Tooled for rendering: web browsers now have all means to show a quality render, and all these means can be natively used from JavaScript</li>
+    </ol>
+  </p>
+  <p>In return, it's a difficult language to master. It won't allow you (yet) to ship a 3D game, or to take part of players' accelerated hardware.</p>
+  <p>To efficientrly overcome JavaScript defects, you'll use CoffeeScript. This Ruby-inspired language generates a clean and optimized JavaScript code.</p>
+  <aside id="server-techno-details">
+    <h1>Hyperion</h1>
+    <p>Engine: NodeJS, language: CoffeeScript. NodeJS uses V8 (the JavaScript engine of Webkits browsers), from which it has removed DOM facilities, and added files, sockets, processes...</p>
+    <p>Data are stored inside a MongoDB database: performance et flexibility.</p>
+    <p>All the game rules are written with CoffeeScript.</p>
+    <p>Communication with game clients is provided by Socket.io: everything is shipped by Websockets, a permanent bi-directionnal socket between server and browser.</p>
+  </aside>
+  <aside id="admin-techno-details">
+    <h1>Rheia</h1>
+    <p>Written with CoffeeScript and using last HTML5 and CSS3 advances. It's really an Rich Internet Application (RIA).</p>
+    <p>It uses jQuery (DOM manipulations) and jQuery-UI (graphical widgets), RequireJS (script loader) BackboneJS (MVC code structuration).</p>
+    <p>Permanently connected thanks to Socket.io, it also uses Ace Editor to write code (game rules ans game client files).</p>
+  </aside>
+  <aside id="game-techno-details">
+    <h1>The game client</h1>
+    <p>Like Rheia, it's a Rich Internet Application written with JavaScript/HTM5/CSS3.</p>
+    <p>You'll be able to use JavaScript, CoffeeScript, Css3 and also Stylus.</p>
+    <p>A jumpstart kit (jQuery, jQuery-UI, RequireJS, BackboneJS) provides base functionnalities (map display, rules triggering...). But you'll be able to use any external library needed.</p>
+    <p>Up to you to enhanced it, and to infuse its unic personnality and Game Design. You'll need to modify it deeply to bring your players a real game experience !</p>
+  </aside>  
+  <div id="scheme3" class="scheme"></div>
+</section>
+<!--<section>
+  <h1>Et ça marche vraiment ?</h1>
+  <p>Oui monsieur ! Jettez un oeil sur la vidéo. C'est une capture de mon propre serveur Mythic-forge.com (Hébergé aux Etats-Unis par BuyVM: grosse latence réseau jusqu'en France...)</p>
+  <video src="resources/Mythic-Forge - First contact.webm" controls preload></video>
+</section>-->
+<section>
+  <h1>Want to use it ?</h1>
+  <p>It's your turn now !</p>
+  <p>Mythic-Forge is an Open Source product (lGPL v3), and uses only Open Source libraries and technologies. It means you can get the code and use it freely.</p>
+  <p>Go to <a href="https://github.com/feugy/mythic-forge">Github</a> to get the code and running instructions. Then, start it and begin to write your first game !</p>
+  <p>You may also want to follow some news on <a href="https://plus.google.com/s/%23mythic-forge">Google+</a></p>
+  <p>At last, I've several in-progress games with Mythic-Forge. Stay tuned on Google+ !</p>
+  <p>Have fun with Mythic-forge, and create great games !</p>
+</section>

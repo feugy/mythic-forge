@@ -149,6 +149,8 @@ configureRIA = (base, rootFolder, isStatic = false, secured = false) ->
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.compress level:9
 app.use '/images', express.static utils.confKey 'images.store'
+# serve static pages from the docs folder
+app.use express.static 'docs'
 
 # configure a game RIA and the administration RIA 
 configureRIA '/game', utils.confKey 'game.production', true

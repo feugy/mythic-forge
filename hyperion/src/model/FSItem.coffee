@@ -19,9 +19,8 @@
 'use strict'
 
 _ = require 'underscore'
-fs = require 'fs'
 pathUtils = require 'path'
-fsExtra = require 'fs-extra'
+fs = require 'fs-extra'
 async = require 'async'
 utils = require '../utils'
 modelWatcher = require('./ModelWatcher').get()
@@ -137,7 +136,7 @@ class FSItem
       if @isFolder 
         # Creates folder
         if isNew
-          fsExtra.mkdir @path, (err) => 
+          fs.mkdirs @path, (err) => 
             return callback "Error while creating new folder #{@path}: #{err}" if err?
             logger.debug "folder #{@path} successfully created"
             # invoke watcher
@@ -169,7 +168,7 @@ class FSItem
         return saveFile() unless isNew
         # for new files, create parent folders
         parent = pathUtils.dirname @path
-        fsExtra.mkdir parent, (err) =>
+        fs.mkdirs parent, (err) =>
           return callback "Error while creating new file #{@path}: #{err}" if err?
           saveFile()
 
@@ -186,7 +185,7 @@ class FSItem
 
       if @isFolder 
         # removes folder and its content
-        fsExtra.remove @path, (err) => 
+        fs.remove @path, (err) => 
           return callback "Error while removing folder #{@path}: #{err}" if err?
           logger.debug "folder #{@path} successfully removed"
           modelWatcher.change 'deletion', 'FSItem', @
@@ -223,15 +222,15 @@ class FSItem
 
         # then creates the new parent path
         parent = pathUtils.dirname newPath
-        fsExtra.mkdir parent, (err) =>
+        fs.mkdirs parent, (err) =>
           return callback "Error while creating new item #{@path}: #{err}" if err?
 
           # then performs copy
-          fsExtra.copy @path, newPath, (err) =>
+          fs.copy @path, newPath, (err) =>
             return callback "Cannot copy item #{@path} to #{newPath}: #{err}" if err?
 
             # and eventually remove old value
-            fsExtra.remove @path, (err) => 
+            fs.remove @path, (err) => 
               return callback "Error while removing olf item #{@path}: #{err}" if err?
 
               logger.debug "item #{@path} successfully moved to #{newPath}"

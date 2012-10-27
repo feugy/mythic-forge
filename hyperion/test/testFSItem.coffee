@@ -17,9 +17,8 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-fs = require 'fs'
 pathUtils = require 'path'
-fsExtra = require 'fs-extra'
+fs = require 'fs-extra'
 async = require 'async'
 FSItem = require '../src/model/FSItem'
 utils = require '../src/utils'
@@ -153,8 +152,8 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
 # Empties the root folder and re-creates it.
 cleanRoot = (done) ->
   root = utils.confKey 'game.dev'
-  fsExtra.remove root, (err) ->
-    fsExtra.mkdir root, (err) ->
+  fs.remove root, (err) ->
+    fs.mkdirs root, (err) ->
       throw new Error err if err?
       done()
 

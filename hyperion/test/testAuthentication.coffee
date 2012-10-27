@@ -187,7 +187,6 @@ describe 'Authentication tests', ->
           assert.equal 'accounts.google.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
           assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
           assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
-
           # forge form to log-in
           form = 
             Email: googleUser
@@ -215,14 +214,18 @@ describe 'Authentication tests', ->
 
               # accepts to give access to account informations
               request 
-                uri: body.match(/<form action="([^"]*)"/)[1].replace(/&amp;/g, '&')
+                uri: body.match(/<form\s+.*action="([^"]*)"/)[1].replace(/&amp;/g, '&')
                 method: 'POST'
                 followAllRedirects: true
                 form: 
+                  _utf8: body.match(/name\s*=\s*"_utf8"\s+value\s*=\s*"([^"]*)"/)[1]
                   state_wrapper: body.match(/name\s*=\s*"state_wrapper"\s+value\s*=\s*"([^"]*)"/)[1]
                   submit_access: true
 
               , (err, res, body) ->
+                # TODO problem with request >= 2.9.203
+                # redirected to localhost, localhost server never hit
+
                 return done err if err?
 
                 # then the success page is displayed
@@ -332,17 +335,16 @@ describe 'Authentication tests', ->
         request 
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
-          followAllRedirects: true
           form:
             username: player.get 'email'
             password: clearPassword
         , (err, res, body) ->
           return done err if err?
           # then the success page is displayed
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-          query = parseUrl(res.request.uri.href).query
-          assert.ok -1 is query.indexOf('error='), "Unexpected server error: #{query}"
-          token = query.replace 'token=', ''
+          url = parseUrl res.headers.location
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.ok -1 is url.query.indexOf('error='), "Unexpected server error: #{url.query}"
+          token = url.query.replace 'token=', ''
           assert.isNotNull token
           # then account has been populated with new token
           Player.findOne {email:player.get 'email'}, (err, saved) ->
@@ -358,16 +360,15 @@ describe 'Authentication tests', ->
         request 
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
-          followAllRedirects: true
           form:
             username: player.get 'email'
             password: 'toto'
         , (err, res, body) ->
           return done err if err?
           # then the success page is displayed
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-          query = parseUrl(res.request.uri.href).query
-          assert.ok -1 isnt query.indexOf('Wrong%20credentials'), "unexpected error #{query}"
+          url = parseUrl res.headers.location
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.ok -1 isnt url.query.indexOf('Wrong%20credentials'), "unexpected error #{url.query}"
           done()   
 
       it 'should unknown user not be authenticated', (done) ->
@@ -376,16 +377,15 @@ describe 'Authentication tests', ->
         request 
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
-          followAllRedirects: true
           form:
             username: 'toto'
             password: 'titi'
         , (err, res, body) ->
           return done err if err?
           # then the success page is displayed
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-          query = parseUrl(res.request.uri.href).query
-          assert.ok -1 isnt query.indexOf('Wrong%20credentials'), "unexpected error #{query}"
+          url = parseUrl res.headers.location
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.ok -1 isnt url.query.indexOf('Wrong%20credentials'), "unexpected error #{url.query}"
           done()   
 
       it 'should user not be authenticated without password', (done) ->
@@ -394,13 +394,12 @@ describe 'Authentication tests', ->
         request 
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
-          followAllRedirects: true
           form:
             username: player.get 'email'
         , (err, res, body) ->
           return done err if err?
           # then the success page is displayed
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-          query = parseUrl(res.request.uri.href).query
-          assert.ok -1 isnt query.indexOf('Missing%20credentials'), "unexpected error #{query}"
+          url = parseUrl res.headers.location
+          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.ok -1 isnt url.query.indexOf('Missing%20credentials'), "unexpected error #{url.query}"
           done()  

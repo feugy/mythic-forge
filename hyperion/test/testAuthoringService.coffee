@@ -114,7 +114,7 @@ describe 'AuthoringService tests', ->
         # and some file in it
         async.forEach ['file1.txt', 'file2.txt', 'folder/file3.txt', 'folder/file4.txt'], (file, next) ->
           file = pathUtils.join root, file
-          fs.mkdir pathUtils.dirname(file), (err) ->
+          fs.mkdirs pathUtils.dirname(file), (err) ->
             return next err if err?
             fs.writeFile file, '', next
         , done

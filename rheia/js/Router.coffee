@@ -21,7 +21,7 @@
 # configure requireJs
 requirejs.config  
   paths:
-    'backbone': 'lib/backbone-0.9.2'
+    'backbone': 'lib/backbone-0.9.2-min'
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
@@ -41,10 +41,10 @@ requirejs.config
     'hogan': 'lib/hogan-2.0.0-min'
     'moment': 'lib/moment-1.7.0-min'
     'ace': 'lib/ace-1.0-min'
-    'i18n': 'lib/i18n'
-    'text': 'lib/text'
+    'i18n': 'lib/i18n-2.0.1-min'
+    'text': 'lib/text-2.0.0-min'
     'nls': '../nls'
-    'tpl': '../templates'
+    'tpl': '../template'
     
   shim:
     'backbone': 

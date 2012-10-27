@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>Rheia administration client</title>
     <link type="text/css" rel="stylesheet" href="style/rheia.css" />
-    <script src="conf.js"></script>
   </head>
   <body>
   </body>

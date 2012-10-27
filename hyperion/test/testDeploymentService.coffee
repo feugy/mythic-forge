@@ -44,7 +44,7 @@ describe 'Deployement tests', ->
     # given a clean game source
     fs.remove repository, (err) ->
       return done err if err?
-      fs.mkdir root, done
+      fs.mkdirs root, done
 
   beforeEach (done) ->
     # given a registered notification listener
@@ -67,7 +67,7 @@ describe 'Deployement tests', ->
     beforeEach (done) ->
       # given a clean game source
       fs.remove root, ->
-        fs.mkdir root, (err) ->
+        fs.mkdirs root, (err) ->
           return done err if err?
           # given a valid game client in it
           fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client'), root, done
@@ -149,26 +149,6 @@ describe 'Deployement tests', ->
           ]
           done()
 
-    it 'should no requirejs configuration be detected', (done) ->
-      # given a requirejs entry file without configuration
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.js.noconfigjs'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
-        return done err if err?
-
-        # when optimizing the game client
-        service.deploy version, 'admin', (err) ->
-          # then an error is reported
-          assert.isNotNull err
-          assert.include err, 'no requirejs configuration file found', "Unexpected error: #{err}"
-          # then notifications were properly received
-          assert.deepEqual notifications, [
-            'DEPLOY_START'
-            'COMPILE_STYLUS'
-            'COMPILE_COFFEE'
-            'OPTIMIZE_JS'
-            'DEPLOY_FAILED'
-          ]
-          done()
-
     it 'should requirejs optimization error be detected', (done) ->
 
       # given a requirejs entry file without error
@@ -180,6 +160,26 @@ describe 'Deployement tests', ->
           # then an error is reported
           assert.isNotNull err
           assert.include err, 'optimized.out\\js\\backbone.js', "Unexpected error: #{err}"
+          # then notifications were properly received
+          assert.deepEqual notifications, [
+            'DEPLOY_START'
+            'COMPILE_STYLUS'
+            'COMPILE_COFFEE'
+            'OPTIMIZE_JS'
+            'DEPLOY_FAILED'
+          ]
+          done()
+
+    it 'should no requirejs configuration be detected', (done) ->
+      # given a requirejs entry file without configuration
+      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.js.noconfigjs'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+        return done err if err?
+
+        # when optimizing the game client
+        service.deploy version, 'admin', (err) ->
+          # then an error is reported
+          assert.isNotNull err
+          assert.include err, 'no requirejs configuration file found', "Unexpected error: #{err}"
           # then notifications were properly received
           assert.deepEqual notifications, [
             'DEPLOY_START'
@@ -234,9 +234,9 @@ describe 'Deployement tests', ->
         ]
         # then the client was deployed
         browser = new Browser silent: true
-        browser.visit("#{rootUrl}/game").then( ->
+        browser.visit("#{rootUrl}/game/").then( ->
           # then the resultant url is working, with template rendering and i18n usage
-          body = browser.body.textContent.trim()
+          body = browser.text('body').trim()
           assert.match body, new RegExp "#{version}\\s*Edition du monde"
           done()
         ).fail done
@@ -339,7 +339,7 @@ describe 'Deployement tests', ->
             return done "Failed to deploy valid client: #{err}" if err?
             # then the client was deployed
             browser = new Browser silent: true
-            browser.visit("#{rootUrl}/game").then( ->
+            browser.visit("#{rootUrl}/game/").then( ->
               # then the resultant url is working, with template rendering and i18n usage
               body = browser.body.textContent.trim()
               assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"
@@ -458,7 +458,7 @@ describe 'Deployement tests', ->
 
                         # then the previous client was deployed
                         browser = new Browser silent: true
-                        browser.visit("#{rootUrl}/game").then( ->
+                        browser.visit("#{rootUrl}/game/").then( ->
                           # then the resultant url is working, with template rendering and i18n usage
                           body = browser.body.textContent.trim()
                           assert.match body, new RegExp "#{version2}\\s*Edition du monde 2"

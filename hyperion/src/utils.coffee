@@ -98,10 +98,11 @@ enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
   # creates if needed  
   unless exists
     try 
-      fs.mkdirSync folderPath
+      fs.mkdirsSync folderPath
       logger?.info "Folder '#{folderPath}' successfully created"
     catch err
-      throw "Unable to create the Executable folder '#{folderPath}': #{err}"
+      console.trace();
+      throw "Unable to create the folder '#{folderPath}': #{err}"
 
 # Allows to add i18n fields on a Mongoose schema.
 # adds a transient attribute `locale` that allows to manage model locale.

@@ -74,7 +74,7 @@ describe 'Utilities tests', ->
     before (done) ->
       fs.remove repository, (err) ->
         return done err if err?
-        fs.mkdir repository, (err) ->
+        fs.mkdirs repository, (err) ->
           return done err if err?
           git.init repository, (err) ->
             return done err if err?
@@ -163,7 +163,7 @@ describe 'Utilities tests', ->
     beforeEach (done) ->
       fs.remove repository, (err) ->
         return done err if err?
-        fs.mkdir repository, (err) ->
+        fs.mkdirs repository, (err) ->
           return done err if err?
           git.init repository, (err) ->
             return done err if err?
