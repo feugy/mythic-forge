@@ -410,7 +410,7 @@ define [
           path: path
           isFolder: false
           # Removes the descriptor and put in utf8 because save will translate it into base64
-          content: atob event.target.result.replace "data:#{file.type};base64,", ''
+          content: atob event.target.result.replace /^data:.*;base64,/, ''
         # and save it on server
         @_createInProgress.save()
 

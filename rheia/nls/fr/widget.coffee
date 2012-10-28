@@ -62,3 +62,11 @@ define
   instanceList: 
     empty: "affectez un objet par drag'n drop"
     unbind: "délier de l'objet"
+
+  advEditor:
+    find: 'Rechercher :'
+    replaceBy: 'Remplacer par :'
+    findPrev: 'occurence précédente'
+    findNext: 'occurence suivante'
+    replace: 'remplace la première occurence'
+    replaceAll: 'remplace toutes les orrucrences'

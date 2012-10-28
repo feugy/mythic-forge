@@ -20,9 +20,27 @@
 
 define [
   'jquery'
+  'underscore'
   'ace/ace'
+  'i18n!nls/widget'
   'widget/baseWidget'
-],  ($, ace) ->
+],  ($, _, ace, i18n) ->
+
+  prompt = "<div class='prompt'>"+
+    "<div class='find'>"+
+      "<span>#{i18n.advEditor.find}</span>"+
+        "<input type='text'/>"+
+        "<a class='previous icon' href='#' title='#{i18n.advEditor.findPrev}'><i class='ui-icon ui-icon-carat-1-n'></i></a>"+
+        "<a class='next icon' href='#' title='#{i18n.advEditor.findNext}'><i class='ui-icon ui-icon-carat-1-s'></i></a>"+
+        "<a class='close icon' href='#'><i class='ui-icon ui-icon-close'></i></a>"+
+      "</div>"+
+      "<div class='replace'>"+
+        "<span>#{i18n.advEditor.replaceBy}</span>"+
+        "<input type='text'/>"+
+        "<a class='first icon' href='#' title='#{i18n.advEditor.replace}'><i class='ui-icon ui-icon-transfer-e-w'></i></a>"+
+        "<a class='all icon' href='#' title='#{i18n.advEditor.replaceAll}'><i class='ui-icon ui-icon-transferthick-e-w'></i></a>"+
+      "</div>"+
+    "</div>"
 
   # set path to avoid problems after optimization
   path = requirejs.s.contexts._.config.baseUrl+requirejs.s.contexts._.config.paths.ace
@@ -52,9 +70,13 @@ define [
       # read-only: use `setOption('tabSize')` to modify.
       tabSize: 2
 
-      # **private**
-      # the ace editor
-      _editor: null
+    # **private**
+    # the ace editor
+    _editor: null
+
+    # **private**
+    # prompt to get find commands
+    _prompt: null
 
     # Frees DOM listeners
     destroy: ->
@@ -67,24 +89,62 @@ define [
       $.rheia.baseWidget::_create.apply @, arguments
       
       @element.addClass 'adv-editor'
-      
+
       # creates and wire the editor
-      @options._editor = ace.edit @element[0]
-      session = @options._editor.getSession()
+      node = $('<div></div>').appendTo @element
+      @_editor = ace.edit node[0]
+      session = @_editor.getSession()
       
       session.on 'change', => 
         # update inner value and fire change event
-        @options.text = @options._editor.getValue()
+        @options.text = @_editor.getValue()
         @_trigger 'change', null, @options.text
       
       # configure it
       session.setUseSoftTabs true
+
+      # special implementation of find command
+      @_editor.commands.addCommand
+        name: 'find'
+        bindKey: win:'Ctrl-F', mac:'Command-F'
+        exec: =>
+          selection = @_editor.session.getTextRange @_editor.getSelectionRange()
+          @_prompt.find('.find input').val selection if selection
+          @_prompt.removeClass('and-replace').addClass 'shown'
+          @_prompt.find('.find input').focus()
+
+      # special implementation of replace command
+      @_editor.commands.addCommand
+        name: 'replace'
+        bindKey: win:'Ctrl-H', mac:'Command-Option-F'
+        exec: =>
+          selection = @_editor.session.getTextRange @_editor.getSelectionRange()
+          @_prompt.find('.find input').val selection if selection
+          @_prompt.addClass('and-replace').addClass 'shown'
+          @_prompt.find('.find input').focus()
 
       # fills its content
       @_setOption 'text', @options.text
       @_setOption 'tabSize', @options.tabSize
       @_setOption 'theme', @options.theme
       @_setOption 'mode', @options.mode
+            
+      # creates prompt
+      @_prompt = $(prompt).appendTo @element
+
+      @_prompt.on 'keyup', '.find input', _.debounce ( =>
+        @_editor.findAll @_prompt.find('.find input').val(), {}, true
+      ), 300
+
+      @_prompt.on 'click', '.previous', => @_editor.findPrevious {}, true
+      @_prompt.on 'click', '.next', => @_editor.findNext {}, true
+      @_prompt.on 'click', '.close', => 
+        @_prompt.removeClass 'shown'
+        @_editor.focus()
+      @_prompt.on 'click', '.first', => 
+        @_editor.replace @_prompt.find('.replace input').val(), needle: @_prompt.find('.find input').val()
+      @_prompt.on 'click', '.all', =>
+        @_editor.replaceAll @_prompt.find('.replace input').val(), needle: @_prompt.find('.find input').val()
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `source` changed.
@@ -96,22 +156,22 @@ define [
       switch key
         when 'text' 
           # keeps the undo manager
-          undoMgr = @options._editor.getSession().getUndoManager()
+          undoMgr = @_editor.getSession().getUndoManager()
           # keeps the cursor position if possible
-          position = @options._editor.selection.getCursor()
-          @options._editor.setValue value
+          position = @_editor.selection.getCursor()
+          @_editor.setValue value
           # setValue will select all new text. rheiaeset the cursor to original position.
-          @options._editor.clearSelection()
-          @options._editor.selection.moveCursorToPosition position
-          @options._editor.getSession().setUndoManager undoMgr
+          @_editor.clearSelection()
+          @_editor.selection.moveCursorToPosition position
+          @_editor.getSession().setUndoManager undoMgr
         when 'tabSize'
           @options.tabSize = value
-          @options._editor.getSession().setTabSize value
+          @_editor.getSession().setTabSize value
         when 'theme'
           @options.theme = value
-          @options._editor.setTheme "ace/theme/#{value}"
+          @_editor.setTheme "ace/theme/#{value}"
         when 'mode'
           value = 'less' if value is 'stylus'
           @options.mode = value
-          @options._editor.getSession().setMode "ace/mode/#{value}"
+          @_editor.getSession().setMode "ace/mode/#{value}"
     

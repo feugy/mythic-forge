@@ -433,3 +433,58 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 
 .instance-details.no-image span
   padding 0.5em 1em
+
+.adv-editor 
+  .ace_editor
+    width 100%
+    height 100%
+
+  .prompt
+    border-radius 0 0 5px 5px
+    padding 5px
+    font-size 0 !important
+    background rgba(black, 0.5)
+    position absolute
+    right 25px
+    top -150px
+    transition all 250ms
+    z-index 1
+
+    .replace
+      margin-top 2px
+      display none
+
+    div > *
+      display inline-block
+
+    .icon
+      background-color rgba(white, 0.5)
+      padding 2px
+      border-radius 3px
+      margin 0 0 0 3px
+      line-height 0 !important
+      padding 3px
+      vertical-align -4px
+
+    .icon:focus
+      background-color rgba(white, 0.7)
+      box-shadow: 0 0 5px rgba(117, 185, 240, 0.6);
+
+    .icon:hover
+      background-color rgba(white, 0.8)
+
+    span
+      width 120px
+      text-align right
+      color white
+      padding-right 1em
+
+    input
+      width 180px
+      min-width 0 !important
+
+  .prompt.shown
+    top 0
+
+  .prompt.and-replace .replace
+    display block
