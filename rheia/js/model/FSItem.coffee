@@ -257,6 +257,7 @@ define [
 
     # Allows to move the current FSItem
     move: (newPath) =>
+      newPath = newPath.replace( /\\/g, conf.separator).replace /\//g, conf.separator
       FSItem.collection.moveInProgress = true
       rheia.sockets.admin.emit 'move', @_serialize(), newPath
 

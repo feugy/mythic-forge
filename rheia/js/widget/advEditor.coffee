@@ -111,6 +111,7 @@ define [
           @options.theme = value
           @options._editor.setTheme "ace/theme/#{value}"
         when 'mode'
+          value = 'less' if value is 'stylus'
           @options.mode = value
           @options._editor.getSession().setMode "ace/mode/#{value}"
     

@@ -10,6 +10,7 @@
     - register users from Facebook
 
 - Rheia
+  - bugs
   - **[TODO]** handle rule requires
   - edition perspective
     - Maps

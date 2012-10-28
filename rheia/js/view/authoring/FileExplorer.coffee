@@ -40,16 +40,16 @@ define [
   # @return the corresponding rendering
   renderItem = (item) ->
     html = ''
-    name = item.get('path').substring item.get('path').lastIndexOf('\\')+1
+    name = item.get('path').substring item.get('path').lastIndexOf(conf.separator)+1
     if item.get 'isFolder'
       html = """
-        <div class="folder" data-path="#{item.get('path')}">
+        <div class="folder" data-path="#{item.get 'path' }">
           <h1><i></i>#{name}</h1>
           <div class="content"></div>
         </div>
       """
     else 
-      html = """<div data-path="#{item.get('path')}" class="file #{item.extension}"><i></i>#{name}</div>"""
+      html = """<div data-path="#{item.get 'path'}" class="file #{item.extension}"><i></i>#{name}</div>"""
     $(html)
 
   # Comparator function, that allows to sort FSItems inside the collection.
@@ -134,7 +134,14 @@ define [
       item = FSItem.collection.get $(event.target).closest('.file,.folder').data 'path'
       return unless item?
       path = item.get 'path'
-      name = path.substring path.lastIndexOf('\\')+1
+      name = path.substring path.lastIndexOf(conf.separator)+1
+
+      # keep previous selected and remove class
+      @_previousSelected = @$el.find('.selected').data 'path'
+      @$el.find('.selected').removeClass 'selected'
+      @selected = path
+      node = $(event.target).closest('div, ul').addClass 'selected'
+
       folder = item.get 'isFolder'
       @_menu.element.empty().data('folder', folder).data 'path', path
       if folder
@@ -171,7 +178,7 @@ define [
     _onAdd: (item) =>
       # ignore restored items
       return if @_loading or item.restored
-      # do not add if already present
+      # do not add if already present (escape \. Leave / as existing)
       existing = @$el.find "div[data-path='#{item.get('path').replace(/\\/g, '\\\\')}']"
       return unless existing.length is 0
 
@@ -186,6 +193,7 @@ define [
         # under a folder
         parent = FSItem.collection.get parentPath
         return unless parent? and parent.get('content')?
+        # escape \. Leave / as existing
         parentNode = @$el.find "div[data-path='#{parentPath.replace(/\\/g, '\\\\')}'] > .content"
         content = parent.get('content').concat()
 
@@ -207,7 +215,17 @@ define [
     #
     # @param item [FSItem] removed item
     _onRemove: (item) =>
+      # escape \. Leave / as existing
       removed = @$el.find "div[data-path='#{item.get('path').replace(/\\/g, '\\\\')}']"
+      pos = removed.offset()
+
+      # remove immediately from parent to allow renaming
+      $('body').append removed
+      removed.css 
+        position: 'absolute'
+        top: pos.top
+        left: pos.left
+      
       removed.transition 
         x:-animShift, 
         animDuration, 
@@ -230,6 +248,7 @@ define [
       @_loading = false
       # Get the existing folder inside explorer
       path = item.get 'path'
+      # escape \. Leave / as existing
       parentNode = @$el.find "div[data-path='#{path.replace(/\\/g, '\\\\')}'] > .content"
 
       content = item.get 'content'
