@@ -84,7 +84,7 @@ define [
         @_oldWidgets = {}
         # all widget are loaded: reset position
         @_itemLayer.css 
-          top:0
+          top: 0
           left: 0
 
       # separate fields from items

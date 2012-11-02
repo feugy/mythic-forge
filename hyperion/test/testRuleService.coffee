@@ -74,8 +74,8 @@ describe 'RuleService tests', ->
             @name= 'rule 3'
           canExecute: (actor, target, callback) =>
             target.getLinked ->
-              callback null, target.get('pilot').equals actor
-          execute: (actor, target, callback) =>
+              callback null, if target.get('pilot').equals actor then [] else null
+          execute: (actor, target, params, callback) =>
             target.getLinked ->
               target.x++
               target.get('pilot').x++
@@ -108,7 +108,7 @@ describe 'RuleService tests', ->
                 return done 'the rule 3 was not resolved' if results[item2._id].length isnt 1
 
                 # when executing this rule on that target
-                service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
+                service.execute results[item2._id][0].name, item1._id, item2._id, [], (err, result)->
                   return done "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
@@ -131,8 +131,8 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 4'
           canExecute: (actor, target, callback) =>
-            callback null, actor.get('stock').length is 0
-          execute: (actor, target, callback) =>
+            callback null, if actor.get('stock').length is 0 then [] else null
+          execute: (actor, target, params, callback) =>
             part = new Item {type:actor.type, name: 'part'}
             @created.push part
             actor.set 'stock', [part]
@@ -156,7 +156,7 @@ describe 'RuleService tests', ->
             return done 'the rule 4 was not resolved' if results[item1._id].length isnt 1
 
             # when executing this rule on that target
-            service.execute results[item1._id][0].name, item1._id, item1._id, (err, result)->
+            service.execute results[item1._id][0].name, item1._id, item1._id, [], (err, result)->
               return done "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
@@ -180,8 +180,8 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 5'
           canExecute: (actor, target, callback) =>
-            callback null, (part for part in actor.get('stock') when target.equals(part))?
-          execute: (actor, target, callback) =>
+            callback null, (part for part in actor.get('stock') when target.equals(part))
+          execute: (actor, target, params, callback) =>
             @removed.push target
             callback null, 'part removed'
         )()"""
@@ -206,7 +206,7 @@ describe 'RuleService tests', ->
               return done 'the rule 5 was not resolved' if results[item2._id].length isnt 1
 
               # when executing this rule on that target
-              service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
+              service.execute results[item2._id][0].name, item1._id, item2._id, [], (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
@@ -236,8 +236,8 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 0'
             canExecute: (actor, target, callback) =>
-              callback null, true;
-            execute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
       script.save (err, saved) ->
@@ -272,7 +272,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute results[player._id][0].name, player._id, (err, result)->
+        service.execute results[player._id][0].name, player._id, [], (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -308,8 +308,8 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 0'
           canExecute: (actor, target, callback) =>
-            callback null, true;
-          execute: (actor, target, callback) =>
+            callback null, []
+          execute: (actor, target, params, callback) =>
             callback null, 'hello modified !'
         module.exports = new MyRule()"""
       script.save (err) ->
@@ -319,7 +319,7 @@ describe 'RuleService tests', ->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
-          service.execute results[player._id][0].name, player._id, (err, result)->
+          service.execute results[player._id][0].name, player._id, [], (err, result)->
             return done "Unable to execute rules: #{err}" if err?
 
             # then the modficiation was taken in account
@@ -337,8 +337,8 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 1'
             canExecute: (actor, target, callback) =>
-              callback null, true;
-            execute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
       script.save (err) ->
@@ -421,7 +421,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute results[item2._id][0].name, item1._id, item2._id, (err, result)->
+        service.execute results[item2._id][0].name, item1._id, item2._id, [], (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -437,8 +437,8 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 2'
             canExecute: (actor, target, callback) =>
-              callback null, target.get('x').valueOf() is 1
-            execute: (actor, target, callback) =>
+              callback null, if target.get('x').valueOf() is 1 then [] else null
+            execute: (actor, target, params, callback) =>
               target.x++
               callback null, 'target moved'
           module.exports = new MoveRule()"""
@@ -455,7 +455,7 @@ describe 'RuleService tests', ->
           assert.ok rule isnt null
 
           # when executing this rule on that target
-          service.execute rule.name, item1._id, item2._id, (err, result)->
+          service.execute rule.name, item1._id, item2._id, [], (err, result)->
             if err?
               assert.fail "Unable to execute rules: #{err}"
               return done();
@@ -843,8 +843,8 @@ describe 'RuleService tests', ->
               @name= 'rule 10'
               @active = false
             canExecute: (actor, target, callback) =>
-              callback null, true;
-            execute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
               target.set 'name', 'changed !'
               callback null, 'hello !'
           )()"""
@@ -869,8 +869,8 @@ describe 'RuleService tests', ->
               @name= 'rule 11'
               @active = false
             canExecute: (actor, target, callback) =>
-              callback null, true;
-            execute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
               target.set 'name', 'changed !'
               callback null, 'hello !'
           )()"""
@@ -878,7 +878,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 11', item1._id, item1._id, (err, results) ->
+        service.execute 'rule 11', item1._id, item1._id, [], (err, results) ->
           # then the rule was not resolved
           assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
           done()
@@ -902,8 +902,8 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 20'
             canExecute: (actor, target, callback) =>
-              callback null, true
-            execute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
               callback null
           )()"""
       script.save (err) ->
@@ -926,15 +926,15 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 21'
             canExecute: (actor, target, callback) =>
-              callback null, true
-            execute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
               callback null
           )()"""
       script.save (err) ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 21', item1._id, item1._id, (err, results) ->
+        service.execute 'rule 21', item1._id, item1._id, [], (err, results) ->
           # then the error is reported
           assert.include err, 'failed to require'
           done()

@@ -18,6 +18,8 @@
 ###
 'use strict'
 
+moment = require 'moment'
+_ = require 'underscore'
 Player = require '../model/Player'
 Item = require '../model/Item'
 utils = require '../utils'
@@ -40,6 +42,18 @@ class _PlayerService
   # Service constructor.
   # Ensure admin account existence.
   constructor: ->
+    # Will update the last connection date after a minute to avoid too much db access
+    @activity = _.debounce (email) =>
+      Player.findOne {email: email}, (err, player) =>
+        return if err? or player is null # ignore errors
+        # set to a minute ago, because we are using debounce.
+        now = new moment()  
+        now.milliseconds 0
+        now.subtract 'seconds', 60
+        player.set 'lastConnection', now.toDate()
+        player.save()
+    , 60000
+
     Player.findOne {email:'admin'}, (err, result) =>
       throw "Unable to check admin account existence: #{err}" if err?
       return logger.info '"admin" account already exists' if result?
@@ -240,4 +254,4 @@ setTokens = (player, provider, callback) ->
     return callback "Failed to update player: #{err}" if err?
     logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.get 'email'}"
     notifier.notify 'players', 'connect', newPlayer
-    callback null, token
+    callback null, token, newPlayer

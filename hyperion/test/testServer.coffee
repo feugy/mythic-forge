@@ -276,8 +276,8 @@ describe 'server tests', ->
                     constructor: ->
                       @name= 'rename'
                     canExecute: (actor, target, callback) =>
-                      callback null, target.get('name') is 'Jack'
-                    execute: (actor, target, callback) =>
+                      callback null, if target.get('name') is 'Jack' then [] else null
+                    execute: (actor, target, params, callback) =>
                       @created.push new Item({type: target.type, name:'Peter'})
                       @removed.push actor
                       target.set('name', 'Joe')
@@ -365,7 +365,7 @@ describe 'server tests', ->
               updated = true
 
             # when executing the rename rule for john on jack
-            socket.emit 'executeRule', results[jack._id][0].name, john._id, jack._id
+            socket.emit 'executeRule', results[jack._id][0].name, john._id, jack._id, []
 
           # when resolving rules for john on jack
           socket.emit 'resolveRules', john._id, jack._id

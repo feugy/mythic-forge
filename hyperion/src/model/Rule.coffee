@@ -54,8 +54,8 @@ class Rule
   # @param actor [Item] the concerned actor
   # @param target [Item] the concerned target
   # @param callback [Function] called when the rule is applied, with two arguments:
-  #   @param err [String] error string. Null if no error occured
-  #   @param apply [Boolean] true if the rule apply, false otherwise.
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback params [Array] array of awaited parameter (may be empty), or null/undefined if rule does not apply
   canExecute: (actor, target, callback) =>
     throw "#{module.filename}.canExecute() is not implemented yet !"
 
@@ -67,10 +67,11 @@ class Rule
   #
   # @param actor [Item] the concerned actor
   # @param target [Item] the concerned target
+  # @param params [Array] array (may be empty) of awaited parametes, specified by resolve.
   # @param callback [Function] called when the rule is applied, with one arguments:
-  #   @param err [String] error string. Null if no error occured
-  #   @param result [Object] an arbitrary result of this rule.
-  execute: (actor, target, callback) =>
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback result [Object] an arbitrary result of this rule.
+  execute: (actor, target, params, callback) =>
     throw "#{module.filename}.execute() is not implemented yet !"
         
 module.exports = Rule

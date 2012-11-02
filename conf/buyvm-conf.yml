@@ -13,10 +13,7 @@ server:
 
 # Authentication details
 authentication:
-  success: 'http://www.mythic-forge.com/rheia/login?'
-  error: 'http://www.mythic-forge.com/rheia/login?'  
   tokenLifeTime: 900 # number of seconds during wich tokens are valid
-  inactivityTime: 900 # number of seconds of inactivity before kicking user
   # Key usable on mythic-forge.com domain with SSL
   google:
     id: 750195776526-mo5tvhku8nig3hdfcrqdmeu5t970ssvp.apps.googleusercontent.com

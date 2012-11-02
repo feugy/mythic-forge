@@ -79,21 +79,22 @@ registerConf = (base) ->
 # Must not be a subpart of another RIA
 # @param rootFolder [String] path to the local folder that contains the RIA files.
 # @param isStatic [Boolean] No coffee or stylus compilation provided. Default to false.
-# @param secured [Boolean] Access to this RIA is secured and need authentication. Default to false.
-configureRIA = (base, rootFolder, isStatic = false, secured = false) ->
+# @param securedRedirect [String] Access to this RIA is secured and need authentication. This base string is used to
+# redirect incoming request that are not authentified or allowed. Default to null.
+# @param
+configureRIA = (base, rootFolder, isStatic = false, securedRedirect = null) ->
 
-  if secured
+  if securedRedirect?
     # if RIA is secured, register first a security filter
-    authentPage = utils.confKey 'authentication.success'
     app.get new RegExp("^#{base}"), (req, res, next) ->
       token = req.signedCookies?.token
       # redirect unless cookie exists
-      return res.redirect "#{authentPage}redirect=#{encodeURIComponent req.url}" unless token?
+      return res.redirect "#{securedRedirect}?redirect=#{encodeURIComponent req.url}" unless token?
       # proceed if cookie value is known
       return next() if token of authorizedTokens
       # removes the cookie and deny
       res.clearCookie 'token'
-      res.redirect "#{authentPage}error=#{encodeURIComponent "#{base} not authorized"}"
+      res.redirect "#{securedRedirect}?error=#{encodeURIComponent "#{base} not authorized"}"
 
   registerConf base
 
@@ -154,7 +155,7 @@ app.use express.static 'docs'
 
 # configure a game RIA and the administration RIA 
 configureRIA '/game', utils.confKey 'game.production', true
-configureRIA '/dev', utils.confKey('game.dev'), false, true
+configureRIA '/dev', utils.confKey('game.dev'), false, '/rheia/login'
 
 if process.env.NODE_ENV is 'buyvm'
   configureRIA '/rheia', './rheia-min', true

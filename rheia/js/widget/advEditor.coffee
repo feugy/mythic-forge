@@ -136,11 +136,15 @@ define [
         @_editor.findAll @_prompt.find('.find input').val(), {}, true
       ), 300
 
-      @_prompt.on 'click', '.previous', => @_editor.findPrevious {}, true
-      @_prompt.on 'click', '.next', => @_editor.findNext {}, true
+      # bind prompt commands
       @_prompt.on 'click', '.close', => 
+        # hide prompt and focus editor
         @_prompt.removeClass 'shown'
         @_editor.focus()
+      # search next and previous
+      @_prompt.on 'click', '.previous', => @_editor.findPrevious {}, true
+      @_prompt.on 'click', '.next', => @_editor.findNext {}, true
+      # replace first and all occurences
       @_prompt.on 'click', '.first', => 
         @_editor.replace @_prompt.find('.replace input').val(), needle: @_prompt.find('.find input').val()
       @_prompt.on 'click', '.all', =>
@@ -152,6 +156,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
+      console.log "set option #{key}"
       return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['text', 'mode', 'theme', 'tabSize']
       switch key
         when 'text' 

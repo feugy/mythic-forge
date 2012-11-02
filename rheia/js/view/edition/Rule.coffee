@@ -23,11 +23,12 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/rule.html'
+  'text!tpl/rule.coffee'
   'utils/validators'
   'view/BaseEditionView'
   'model/Executable'
   'widget/advEditor'
-], ($, i18n, i18nEdition, template, validators, BaseEditionView, Executable) ->
+], ($, i18n, i18nEdition, template, emptyRule, validators, BaseEditionView, Executable) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -69,7 +70,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable _id: i18n.labels.newName, content:''
+      @model = new Executable _id: i18n.labels.newName, content: emptyRule
 
     # **private**
     # Gets values from rendering and saved them into the edited object.

@@ -316,11 +316,14 @@ define [
       , i18n.labels.fsItemName, input, 'keyup' 
 
       # displays error on keyup. Binds after validator creation to validate first
-      input.on 'keyup', =>
+      input.focus()
+      input.on 'keyup', (event) =>
         # displays error on keyup
         popup.find('.errors').empty()
         if validator.errors.length
           popup.find('.errors').append error.msg for error in validator.errors
+        if event.which is $.ui.keyCode.ENTER
+          popup.parent().find('.ui-dialog-buttonset > *').eq(0).click()
     
     # **private**
     # Handler that removes selected fsItem after a confirmation popup

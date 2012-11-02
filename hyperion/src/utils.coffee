@@ -146,6 +146,7 @@ addI18n = (schema, field, options = {}) ->
 # @param property [Object] the property definition
 # @option property type [String] the awaited type. Could be: string, text, boolean, integer, float, date, array or object
 # @option property def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
+  # @return null if value is correct, an error string otherwise
 checkPropertyType = (value,  property) ->
   err = null
 
@@ -191,6 +192,16 @@ checkPropertyType = (value,  property) ->
     when 'string' then checkString()
     when 'text' then checkString()
     else err = "#{property.type} isn't a valid type"
+  err
+
+# Check that passed parameters do not violate constraints of awaited parameters
+#
+# @param actual [Array] Array of execution parameter values
+# @param expected [Array] Array of parameter constraints
+# @return null if value is correct, an error string otherwise
+checkParameters = (actual, expected) ->
+  err = null
+  # TODO
   err
 
 # Simple utility that generate a random token containing alphanumerical characters
@@ -451,6 +462,7 @@ module.exports =
   generateToken: generateToken
   enforceFolderSync: enforceFolderSync
   checkPropertyType: checkPropertyType
+  checkParameters: checkParameters
   addI18n: addI18n
   enhanceI18n: enhanceI18n
   collapseHistory: collapseHistory

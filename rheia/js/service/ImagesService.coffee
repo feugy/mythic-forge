@@ -51,7 +51,6 @@ define [
         _.defer =>
           rheia.router.trigger 'imageLoaded', true, image, @_cache[image]
       else unless image in @_pendingImages
-        console.log "load image #{image}..."
         @_pendingImages.push image
         # creates an image facility
         imgData = new Image()
@@ -140,7 +139,6 @@ define [
       src = event.target.src.replace /\?\d*$/, ''
       src = _.find @_pendingImages, (image) -> _(src).endsWith image
       return unless src?
-      console.log "image #{src} loaded"
       # Remove event from pending array
       @_pendingImages.splice @_pendingImages.indexOf(src), 1
       # Gets the image data with a canvas temporary element

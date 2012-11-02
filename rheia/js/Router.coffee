@@ -157,7 +157,7 @@ define [
 
     # wire logout facilities
     rheia.router.on 'logout', => 
-      localStorage.removeItem 'token'
+      localStorage.removeItem 'rheia.token'
       isLoggingOut = true
       socket.emit 'logout'
       rheia.router.navigate 'login', trigger: true
@@ -177,7 +177,7 @@ define [
       socket.emit 'getConnected', (err, player) =>
         # stores the token to allow re-connection
         rheia.player = player
-        localStorage.setItem 'token', player.token
+        localStorage.setItem 'rheia.token', player.token
         # update socket.io query to allow reconnection with new token value
         socket.socket.options.query = "token=#{player.token}"
 
@@ -212,7 +212,7 @@ define [
       @route 'login?error=:err', '_onLoginError'
       @route 'login?token=:token', '_onLoggedIn'
       @route 'login?redirect=:redirect', 'logAndRedirect', (redirect) =>
-        localStorage.setItem 'redirect', decodeURIComponent redirect
+        localStorage.setItem 'rheia.redirect', decodeURIComponent redirect
         @_onDisplayLogin()
       @route 'edition', 'edition', =>
         @_showPerspective 'editionPerspective', EditionPerspective
@@ -250,12 +250,12 @@ define [
       # check if we are connected
       if rheia.sockets.game is null
         perspectiveLoading = false
-        token = localStorage.getItem 'token'
+        token = localStorage.getItem 'rheia.token'
         return @navigate 'login', trigger:true unless token?
         return @_onLoggedIn token
 
       # update last perspective visited
-      localStorage.setItem 'lastPerspective', window.location.pathname.replace conf.basePath, ''
+      localStorage.setItem 'rheia.lastPerspective', window.location.pathname.replace conf.basePath, ''
 
       rheia.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists
@@ -280,9 +280,9 @@ define [
     #
     # @param token [String] valid autorization token
     _onLoggedIn: (token) =>
-      redirect = localStorage.getItem 'redirect'
+      redirect = localStorage.getItem 'rheia.redirect'
       if redirect?
-        localStorage.removeItem 'redirect'
+        localStorage.removeItem 'rheia.redirect'
         return window.location.pathname = redirect
       # Connects token
       connect token, =>
@@ -304,7 +304,7 @@ define [
 
         # run current or last-saved perspective
         current = window.location.pathname.replace conf.basePath, ''
-        current = localStorage.getItem 'lastPerspective' if current is 'login'
+        current = localStorage.getItem 'rheia.lastPerspective' if current is 'login'
         current = 'edition' unless current?
         # reset Backbone.history internal state to allow re-running current route
         Backbone.history.fragment = null

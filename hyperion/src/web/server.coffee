@@ -25,6 +25,8 @@ http = require 'http'
 https = require 'https'
 fs = require 'fs'
 passport = require 'passport'
+moment = require 'moment'
+urlParse = require('url').parse
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 TwitterStrategy = require('passport-twitter').Strategy
 LocalStrategy = require('passport-local').Strategy
@@ -73,17 +75,14 @@ else
 io = require('socket.io').listen server, {logger: logger}
 io.set 'log level', 0 # only errors
 
-# stores for each socket (socket id has key) an inactivity timeout
-inactivity = {}
-inactivityTime = 1000 * utils.confKey 'authentication.inactivityTime'
-
-# Invoked when some socket has activity. It reset its inactivity timer
+# Returns redirection url after authentication
+# Garantee no query parameter, and always redirect on static port without http
 #
-# @param id [String] socket's id
-# @param email [String] socket corresponding player's email 
-activation = (id, email) ->
-  clearTimeout inactivity[id]
-  # TODO does not work properly inactivity[id] = setTimeout (-> playerService.disconnect email, 'inactivity', ->), inactivityTime
+# @param req [Object] incoming request
+# @return string to redirect on
+getRedirect = (req) ->
+  url = urlParse if req.headers.referer? then req.headers.referer else "http://#{req.headers.host}"
+  "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.staticPort'}#{url.pathname}"
 
 # Kick a user
 # 
@@ -107,7 +106,7 @@ addCookie = (res, cookie) ->
   res.cookie 'token', cookie,
     signed: true
     httpOnly: true 
-    expires: new Date Date.now()+1000*utils.confKey 'authentication.tokenLifeTime'
+    expires: new moment().add('days', 1).toDate()
 
 # This methods exposes all service methods in a given namespace.
 #
@@ -126,7 +125,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
         do(method) ->
           socket.on method, ->
             # reset inactivity
-            activation socket.id, email
+            playerService.activity email
             originalArgs = Array.prototype.slice.call arguments
             args = originalArgs.concat()
             
@@ -206,10 +205,10 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
   app.get "/auth/#{provider}/callback", (req, res, next) ->
     passport.authenticate(provider, (err, token) ->
       # authentication failed
-      return res.redirect "#{errorUrl}error=#{err}" if err?
+      return res.redirect "#{getRedirect req}?error=#{err}" if err?
       # before redirecting, set a cookie to allow access to gamedev
       addCookie res, token
-      res.redirect "#{successUrl}token=#{token}"
+      res.redirect "#{getRedirect req}?token=#{token}"
       # remove session created during authentication
       req.session.destroy()
     ) req, res, next
@@ -270,9 +269,6 @@ watcher.on 'change', (operation, className, instance) ->
 # Configure also a strategy for manually created accounts.
 # Browser will be redirected to success Url with a `token` parameter in case of success 
 # Browser will be redirected to success Url with a `err` parameter in case of failure
-successUrl = utils.confKey 'authentication.success'
-errorUrl = utils.confKey 'authentication.error'
-
 passport.use new LocalStrategy playerService.authenticate
 
 # `POST /auth/login`
@@ -283,11 +279,12 @@ passport.use new LocalStrategy playerService.authenticate
 app.post '/auth/login', (req, res, next) ->
   passport.authenticate('local', (err, token, details) ->
     # authentication failed
-    return res.redirect "#{errorUrl}error=#{err}" if err?
-    return res.redirect "#{errorUrl}error=#{details.message}" if token is false
-    # before redirecting, set a cookie to allow access to gamedev
-    addCookie res, token
-    res.redirect "#{successUrl}token=#{token}"
+    return res.redirect "#{getRedirect req}?error=#{err}" if err?
+    return res.redirect "#{getRedirect req}?error=#{details.message}" if token is false
+    if details?.isAdmin
+      # before redirecting, set a cookie to allow access to gamedev
+      addCookie res, token
+    res.redirect "#{getRedirect req}?token=#{token}"
   ) req, res, next
 
 registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
@@ -319,7 +316,7 @@ unless noSecurity
     email = socket.manager.handshaken[socket.id]?.playerEmail
 
     # set inactivity
-    activation socket.id, email
+    playerService.activity email
 
     # retrieve the player email set during autorization phase, and stores it.
     socket.set 'email', email

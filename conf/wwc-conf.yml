@@ -30,20 +30,20 @@ ssl:
 # MongoDB connection
 mongo:
   host: localhost
-  db: proto-game
+  db: wwc
 
 # Executable scripts
 executable:
-  source: ../proto-game/rules
+  source: ../wwc/rules
   target: ./hyperion/lib/compiled
 
 # Game client
 game:
   # Must not contains or be a sibling of other paths.
-  dev: ../proto-game/source/client
-  optimized: ../proto-game/optimized
-  production: ../proto-game/final
-  save: ../proto-game/previous
+  dev: ../wwc/source/client
+  optimized: ../wwc/optimized
+  production: ../wwc/final
+  save: ../wwc/previous
 
 # Turns execution settings. Frequency in seconds
 turn:
@@ -51,4 +51,4 @@ turn:
 
 # Images file storage
 images:
-  store: ../proto-game/images
+  store: ../wwc/images

@@ -71,10 +71,13 @@ filterModified = (item, modified) ->
 #
 # @param actor [Object] the concerned actor or Player
 # @param targets [Array<Item>] array of targets the targeted item
+# @param wholeRule [Boolean] true to returns the whole rule and not just name/category
 # @param callback [Function] callback executed when rules where determined. Called with parameters:
 # @option callback err [String] an error string, or null if no error occured
-# @option callback rules [Object] applicable rules, stored in array and indexed with the target'id on which they apply
-resolve = (actor, targets, callback) ->
+# @option callback rules [Object] applicable rules: an associated array with target id as key, and
+# as value an array containing for each applicable rule the awaited parameters (params) and the rule name/category
+#
+resolve = (actor, targets, wholeRule, callback) ->
   results = {} 
   remainingTargets = 0
   
@@ -121,12 +124,16 @@ resolve = (actor, targets, callback) ->
           # function applied to filter rules that apply to the current target.
           filterRule = (rule, end) ->
             try
-              rule.canExecute actor, target, (err, isApplicable) ->
+              rule.canExecute actor, target, (err, parameters) ->
                 # exit at the first resolution error
                 return callback "Failed to resolve rule #{rule.name}: #{err}" if err?
-                if isApplicable
+                if Array.isArray parameters
                   logger.debug "rule #{rule.name} applies"
-                  results[target._id].push(rule) 
+                  if wholeRule
+                    result = rule: rule, params: parameters
+                  else
+                    result = name: rule.name, category: rule.category, params: parameters
+                  results[target._id].push result 
                 end() 
             catch err
               # exit at the first resolution error
@@ -214,10 +221,6 @@ class _RuleService
         
   # Resolves the applicable rules for a given situation.
   #
-  # @param callback [Function] callback executed when rules where determined. Called with parameters:
-  # @option callback err [String] an error string, or null if no error occured
-  # @option callback rules [Object] applicable rules, stored in array and indexed with the target'id on which they apply
-  #
   # @overload resolve(playerId, callback)
   #   Resolves applicable rules at for a player
   #   @param playerId [ObjectId] the concerned player's id
@@ -231,6 +234,12 @@ class _RuleService
   # @overload resolve(actorId, targetId, callback)
   #   Resolves applicable rules at for a specific target
   #   @param targetId [ObjectId] the targeted item's id
+  #
+  # @param callback [Function] callback executed when rules where determined. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback rules [Object] applicable rules: an associated array with target id as key, and
+  # as value an array containing for each applicable rule the awaited parameters (params) and the rule name and category
+  #
   resolve: (args..., callback) =>
     if args.length is 1
       # only playerId specified. Retrieve corresponding account
@@ -240,7 +249,7 @@ class _RuleService
         return callback "No player with id #{playerId}" unless player?
         # at last, resolve rules.
         logger.debug "resolve rules for player #{playerId}"
-        resolve player, [player], callback
+        resolve player, [player], false, callback
     else if args.length is 2
       # actorId and targetId are specified. Retrieve corresponding items
       actorId = args[0]
@@ -253,7 +262,7 @@ class _RuleService
         return callback "No target with id #{targetId}" unless target?
         # at last, resolve rules.
         logger.debug "resolve rules for actor #{actorId} and #{targetId}"
-        resolve actor, [target], callback
+        resolve actor, [target], false, callback
     else if args.length is 3 
       actorId = args[0]
       x = args[1]
@@ -274,7 +283,7 @@ class _RuleService
           return callback "Cannot resolve rules. Failed to retrieve field at position x:#{x} y:#{y}: #{err}" if err?
           results.splice 0, 0, field if field?
           logger.debug "resolve rules for actor #{actorId} at x:#{x} y:#{y}"
-          resolve actor, results, callback
+          resolve actor, results, false, callback
     else 
       throw new Error "resolve() must be call with player id or actor and target ids, or actor id and coordinates"
 
@@ -283,9 +292,6 @@ class _RuleService
   # All objects modified by the rule will be registered in database.
   #
   # @param ruleName [String] the executed rule name
-  # @param callback [Function] callback executed when rules where determined. Called with parameters:
-  # @option callback err [String] an error string, or null if no error occured
-  # @option callback rules [Object] applicable rules, stored in array and indexed with the target'id on which they apply
   #
   # @overload execute(ruleName, playerId, callback)
   #   Executes a specific rule for a player
@@ -295,17 +301,27 @@ class _RuleService
   #   Executes a specific rule for an actor and a given target
   #   @param actorId [ObjectId] the concerned actor's id
   #   @param targetId [ObjetId] the targeted item
-  execute: (ruleName, args..., callback) =>
+  #
+  # @param parameters [Array] array of awaited rule parameters
+  # @param callback [Function] callback executed when rules where determined. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback results [Object] arbitrary object returned by rule execution
+  #
+  execute: (ruleName, args..., parameters, callback) =>
     actor = null
     target = null
     # second part of the process
     process = =>
       logger.debug "execute rule #{ruleName} of #{actor._id} for #{target._id}"
       # then resolve rules
-      resolve actor, [target], (err, rules) =>
+      resolve actor, [target], true, (err, rules) =>
         # if the rule does not apply, leave right now
         return callback "Cannot resolve rule #{ruleName}: #{err}" if err?
-        rule = rule for rule in rules[target._id] when rule.name is ruleName
+        for applicable in rules[target._id] when applicable.rule.name is ruleName
+          rule = applicable.rule
+          err = utils.checkParameters parameters, applicable.params
+          return callback "Invalid parameters for #{ruleName}: #{err}" if err?
+          break
         return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}" unless rule?
         
         # reinitialize creation and removal arrays.
@@ -313,7 +329,7 @@ class _RuleService
         rule.removed = []
         # otherwise, execute the rule
         try 
-          rule.execute actor, target, (err, result) => 
+          rule.execute actor, target, parameters, (err, result) => 
             return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
 
             saved = []

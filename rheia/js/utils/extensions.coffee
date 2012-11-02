@@ -105,7 +105,9 @@ define [
   # define a getter for page visibility
   Object.defineProperty document, 'hidden', 
     get: () ->
-      document[prefix+'Hidden']
+      document["#{prefix}Hidden"]
+  # unified event name
+  $(document).on "#{prefix}visibilitychange", (event) -> $(document).trigger 'visibilitychange', event
 
   # use same name for animation frames facilities
   window.requestAnimationFrame = window[prefix+'RequestAnimationFrame']

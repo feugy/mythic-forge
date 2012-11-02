@@ -4,6 +4,7 @@
   - cache evinction on inutility and size
   - test images for field types and event types
   - Rule engine
+    - **[TODO]** check execute() parameters
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
   - Security
@@ -123,6 +124,7 @@
     - turn rules
     - turns notifications on success and error cases
     - handle require error cases on executables
+    - rule may require parameters
   - Web layer
     - map items CRUD invokation
     - rule engine invokation

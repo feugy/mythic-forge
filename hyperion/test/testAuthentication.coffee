@@ -18,6 +18,7 @@
 ###
 
 server = require '../src/web/server'
+proxy = require '../src/web/proxy'
 Player = require '../src/model/Player'
 utils = require '../src/utils'
 request = require 'request'
@@ -25,6 +26,7 @@ parseUrl = require('url').parse
 assert = require('chai').assert
 
 port = utils.confKey 'server.apiPort'
+staticPort = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"
 
 describe 'Authentication tests', ->
@@ -32,11 +34,14 @@ describe 'Authentication tests', ->
   before (done) ->
     Player.collection.drop (err)->
       return done err if err?
-      server.listen port, 'localhost', done
+      server.listen port, 'localhost', (err) ->
+        return done err if err?
+        proxy.listen staticPort, 'localhost', done
 
   # Restore admin player for further tests
   after (done) ->
     server.close()
+    proxy.close()
     new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
   describe 'given a started server', ->
@@ -82,7 +87,7 @@ describe 'Authentication tests', ->
               return done err if err?
 
               # then the success page is displayed
-              assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+              assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
               token = parseUrl(res.request.uri.href).query.replace 'token=', ''
               assert.isNotNull token
               # then account has been created and populated
@@ -103,7 +108,7 @@ describe 'Authentication tests', ->
           return done err if err?
 
           # then the success page is displayed
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
           token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
           assert.isNotNull token2
           assert.notEqual token2, token
@@ -161,7 +166,7 @@ describe 'Authentication tests', ->
                   return done err if err?
 
                   # then the success page is displayed
-                  assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+                  assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
                   token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
                   assert.isNotNull token2
                   assert.notEqual token2, token
@@ -184,7 +189,7 @@ describe 'Authentication tests', ->
         request "#{rootUrl}/auth/google", (err, res, body) ->
           return done err if err?
           # then the google authentication page is displayed
-          assert.equal 'accounts.google.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
           assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
           assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
           # forge form to log-in
@@ -229,7 +234,7 @@ describe 'Authentication tests', ->
                 return done err if err?
 
                 # then the success page is displayed
-                assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+                assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
                 token = parseUrl(res.request.uri.href).query.replace 'token=', ''
                 assert.isNotNull token
                 # then account has been created and populated
@@ -249,7 +254,7 @@ describe 'Authentication tests', ->
         request "#{rootUrl}/auth/google", (err, res, body) ->
           return done err if err?
           # then the success page is displayed
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
           token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
           assert.isNotNull token2
           assert.notEqual token2, token
@@ -273,7 +278,7 @@ describe 'Authentication tests', ->
           request "#{rootUrl}/auth/google", (err, res, body) ->
             return done err if err?
             # then the google authentication page is displayed
-            assert.equal 'accounts.google.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+            assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
             assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
             assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
 
@@ -303,7 +308,7 @@ describe 'Authentication tests', ->
                 return done err if err?
 
                 # then the success page is displayed
-                assert.equal "localhost:#{utils.confKey 'server.apiPort'}", res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+                assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
                 token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
                 assert.isNotNull token2
                 assert.notEqual token2, token
@@ -342,7 +347,7 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
           assert.ok -1 is url.query.indexOf('error='), "Unexpected server error: #{url.query}"
           token = url.query.replace 'token=', ''
           assert.isNotNull token
@@ -367,7 +372,7 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
           assert.ok -1 isnt url.query.indexOf('Wrong%20credentials'), "unexpected error #{url.query}"
           done()   
 
@@ -384,7 +389,7 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
           assert.ok -1 isnt url.query.indexOf('Wrong%20credentials'), "unexpected error #{url.query}"
           done()   
 
@@ -400,6 +405,6 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal "localhost:#{utils.confKey 'server.apiPort'}", url.host, "Wrong host: #{url.host}"
+          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
           assert.ok -1 isnt url.query.indexOf('Missing%20credentials'), "unexpected error #{url.query}"
           done()  

@@ -38,13 +38,13 @@ define [
   # @option b x [Number] B's abscissa
   # @option b y [Number] B's ordinate
   # @return true if C is above the straight formed by A and B
-  _isAbove= (c, a, b) ->
+  _isBelow= (c, a, b) ->
     # first the leading coefficient
-    coef = (b.y-a.y) / (b.x-a.x)
-    # second the straight equation: y = coeff*x-h (because y is inverted)
-    h = coef*a.x - a.y
-    # above if c.y is greater than the equation computation
-    c.y < coef*c.x-h
+    coef = (b.y - a.y) / (b.x - a.x)
+    # second the straight equation: y = coeff*x + h
+    h = a.y - coef*a.x
+    # below if c.y is higher than the equation computation (because y is inverted)
+    c.y > coef*c.x + h
 
   # Base widget for maps that allows drag'n drop affectation and selections
   # Currently, only hexagonal maps are implemented
@@ -98,7 +98,6 @@ define [
       # string used to allow only a specific type of drag'n drop operations
       dndType: null
 
-      # **private**
       # color used for markers, grid, and so on.
       colors:
         selection: '#666'
@@ -106,8 +105,11 @@ define [
         grid: '#888'
         hover: '#ccc'
 
+      # angle use to simulate perspective. 60 means view from above. 45 means iso perspective
+      angle: 45
+
     # **private**
-    # Coordinate of the hidden top left tile, origin of the map.
+    # Coordinate of the hidden bottom left tile, origin of the map.
     _origin: x:0, y:0
 
     # **private**
@@ -222,12 +224,16 @@ define [
     # @option return top [Number] the object's top offset, relative to the map origin
     # @option return z-index [Number] the object's z-index
     elementOffset: (obj) ->
-      coeff = Math.abs(obj.y+@_origin.y)%2
-      shift = (Math.abs(obj.y)+1)%2 * Math.abs(@_origin.y%2)
+      # invert y axis
+      top = @_height*3 - ((obj.y - @_origin.y + 1) * 0.75 + 0.25) * @_tileH
+      # shift to right on even rows
+      shift = if Math.floor((@_height*3-top)/(@_tileH*0.75))%2 then 0 else if Math.abs(@_origin.y)%2  then -1 else 1
       {
-        left: (obj.x-@_origin.x-shift) * @_tileW + coeff * 0.5 * @_tileW
-        top: (obj.y-@_origin.y) * @_tileH * 0.75
-        'z-index': obj.y*2 + obj.x 
+        # left may be shifted on even rows
+        left: (obj.x - @_origin.x + 0.5*shift) * @_tileW
+        top: top
+        # for z-index, row is more important than column
+        'z-index': (@_verticalTotalNum()*3-obj.y+@_origin.y)*2 + obj.x 
       }
 
     # Returns the tile size in pixels, with zoom applied
@@ -251,36 +257,38 @@ define [
     # @option result y [Number] tile ordinates
     getCoord: (mouse) ->
       o = @options
-      # locate the upper rectangle in which the mouse hit
-      row = Math.floor mouse.y/(@_tileH*0.75) # TODO specific iso
-      if row % 2 isnt 0
-        mouse.x -= @_tileW*0.5
-      col = Math.floor mouse.x/@_tileW
-
-      # upper summit of the hexagon
+      # locate the upper rectangle in which the mouse hit, with reverted y axis
+      row = Math.floor (@_height*3-mouse.y)/(@_tileH*0.75) # TODO specific iso
+      shift = 0
+      if row % 2 is 1
+        shift = @_tileW*0.5
+      col = Math.floor (mouse.x+shift)/@_tileW
+      
+      # bottom summit of the hexagon
       a = 
-        x: (col+0.5)*@_tileW
-        y: row*@_tileH*0.75
-      # top-right summit of the hexagon
+        x: (col+0.5)*@_tileW-shift
+        y: @_height*3-row*@_tileH*0.75-2
+      # bottom-right summit of the hexagon
       b = 
-        x: (col+1)*@_tileW
-        y: (row+0.25)*@_tileH*0.75
-      # top-left summit of the hexagon
+        x: (col+1)*@_tileW-shift
+        y: @_height*3-(row+0.25)*@_tileH*0.75-2
+      # bottom-left summit of the hexagon
       c = 
-        x: col*@_tileW
+        x: col*@_tileW-shift
         y: b.y
-      # if the hit fell in the upper right triangle, it's in the hexagon above and right
-      if _isAbove(mouse, a, b)
-        col++ if row % 2
+
+      if _isBelow mouse, c, a
+        # if the hit fell in the lower left triangle, it's in the hexagon below and left
+        col-- if row % 2 is 1
         row--
-      # or if the hit fell in the upper left triangle, it's in the hexagon above and left
-      else if _isAbove(mouse, c, a)
-        col-- unless row % 2
+      else if _isBelow mouse, a, b
+        # or if the hit fell in the lower right triangle, it's in the hexagon below and right
+        col++ if row % 2 is 0
         row--
       # or it's the good hexagon :)
-      y = @_origin.y+row
+      y = row+@_origin.y
       pos = {
-        x: col+@_origin.x+Math.abs(@_origin.y%2)*(Math.abs(y)+1)%2
+        x: col+@_origin.x-Math.abs(y)%2*(Math.abs(@_origin.y)+1)%2
         y: y
       }
 
@@ -315,9 +323,9 @@ define [
       @_computeDimensions()
       @_tileW *= o.zoom
       @_tileH *= o.zoom
-      o.lowerCoord =
-        x: @_origin.x+Math.round(@_width/@_tileW)-1
-        y: @_origin.y+Math.round(@_height/(@_tileH*0.75)) # TODO specific iso
+      @_origin = 
+        x: o.lowerCoord.x - Math.floor @_width/@_tileW
+        y: o.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
 
       @element.css(
         height: @_height
@@ -387,12 +395,15 @@ define [
       return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['lowerCoord', 'displayGrid', 'displayMarkers', 'zoom']
       switch key
         when 'lowerCoord'
-          @options[key] = value
           o = @options
+          o[key] = value
           # computes lower coordinates
           o.upperCoord = 
-            x: value.x+Math.round @_width/@_tileW
-            y: value.y+Math.round @_height/(@_tileH*0.75) # TODO specific iso
+            x: value.x + Math.ceil @_width/@_tileW
+            y: value.y + Math.ceil @_height/(@_tileH*0.75) # TODO specific iso
+          @_origin = 
+            x: value.x - Math.floor @_width/@_tileW
+            y: value.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
           # creates a clone layer while reloading
           @_cloneLayer = $("<canvas width=\"#{@_width*3}\" height=\"#{@_height*3}\"></canvas>")
           # empty datas
@@ -408,6 +419,16 @@ define [
           @options[key] = value
           # change zoom without triggering the event
           @_zoom @options.zoom, true
+
+    # **private**
+    # Returns the number of tile within the map total height.
+    # Used to reverse the ordinate axis.
+    # Intended to be inherited, this implementation returns the layer container
+    #
+    # @param event [Event] the drag start event
+    # @return the moved DOM node.
+    _verticalTotalNum: () -> 
+      -1 + Math.floor @_height*3/(@_tileH*0.75) # TODO specific iso
 
     # **private**
     # Returns the DOM node moved by drag'n drop operation within the map.
@@ -456,16 +477,16 @@ define [
 
       # dimensions of the square that embed an hexagon.
       # the angle used reflect the perspective effect. 60° > view from above. 45° > isometric perspective
-      @_tileH = s*2*Math.sin 45*Math.PI/180
+      @_tileH = s*2*Math.sin @options.angle*Math.PI/180
       @_tileW = s*2
 
       # canvas dimensions (add 1 to take in account stroke width)
-      @_width = 1+(@options.horizontalTileNum*2+1)*s
-      @_height = 1+@options.verticalTileNum*0.75*@_tileH+0.25*@_tileH # TODO specific iso
+      @_width = 1+@options.horizontalTileNum*@_tileW
+      @_height = 1+@options.verticalTileNum*@_tileH*0.75 # TODO specific iso
 
       @_origin = 
-        x: @options.lowerCoord.x - @options.horizontalTileNum
-        y: @options.lowerCoord.y - @options.verticalTileNum
+        x: @options.lowerCoord.x - Math.floor @_width/@_tileW
+        y: @options.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
 
     # **private**
     # Redraws the grid wireframe.
@@ -477,22 +498,24 @@ define [
       return unless o.displayGrid
 
       ctx.strokeStyle = o.colors.grid 
-      # draw grid on it
-      for y in [0.5..@_height*3] by @_tileH*1.5
+      # draw grid on it, with revert ordinate axis
+      step = -@_tileH*1.5
+      for y in [@_height*3-0.5..0.5] by step
         for x in [0.5..@_width*3] by @_tileW    
           # horizontal hexagons
-          # first hexagon: starts from top-right summit, and draws counter-clockwise until bottom summit
-          ctx.moveTo x+@_tileW, y+@_tileH*0.25
+          # first hexagon: starts from bottom-right summit, and draws clockwise until top summit
+          ctx.moveTo x+@_tileW, y-@_tileH*0.25
           ctx.lineTo x+@_tileW*0.5, y
-          ctx.lineTo x, y+@_tileH*0.25
-          ctx.lineTo x, y+@_tileH*0.75
-          ctx.lineTo x+@_tileW*0.5, y+@_tileH
-          # second hexagon: starts from top summit, and draws counter-clockwise until bottom-right summit
-          ctx.moveTo x+@_tileW, y+@_tileH*0.75
-          ctx.lineTo x+@_tileW*0.5, y+@_tileH
-          ctx.lineTo x+@_tileW*0.5, y+@_tileH*1.5
-          ctx.lineTo x+@_tileW, y+@_tileH*1.75
-          ctx.lineTo x+@_tileW*1.5, y+@_tileH*1.5
+          ctx.lineTo x, y-@_tileH*0.25
+          ctx.lineTo x, y-@_tileH*0.75
+          ctx.lineTo x+@_tileW*0.5, y-@_tileH
+          # second hexagon: starts from bottom summit, and draws clockwise until top-right summit
+          ctx.moveTo x+@_tileW, y-@_tileH*0.75
+          ctx.lineTo x+@_tileW*0.5, y-@_tileH
+          ctx.lineTo x+@_tileW*0.5, y-@_tileH*1.5
+          ctx.lineTo x+@_tileW, y-@_tileH*1.75
+          ctx.lineTo x+@_tileW*1.5, y-@_tileH*1.5
+          
       ctx.stroke()
 
     # **private**
@@ -508,20 +531,19 @@ define [
       ctx.fillStyle = o.colors.markers
       ctx.textAlign = 'center'
       ctx.textBaseline  = 'middle'
-      originX = @_origin.x
-      originY = @_origin.y
-      # draw grid on it
-      line = 0
-      for y in [0.5..@_height*3] by @_tileH*1.5
-        for x in [0.5..@_width*3] by @_tileW   
-          gameX = originX + Math.floor x/@_tileW
-          gameY = originY + line
+      # draw grid on it, with revert ordinate axis
+      step = -@_tileH*1.5
+      line = originY = Math.floor (@_height*3-@_tileH)/step
+      for y in [@_height*3-0.5..0.5] by step
+        for x in [0.5..@_width*3] by @_tileW    
+          gameX = @_origin.x + Math.floor x/@_tileW
+          gameY = @_origin.y + line - originY
 
           if gameX % 5 is 0
             if gameY % 5 is 0
-              ctx.fillText "#{gameX}:#{gameY}", x+@_tileW*0.5, y+@_tileH*0.5
+              ctx.fillText "#{gameX}:#{gameY}", x+@_tileW*0.5, y-@_tileH*0.5
             else if gameY > 0 and gameY % 5 is 4 or gameY < 0 and gameY % 5 is -1
-              ctx.fillText "#{gameX}:#{gameY+1}", x+@_tileW*((Math.abs(@_origin.y)+1) % 2), y+@_tileH*1.25
+              ctx.fillText "#{gameX}:#{gameY+1}", x+@_tileW*((Math.abs(@_origin.y)+1) % 2), y-@_tileH*1.25
 
         line += 2
 
@@ -542,7 +564,6 @@ define [
       ctx.lineTo left+@_tileW*.5, top+@_tileH
       ctx.lineTo left+@_tileW, top+@_tileH*.75
       ctx.lineTo left+@_tileW, top+@_tileH*.25
-      ctx.lineTo left+@_tileW*.5, top
       ctx.closePath()
       ctx.fillStyle = color
       ctx.fill()
@@ -595,6 +616,9 @@ define [
         @_computeDimensions()
         @_tileW *= o.zoom
         @_tileH *= o.zoom
+        @_origin = 
+          x: o.lowerCoord.x - Math.floor @_width/@_tileW
+          y: o.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
 
         # redraws everything
         @_drawGrid()
@@ -616,8 +640,8 @@ define [
           # compute new lowerCoord
           o = @options
           newCoord =
-            x: @_origin.x+Math.round(@_width/@_tileW)-1
-            y: @_origin.y+Math.round(@_height/(@_tileH*0.75)) # TODO specific iso
+            x: @_origin.x+Math.floor @_width/@_tileW
+            y: @_origin.y+Math.floor @_height/(@_tileH*0.75) # TODO specific iso
           console.log "map zoom ends on x: #{newCoord.x} y:#{newCoord.y}"
           @setOption 'lowerCoord', newCoord
         , 300
@@ -647,7 +671,7 @@ define [
       for data in o.data
         if "#{data.typeId}-#{data.num}.png" is src
           {left, top} = @elementOffset data
-          ctx.drawImage img, left, top, @_tileW, @_tileH
+          ctx.drawImage img, left, top, @_tileW+1, @_tileH+1
       # all images was loaded: remove temporary field layer
       @_replaceFieldClone()
           
@@ -769,55 +793,46 @@ define [
         # move end
         o = @options
         
-        moveX = -parseInt @_container.css 'left'
-        moveY = -parseInt @_container.css 'top'
+        # get the movement's width and height
+        reference = @getCoord x:@_width, y:@_height
+        pos = 
+          x:-parseInt @_container.css 'left'
+          y:-parseInt @_container.css 'top'
+        move =  @getCoord pos
+        move.x -= reference.x
+        move.y -= reference.y
 
         # update widget coordinates
-        origin = @getCoord x:@_width, y:@_height
-        newPos =  @getCoord x:moveX, y:moveY
-        @_origin.x += newPos.x-origin.x
-        @_origin.y += newPos.y-origin.y
+        o.lowerCoord.x += move.x
+        o.lowerCoord.y += move.y
+        @_origin = 
+          x: o.lowerCoord.x - Math.floor @_width/@_tileW
+          y: o.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
 
-        # and redraws everything, because it depends on the graduations
+        # redraws everything
         @_drawGrid()
         @_drawMarkers()
         @_drawSelection()
         @_drawCursor()
 
-        # we need to ajust the end animation regarding the mouse position:
-        # if it's over an half tile, follow the movement, otherwise, goes backward 
-        shiftX = moveX % @_tileW
-        if Math.abs(shiftX) >  @_tileW/2
-          shiftX += (if shiftX > 0 then -1 else 1 ) * @_tileW
-
-        shiftY = moveY % @_tileH*0.75 # TODO specific iso
-        if Math.abs(shiftY) >  @_tileH*0.75/2
-          shiftY += (if shiftY > 0 then -1 else 1 ) * @_tileH*0.75
-
         # place fields layer because it will be redrawn once all new content would have been retrieved 
-        fShiftX = origin.x-newPos.x
-        fShiftY = origin.y-newPos.y
-        if fShiftY % 2 isnt 0
-          fShiftX += if @_origin.y % 2 then -0.5 else 0.5
+        # shift to right on even rows
+        shift = unless move.y%2 then 0 else if @_origin.y%2 then -1 else 1
         @_container.find('.movable').css
-          left: fShiftX*@_tileW
-          top: fShiftY*@_tileH*0.75
+          left: (0.5*shift-move.x)*@_tileW
+          top: move.y*@_tileH*0.75 # TODO specific iso
 
-        # place the container, and run the end animation
+        # place the container to only animate along a single tile dimension and run the end animation
         @_container.css
-          left: -@_width+shiftX
-          top: -@_height+shiftY
-
+          left: -@_width+(pos.x/@_tileW)-(pos.x%@_tileW)
+          top: -@_height+(pos.y/(@_tileH*0.75))-(pos.y%@_tileH*0.75)
         @_container.transition
           left: -@_width
           top: -@_height
         , 200, =>
           # reloads map
-          newCoord =
-            x: @_origin.x+Math.round(@_width/@_tileW)-1
-            y: @_origin.y+Math.round(@_height/(@_tileH*0.75)) # TODO specific iso
-          console.log "map move ends on x:#{newCoord.x} y:#{newCoord.y}"
-          @setOption 'lowerCoord', newCoord
+          console.log "map move ends on x:#{o.lowerCoord.x} y:#{o.lowerCoord.y}"
+          @setOption 'lowerCoord', o.lowerCoord
 
     # **private**
     # Drag'n drop selection end handler.
