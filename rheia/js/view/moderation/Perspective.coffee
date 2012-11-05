@@ -35,11 +35,12 @@ define [
   'view/moderation/Item'
   'view/moderation/Event'
   'view/moderation/Player'
+  'widget/mapRenderers'
   'widget/search'
   'widget/moderationMap'
   'widget/loadableImage'
 ], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, EventType, 
-  Map, Field, Item, Event, Player, ItemView, EventView, PlayerView) ->
+  Map, Field, Item, Event, Player, ItemView, EventView, PlayerView, Renderers) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
@@ -213,6 +214,7 @@ define [
       id = $(event.target).val()
       @_map = Map.collection.get id
       # reload map
+      @_mapWidget.setOption 'renderer', new Renderers[@_map.get 'kind']()
       @_mapWidget.setOption 'mapId', id
       @_mapWidget.setOption 'lowerCoord', @_mapWidget.options.lowerCoord
 

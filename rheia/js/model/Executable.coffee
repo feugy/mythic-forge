@@ -69,7 +69,6 @@ define [
       eval coffee.compile content
 
       requirejs.onError = (err) =>
-        console.error err unless silent
         delete requirejs.onError
         unless silent
           console.log content
@@ -168,7 +167,6 @@ define [
             # reset internal state as if rule was new
             @exported = null
             @error = err
-            console.log 'coucou'
             return @trigger 'change:error', @
           @exported = exported
           oldKind = @kind

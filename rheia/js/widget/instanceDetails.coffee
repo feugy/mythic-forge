@@ -107,7 +107,7 @@ define [
                   firstShowDelay: 1000
                 ).data 'toggleable'
             @_tooltip.open event.pageX, event.pageY
-          , 750
+          , 500
         @element.on 'mouseleave', => clearTimeout @_tooltipTimeout
 
     # **private**

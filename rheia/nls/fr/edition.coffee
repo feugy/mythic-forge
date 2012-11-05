@@ -74,9 +74,9 @@ define
       array: "tableau d'objets"
     mapKind: 'Type'
     mapKinds: [
-      {name: '2D-iso hexagonale', value:'hexagon'}
-      {name: '2D-iso carrée', value:'diamond'}
-      {name: '2D carrée', value:'square'}
+      {name: 'Hexagonale', value:'hexagon'}
+      {name: '3D isométrique', value:'diamond'}
+      {name: '2D', value:'square'}
     ]
     randomAffect: 'affectation aléatoire'
 

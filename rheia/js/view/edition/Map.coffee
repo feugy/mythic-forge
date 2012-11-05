@@ -28,8 +28,9 @@ define [
   'model/Map'
   'model/Field'
   'model/FieldType'
+  'widget/mapRenderers'
   'widget/authoringMap'
-], ($, _, i18n, i18nEdition, template, BaseEditionView, Map, Field, FieldType) ->
+], ($, _, i18n, i18nEdition, template, BaseEditionView, Map, Field, FieldType, Renderers) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -134,7 +135,14 @@ define [
     # call to `fillRendering`. 
     _specificRender: =>
       super()
-      @_kindWidget = @$el.find('select.field').change @_onChange
+      @_kindWidget = @$el.find('select.field').change =>
+        kind = @_kindWidget.find('option:selected').val()
+        if kind of Renderers
+          renderer =  new Renderers[kind]() 
+          @_mapWidget.setOption 'renderer', renderer
+        @_onChange()
+
+      kind = @_kindWidget.find('option:selected').val()
       @_mapWidget = @$el.find('.map').authoringMap(
         tileDim: 75
         verticalTileNum: 14
@@ -144,8 +152,10 @@ define [
         displayMarkers: true
         dndType: i18n.constants.fieldAffectation
         affect: @_onAffect
+        renderer: if kind of Renderers then new Renderers[kind]() else null
         coordChanged: =>
           # reloads map content
+          return if @_tempId?
           @model.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
         selectionChanged: =>
           # update action bar button state
@@ -167,17 +177,18 @@ define [
     _fillModel: =>
       # superclass handles description image, name and description
       super()
-
       # update map kind
       @model.set 'kind', @_kindWidget.find('option:selected').val()
 
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
+      kind = @model.get 'kind' 
+      renderer =  new Renderers[kind]() if kind of Renderers
       # update kind rendering (before calling super)
       @_kindWidget.find('option:selected').removeAttr 'selected'
-      @_kindWidget.find("option[value='#{@model.get('kind')}']").attr 'selected', 'selected'
-      @_mapWidget.setOption 'kind', @model.get 'kind'
+      @_kindWidget.find("option[value='#{kind}']").attr 'selected', 'selected'
+      @_mapWidget.setOption 'renderer', renderer
 
       # superclass handles description image, name and description, and trigger _onChange
       super()

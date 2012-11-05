@@ -154,9 +154,8 @@ define [
     dragHelper: (instance) ->
       # put instance name and type image
       dragged = $("<span><label>#{instanceName instance}</label></span>")
-      $('<span></span>').loadableImage(
-        source: instance?.get('type')?.get 'descImage'
-        noButtons: true
+      $('<span></span>').mapItem(
+        model: instance
       ).prependTo dragged
 
       dragged.data 'instance', instance

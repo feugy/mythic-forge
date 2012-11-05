@@ -26,25 +26,6 @@ define [
   'mousewheel'
 ],  ($, _, utils) ->
 
-  # Compute the location of the point C regarding the straight between A and B
-  #
-  # @param c [Object] tested point
-  # @option c x [Number] C's abscissa
-  # @option c y [Number] C's ordinate
-  # @param a [Object] first reference point
-  # @option a x [Number] A's abscissa
-  # @option a y [Number] A's ordinate
-  # @param b [Object] second reference point
-  # @option b x [Number] B's abscissa
-  # @option b y [Number] B's ordinate
-  # @return true if C is above the straight formed by A and B
-  _isBelow= (c, a, b) ->
-    # first the leading coefficient
-    coef = (b.y - a.y) / (b.x - a.x)
-    # second the straight equation: y = coeff*x + h
-    h = a.y - coef*a.x
-    # below if c.y is higher than the equation computation (because y is inverted)
-    c.y > coef*c.x + h
 
   # Base widget for maps that allows drag'n drop affectation and selections
   # Currently, only hexagonal maps are implemented
@@ -52,9 +33,8 @@ define [
 
     options:   
 
-      # displayed map content. 
-      # Read-only, use `addData()` and `removeData()` to update.
-      data: []
+      # delegate object used to draw tiles on map
+      renderer: null
 
       # lower coordinates of the displayed map. Modification triggers the 'coordChanged' event, and reset map content.
       # Read-only, use `setOption('lowerCoord', ...)` to modify.
@@ -109,16 +89,12 @@ define [
       angle: 45
 
     # **private**
+    # displayed map content. 
+    _data: []
+
+    # **private**
     # Coordinate of the hidden bottom left tile, origin of the map.
     _origin: x:0, y:0
-
-    # **private**
-    # Real tile width in pixel, taking zoom in account.
-    _tileW: 0
-
-    # **private**
-    # Real tile height in pixel, taking zoom in account.
-    _tileH: 0
 
     # **private**
     # Total width of the displayed map.
@@ -188,7 +164,7 @@ define [
       o = @options
       for data in added
         if data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
-          o.data.push data
+          @_data.push data
           img = "/images/#{data.typeId}-#{data.num}.png"
           unless img in @_loadedImages
             @_loadedImages.push img
@@ -206,90 +182,25 @@ define [
       for data in removed
         if data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
           # draw white tile at removed field coordinate
-          @_drawTile ctx, data, 'white'
+          o.renderer.drawTile ctx, data, 'white'
           # removes from local cache
-          for field, i in o.data when field._id is data._id
-            o.data.splice i, 1
+          for field, i in @_data when field._id is data._id
+            @_data.splice i, 1
             break
 
-    # Compute the display position of a given object, relatively to the map origin.
-    # Set Also the z-index
-    # TODO specific iso
+    # Allows renderer to get map internal dimensions
     #
-    # @param coord [Object] object containing x and y coordinates
-    # @option coord x [Number] object abscissa
-    # @option coord y [Number] object ordinates
-    # @return an object containing:
-    # @option return left [Number] the object's left offset, relative to the map origin
-    # @option return top [Number] the object's top offset, relative to the map origin
-    # @option return z-index [Number] the object's z-index
-    elementOffset: (obj) ->
-      # invert y axis
-      top = @_height*3 - ((obj.y - @_origin.y + 1) * 0.75 + 0.25) * @_tileH
-      # shift to right on even rows
-      shift = if Math.floor((@_height*3-top)/(@_tileH*0.75))%2 then 0 else if Math.abs(@_origin.y)%2  then -1 else 1
+    # @return map inner dimension:
+    # @option height [Number] the total map height, which is 3 times the displayed height
+    # @option width [Number] the total map width, which is 3 times the displayed width
+    # @option origin [Object] the map coordinate of the lower-left corner of the map
+    # @option verticalTotalNum [Number] number of tile within the displayed height
+    mapRefs: ->
       {
-        # left may be shifted on even rows
-        left: (obj.x - @_origin.x + 0.5*shift) * @_tileW
-        top: top
-        # for z-index, row is more important than column
-        'z-index': (@_verticalTotalNum()*3-obj.y+@_origin.y)*2 + obj.x 
-      }
-
-    # Returns the tile size in pixels, with zoom applied
-    # 
-    # @return an object containing:
-    # @option return width [Number] tile unitary width
-    # @option return height [Number] tile unitary height
-    tileSize: ->
-      {
-        width: @_tileW
-        height: @_tileH
-      }
-
-    # Returns x-y map coordinates from x-y pixel coordinate 
-    #  
-    # @param mouse [Object] mouse position relatively to the container
-    # @option result x [Number] pixel horizontal position
-    # @option result y [Number] pixel vertical position
-    # @return coordinates
-    # @option result x [Number] tile abscissa
-    # @option result y [Number] tile ordinates
-    getCoord: (mouse) ->
-      o = @options
-      # locate the upper rectangle in which the mouse hit, with reverted y axis
-      row = Math.floor (@_height*3-mouse.y)/(@_tileH*0.75) # TODO specific iso
-      shift = 0
-      if row % 2 is 1
-        shift = @_tileW*0.5
-      col = Math.floor (mouse.x+shift)/@_tileW
-      
-      # bottom summit of the hexagon
-      a = 
-        x: (col+0.5)*@_tileW-shift
-        y: @_height*3-row*@_tileH*0.75-2
-      # bottom-right summit of the hexagon
-      b = 
-        x: (col+1)*@_tileW-shift
-        y: @_height*3-(row+0.25)*@_tileH*0.75-2
-      # bottom-left summit of the hexagon
-      c = 
-        x: col*@_tileW-shift
-        y: b.y
-
-      if _isBelow mouse, c, a
-        # if the hit fell in the lower left triangle, it's in the hexagon below and left
-        col-- if row % 2 is 1
-        row--
-      else if _isBelow mouse, a, b
-        # or if the hit fell in the lower right triangle, it's in the hexagon below and right
-        col++ if row % 2 is 0
-        row--
-      # or it's the good hexagon :)
-      y = row+@_origin.y
-      pos = {
-        x: col+@_origin.x-Math.abs(y)%2*(Math.abs(@_origin.y)+1)%2
-        y: y
+        height: @_height*3
+        width: @_width*3
+        origin: @_origin
+        verticalTotalNum: @_verticalTotalNum()
       }
 
     # **private**
@@ -299,8 +210,6 @@ define [
 
       # Initialize internal state
       @_origin = x:0, y:0
-      @_tileW = 0
-      @_tileH = 0
       @_width = 0
       @_height = 0
       @_container = null
@@ -315,17 +224,12 @@ define [
       @_loadedImages  = []
       @_pendingImages = 0
 
-
       @element.empty().removeClass().addClass 'map-widget'
       o = @options
+      return unless o.renderer?
 
       # dimensions depends on the map kind.
       @_computeDimensions()
-      @_tileW *= o.zoom
-      @_tileH *= o.zoom
-      @_origin = 
-        x: o.lowerCoord.x - Math.floor @_width/@_tileW
-        y: o.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
 
       @element.css(
         height: @_height
@@ -352,7 +256,7 @@ define [
         @_onClick event
       ).on('mousemove', (event) => 
         return unless @_moveJumper++ % 3 is 0
-        @_cursor = @getCoord @_mousePos event
+        @_cursor = @options.renderer.posToCoord @_mousePos event
         @_drawCursor()
       ).on('mouseleave', (event) => 
         @_cursor = null
@@ -392,31 +296,30 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['lowerCoord', 'displayGrid', 'displayMarkers', 'zoom']
+      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['renderer', 'lowerCoord', 'displayGrid', 'displayMarkers', 'zoom']
+      o = @options
+      o[key] = value
       switch key
+        when 'renderer'
+          @_create() if value?
         when 'lowerCoord'
-          o = @options
-          o[key] = value
           # computes lower coordinates
           o.upperCoord = 
-            x: value.x + Math.ceil @_width/@_tileW
-            y: value.y + Math.ceil @_height/(@_tileH*0.75) # TODO specific iso
+            x: value.x + Math.ceil @_width/o.renderer.tileW
+            y: value.y + Math.ceil @_height/o.renderer.tileH
           @_origin = 
-            x: value.x - Math.floor @_width/@_tileW
-            y: value.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
+            x: value.x - Math.floor @_width/o.renderer.tileW
+            y: value.y - Math.floor @_height/o.renderer.tileH
           # creates a clone layer while reloading
           @_cloneLayer = $("<canvas width=\"#{@_width*3}\" height=\"#{@_height*3}\"></canvas>")
           # empty datas
-          o.data = []
+          @_data = []
           @_trigger 'coordChanged'
         when 'displayGrid'
-          @options[key] = value
           @_drawGrid()
         when 'displayMarkers'
-          @options[key] = value
           @_drawMarkers()
         when 'zoom'
-          @options[key] = value
           # change zoom without triggering the event
           @_zoom @options.zoom, true
 
@@ -428,7 +331,7 @@ define [
     # @param event [Event] the drag start event
     # @return the moved DOM node.
     _verticalTotalNum: () -> 
-      -1 + Math.floor @_height*3/(@_tileH*0.75) # TODO specific iso
+      -1 + Math.floor @_height*3/@options.renderer.tileH
 
     # **private**
     # Returns the DOM node moved by drag'n drop operation within the map.
@@ -470,23 +373,21 @@ define [
 
     # **private**
     # Allows sub-classes to compute individual tiles and map dimensions, without using zoom.
-    # Must set attributes `_tileW`, `_tileH`, `_width`, `_height` and `_origin`
+    # Must set attributes `_width`, `_height` and `_origin`
     _computeDimensions: ->
       # horizontal hexagons: side length of an hexagon.
       s = @options.tileDim/2
 
-      # dimensions of the square that embed an hexagon.
-      # the angle used reflect the perspective effect. 60° > view from above. 45° > isometric perspective
-      @_tileH = s*2*Math.sin @options.angle*Math.PI/180
-      @_tileW = s*2
+      o = @options
+      o.renderer.init @
 
-      # canvas dimensions (add 1 to take in account stroke width)
-      @_width = 1+@options.horizontalTileNum*@_tileW
-      @_height = 1+@options.verticalTileNum*@_tileH*0.75 # TODO specific iso
+      # canvas dimensions (add 1 to take in account stroke width, and no zoom)
+      @_width = 1+o.horizontalTileNum*o.renderer.tileW/o.zoom
+      @_height = 1+o.verticalTileNum*o.renderer.tileH/o.zoom 
 
       @_origin = 
-        x: @options.lowerCoord.x - Math.floor @_width/@_tileW
-        y: @options.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
+        x: o.lowerCoord.x - Math.floor @_width/o.renderer.tileW
+        y: o.lowerCoord.y - Math.floor @_height/o.renderer.tileH
 
     # **private**
     # Redraws the grid wireframe.
@@ -498,25 +399,7 @@ define [
       return unless o.displayGrid
 
       ctx.strokeStyle = o.colors.grid 
-      # draw grid on it, with revert ordinate axis
-      step = -@_tileH*1.5
-      for y in [@_height*3-0.5..0.5] by step
-        for x in [0.5..@_width*3] by @_tileW    
-          # horizontal hexagons
-          # first hexagon: starts from bottom-right summit, and draws clockwise until top summit
-          ctx.moveTo x+@_tileW, y-@_tileH*0.25
-          ctx.lineTo x+@_tileW*0.5, y
-          ctx.lineTo x, y-@_tileH*0.25
-          ctx.lineTo x, y-@_tileH*0.75
-          ctx.lineTo x+@_tileW*0.5, y-@_tileH
-          # second hexagon: starts from bottom summit, and draws clockwise until top-right summit
-          ctx.moveTo x+@_tileW, y-@_tileH*0.75
-          ctx.lineTo x+@_tileW*0.5, y-@_tileH
-          ctx.lineTo x+@_tileW*0.5, y-@_tileH*1.5
-          ctx.lineTo x+@_tileW, y-@_tileH*1.75
-          ctx.lineTo x+@_tileW*1.5, y-@_tileH*1.5
-          
-      ctx.stroke()
+      o.renderer.drawGrid ctx
 
     # **private**
     # Redraws the grid markers.
@@ -531,42 +414,7 @@ define [
       ctx.fillStyle = o.colors.markers
       ctx.textAlign = 'center'
       ctx.textBaseline  = 'middle'
-      # draw grid on it, with revert ordinate axis
-      step = -@_tileH*1.5
-      line = originY = Math.floor (@_height*3-@_tileH)/step
-      for y in [@_height*3-0.5..0.5] by step
-        for x in [0.5..@_width*3] by @_tileW    
-          gameX = @_origin.x + Math.floor x/@_tileW
-          gameY = @_origin.y + line - originY
-
-          if gameX % 5 is 0
-            if gameY % 5 is 0
-              ctx.fillText "#{gameX}:#{gameY}", x+@_tileW*0.5, y-@_tileH*0.5
-            else if gameY > 0 and gameY % 5 is 4 or gameY < 0 and gameY % 5 is -1
-              ctx.fillText "#{gameX}:#{gameY+1}", x+@_tileW*((Math.abs(@_origin.y)+1) % 2), y-@_tileH*1.25
-
-        line += 2
-
-    # **private**
-    # Draw a single selected tile in selection or to highlight hover
-    # TODO iso specific
-    #
-    # @param ctx [Canvas] the canvas context.
-    # @param pos [Object] coordinate of the drew tile
-    # @param color [String] the color used to fill the tile
-    _drawTile: (ctx, pos, color) ->
-      ctx.beginPath()
-      {left, top} = @elementOffset pos
-      # draws an hexagon
-      ctx.moveTo left+@_tileW*.5, top
-      ctx.lineTo left, top+@_tileH*.25
-      ctx.lineTo left, top+@_tileH*.75
-      ctx.lineTo left+@_tileW*.5, top+@_tileH
-      ctx.lineTo left+@_tileW, top+@_tileH*.75
-      ctx.lineTo left+@_tileW, top+@_tileH*.25
-      ctx.closePath()
-      ctx.fillStyle = color
-      ctx.fill()
+      o.renderer.drawMarkers ctx
 
     # **private**
     # Draws the current selection on the selection layer
@@ -578,7 +426,7 @@ define [
       ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       ctx.fillStyle = @options.colors.selection
-      @_drawTile ctx, selected, @options.colors.selection for selected in @options.selection
+      @options.renderer.drawTile ctx, selected, @options.colors.selection for selected in @options.selection
 
     # **private**
     # Redraws cursor on stored position (@_cursor)
@@ -586,7 +434,7 @@ define [
       canvas = @element.find('.hover')[0]
       canvas.width = canvas.width
       return unless @_cursor
-      @_drawTile canvas.getContext('2d'), @_cursor, @options.colors.hover
+      @options.renderer.drawTile canvas.getContext('2d'), @_cursor, @options.colors.hover
 
     # **private**
     # Allows to zoom in and out the map
@@ -614,11 +462,6 @@ define [
         o.zoom = zoom
         # computes again current dimensions
         @_computeDimensions()
-        @_tileW *= o.zoom
-        @_tileH *= o.zoom
-        @_origin = 
-          x: o.lowerCoord.x - Math.floor @_width/@_tileW
-          y: o.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
 
         # redraws everything
         @_drawGrid()
@@ -629,8 +472,8 @@ define [
         # redraws totally the field layer
         canvas = @_container.find('.fields')[0]
         canvas.width = canvas.width
-        tmp = o.data
-        o.data = []
+        tmp = @_data
+        @_data = []
         @addData tmp
 
         # trigger event
@@ -640,8 +483,8 @@ define [
           # compute new lowerCoord
           o = @options
           newCoord =
-            x: @_origin.x+Math.floor @_width/@_tileW
-            y: @_origin.y+Math.floor @_height/(@_tileH*0.75) # TODO specific iso
+            x: @_origin.x+Math.floor @_width/o.renderer.tileW
+            y: @_origin.y+Math.floor @_height/o.renderer.tileH
           console.log "map zoom ends on x: #{newCoord.x} y:#{newCoord.y}"
           @setOption 'lowerCoord', newCoord
         , 300
@@ -668,10 +511,10 @@ define [
       ctx = @_cloneLayer[0].getContext '2d' if @_cloneLayer?
 
       # looks for data corresponding to this image
-      for data in o.data
+      for data in @_data
         if "#{data.typeId}-#{data.num}.png" is src
-          {left, top} = @elementOffset data
-          ctx.drawImage img, left, top, @_tileW+1, @_tileH+1
+          {left, top} = o.renderer.coordToPos data
+          ctx.drawImage img, left, top, o.renderer.tileRenderW+1, o.renderer.tileRenderH+1
       # all images was loaded: remove temporary field layer
       @_replaceFieldClone()
           
@@ -721,7 +564,9 @@ define [
       # keeps the start coordinate for a selection
       if event.shiftKey and @_selectable
         @_offset = offset
-        @_start = @getCoord x:event.pageX+@_width-@_offset.left, y:event.pageY+@_height-@_offset.top
+        @_start = o.renderer.posToCoord
+          x: event.pageX+@_width-@_offset.left
+          y: event.pageY+@_height-@_offset.top
         # adds a layer to draw selection
         @_selectLayer = @element.find('.selection').clone()
         @_container.append @_selectLayer
@@ -760,7 +605,9 @@ define [
       # draws temporary selection
       if @_start and @_selectLayer
         # compute temporary end of the selectionEvalue la fin temporaire de la séléction
-        end = @getCoord x:event.pageX+@_width-@_offset.left, y:event.pageY+@_height-@_offset.top
+        end = o.renderer.posToCoord 
+          x: event.pageX+@_width-@_offset.left
+          y: event.pageY+@_height-@_offset.top
         lower =
           x: Math.min end.x, @_start.x
           y: Math.min end.y, @_start.y
@@ -773,7 +620,7 @@ define [
         # walk through selected tiles
         for x in [lower.x..higher.x]
           for y in [lower.y..higher.y]
-            @_drawTile ctx, {x:x, y:y}, @options.colors.selection
+            @options.renderer.drawTile ctx, {x:x, y:y}, @options.colors.selection
       true
     
     # **private**
@@ -794,11 +641,11 @@ define [
         o = @options
         
         # get the movement's width and height
-        reference = @getCoord x:@_width, y:@_height
+        reference = o.renderer.posToCoord x:@_width, y:@_height
         pos = 
           x:-parseInt @_container.css 'left'
           y:-parseInt @_container.css 'top'
-        move =  @getCoord pos
+        move = o.renderer.posToCoord pos
         move.x -= reference.x
         move.y -= reference.y
 
@@ -806,8 +653,8 @@ define [
         o.lowerCoord.x += move.x
         o.lowerCoord.y += move.y
         @_origin = 
-          x: o.lowerCoord.x - Math.floor @_width/@_tileW
-          y: o.lowerCoord.y - Math.floor @_height/(@_tileH*0.75) # TODO specific iso
+          x: o.lowerCoord.x - Math.floor @_width/o.renderer.tileW
+          y: o.lowerCoord.y - Math.floor @_height/o.renderer.tileH
 
         # redraws everything
         @_drawGrid()
@@ -819,13 +666,13 @@ define [
         # shift to right on even rows
         shift = unless move.y%2 then 0 else if @_origin.y%2 then -1 else 1
         @_container.find('.movable').css
-          left: (0.5*shift-move.x)*@_tileW
-          top: move.y*@_tileH*0.75 # TODO specific iso
+          left: (0.5*shift-move.x)*o.renderer.tileW
+          top: move.y*o.renderer.tileH
 
         # place the container to only animate along a single tile dimension and run the end animation
         @_container.css
-          left: -@_width+(pos.x/@_tileW)-(pos.x%@_tileW)
-          top: -@_height+(pos.y/(@_tileH*0.75))-(pos.y%@_tileH*0.75)
+          left: -@_width+(pos.x/o.renderer.tileW)-(pos.x%o.renderer.tileW)
+          top: -@_height+(pos.y/o.renderer.tileH)-(pos.y%o.renderer.tileH)
         @_container.transition
           left: -@_width
           top: -@_height
@@ -848,7 +695,9 @@ define [
       # removes temporary layer
       @_selectLayer.remove()
       # compute end coordinate
-      end = @getCoord x:event.pageX+@_width-@_offset.left, y:event.pageY+@_height-@_offset.top
+      end = o.renderer.posToCoord 
+        x: event.pageX+@_width-@_offset.left
+        y: event.pageY+@_height-@_offset.top
       console.log "selection between x:#{@_start.x} y:#{@_start.y} and x:#{end.x} y:#{end.y}"
 
       lower =
@@ -873,7 +722,7 @@ define [
     # @param event [Event] click event
     _onClick: (event) ->
       return unless @_selectable
-      coord = @getCoord @_mousePos event
+      coord = @options.renderer.posToCoord @_mousePos event
       console.log "click on tile x:#{coord.x} y:#{coord.y} with control key #{event.ctrlKey}"
       add = true
       if event.ctrlKey
@@ -890,3 +739,72 @@ define [
       @options.selection.push coord if add
       @_drawSelection()
       @_trigger 'selectionChanged'
+
+
+  # The map renderer is used to render tiles on the map
+  # Extending this class allows to have different tiles type: hexagonal, diamond...
+  class MapRenderer
+
+    # associated map widget
+    map: null
+
+    # Individual tile width, taking zoom into account
+    # Used for tile displayal, may have overlapping with other tiles.
+    tileRenderH: null
+
+    # Individual tile height, taking zoom into account
+    # Used for tile displayal, may have overlapping with other tiles.
+    tileRenderH: null
+
+    # Individual tile width, taking zoom into account
+    # Used for tile displayal, may have overlapping with other tiles.
+    tileW: null
+
+    # Individual tile height, taking zoom into account
+    # Used to compute stuff within map, without any overlapping
+    tileH: null
+    
+    # Initiate the renderer with map inner state. 
+    # Initiate `tileW` and `tileH`.
+    #
+    # @param map [Object] the associated map widget
+    # 
+    init: (map) => throw new Error 'the `init` method must be implemented'
+
+    # Translate map coordinates to css position (relative to the map origin)
+    #
+    # @param coord [Object] object containing x and y coordinates
+    # @option coord x [Number] object abscissa
+    # @option coord y [Number] object ordinates
+    # @return an object containing:
+    # @option return left [Number] the object's left offset, relative to the map origin
+    # @option return top [Number] the object's top offset, relative to the map origin
+    coordToPos: (obj) => throw new Error 'the `coordToPos` method must be implemented'
+
+    # Translate css position (relative to the map origin) to map coordinates to css position
+    #
+    # @param coord [Object] object containing top and left position relative to the map origin
+    # @option coord left [Number] the object's left offset
+    # @option coord top [Number] the object's top offset
+    # @return an object containing:
+    # @option return x [Number] object abscissa
+    # @option return y [Number] object ordinates
+    # @option return z-index [Number] the object's z-index
+    posToCoord: (pos) => throw new Error 'the `posToCoord` method must be implemented'
+
+    # Draws the grid wireframe on a given context.
+    #
+    # @param ctx [Object] the canvas context on which drawing
+    drawGrid: (ctx) => throw new Error 'the `drawGrid` method must be implemented'
+
+    # Draws the markers on a given context.
+    #
+    # @param ctx [Object] the canvas context on which drawing
+    drawMarkers: (ctx) => throw new Error 'the `drawMarkers` method must be implemented'
+
+    # Draw a single selected tile in selection or to highlight hover
+    #
+    # @param ctx [Canvas] the canvas context.
+    # @param pos [Object] coordinate of the drew tile
+    # @param color [String] the color used to fill the tile
+    drawTile: (ctx, pos, color) -> throw new Error 'the `drawTile` method must be implemented'

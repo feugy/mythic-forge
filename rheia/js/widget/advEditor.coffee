@@ -78,6 +78,10 @@ define [
     # prompt to get find commands
     _prompt: null
 
+    # **private**
+    # number of occurences previously found
+    _foundNum: 0
+
     # Frees DOM listeners
     destroy: ->
       @_editor.destroy()
@@ -107,21 +111,13 @@ define [
       @_editor.commands.addCommand
         name: 'find'
         bindKey: win:'Ctrl-F', mac:'Command-F'
-        exec: =>
-          selection = @_editor.session.getTextRange @_editor.getSelectionRange()
-          @_prompt.find('.find input').val selection if selection
-          @_prompt.removeClass('and-replace').addClass 'shown'
-          @_prompt.find('.find input').focus()
+        exec: => @_onShowPrompt false
 
       # special implementation of replace command
       @_editor.commands.addCommand
         name: 'replace'
         bindKey: win:'Ctrl-H', mac:'Command-Option-F'
-        exec: =>
-          selection = @_editor.session.getTextRange @_editor.getSelectionRange()
-          @_prompt.find('.find input').val selection if selection
-          @_prompt.addClass('and-replace').addClass 'shown'
-          @_prompt.find('.find input').focus()
+        exec: => @_onShowPrompt true
 
       # fills its content
       @_setOption 'text', @options.text
@@ -132,23 +128,17 @@ define [
       # creates prompt
       @_prompt = $(prompt).appendTo @element
 
-      @_prompt.on 'keyup', '.find input', _.debounce ( =>
-        @_editor.findAll @_prompt.find('.find input').val(), {}, true
-      ), 300
-
+      # progressive find while entering input
+      @_prompt.on 'keyup', '.find input', _.throttle (=> @_onFind()), 100
       # bind prompt commands
-      @_prompt.on 'click', '.close', => 
-        # hide prompt and focus editor
-        @_prompt.removeClass 'shown'
-        @_editor.focus()
+      @_prompt.on 'click', '.close', (event) => @_onClosePrompt event
       # search next and previous
-      @_prompt.on 'click', '.previous', => @_editor.findPrevious {}, true
-      @_prompt.on 'click', '.next', => @_editor.findNext {}, true
+      @_prompt.on 'click', '.previous', (event) => @_onFind event, false
+      @_prompt.on 'click', '.next', (event) => @_onFind event, true
       # replace first and all occurences
-      @_prompt.on 'click', '.first', => 
-        @_editor.replace @_prompt.find('.replace input').val(), needle: @_prompt.find('.find input').val()
-      @_prompt.on 'click', '.all', =>
-        @_editor.replaceAll @_prompt.find('.replace input').val(), needle: @_prompt.find('.find input').val()
+      @_prompt.on 'click', '.first', (event) => @_onReplace event
+      @_prompt.on 'click', '.all', (event) => @_onReplace event, true
+        
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `source` changed.
@@ -179,4 +169,54 @@ define [
           value = 'less' if value is 'stylus'
           @options.mode = value
           @_editor.getSession().setMode "ace/mode/#{value}"
-    
+   
+    # **private**
+    # Show the find/replace prompt with an animation (Css)
+    #
+    # @param withReplace [Boolean] display the replace prompt
+    _onShowPrompt: (withReplace) ->
+      # change the searched content
+      selection = @_editor.session.getTextRange @_editor.getSelectionRange()
+      @_prompt.find('.find input').val selection if selection
+      # show prompt with replace and focus input
+      @_prompt.toggleClass('and-replace', withReplace).addClass 'shown'
+      @_prompt.find('.find input').focus()
+
+    # **private**
+    # Close the find/replace prompt
+    #
+    # @param event [Event] cancelled click event
+    _onClosePrompt: (event) -> 
+      event?.preventDefault()
+      # hide prompt and focus editor
+      @_prompt.removeClass 'shown'
+      @_editor.focus()
+
+    # **private**
+    # Find all, next or previous occurences of the searched text
+    #
+    # @param event [Event] cancelled click event
+    # @param next [Boolean] true to find next, false to find previous, other to find all
+    _onFind: (event, next) ->
+      event?.preventDefault()
+      if next is true
+        @_editor.findNext {}, true
+      else if next is false
+        @_editor.findPrevious {}, true
+      else
+        # search first
+        @_foundNum = @_editor.find @_prompt.find('.find input').val(), {}, true
+
+    # **private**
+    # Replace first or all occurences of the searched text with replace text
+    #
+    # @param event [Event] cancelled click event
+    # @param all [Boolean] true to replace all occurences
+    _onReplace: (event, all) ->
+      event?.preventDefault()
+      value = @_prompt.find('.replace input').val()
+      options = needle: @_prompt.find('.find input').val()
+      if all
+        @_editor.replaceAll value, options
+      else
+        @_editor.replace value, options

@@ -23,7 +23,7 @@ requirejs.config
   paths:
     'backbone': 'lib/backbone-0.9.2-min'
     'underscore': 'lib/underscore-1.3.3-min'
-    'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
+    'underscore.string': 'lib/underscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
     'jquery-ui': 'lib/jquery-ui-1.8.21-min'
     'jquery-punch': 'lib/jquery-punch-0.2.2-min'
@@ -34,8 +34,8 @@ requirejs.config
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
     'socket.io': 'lib/socket.io-0.9.10-min'
     'async': 'lib/async-0.1.22-min'
-    'coffeescript': 'lib/coffee-script-1.3.3-min'
-    'queryparser': 'lib/queryparser-1.1.0-min'
+    'coffeescript': 'lib/coffee-script-1.4.0-min'
+    'queryparser': 'lib/queryparser-1.2.0-min'
     'md5': 'lib/md5-2.2-min'
     'html5slider': 'lib/html5slider-min'
     'hogan': 'lib/hogan-2.0.0-min'
@@ -45,6 +45,8 @@ requirejs.config
     'text': 'lib/text-2.0.0-min'
     'nls': '../nls'
     'tpl': '../template'
+    # shim for rules
+    'mongodb': 'lib/shim/mongodb'
     
   shim:
     'backbone': 

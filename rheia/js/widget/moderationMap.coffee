@@ -189,7 +189,9 @@ define [
       moved = @_container
       # move from the map: search for an item wbove position
       offset = @element.offset()
-      pos = @getCoord x:event.pageX+@_width-offset.left, y:event.pageY+@_height-offset.top
+      pos = @options.renderer.posToCoord 
+        x: event.pageX+@_width-offset.left
+        y: event.pageY+@_height-offset.top
 
       @_dragged = []
       if @_popupMenu?
@@ -209,8 +211,8 @@ define [
         
         # set cursor offset of the drag helper, and avoid helper to be bellow cursor
         @_container.draggable 'option', 'cursorAt',
-          left: (@_tileW*@options.zoom/2)-25
-          top: (@_tileH*@options.zoom/2)-22
+          left: (@options.tileDim*@options.zoom/2)-25
+          top: (@options.tileDim*@options.zoom/2)-22
       else
         # reset the drag helper cursor offset
         @_container.draggable 'option', 'cursorAt', null
@@ -288,7 +290,7 @@ define [
     # Click handler that toggle the clicked tile from selection if the ctrl key is pressed
     # @param event [Event] click event
     _onClick: (event) ->
-      pos = @getCoord @_mousePos event
+      pos = @options.renderer.posToCoord @_mousePos event
       @_popupMenu?.element.off 'click'
       @_popupMenu?.element.remove()
 

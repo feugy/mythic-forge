@@ -116,24 +116,23 @@ define [
     #
     # @param defer [Boolean] allow to differ the application of new position. false by default
     _positionnate: (defer = false)->
+      return unless @options.map?
       coordinates = 
         x: @options.model.get 'x'
         y: @options.model.get 'y'
 
-      # get the widget cell coordinates
-      pos = @options.map.elementOffset coordinates
+      o = @options.map.options
 
-      zoom = @options.map.options.zoom
+      # get the widget cell coordinates
+      pos = o.renderer.coordToPos coordinates
       
       # center horizontally with tile, and make tile bottom and widget bottom equal
-      size = @options.map.tileSize()
-      pos.left += (size.width-@_imageSpec.width*zoom)/2 
-      pos.top += size.height-@_imageSpec.height*zoom
+      pos.left += (o.renderer.tileRenderW-@_imageSpec.width*o.zoom)/2 
+      pos.top += o.renderer.tileRenderH-@_imageSpec.height*o.zoom
 
-      # add perspective correction TODO iso specific
-      correction = -0.75*(@options.model.get('x')-@options.map.options.lowerCoord.x)+4
-      pos['-moz-transform'] = "skewX(#{correction}deg) scale(#{zoom})"
-      pos['-webkit-transform'] = "skewX(#{correction}deg) scale(#{zoom})"
+      # add perspective correction
+      pos['-moz-transform'] = "scale(#{o.zoom})"
+      pos['-webkit-transform'] = "scale(#{o.zoom})"
 
       if defer 
         # do not apply immediately the new position
@@ -261,7 +260,7 @@ define [
     _onUpdate: (model, changes) ->
       @options.model = model
       # removes if map has changed
-      @_onDestroy() if @options.model?.get('map')?.id isnt @options.map.options.mapId
+      @_onDestroy() if @options.model?.get('map')?.id isnt @options.map?.options.mapId
 
       if 'x' of changes or 'y' of changes
         # positionnate with animation if transition changed
