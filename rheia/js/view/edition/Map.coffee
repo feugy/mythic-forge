@@ -139,20 +139,16 @@ define [
         kind = @_kindWidget.find('option:selected').val()
         if kind of Renderers
           renderer =  new Renderers[kind]() 
+          @_mapWidget.options[key] = val for key, val of renderer.defaults
           @_mapWidget.setOption 'renderer', renderer
         @_onChange()
 
-      kind = @_kindWidget.find('option:selected').val()
       @_mapWidget = @$el.find('.map').authoringMap(
-        tileDim: 75
-        verticalTileNum: 14
-        horizontalTileNum: 12
         lowerCoord: {x:0, y:0}
         displayGrid: true
         displayMarkers: true
         dndType: i18n.constants.fieldAffectation
         affect: @_onAffect
-        renderer: if kind of Renderers then new Renderers[kind]() else null
         coordChanged: =>
           # reloads map content
           return if @_tempId?
@@ -164,6 +160,8 @@ define [
           @_inhibitZoom = true
           @$el.find('.zoom').val @_mapWidget.options.zoom
       ).data 'authoringMap'
+      # initiate renderer
+      @_kindWidget.change()
 
       # update map commands
       @$el.find('.toggle-grid').removeAttr 'checked'
@@ -184,11 +182,14 @@ define [
     # Updates rendering with values from the edited object.
     _fillRendering: =>
       kind = @model.get 'kind' 
-      renderer =  new Renderers[kind]() if kind of Renderers
       # update kind rendering (before calling super)
       @_kindWidget.find('option:selected').removeAttr 'selected'
       @_kindWidget.find("option[value='#{kind}']").attr 'selected', 'selected'
-      @_mapWidget.setOption 'renderer', renderer
+      
+      if kind of Renderers
+        renderer =  new Renderers[kind]() 
+        @_mapWidget.options[key] = val for key, val of renderer.defaults
+        @_mapWidget.setOption 'renderer', renderer
 
       # superclass handles description image, name and description, and trigger _onChange
       super()
@@ -249,10 +250,9 @@ define [
     # @option details inSelection [Boolean] indicates wheter the drop tile is in a multiple selection
     _onAffect: (event, details) =>
       unless details.inSelection
-        # removes current field
-        for field in @_mapWidget.options.data when field.x is details.coord.x and field.y is details.coord.y
-          # stored fields are just Json object, not Backbone.Model
-          new Field(field).destroy()
+        # removes current field if needed
+        existing = @_mapWidget.getData details.coord
+        new Field(existing).destroy() if existing?
 
         # and add new one instead
         new Field(
@@ -317,11 +317,12 @@ define [
     # @option details inSelection [Boolean] indicates wheter the drop tile is in a multiple selection
     _onRemoveSelection: (event) =>
       # gets JSON fields from map Widget that are selected
-      removed = _.filter @_mapWidget.options.data, (field) => 
-        return true for selected in @_mapWidget.options.selection when field.x is selected.x and field.y is selected.y
+      removed = []
+      for selected in @_mapWidget.options.selection
+        data = @_mapWidget.getData selected
+        removed.push new Field data if data?
       
       # creates Backbone models, and remove them in block
-      removed[i] = new Field field for field, i in removed
       Field.collection.destroy removed
       
     # **private**  

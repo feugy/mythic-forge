@@ -190,8 +190,8 @@ define [
       # move from the map: search for an item wbove position
       offset = @element.offset()
       pos = @options.renderer.posToCoord 
-        x: event.pageX+@_width-offset.left
-        y: event.pageY+@_height-offset.top
+        left: event.pageX+@_width-offset.left
+        top: event.pageY+@_height-offset.top
 
       @_dragged = []
       if @_popupMenu?
