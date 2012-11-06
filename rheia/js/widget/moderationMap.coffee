@@ -157,8 +157,13 @@ define [
       $.rheia.authoringMap::_create.apply @, arguments
 
       # adds the item layer.    
-      @_itemLayer = $("<div class='items movable' style='height:#{@_height*3}px; width:#{@_width*3}px'></div>").appendTo @_container
 
+      @_itemLayer = $("<div class='items movable'></div>").appendTo @_container
+      if @options.renderer?
+        @_itemLayer.css
+          height: @options.renderer.height*3
+          width: @options.renderer.width*3
+          
     # **private**
     # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
     #
@@ -290,13 +295,13 @@ define [
     # Click handler that toggle the clicked tile from selection if the ctrl key is pressed
     # @param event [Event] click event
     _onClick: (event) ->
-      pos = @options.renderer.posToCoord @_mousePos event
+      coord = @options.renderer.posToCoord @_mousePos event
       @_popupMenu?.element.off 'click'
       @_popupMenu?.element.remove()
 
       @_clicked = []
       for id, widget of @_itemWidgets
-        if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
+        if widget.options.coordinates.x is coord.x and widget.options.coordinates.y is coord.y
           @_clicked.push widget.options.model
 
       if @_clicked.length is 1

@@ -200,6 +200,9 @@ define [
       # for chaining purposes
       @
 
+    # Called by the TabPerspective each time the view is showned.
+    shown: =>
+
     # **private**
     # Effectively creates a new model.
     # **Must be overriden by subclasses**

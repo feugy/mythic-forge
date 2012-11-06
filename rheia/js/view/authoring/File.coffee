@@ -101,6 +101,10 @@ define [
         FSItem.collection.fetch item:@model
       # wire version changes
       @model.on 'version', @_onChangeVersion
+      
+    # Called by the TabPerspective each time the view is showned.
+    shown: =>
+      @_editorWidget?.resize()
 
     dispose: =>
       @model.off 'version', @_onChangeVersion

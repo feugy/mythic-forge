@@ -66,7 +66,11 @@ define [
       @model.on 'change:active', @_onActiveChange
       @model.on 'change:error', @_onCompilationError
       console.log "creates rule edition view for #{if id? then @model.id else 'a new rule'}"
-
+    
+    # Called by the TabPerspective each time the view is showned.
+    shown: =>
+      @_editorWidget?.resize()
+      
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>

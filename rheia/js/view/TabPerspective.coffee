@@ -98,8 +98,10 @@ define [
         )
         # handlers
         .bind('tabsadd', @_onTabAdded)
-        .bind('tabsselect', (event, ui) => @_actionBars?.select ui.index)
-        .data 'tabs'
+        .bind('tabsselect', (event, ui) => 
+          @_actionBars?.select ui.index
+          @_views[ui.index].shown()
+        ).data 'tabs'
 
       # instanciates a tab widget for action bars
       @_actionBars = @$el.find('> .right .ui-tabs.action-bars').tabs().data 'tabs'

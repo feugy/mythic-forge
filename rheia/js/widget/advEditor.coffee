@@ -87,6 +87,10 @@ define [
       @_editor.destroy()
       $.rheia.baseWidget::destroy.apply @, arguments
 
+    # This method might be called when the editor is shown, to resize it properly
+    resize: ->
+      _.defer => @_editor.resize true
+
     # **private**
     # Builds rendering
     _create: ->
@@ -177,7 +181,7 @@ define [
     _onShowPrompt: (withReplace) ->
       # change the searched content
       selection = @_editor.session.getTextRange @_editor.getSelectionRange()
-      @_prompt.find('.find input').val selection if selection
+      @_prompt.find('.find input').val if selection then selection else ''
       # show prompt with replace and focus input
       @_prompt.toggleClass('and-replace', withReplace).addClass 'shown'
       @_prompt.find('.find input').focus()

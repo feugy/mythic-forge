@@ -34,6 +34,21 @@ define [
 
   i18n = $.extend true, i18n, i18nEdition
 
+  # defaults rendering dimensions
+  renderDefaults = 
+    hexagon:
+      tileDim: 75
+      verticalTileNum: 14
+      horizontalTileNum: 12
+    diamond:
+      tileDim: 75
+      verticalTileNum: 22
+      horizontalTileNum: 12
+    square:
+      tileDim: 75
+      verticalTileNum: 8
+      horizontalTileNum: 11
+
   # Displays and edit a map on edition perspective
   class MapView extends BaseEditionView
 
@@ -139,7 +154,7 @@ define [
         kind = @_kindWidget.find('option:selected').val()
         if kind of Renderers
           renderer =  new Renderers[kind]() 
-          @_mapWidget.options[key] = val for key, val of renderer.defaults
+          @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
           @_mapWidget.setOption 'renderer', renderer
         @_onChange()
 
@@ -188,7 +203,7 @@ define [
       
       if kind of Renderers
         renderer =  new Renderers[kind]() 
-        @_mapWidget.options[key] = val for key, val of renderer.defaults
+        @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
         @_mapWidget.setOption 'renderer', renderer
 
       # superclass handles description image, name and description, and trigger _onChange

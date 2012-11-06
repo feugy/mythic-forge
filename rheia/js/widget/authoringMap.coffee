@@ -27,8 +27,8 @@ define [
 ],  ($, _, utils) ->
 
 
-  # Base widget for maps that allows drag'n drop affectation and selections
-  # Currently, only hexagonal maps are implemented
+  # Base widget for maps that allows drag'n drop affectation and selections.
+  # It delegates rendering operations to a mapRenderer that you need to manually create and set.
   $.widget 'rheia.authoringMap', $.rheia.baseWidget,
 
     options:   
@@ -262,9 +262,7 @@ define [
       @bindTo rheia.router, 'imageLoaded', => @_onImageLoaded.apply @, arguments
   
       # gets first data
-      setTimeout =>
-        @setOption 'lowerCoord', o.lowerCoord
-      , 0
+      _.defer =>  @setOption 'lowerCoord', o.lowerCoord
 
     # **private**
     # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.

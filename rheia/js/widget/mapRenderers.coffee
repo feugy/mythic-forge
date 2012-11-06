@@ -1,3 +1,21 @@
+###
+  Copyright 2010,2011,2012 Damien Feugas
+  
+  This file is part of Mythic-Forge.
+
+  Myth is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  at your option any later version.
+
+  Myth is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser Public License for more details.
+
+  You should have received a copy of the GNU Lesser Public License
+  along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
+###
 'use strict'
 
 define [
@@ -27,12 +45,6 @@ define [
 
   {
     hexagon: class HexagonRenderer extends Renderer
-
-      # defaults rendering dimensions
-      defaults:
-        tileDim: 75
-        verticalTileNum: 14
-        horizontalTileNum: 12
 
       # Initiate the renderer with map inner state. 
       # Value attributes `height`, `width`, `tileW` and `tileH`
@@ -143,7 +155,6 @@ define [
           y: y
         }
 
-
       # Draws the grid wireframe on a given context.
       #
       # @param ctx [Object] the canvas context on which drawing
@@ -233,12 +244,6 @@ define [
     # Diamond renderer creates isometric maps.
     # In terms of map coordinates, lowerCoord is displayed at upper-left corner, and upperCoord at lower-right corner.
     diamond: class DiamondRenderer extends Renderer
-
-      # defaults rendering dimensions
-      defaults:
-        tileDim: 75
-        verticalTileNum: 22
-        horizontalTileNum: 12
 
       # Initiate the renderer with map inner state. 
       # Value attributes `height`, `width`, `tileW` and `tileH`.
@@ -456,12 +461,6 @@ define [
 
     # Square renderer creates classic checkerboard maps
     square: class SquareRenderer extends Renderer
-
-      # defaults rendering dimensions
-      defaults:
-        tileDim: 75
-        verticalTileNum: 8
-        horizontalTileNum: 11
 
       # Initiate the renderer with map inner state.
       # Value attributes `height`, `width`, `tileW` and `tileH`

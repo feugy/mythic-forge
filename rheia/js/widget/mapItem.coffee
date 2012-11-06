@@ -127,7 +127,7 @@ define [
       pos = o.renderer.coordToPos coordinates
       
       # center horizontally with tile, and make tile bottom and widget bottom equal
-      pos.left += (o.renderer.tilerW-@_imageSpec.width*o.zoom)/2 
+      pos.left += (o.renderer.tileW-@_imageSpec.width*o.zoom)/2 
       pos.top += o.renderer.tileH-@_imageSpec.height*o.zoom
 
       # add perspective correction

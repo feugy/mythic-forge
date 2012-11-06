@@ -44,6 +44,21 @@ define [
 
   i18n = $.extend true, i18n, i18nModeration
 
+  # defaults rendering dimensions
+  renderDefaults = 
+    hexagon:
+      tileDim: 75
+      verticalTileNum: 14
+      horizontalTileNum: 8
+    diamond:
+      tileDim: 75
+      verticalTileNum: 22
+      horizontalTileNum: 8  
+    square:
+      tileDim: 75
+      verticalTileNum: 8
+      horizontalTileNum: 8
+
   # The moderation perspective shows real maps, and handle items, event and players
   class ModerationPerspective extends TabPerspective
     
@@ -121,12 +136,8 @@ define [
       # instanciate map widget
       @_mapWidget = @$el.find('.map').moderationMap(
         dndType: i18n.constants.instanceAffectation
-        tileDim: 75
-        verticalTileNum: 12
-        horizontalTileNum: 7
         # use a small zoom, and 0:0 is visible
         zoom: 0.75
-        lowerCoord: {x:-3, y:-4}
         displayGrid: true
         displayMarkers: true
         coordChanged: =>
@@ -214,6 +225,7 @@ define [
       id = $(event.target).val()
       @_map = Map.collection.get id
       # reload map
+      @_mapWidget.options[key] = val for key, val of renderDefaults[@_map.get 'kind']
       @_mapWidget.setOption 'renderer', new Renderers[@_map.get 'kind']()
       @_mapWidget.setOption 'mapId', id
       @_mapWidget.setOption 'lowerCoord', @_mapWidget.options.lowerCoord
