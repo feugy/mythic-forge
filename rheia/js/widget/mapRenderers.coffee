@@ -258,7 +258,7 @@ define [
 
         # canvas dimensions (add 1 to take in account stroke width, and no zoom)
         @width = 1+map.options.horizontalTileNum*@tileW/map.options.zoom
-        @height = 1+map.options.verticalTileNum*(@tileH*0.5)/map.options.zoom 
+        @height = 1+map.options.verticalTileNum*@tileH/map.options.zoom
 
         @origin = @nextCorner map.options.lowerCoord, true
 
@@ -277,34 +277,36 @@ define [
       # False to indicate its the bottom-left corner
       # @return map coordinates of the other corner
       nextCorner: (coord, upper=false) => 
-        
         if upper
-          # use a rectangular triangle below left edge of displayed area
-          # triangle's left corner is `angle/2`, triangle's right edge is `@height/2` 
-          offsetLeft = @height/(2*Math.tan @map.options.angle*Math.PI/360)
+          offsetW = @height*0.5*Math.tan @map.options.angle*Math.PI/180
+          tileW = @tileW/@map.options.zoom  
+          tileH = @tileH/@map.options.zoom
 
-          save = x:@origin.x, y:@origin.y
+          sav = x:@origin.x, y:@origin.y
           @origin = x:0, y:0
-          # we need to center vertically the lower-left corner, and goes backward
-          res = @posToCoord 
-            top: @height*1.5
-            left: @width-offsetLeft
-
-          @origin = save
+          # with an origin at 0:0, found the coordinate of the opposite searched point
+          # the search point is at @height=1.5 and @-width-offsetW
+          # shift by tile width and height to tackle posToCoord round operations 
+          res = @posToCoord top: -tileH+@height*4.5, left: tileW*3-@width+offsetW
+          @origin = sav
           {
-            x: coord.x - res.x
-            y: coord.y - res.y
-          } 
+            x: coord.x + res.x
+            y: coord.y + res.y
+          }
         else
+          sin = Math.sin @map.options.angle*Math.PI/180
           # use a rectangular triangle below left edge of displayed area
-          # triangle's left corner is `angle/2`, triangle's right edge is `@height/2` 
-          hypoLeft = @height/(2*Math.cos @map.options.angle*Math.PI/360)
+          # triangle's top corner is `angle`, triangle's bottom edge is `@height/2` 
+          hypoLeft = (@height*0.5)/sin
           # use a rectangular triangle above top edge of displayed area
           # triangle's top corner is `angle`, triangle's bottom edge is `@width/2` 
-          hypoTop = @width/(2*Math.sin @map.options.angle*Math.PI/180)
+          hypoTop = (@width*0.5)/sin
+          # but we need to correct error due to misplacing the origin...
+          error = @tileW*2/(@map.options.zoom*sin)
           # compute square edge's length
-          hypoSquare = @tileH/(2*Math.cos @map.options.angle*Math.PI/180)
-          edge = Math.ceil (hypoLeft+hypoTop)/hypoSquare
+          hypoSquare = @tileW*0.5/sin
+          edge = Math.ceil (hypoLeft+hypoTop+error)/hypoSquare
+          console.log hypoLeft, hypoTop, hypoSquare, edge
           {
             x: coord.x + edge
             y: coord.y + edge
@@ -346,7 +348,7 @@ define [
           shift = @tileW*0.5
           xShift = -1
         col = Math.floor (pos.left+shift)/@tileW
-
+        
         # bottom summit of the diamond
         a = 
           left: (col+0.5)*@tileW-shift

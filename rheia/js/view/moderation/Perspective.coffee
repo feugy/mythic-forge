@@ -50,14 +50,17 @@ define [
       tileDim: 75
       verticalTileNum: 14
       horizontalTileNum: 8
+      angle: 45
     diamond:
       tileDim: 75
-      verticalTileNum: 22
+      verticalTileNum: 11
       horizontalTileNum: 8  
+      angle: 45
     square:
       tileDim: 75
       verticalTileNum: 8
       horizontalTileNum: 8
+      angle: 0
 
   # The moderation perspective shows real maps, and handle items, event and players
   class ModerationPerspective extends TabPerspective
@@ -136,7 +139,6 @@ define [
       # instanciate map widget
       @_mapWidget = @$el.find('.map').moderationMap(
         dndType: i18n.constants.instanceAffectation
-        # use a small zoom, and 0:0 is visible
         zoom: 0.75
         displayGrid: true
         displayMarkers: true

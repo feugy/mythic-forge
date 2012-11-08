@@ -42,7 +42,7 @@ define [
       horizontalTileNum: 12
     diamond:
       tileDim: 75
-      verticalTileNum: 22
+      verticalTileNum: 11
       horizontalTileNum: 12
     square:
       tileDim: 75
