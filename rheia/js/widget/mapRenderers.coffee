@@ -306,7 +306,6 @@ define [
           # compute square edge's length
           hypoSquare = @tileW*0.5/sin
           edge = Math.ceil (hypoLeft+hypoTop+error)/hypoSquare
-          console.log hypoLeft, hypoTop, hypoSquare, edge
           {
             x: coord.x + edge
             y: coord.y + edge
