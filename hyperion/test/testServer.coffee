@@ -18,7 +18,7 @@
 ###
 
 pathUtils = require 'path'
-server = require '../src/web/server'
+server = require('../src/web/middle').server
 socketClient = require 'socket.io-client'
 Map = require '../src/model/Map'
 Item = require '../src/model/Item'

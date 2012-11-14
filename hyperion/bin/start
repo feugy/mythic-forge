@@ -1,7 +1,19 @@
 #!/usr/bin/env node
 var utils = require('../lib/utils');
+var http = require('http');
+var apiPort = utils.confKey('server.apiPort');
+var staticPort = utils.confKey('server.staticPort');
 
-// Launches the proxy server
-require('../lib/web/proxy').listen(utils.confKey('server.staticPort'));
+// Start within the same server if necessary
+
+var front = require('../lib/web/front');
 // And the api server
-require('../lib/web/server').listen(utils.confKey('server.apiPort'));
+var middle = require('../lib/web/middle');
+
+if (apiPort === staticPort) {
+  front(middle.app);
+} else {
+  // or create separate server
+  front().listen(staticPort);
+}
+middle.server.listen(apiPort);

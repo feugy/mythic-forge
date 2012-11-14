@@ -20,10 +20,11 @@
 async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
+http = require 'http'
 FSItem = require '../src/model/FSItem'
 utils = require '../src/utils'
 util = require 'util'
-server = require '../src/web/proxy'
+front = require '../src/web/front'
 Browser = require 'zombie'
 git = require 'gift'
 assert = require('chai').assert
@@ -192,6 +193,8 @@ describe 'Deployement tests', ->
 
   describe 'given a started static server', ->
 
+    server = null
+
     before (done) ->
       # given a valid game client in it
       fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client'), root, (err) ->
@@ -204,6 +207,7 @@ describe 'Deployement tests', ->
             return done err if err?
             repo.commit 'initial', all:true, (err, stdout, stderr) ->
               return done err if err?
+              server = http.createServer front()
               server.listen port, 'localhost', done
       
     after (done) ->

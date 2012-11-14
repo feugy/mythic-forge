@@ -8,7 +8,7 @@ logLevels:
 server:
   host: localhost
   staticPort: 3080
-  apiPort: 3443  
+  apiPort: 3080
   cookieSecret: Hey monkey donkey !
 
 # Authentication details

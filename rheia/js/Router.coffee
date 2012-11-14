@@ -32,7 +32,7 @@ requirejs.config
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
-    'socket.io': 'lib/socket.io-0.9.10-min'
+    'socket.io': 'lib/socket.io-0.9.11-min'
     'async': 'lib/async-0.1.22-min'
     'coffeescript': 'lib/coffee-script-1.4.0-min'
     'queryparser': 'lib/queryparser-1.2.0-min'
@@ -164,7 +164,7 @@ define [
       socket.emit 'logout'
       rheia.router.navigate 'login', trigger: true
 
-    socket = io.connect conf.apiBaseUrl, {secure: true, query:"token=#{token}"}
+    socket = io.connect conf.apiBaseUrl, {query:"token=#{token}"}
 
     socket.on 'error', (err) ->
       errorCallback err if connected

@@ -349,4 +349,6 @@ app.get '/konami', (req, res) ->
   res.send '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
   
 # Exports the application.
-module.exports = server
+module.exports = 
+  server: server
+  app: app
