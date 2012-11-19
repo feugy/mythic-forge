@@ -20,6 +20,7 @@
 
 logger = require('../logger').getLogger 'web'
 express = require 'express'
+_ = require 'underscore'
 utils = require '../utils'
 http = require 'http'
 https = require 'https'
@@ -180,7 +181,7 @@ checkAdmin = (handshakeData, callback) ->
 # @param scopes [Array] OAuth2 scopes sent to provider. Null for OAuth providers
 registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
 
-  if scopes isnt null
+  if scopes?
     # OAuth2 provider
     passport.use  new strategy
       clientID: utils.confKey "authentication.#{provider}.id"
@@ -200,15 +201,32 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
 
     args = {}
 
-  app.get "/auth/#{provider}", passport.authenticate provider, args
+  redirects = []
+
+  app.get "/auth/#{provider}", (req, res, next) ->
+    # store redirection url
+    id = "req#{_.uniqueId()}"
+    redirects[id] = getRedirect req
+    if scopes?
+      args.state = id
+    else 
+      req.session.state = id
+    passport.authenticate(provider, args) req, res, next
 
   app.get "/auth/#{provider}/callback", (req, res, next) ->
+    # reuse redirection url
+    if scopes?
+      state = req.param 'state'
+    else
+      state = req.session.state
+    redirect = redirects[state]
+
     passport.authenticate(provider, (err, token) ->
       # authentication failed
-      return res.redirect "#{getRedirect req}?error=#{err}" if err?
+      return res.redirect "#{redirect}?error=#{err}" if err?
       # before redirecting, set a cookie to allow access to gamedev
       addCookie res, token
-      res.redirect "#{getRedirect req}?token=#{token}"
+      res.redirect "#{redirect}?token=#{token}"
       # remove session created during authentication
       req.session.destroy()
     ) req, res, next
