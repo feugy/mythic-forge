@@ -22,30 +22,17 @@ define [
   'jquery'
   'utils/utilities'
   'i18n!nls/common'
-  'widget/baseWidget'
+  'widget/base'
   'widget/typeDetails'
-], ($, utils, i18n) ->
+], ($, utils, i18n, Base) ->
 
   # A tree that displays type models.
   # Organize models in categories.
   # Triggers `open` event when opening a category (with category in parameter)
   # Triggers `openElement` event when clicking an item, or its open contextual menu item (with category and id in parameter)
   # Triggers `removeElement` event when clicking an item remove contextual menu item (with category and id in parameter)
-  $.widget 'rheia.typeTree', $.rheia.baseWidget,
+  class TypeTree extends Base
     
-    options:  
-      # duration of category toggle animations
-      animDuration: 250
-
-      # The displayed type models
-      content: []
-
-      # when a category is empty, hides it
-      hideEmpty: false
-
-      # when first displayed, categories may be opened or not
-      openAtStart: false
-
     # **private**
     # list of displayed categories
     _categories: [
@@ -68,34 +55,43 @@ define [
       id: 'TurnRule'
     ]
 
-    # Frees DOM listeners
-    destroy: ->
-      @element.off 'click'
-      $.rheia.baseWidget::destroy.apply @, arguments
+    constructor: (element, options) ->
+      super element, options
+      @_create()
+
+    # Method invoked when the widget options are set. Update rendering if `model` is changed.
+    #
+    # @param key [String] the set option's key
+    # @param value [Object] new value for this option    
+    setOption: (key, value) =>
+      return unless key in ['content']
+      switch key
+        when 'content' 
+          value = [] unless Array.isArray value
+          @options.content = value
+          @_create()
 
     # **private**
     # Builds rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
-      
-      @element.on 'click', 'dt', (event) => @_onToggleCategory event
-      @element.on 'click', 'dd > *', (event) => @_onOpenElement event
-      @element.on 'click', 'dd .menu .open', (event) => @_onOpenElement event
-      @element.on 'click', 'dd .menu .remove', (event) => @_onRemoveElement event
+    _create: =>
+      @$el.on 'click', 'dt', @_onToggleCategory
+      @$el.on 'click', 'dd > *', @_onOpenElement
+      @$el.on 'click', 'dd .menu .open', @_onOpenElement
+      @$el.on 'click', 'dd .menu .remove', @_onRemoveElement
 
-      @element.addClass('type-tree').empty()
+      @$el.addClass('type-tree').empty()
       # creates categories, and fill with relevant models
       for category in @_categories
-        content = @options.content.filter (model) -> model?._className is category.id or model?.kind is category.id
+        content = @options.content?.filter (model) -> model?._className is category.id or model?.kind is category.id
         # discard category unless there is content or were told not to do
-        continue unless content.length > 0 or !@options.hideEmpty
+        continue unless content?.length > 0 or !@options.hideEmpty
 
         categoryClass = utils.dashSeparated(category.id)
-        @element.append """<dt class="#{if @options.openAtStart then 'open' else ''}">
+        @$el.append """<dt class="#{if @options.openAtStart then 'open' else ''}">
             <i class="#{categoryClass}"></i>#{category.name}
           </dt>
           <dd data-category=#{category.id} class="#{categoryClass}"></dd>"""
-        container = @element.find "dd.#{categoryClass}"
+        container = @$el.find "dd.#{categoryClass}"
         container.hide() unless @options.openAtStart
 
         @_renderModels content, container, category.id
@@ -108,44 +104,31 @@ define [
     # @param category [String] the displayed category id
     _renderModels: (content, container, category) =>
       $('<div></div>').typeDetails(model:model).appendTo container for model in content
-          
-    # **private**
-    # Method invoked when the widget options are set. Update rendering if `model` is changed.
-    #
-    # @param key [String] the set option's key
-    # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['content']
-      switch key
-        when 'content' 
-          value = [] unless Array.isArray value
-          @options.content = value
-          @_create()
 
     # **private**
     # Open or hides a category. 
     # Toggle animation, and may trigger the `open` event
     #
     # @param event [Event] the click event
-    _onToggleCategory: (event) ->
+    _onToggleCategory: (event) =>
       title = $(event.target).closest 'dt'
       # gets the corresponding 
       if title.hasClass 'open'
         title.next('dd').hide @options.animDuration, -> title.removeClass 'open'   
       else 
         title.next('dd').show @options.animDuration, -> title.addClass 'open' 
-        @_trigger 'open', event, title.next('dd').data 'category'
+        @$el.trigger 'open', title.next('dd').data 'category'
 
     # **private**
     # Open the element clicked by triggering the `openElement` event.
     #
     # @param event [Event] the click cancelled event
-    _onOpenElement: (event) ->
+    _onOpenElement: (event) =>
       event?.preventDefault()
       event?.stopImmediatePropagation()
       element = $(event.target).closest 'dd > *'
       return unless element?
-      @_trigger 'openElement', event, 
+      @$el.trigger 'openElement',
         category: element.data 'category'
         id: element.data 'id'
 
@@ -153,12 +136,27 @@ define [
     # Removed the element clicked by triggering the `removeElement` event.
     #
     # @param event [Event] the click cancelled event
-    _onRemoveElement: (event) ->
+    _onRemoveElement: (event) =>
       event?.preventDefault()
       event?.stopImmediatePropagation()
       element = $(event.target).closest 'dd > *'
       return unless element?
       $(event.target).closest('.menu').remove()
-      @_trigger 'removeElement', event, 
+      @$el.trigger 'removeElement',
         category: element.data 'category'
         id: element.data 'id'
+
+  # widget declaration
+  TypeTree._declareWidget 'typeTree', 
+
+    # duration of category toggle animations
+    animDuration: 250
+
+    # The displayed type models
+    content: []
+
+    # when a category is empty, hides it
+    hideEmpty: false
+
+    # when first displayed, categories may be opened or not
+    openAtStart: false

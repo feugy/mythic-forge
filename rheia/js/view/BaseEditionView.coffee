@@ -148,14 +148,14 @@ define [
       @_nameWidget = @$el.find(".#{@_nameAttribute}.field").property(
         type: 'string'
         allowNull: false
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       @_descWidget = @$el.find('.desc.field').property(
         type: 'text'
         allowNull: false
         tooltipFct: i18n.tips.desc
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       # creates all validators.
@@ -234,7 +234,7 @@ define [
       unless @_descImageWidget?
         @_descImageWidget = @$el.find('.desc.image').loadableImage(
           source: @model.get 'descImage'
-          change: @_onChange
+        ).on('change', @_onChange
         ).data 'loadableImage'
       else 
         @_descImageWidget.setOption 'source', @model.get 'descImage'
@@ -249,7 +249,7 @@ define [
       # adds a validator for name
       if @_nameWidget?
         @_validators.push new validators.String {required: true}, @_nameDisplayLabel, 
-          @_nameWidget.element, null, (node) -> node.find('input').val()
+          @_nameWidget.$el, null, (node) -> node.find('input').val()
 
     # **private**
     # Allows to compute the rendering's validity.

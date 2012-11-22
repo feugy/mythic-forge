@@ -24,32 +24,16 @@ define [
   'utils/utilities'
   'i18n!nls/common'
   'i18n!nls/widget'
-  'widget/baseWidget'
+  'widget/base'
   'widget/loadableImage'
   'widget/toggleable'
-], ($, _, utils, i18n, i18nWidget) ->
+], ($, _, utils, i18n, i18nWidget, Base) ->
 
   i18n = $.extend true, i18n, i18nWidget
 
   # This widget displays a list of linked instances, using instanceDetails for rendergin.
   # The size list could be limited to 1, and any modification will remplace the previous value.
-  $.widget 'rheia.instanceDetails', $.rheia.baseWidget,
-
-    options:
-      
-      # Currently displayed object
-      value: null
-      
-      # Scope used to drag objects from widget. Null to disable
-      dndType: null
-      
-      # Tooltip generator. 
-      # This function takes displayed object as parameter, and must return a string, used as tooltip.
-      # If null is returned, no tooltip displayed
-      tooltipFct: null
-      
-      # Tooltip animations length
-      tooltipFade: 250
+  class InstanceDetails extends Base
 
     # **private**
     # created tooltip
@@ -59,18 +43,22 @@ define [
     # simple timeout to delay tooltip opening
     _tooltipTimeout: null
       
+    # initialize widget
+    constructor: (element, options) ->
+      super element, options
+      @_create()
+
     # destructor: free DOM nodes and handles
-    destroy: ->
-      @_tooltip?.element.remove()
-      @element.find('*').unbind()
-      $.rheia.baseWidget::destroy.apply @, arguments
+    dispose: =>
+      @_tooltip?.$el.remove()
+      @$el.find('*').unbind()
+      super()
 
     # build rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
+    _create: =>
       instance = @options.value
 
-      @element.addClass 'instance-details'
+      @$el.addClass 'instance-details'
 
       if instance? and 'object' is utils.type instance
         # displays an image if a type is available
@@ -78,15 +66,15 @@ define [
           # always use type image
           img = instance.get('type').get 'descImage'
 
-          $('<div></div>').loadableImage(source: img, noButtons:true).appendTo @element if img?
+          $('<div></div>').loadableImage(source: img, noButtons:true).appendTo @$el if img?
         else
-          @element.addClass 'no-image'
+          @$el.addClass 'no-image'
 
         # displays label with name
-        @element.append "<span>#{_.sprintf i18n.instanceDetails.name, utils.instanceName(instance), instance.id}</span>"
+        @$el.append "<span>#{_.sprintf i18n.instanceDetails.name, utils.instanceName(instance), instance.id}</span>"
       
       if @options.dndType?
-        @element.draggable
+        @$el.draggable
           scope: @options.dndType
           appendTo: 'body'
           distance: 15
@@ -95,7 +83,7 @@ define [
 
       # adds a tooltip
       if 'function' is utils.type @options.tooltipFct
-        @element.on 'mouseenter', (event) =>
+        @$el.on 'mouseenter', (event) =>
           clearTimeout @_tooltipTimeout
           @_tooltipTimeout = setTimeout =>
             if @_tooltip
@@ -108,18 +96,34 @@ define [
                 ).data 'toggleable'
             @_tooltip.open event.pageX, event.pageY
           , 500
-        @element.on 'mouseleave', => clearTimeout @_tooltipTimeout
+        @$el.on 'mouseleave', => clearTimeout @_tooltipTimeout
 
-    # **private**
     # Method invoked when the widget options are set. Update rendering if value change.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['value']
+    setOption: (key, value) =>
+      return unless key in ['value']
       # updates inner option
       @options[key] = value
       # refresh rendering.
-      @element.find('*').unbind()
-      @element.empty()
+      @$el.find('*').unbind()
+      @$el.empty()
       @_create()
+
+  # widget declaration
+  InstanceDetails._declareWidget 'instanceDetails', 
+
+    # Currently displayed object
+    value: null
+    
+    # Scope used to drag objects from widget. Null to disable
+    dndType: null
+    
+    # Tooltip generator. 
+    # This function takes displayed object as parameter, and must return a string, used as tooltip.
+    # If null is returned, no tooltip displayed
+    tooltipFct: null
+    
+    # Tooltip animations length
+    tooltipFade: 250

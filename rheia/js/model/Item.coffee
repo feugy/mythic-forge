@@ -56,7 +56,7 @@ define [
 
       # trigger re-addition for Item views
       for existing in previous
-        @trigger 'readd', existing, @get existing.id
+        @trigger 'read', existing, @get existing.id
 
 
     # **private**

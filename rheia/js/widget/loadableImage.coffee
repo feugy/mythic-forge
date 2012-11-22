@@ -20,89 +20,77 @@
 
 define [
   'jquery'
+  'underscore'
   'i18n!nls/widget'
-  'widget/baseWidget'
-],  ($, i18n) ->
-
+  'widget/base'
+],  ($, _, i18n, Base) ->
 
   # Widget that displays an image and two action buttons to upload a new version or delete the existing one.
   # Triggers a `change`event when necessary.
-  $.widget 'rheia.loadableImage', $.rheia.baseWidget, 
-
-    options:    
-
-      # image source: a string url
-      # read-only: use `setOption('source')` to modify
-      source: null
-
-      # allow subclasses to disable buttons
-      noButtons: false
+  class LoadableImage extends Base
       
     # **private**
     # the image DOM element
     _image: null
 
-    # Frees DOM listeners
-    destroy: ->
-      @element.find('.ui-icon').unbind()
-      $.rheia.baseWidget::destroy.apply @, arguments
-
     # **private**
     # Builds rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
+    constructor: (element, options) ->
+      super element, options
       
       # encapsulates the image element in a div
-      @element.addClass 'loadable'
-      @_image = $('<img/>').appendTo @element
+      @$el.addClass 'loadable'
+      @_image = $('<img/>').appendTo @$el
       
       unless @options.noButtons
         # add action buttons
         $("""<div class="ui-icon ui-icon-folder-open">
               <input type="file" accept="image/*"/>
-            </div>""").appendTo(@element).change (event) => @_onUpload event
+            </div>""").appendTo(@$el).change @_onUpload
 
         $('<span class="ui-icon ui-icon-trash">delete</span>')
-            .appendTo(@element).click (event) => @_onDelete event
+            .appendTo(@$el).click @_onDelete
 
       # reload image
-      @_setOption 'source', @options.source
+      @setOption 'source', @options.source
 
-    # **private**
+    # Frees DOM listeners
+    dispose: =>
+      @$el.find('.ui-icon').off()
+      super()
+
     # Method invoked when the widget options are set. Update rendering if `source` changed.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['source']
-      switch key
-        when 'source' 
-          @options.source = value
-          # do not display alternative text yet
-          @_image.removeAttr 'src'
-          # load image from images service
-          if @options.source is null 
-            setTimeout (=> @_onLoaded false, '/images/null'), 0
-          else 
-            # loading handler
-            @bindTo rheia.router, 'imageLoaded', => @_onLoaded.apply @, arguments
-            rheia.router.trigger 'loadImage', "/images/#{@options.source}"
+    setOption: (key, value) =>
+      return unless key is 'source' 
+      @options.source = value
+      # do not display alternative text yet
+      @_image.removeAttr 'src'
+      # load image from images service
+      if @options.source is null 
+        _.defer => @_onLoaded false, '/images/null'
+      else 
+        # loading handler
+        @bindTo rheia.router, 'imageLoaded', @_onLoaded
+        rheia.router.trigger 'loadImage', "/images/#{@options.source}"
 
     # **private**
     # Creates an alternative text if necessary
-    _createAlt: ->
-      return if @element.find('.alt').length isnt 0
+    _createAlt: =>
+      return if @$el.find('.alt').length isnt 0
       # do not use regular HTML alt attribute because Chrome doesn't handle it correctly: position cannot be set
-      @element.prepend "<p class=\"alt\">#{i18n.loadableImage.noImage}</p>"
+      @$el.prepend "<p class=\"alt\">#{i18n.loadableImage.noImage}</p>"
       
     # **private**
     # Invoked when a file have been choosen.
     # Update the rendering and trigger the `change`event
     # 
     # @param event [Event] click event on the upload action button
-    _onUpload: (event) ->
+    _onUpload: (event) =>
       # Récupère le nom du fichier.
-      input = @element.find('input[type=file]')[0]
+      input = @$el.find('input[type=file]')[0]
       # ignore if no file choosen
       return unless input.files.length > 0 
       file = input.files[0]
@@ -115,42 +103,49 @@ define [
       reader.onload = (event) =>
         # change the image source
         @_image.attr 'src', event.target.result
-        @element.find('.alt').remove()
+        @$el.find('.alt').remove()
       reader.readAsDataURL file
 
       # trigger the change
       @options.source = file
-      console.log "change image: #{file}"
-      @_trigger 'change', event
+      @$el.trigger 'change'
     
     # **private**
     # Image loading failure handler: displays the alternative text.
     # If the handler is triggered by the deletion button, emit the `change`event.
     # 
     # @param event [Event]loading failure event or click event.
-    _onDelete: (event) ->
-      console.log 'change image: none'
+    _onDelete: (event) =>
       @_image.removeAttr 'src'
       # now, displays the alternative text
       @_createAlt()
       @options.source = null
-      @_trigger 'change', event
+      @$el.trigger 'change'
       
-
     # **private**
     # Image loading handler: hides the alternative text if success, or displays it if error.
     #
     # @param success [Boolean] indicates wheiter or not loading succeeded
     # @param src [String] loaded image source
     # @param img [Image] if successful, loaded image DOM node
-    _onLoaded: (success, src, img) -> 
+    _onLoaded: (success, src, img) => 
       return unless src is "/images/#{@options.source}"
       @unboundFrom rheia.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
         @_image.replaceWith $(img).clone()
-        @_image = @element.find 'img'
-        @element.find('.alt').remove()
+        @_image = @$el.find 'img'
+        @$el.find('.alt').remove()
       else 
         # displays the alternative text
         @_createAlt()
+
+  # widget declaration
+  LoadableImage._declareWidget 'loadableImage', 
+  
+    # image source: a string url
+    # read-only: use `setOption('source')` to modify
+    source: null
+
+    # allow subclasses to disable buttons
+    noButtons: false

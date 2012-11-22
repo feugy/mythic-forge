@@ -25,65 +25,30 @@ define [
   'utils/validators'
   'widget/loadableImage'
   'widget/property'
-],  ($, _, i18n, validators) ->
+],  ($, _, i18n, validators, LoadableImage) ->
 
 
   # A special loadableImage that allows to input sprite informations.
   # A special data flag is added to the `change` event to differentiate changes from sprite specification
   # from thoses from image upload/removal.
   # When the flag is true, then the changes is not about image source.
-  $.widget 'rheia.spriteImage', $.rheia.loadableImage, 
-
-    options:
-
-      # sprite width, set with the dedicated input
-      # read-only: use `setOption('spriteW')` to modify
-      spriteW: 0
-
-      # sprite height, set with the dedicated input
-      # read-only: use `setOption('spriteH')` to modify
-      spriteH: 0
-
-      # sprites definition.
-      # read-only: use `setOption('sprite')` to modify
-      sprites: {}
-
-      # show/hide duration in milliseconds
-      duration: 250
-
-      # list of validation errors, when the rendering changes.
-      # an empty list means no error.
-      errors:[]
-      
-      # **private**
-      # inhibit the change event if necessary.
-      _silent: false
-
-      # **private**
-      # validators for names
-      _validators: []
-
-    # Frees DOM listeners
-    destroy: ->
-      @element.find('input').unbind()
-      @element.unbind()
-      validator.dispose() for validator in @options._validators
-      $.rheia.loadableImage::destroy.apply @, arguments
+  class SpriteImage extends LoadableImage
 
     # **private**
     # Builds rendering. Adds inputs for image dimensions
-    _create: ->
-      $.rheia.loadableImage::_create.apply @, arguments
+    constructor: (element, options) ->
+      super element, options
+
       @options._silent = true
-      @element.addClass 'sprite'
-      @element.hover (event) => 
-        @element.addClass('show').find('.details').transition {opacity:1}, @options.duration
+      @$el.addClass 'sprite'
+      @$el.hover (event) => 
+        @$el.addClass('show').find('.details').transition {opacity:1}, @options.duration
       , (event) =>
-        @element.removeClass('show').find('.details').transition {opacity:0}, @options.duration
+        @$el.removeClass('show').find('.details').transition {opacity:0}, @options.duration
 
       # inputs for width and height
       $("""<div class="dimensions">#{i18n.spriteImage.dimensions}<input type="numer" class="spriteW"/>
-        <input type="numer" class="spriteH"/></div>""").appendTo @element
+        <input type="numer" class="spriteH"/></div>""").appendTo @$el
 
       $("""<div class="details">
         <h1>#{i18n.spriteImage.sprites}</h1>
@@ -99,9 +64,9 @@ define [
           <tbody></tbody>
         </table>
         <a href="#" class="add"></a>
-      </div>""").appendTo @element
+      </div>""").appendTo @$el
 
-      @element.find('.details .add').button(
+      @$el.find('.details .add').button(
         label: i18n.spriteImage.add
         icons:
           primary: 'add small'
@@ -110,27 +75,49 @@ define [
         @options.sprites[i18n.spriteImage.newName] =
           duration: 0
           number: 0
-          rank: @element.find('.details tbody tr').length
+          rank: @$el.find('.details tbody tr').length
         @_refreshSprites()
-        @_trigger 'change', event, isSprite: true
+        @$el.trigger 'change', isSprite: true
 
       @_refreshSprites()
 
-      @element.find('.dimensions input').keyup _.debounce ((event) => @_onDimensionChange event), 300
+      @$el.find('.dimensions input').keyup _.debounce ((event) => @_onDimensionChange event), 300
 
       @setOption 'spriteW', @options.spriteW
       @setOption 'spriteH', @options.spriteH
       @options._silent = false
 
+    # Method invoked when the widget options are set. Update rendering if `spriteH` or `spriteW` changed.
+    #
+    # @param key [String] the set option's key
+    # @param value [Object] new value for this option    
+    setOption: (key, value) =>
+      return super key, value unless key in ['spriteW', 'spriteH', 'sprite']
+      switch key
+        when 'spriteW', 'spriteH' 
+          value = parseInt value
+          value = 0 if isNaN value
+          @options[key] = value
+          @$el.find(".#{key}").val value
+        when 'sprite'
+          @$el.find('.details *').unbind().remove()
+          @_refreshSprites()
+
+    # Frees DOM listeners
+    dispose: =>
+      @$el.find('input').off()
+      validator.dispose() for validator in @options._validators
+      super()
+
     # **private**
     # Empties and rebuilds sprite specifications rendering.
-    _refreshSprites: ->
+    _refreshSprites: =>
       # disposes validators
       validator.dispose() for validator in @options._validators
       @options._validators = []
 
       # clear existing sprites
-      table = @element.find('.details table tbody').empty()
+      table = @$el.find('.details table tbody').empty()
 
       # property widget change handler: set property in options, and trigger change event
       onChangeFactory = (key = null) =>
@@ -153,10 +140,10 @@ define [
           else 
             # add special error to indicate unsave
             @options.errors.push err: 'unsaved', msg: _.sprintf i18n.spriteImage.unsavedSprite, value
-            @element.addClass 'validation-error'
+            @$el.addClass 'validation-error'
 
           # the last parameters allow to split changes from the image from those from sprite definition
-          @_trigger 'change', event, isSprite: true unless @options._silent
+          @$el.trigger 'change', isSprite: true unless @options._silent
 
       for name, spec of @options.sprites
         line = $("""<tr data-name="#{name}">
@@ -199,7 +186,7 @@ define [
           delete @options.sprites[$(event.target).closest('tr').data 'name']
           @_refreshSprites()
           @_validates()
-          @_trigger 'change', event, isSprite: true
+          @$el.trigger 'change', isSprite: true
         
         # creates a validator for name.
         @options._validators.push new validators.String {required: true},
@@ -208,36 +195,49 @@ define [
     # **private**
     # Validates each created validators, and fills the `errors` attribute. 
     # Toggles the error class on the widget's root.
-    _validates: ->
+    _validates: =>
       @options.errors = []
       @options.errors = @options.errors.concat validator.validate() for validator in @options._validators
-      @element.toggleClass 'validation-error', @options.errors.length isnt 0
-
-    # **private**
-    # Method invoked when the widget options are set. Update rendering if `spriteH` or `spriteW` changed.
-    #
-    # @param key [String] the set option's key
-    # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.loadableImage::_setOption.apply @, arguments unless key in ['spriteW', 'spriteH', 'sprite']
-      switch key
-        when 'spriteW', 'spriteH' 
-          value = parseInt value
-          value = 0 if isNaN value
-          @options[key] = value
-          @element.find(".#{key}").val value
-        when 'sprite'
-          @element.find('.details *').unbind().remove()
-          @_refreshSprites()
+      @$el.toggleClass 'validation-error', @options.errors.length isnt 0
 
     # **private**
     # hanlder that validates dimensions.
     #
     # @param event [Event] change event on dimension imputs
-    _onDimensionChange: (event) ->
+    _onDimensionChange: (event) =>
       for key in ['spriteW', 'spriteH']
-        value = parseInt @element.find(".#{key}").val()
+        value = parseInt @$el.find(".#{key}").val()
         value = 0 if isNaN value
-        @element.find(".#{key}").val value
+        @$el.find(".#{key}").val value
         @options[key] = value
-      @_trigger 'change', event, isSprite: true unless @options._silent
+      @$el.trigger 'change', isSprite: true unless @options._silent
+
+  # widget declaration
+  SpriteImage._declareWidget 'spriteImage', $.extend true, {}, $.fn.loadableImage.defaults, 
+
+    # sprite width, set with the dedicated input
+    # read-only: use `setOption('spriteW')` to modify
+    spriteW: 0
+
+    # sprite height, set with the dedicated input
+    # read-only: use `setOption('spriteH')` to modify
+    spriteH: 0
+
+    # sprites definition.
+    # read-only: use `setOption('sprite')` to modify
+    sprites: {}
+
+    # show/hide duration in milliseconds
+    duration: 250
+
+    # list of validation errors, when the rendering changes.
+    # an empty list means no error.
+    errors:[]
+    
+    # **private**
+    # inhibit the change event if necessary.
+    _silent: false
+
+    # **private**
+    # validators for names
+    _validators: []

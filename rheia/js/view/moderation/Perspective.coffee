@@ -131,9 +131,9 @@ define [
         isType: false,
         dndType: i18n.constants.instanceAffectation
         tooltipFct: utils.instanceTooltip
-        search: (event, query) -> rheia.searchService.searchInstances query
-        openElement: (event, details) -> rheia.router.trigger 'open', details.category, details.id
-        removeElement: (event, details) -> rheia.router.trigger 'remove', details.category, details.id
+      ).on('search', (event, query) -> rheia.searchService.searchInstances query
+      ).on('openElement', (event, details) -> rheia.router.trigger 'open', details.category, details.id
+      ).on('removeElement', (event, details) -> rheia.router.trigger 'remove', details.category, details.id
       ).data 'search'
 
       # instanciate map widget
@@ -142,15 +142,14 @@ define [
         zoom: 0.75
         displayGrid: true
         displayMarkers: true
-        coordChanged: =>
+      ).on('affectInstance', @_onAffect
+      ).on('coordChanged', =>
           # reloads map content
           return unless @_map
           @_map.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
-        itemClicked: (event, item) =>
+      ).on('itemClicked', (event, item) =>
           # opens the clicked item
           rheia.router.trigger 'open', 'Item', item.id
-        affectInstance: @_onAffect
-
       ).data 'moderationMap'
 
       # bind maps commands

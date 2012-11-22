@@ -79,6 +79,7 @@ define
       {name: '2D', value:'square'}
     ]
     randomAffect: 'affectation aléatoire'
+    mapNotSaved: "Merci de sauvegarder la carte avant d'affecter des terrains"
 
   tips:
     addProperty: 'Ajoute une nouvelle propriété'

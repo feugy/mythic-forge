@@ -24,9 +24,9 @@ define [
   'utils/utilities'
   'i18n!nls/common'
   'i18n!nls/widget'
-  'widget/baseWidget'
+  'widget/base'
   'widget/instanceDetails'
-], ($, _, utils, i18n, i18nWidget) ->
+], ($, _, utils, i18n, i18nWidget, Base) ->
 
   i18n = $.extend true, i18n, i18nWidget
 
@@ -36,90 +36,64 @@ define [
   #
   # Triggers event `change` when an item is added or replace by drag'n drop, or removed by unbinding.
   # Triggers event `click` when an item is clicked.
-  $.widget 'rheia.instanceList', $.rheia.baseWidget,
-
-    options:
-    
-      # Currently displayed object list. Read-only: use setOption('value') to change.
-      value: null
-      
-      # Restrict list size to 1
-      onlyOne: false
-      
-      # Indicate wether or not to add unlink button. Read-only: use setOption('withUnbind') to change.
-      withUnbind: true
-        
-      # Tooltip generator used inside instanceDetails widgets. 
-      # This function takes displayed object as parameter, and must return a string, used as tooltip.
-      # If null is returned, no tooltip displayed
-      tooltipFct: null
-      
-      # Accepted drag'n drop scope. Null to disable drop inside widget
-      dndType: null
-
-      # Restricted type of dropped objects. Empty means no restriction
-      accepted: []
-        
-      # label used when list is empty
-      emptyLabel: i18n.instanceList.empty
-
-    # destructor: free DOM nodes and handles
-    destroy: ->
-      @element.find('.unbind').unbind()
-      @element.unbind()
-      $.rheia.baseWidget::destroy.apply @, arguments
+  class InstanceList extends Base
 
     # build rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
-      @element.addClass 'instance-list'
+    constructor: (element, options) ->
+      super element, options
+
+      @$el.addClass 'instance-list'
 
       # add droppable capabilities
       if @options.dndType
-        @element.droppable
+        @$el.droppable
           scope: this.options.dndType
           tolerance: 'pointer'
           hoverClass: 'drop-hover'
           activeClass: 'drop-possible'
-          accept: => @_onAccept.apply @, arguments
-          drop: => @_onDrop.apply @, arguments
+          accept: @_onAccept
+          drop: @_onDrop
 
       # click handler
-      @element.on 'click', (event) => @_onClick event
+      @$el.on 'click', @_onClick
       
       # fills list
-      @_createList()
+      @_create()
 
-    # **private**
+    # destructor: free DOM nodes and handles
+    dispose: =>
+      @$el.find('.unbind').off()
+      super()
+
     # Method invoked when the widget options are set. Update rendering if value change.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['value', 'withUnbind']
+    setOption: (key, value) =>
+      return unless key in ['value', 'withUnbind']
       # updates inner option
       @options[key] = value
       return if @_inhibit
       # refresh rendering.
-      @_createList()
+      @_create()
 
     # **private**
     # Effectively fills the linked object list
-    _createList: ->
-      @element.find('.unbind').unbind()
-      @element.empty().append "<li class='empty'>#{@options.emptyLabel}</li>"
+    _create: =>
+      @$el.find('.unbind').unbind()
+      @$el.empty().append "<li class='empty'>#{@options.emptyLabel}</li>"
       # makes value an array
       linked = @options.value
       linked = [linked] if linked? and !Array.isArray linked
 
       return unless Array.isArray(linked) and linked.length > 0
-      @element.empty()
+      @$el.empty()
 
       # creates a widget for each linked object
       for link, i in linked
         continue unless link? and link isnt ''
         # instanciate the widget
-        line = $("<li data-idx='#{i}'></li>").appendTo @element
+        line = $("<li data-idx='#{i}'></li>").appendTo @$el
         $('<span></span>').instanceDetails(
           value: link,
           tooltipFct: @options.tooltipFct,
@@ -130,7 +104,7 @@ define [
         $('<a class="unbind"></a>')
           .appendTo(line)
           .attr('title', i18n.instanceList.unbind)
-          .on('click', (event) => @_onUnbind event)
+          .on('click', @_onUnbind)
           .button
             icons: primary: 'ui-icon x-small unbind'
             text: false
@@ -140,7 +114,7 @@ define [
     #
     # @param draggable [Object] drag'n drop operation source
     # @return true if operation is possible, false otherwise
-    _onAccept: (draggable) ->
+    _onAccept: (draggable) =>
       data = draggable.data('draggable')?.helper?.data 'instance'
       return false unless data? and data.constructor.name?
       @options.accepted.length is 0 or data.constructor.name in @options.accepted
@@ -153,7 +127,7 @@ define [
     # @option details draggable [Object] drag'n drop source
     # @option details helper [Object] the moved object
     # @option position [Object] the current position of the drag helper (absolute)
-    _onDrop: (event, details) ->
+    _onDrop: (event, details) =>
       # gets the dropped data
       instance = details.helper.data 'instance'
       return unless instance?
@@ -165,27 +139,27 @@ define [
 
       # re-creates the rendering, once the drop operation is finished
       _.defer =>
-        @_createList()
-        @_trigger 'change', event, @options.value
+        @_create()
+        @$el.trigger 'change', @options.value
 
     # **private**
     # Click handler. Find the closest item and triggers `click` if found
     # 
     # @param event [Event] list click event
-    _onClick: (event) ->
+    _onClick: (event) =>
       target = $(event.target).closest 'li'
       instance = target.find('.instance-details').data('instanceDetails')?.options.value
       return unless instance?
       # stop event and triggers click
       event.preventDefault()
       event.stopImmediatePropagation()
-      @_trigger 'click', event, instance
+      @$el.trigger 'click', instance
     
     # **private**
     # Click handler on unbind button. Removes object from list and re-creates rendering.
     # 
     # @param event [Event] unbind buttont click event
-    _onUnbind: (event) ->
+    _onUnbind: (event) =>
       event.preventDefault()
       event.stopImmediatePropagation()
       # only one displayed: removes value
@@ -196,5 +170,31 @@ define [
         # removes object from list
         @options.value.splice idx, 1
       # refresh rendering
-      @_createList()
-      @_trigger 'change', event, @options.value
+      @_create()
+      @$el.trigger 'change', @options.value
+
+  # widget declaration
+  InstanceList._declareWidget 'instanceList',
+
+    # Currently displayed object list. Read-only: use setOption('value') to change.
+    value: null
+    
+    # Restrict list size to 1
+    onlyOne: false
+    
+    # Indicate wether or not to add unlink button. Read-only: use setOption('withUnbind') to change.
+    withUnbind: true
+      
+    # Tooltip generator used inside instanceDetails widgets. 
+    # This function takes displayed object as parameter, and must return a string, used as tooltip.
+    # If null is returned, no tooltip displayed
+    tooltipFct: null
+    
+    # Accepted drag'n drop scope. Null to disable drop inside widget
+    dndType: null
+
+    # Restricted type of dropped objects. Empty means no restriction
+    accepted: []
+      
+    # label used when list is empty
+    emptyLabel: i18n.instanceList.empty

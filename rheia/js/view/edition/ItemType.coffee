@@ -127,7 +127,7 @@ define [
     # Bind quantifiable rendering to change event.
     _specificRender: =>
       super()
-      @_quantifiable = @$el.find('.quantifiable.field').change @_onChange
+      @_quantifiable = @$el.find('.quantifiable.field').on 'change', @_onChange
     
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -203,7 +203,7 @@ define [
             spriteW: original.width
             spriteH: original.height
             sprites: original.sprites
-            change: @_onImageChange
+          ).on('change', @_onImageChange
           ).appendTo(container).data 'spriteImage'
       # a special image to add new images  
       @_addNewImage() 
@@ -216,7 +216,7 @@ define [
           # is it an upload ?
           if arg? and !arg.isSprite and addImage.options.source isnt null
             # transforms it into a regular image widget
-            addImage.element.removeClass 'add-image'
+            addImage.$el.removeClass 'add-image'
             addImage.change = @_onImageChange
             @_imageWidgets.push addImage
             @_addNewImage()
@@ -232,5 +232,5 @@ define [
       widget = $(event.target).closest('.loadable').data 'spriteImage'
       if widget.options.source is null and @_imageWidgets.indexOf(widget) is @_imageWidgets.length-1
         @_imageWidgets.splice @_imageWidgets.length-1, 1
-        widget.element.remove()
+        widget.$el.remove()
       @_onChange event

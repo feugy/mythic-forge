@@ -22,7 +22,7 @@ define [
   'jquery'
   'utils/utilities'
   'widget/loadableImage'
-],  ($, utils) ->
+],  ($, utils, LoadableImage) ->
 
   # List of executing animations
   _anims = []
@@ -43,21 +43,7 @@ define [
 
   # Widget that renders an item inside a map Item.
   # Manage its position and its animations
-  $.widget 'rheia.mapItem', $.rheia.loadableImage, 
-
-    options:    
-
-      # Rendered item
-      model: null
-
-      # The associated map
-      map: null
-
-      # Disable buttons
-      noButtons: true
-
-      # Current position of the widget in map. Read-only: do not change externally
-      coordinates: x:null, y:null
+  class MapItem extends LoadableImage
 
     # **private**
     # Model images specification
@@ -87,35 +73,29 @@ define [
     # Stored position applied at the end of the next animation
     _newPos: null
 
-    # Frees DOM listeners
-    destroy: ->
-      @element.off()
-      $.rheia.loadableImage::destroy.apply @, arguments
-      @element.remove()
-
-    # **private**
     # Builds rendering. Image is computed from the model type image and instance number
-    _create: ->
+    constructor: (element, options) ->
       # compute item image
-      @_imageSpec = @options.model.get('type').get('images')?[@options.model.get 'imageNum']
-      @options.source = @_imageSpec?.file
-      $.rheia.loadableImage::_create.apply @, arguments
+      @_imageSpec = options.model.get('type').get('images')?[options.model.get 'imageNum']
+      options.source = @_imageSpec?.file
 
-      @element.addClass 'map-item'
+      super element, options
+      
+      @$el.addClass 'map-item'
 
       @_image.replaceWith '<div class="image"></div>'
-      @_image = @element.find '.image'
+      @_image = @$el.find '.image'
 
       # bind to model events
-      @bindTo @options.model, 'update',  => @_onUpdate.apply @, arguments
-      @bindTo @options.model, 'destroy', => @_onDestroy
+      @bindTo @options.model, 'update',  @_onUpdate
+      @bindTo @options.model, 'destroy', => @$el.remove()
 
     # **private**
     # Compute and apply the position of the current widget inside its map widget.
     # In case of position deferal, the new position will be slighly applied during next animation
     #
     # @param defer [Boolean] allow to differ the application of new position. false by default
-    _positionnate: (defer = false)->
+    _positionnate: (defer = false) =>
       return unless @options.map?
       coordinates = 
         x: @options.model.get 'x'
@@ -140,11 +120,11 @@ define [
         @_newPos = pos
       else
         @options.coordinates = coordinates
-        @element.css pos
+        @$el.css pos
 
     # **private**
     # Shows relevant sprite image regarding the current model animation and current timing
-    _renderSprite: ->
+    _renderSprite: =>
       # do we have a transition ?
       transition = @options.model.getTransition()
       transition = null unless @_imageSpec.sprites? and transition of @_imageSpec.sprites
@@ -169,8 +149,8 @@ define [
 
       # if we moved, compute the steps
       if @_newPos?
-        @_newPos.stepL = (@_newPos.left-parseInt @element.css 'left')/@_sprite.number
-        @_newPos.stepT = (@_newPos.top-parseInt @element.css 'top')/@_sprite.number
+        @_newPos.stepL = (@_newPos.left-parseInt @$el.css 'left')/@_sprite.number
+        @_newPos.stepT = (@_newPos.top-parseInt @$el.css 'top')/@_sprite.number
 
       if document.hidden
         # document not visible: drop directly to last frame.
@@ -184,7 +164,7 @@ define [
     # Otherwise, does nothing
     #
     # @param current [Number] the current timestamp. Null to stop current animation.
-    _onFrame: (current) ->
+    _onFrame: (current) =>
       # loop until the end of the animation
       if current? and current-@_start < @_sprite.duration
         # only animate at needed frames
@@ -200,7 +180,7 @@ define [
           @_step++
           # Slightly move during animation
           if @_newPos?
-            @element.css 
+            @$el.css 
               left: @_newPos.left-@_newPos.stepL*(@_sprite.number-@_step)
               top: @_newPos.top-@_newPos.stepT*(@_sprite.number-@_step)
       else 
@@ -217,7 +197,7 @@ define [
         if @_newPos
           delete @_newPos.stepL
           delete @_newPos.stepT
-          @element.css @_newPos
+          @$el.css @_newPos
           @_newPos = null
 
 
@@ -227,7 +207,7 @@ define [
     # @param success [Boolean] indicates wheiter or not loading succeeded
     # @param src [String] loaded image source
     # @param img [Image] if successful, loaded image DOM node
-    _onLoaded: (success, src, img) ->
+    _onLoaded: (success, src, img) =>
       return unless src is "/images/#{@options.source}"
       @unboundFrom rheia.router, 'imageLoaded'
       if success 
@@ -237,12 +217,12 @@ define [
           width: @_imageSpec.width
           height: @_imageSpec.height
 
-        @element.find('.alt').remove()
+        @$el.find('.alt').remove()
       else 
         # displays the alternative text
         @_createAlt()
 
-      @element.css
+      @$el.css
         width: @_imageSpec.width
         height: @_imageSpec.height
 
@@ -250,17 +230,17 @@ define [
 
       # now display correct sprite
       @_renderSprite()
-      @_trigger 'loaded', null, {item:@options.mode}
+      @$el.trigger 'loaded', {item:@options.mode}
 
     # **private**
     # Updates model inner values
     #
     # @param model [Object] new model values
     # @param changes [Object] fields that have changed
-    _onUpdate: (model, changes) ->
+    _onUpdate: (model, changes) =>
       @options.model = model
       # removes if map has changed
-      @_onDestroy() if @options.model?.get('map')?.id isnt @options.map?.options.mapId
+      return @$el.remove() if @options.model?.get('map')?.id isnt @options.map?.options.mapId
 
       if 'x' of changes or 'y' of changes
         # positionnate with animation if transition changed
@@ -270,7 +250,17 @@ define [
       if 'transition' of changes and changes.transition?
         @_renderSprite()
 
-    # **private**
-    # On model destruction, destroy the widget also
-    _onDestroy: ->
-      @destroy()
+  # widget declaration
+  MapItem._declareWidget 'mapItem', $.extend true, {}, $.fn.loadableImage.defaults, 
+
+    # Rendered item
+    model: null
+
+    # The associated map
+    map: null
+
+    # Disable buttons
+    noButtons: true
+
+    # Current position of the widget in map. Read-only: do not change externally
+    coordinates: x:null, y:null

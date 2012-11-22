@@ -23,53 +23,45 @@ define [
   'moment'
   'i18n!nls/common'
   'i18n!nls/widget'
-  'widget/baseWidget'
+  'widget/base'
   'widget/instanceList'
-],  ($, moment, i18n, i18nWidget) ->
+],  ($, moment, i18n, i18nWidget, Base) ->
 
   i18n = $.extend true, i18n, i18nWidget
 
   # The property widget allows to display and edit a type's property. 
   # It adapts to the property's own type.
-  $.widget 'rheia.property', $.rheia.baseWidget,
+  class Property extends Base
     
-    options:     
-      
-      # maximum value for type `integer` or `float`
-      max: 100000000000
-      
-      # minimum value for type `integer` or `float`
-      min: -100000000000
-
-      # property's type: string, text, boolean, integer, float, date, array or object
-      type: 'string'
-      
-      # property's value. Null by default
-      value: null
-      
-      # if true, no `null` isn't a valid value. if false, a checkbox is added to specify null value.
-      allowNull: true
-      
-      # differentiate the instance and type behaviour.
-      isInstance: false
-
-      # different classes accepted for values inside arrays and objects properties
-      accepted: []
-      
-      # this  is called to display the property's tooltip.
-      # it must return a string or null
-      tooltipFct: null
+    constructor: (element, options) ->
+      super element, options
+      @_create()
 
     # destructor: free DOM nodes and handles
-    destroy: ->
-      @element.find('*').unbind()
-      $.rheia.baseWidget::destroy.apply @, arguments
+    dispose: =>
+      @$el.find('*').off()
+      super()
+    
+    # Method invoked when the widget options are set. Update rendering if value change.
+    #
+    # @param key [String] the set option's key
+    # @param value [Object] new value for this option
+    setOption: (key, value) =>
+      return unless key in ['type', 'value']
+      # updates inner option
+      @options[key] = value
+      return if @_inhibit
+      # refresh rendering.
+      @$el.find('*').unbind().remove()
+      @$el.html ''
+      # inhibition flag: for firefox and numeric types. the `numeric` widget trigger setOption twice
+      @_inhibit = true
+      @_create()
+      @_inhibit = false
 
     # build rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
-      
-      @element.addClass 'property-widget'
+    _create: =>
+      @$el.addClass 'property-widget'
       # first cast
       @_castValue()
       rendering = null
@@ -78,8 +70,8 @@ define [
       switch @options.type
         when 'string'
           # simple text input
-          rendering = $("""<input type="text" value="#{@options.value}"/>""").appendTo @element
-          rendering.keyup (event) => @_onChange event
+          rendering = $("""<input type="text" value="#{@options.value}"/>""").appendTo @$el
+          rendering.on 'keyup', @_onChange
           unless isNull
             @options.value = rendering.val()
           else if @options.allowNull
@@ -87,8 +79,8 @@ define [
 
         when 'text'
           # textarea
-          rendering = $("""<textarea>#{@options.value or ''}</textarea>""").appendTo @element
-          rendering.keyup (event) => @_onChange event
+          rendering = $("""<textarea>#{@options.value or ''}</textarea>""").appendTo @$el
+          rendering.on 'keyup', @_onChange
           unless isNull 
             @options.value = rendering.val()
           else if @options.allowNull
@@ -104,8 +96,8 @@ define [
               <input name="#{group}" value="false" type="radio" #{if @options.value is false then 'checked="checked"'}/>
               #{i18n.property.isFalse}
             </span>
-            """).appendTo @element
-          rendering.find('input').change (event) => @_onChange event
+            """).appendTo @$el
+          rendering.find('input').on 'change', @_onChange
           if isNull
             rendering.find('input').attr  'disabled', 'disabled'
 
@@ -115,8 +107,8 @@ define [
           rendering = $("""
             <input type="number" min="#{@options.min}" 
                    max="#{@options.max}" step="#{step}" 
-                   value="#{@options.value}"/>""").appendTo @element
-          rendering.bind 'change keyup', (event) => @_onChange event
+                   value="#{@options.value}"/>""").appendTo @$el
+          rendering.on 'change keyup', @_onChange
           if $.browser.mozilla 
             # we must use a widget on firefox       
             rendering.attr('name', parseInt Math.random()*1000000000)
@@ -157,14 +149,14 @@ define [
               value: @options.value
               onlyOne: @options.type is 'object'
               dndType: i18n.constants.instanceAffectation
-              change: (event) => @_onChange event
               tooltipFct: @options.tooltipFct
               accepted: @options.accepted
-              click: (event, instance) =>
-                @_trigger 'open', event, instance
-            ).appendTo @element
+            ).on('change', @_onChange
+            ).on('click', (event, instance) =>
+              @$el.trigger 'open', instance
+            ).appendTo @$el
 
-            @options.value = rendering.instanceList 'option', 'value'
+            @options.value = rendering.data('instanceList')?.options.value
 
           else 
             # for type, use a select.
@@ -172,7 +164,7 @@ define [
             markup += """<option value="#{spec.val}" 
                 #{if @options.value is spec.val then 'selected="selected"'}>#{spec.name}
               </option>""" for spec in i18n.property.objectTypes
-            rendering = $("<select>#{markup}</select>").appendTo(@element).change (event) => @_onChange event
+            rendering = $("<select>#{markup}</select>").appendTo(@$el).on 'change', @_onChange
             @options.value = rendering.val() 
         
         when 'date'
@@ -181,7 +173,7 @@ define [
             # unfortunately, moment and jquery datetimepiker do not share their formats...
             dateFormat: i18n.constants.dateFormat.toLowerCase()
             timeFormat: i18n.constants.timeFormat.toLowerCase()
-          ).appendTo(@element).change (event) => @_onChange event
+          ).appendTo(@$el).on 'change', @_onChange
 
           rendering.datetimepicker 'setDate', new Date @options.value unless isNull
 
@@ -192,12 +184,12 @@ define [
        
       # adds the null value checkbox if needed
       return if !@options.allowNull or @options.type is 'object' or @options.type is 'array'
-      @element.append("""<input class="isNull" type="checkbox" #{if isNull then 'checked="checked"'} 
-        /><span>#{i18n.property.isNull}</span>""").change (event) => @_onChange event
+      $("""<input class="isNull" type="checkbox" #{if isNull then 'checked="checked"'} 
+        /><span>#{i18n.property.isNull}</span>""").appendTo(@$el).on 'change', @_onChange
 
     # **private**
     # Enforce for integer, float and boolean value that the value is well casted/
-    _castValue: ->
+    _castValue: =>
       return unless @options.value?
       switch @options.type
         when 'integer' then @options.value = parseInt @options.value
@@ -213,14 +205,14 @@ define [
     # Content change handler. Update the current value and trigger event `change`
     #
     # @param event [Event] the rendering change event
-    _onChange: (event) ->
+    _onChange: (event) =>
       target = $(event.target)
       newValue = target.val()
       
       # special case when we set to null.
       if target.hasClass 'isNull'
-        isNull =  @element.find('.isNull:checked').length is 1
-        input = @element.find '*:nth-child(1)'
+        isNull =  @$el.find('.isNull:checked').length is 1
+        input = @$el.find '*:nth-child(1)'
         
         switch @options.type
           when 'float', 'integer'
@@ -257,28 +249,38 @@ define [
         
       else if target.hasClass 'instance'
         # special case of arrays and objects of instances
-        newValue = target.instanceList 'option', 'value'
+        newValue = target.data('instanceList')?.options.value
       
       # cast value
       @options.value = newValue
       @_castValue()
-      @_trigger 'change', event, value:@options.value
+      @$el.trigger 'change', value:@options.value
       event.stopPropagation()
+
+  # widget declaration
+  Property._declareWidget 'property', 
+
+    # maximum value for type `integer` or `float`
+    max: 100000000000
     
-    # **private**
-    # Method invoked when the widget options are set. Update rendering if value change.
-    #
-    # @param key [String] the set option's key
-    # @param value [Object] new value for this option
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['type', 'value']
-      # updates inner option
-      @options[key] = value
-      return if @_inhibit
-      # refresh rendering.
-      @element.find('*').unbind().remove()
-      @element.html ''
-      # inhibition flag: for firefox and numeric types. the `numeric` widget trigger setOption twice
-      @_inhibit = true
-      @_create()
-      @_inhibit = false
+    # minimum value for type `integer` or `float`
+    min: -100000000000
+
+    # property's type: string, text, boolean, integer, float, date, array or object
+    type: 'string'
+    
+    # property's value. Null by default
+    value: null
+    
+    # if true, no `null` isn't a valid value. if false, a checkbox is added to specify null value.
+    allowNull: true
+    
+    # differentiate the instance and type behaviour.
+    isInstance: false
+
+    # different classes accepted for values inside arrays and objects properties
+    accepted: []
+    
+    # this  is called to display the property's tooltip.
+    # it must return a string or null
+    tooltipFct: null

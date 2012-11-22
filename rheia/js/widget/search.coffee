@@ -24,39 +24,17 @@ define [
   'i18n!nls/widget'
   'queryparser'
   'utils/utilities'
-  'widget/baseWidget'
+  'widget/base'
   'widget/typeTree'
   'widget/instanceTree'
-], ($, _, i18n, parser, utils) ->
+], ($, _, i18n, parser, utils, Base) ->
   
   # The search widget displays a search field, a line for results number, and a popup
   # for search results.
   # the `search` event is triggered when a search need to be performed, with query as parameter.
   # the `click` event is triggered when clicking an item in results (with category and id in parameter)
-  $.widget 'rheia.search', $.rheia.baseWidget,
+  class Search extends Base
     
-    options:  
-      
-      # Help text displayed when hovering the help icon
-      helpTip: ''
-
-      # Displayed results. Read-only: use setOption('results') to change.
-      results: []
-
-      # True to display types, false to display instances
-      isType: true
-        
-      # Tooltip generator used inside results (instance only). 
-      # This function takes displayed object as parameter, and must return a string, used as tooltip.
-      # If null is returned, no tooltip displayed
-      tooltipFct: null
-      
-      # Used scope for instance drag'n drop operations. Null to disable drop outside widget
-      dndType: null
-
-      # duration of result toggle animations
-      animDuration: 250
-
     # **private**
     # avoid triggering multiple searchs.
     _searchPending: false
@@ -85,25 +63,70 @@ define [
     # Stores the name of the tree widget used
     _treeWidget: null
 
+    # Builds rendering
+    constructor: (element, options) ->
+      super element, options
+
+      @_treeWidget = if @options.isType then 'typeTree' else 'instanceTree'
+
+      # general change handler: refresh search
+      @bindTo rheia.router, 'modelChanged', => 
+        @_refresh = true
+        @triggerSearch()
+      
+      # Executable kind changed: refresh results
+      @_kindChanged = => 
+        return unless Array.isArray(@options.results) and @options.results.length
+        @_results[@_treeWidget] 'setOption', 'content', @options.results
+      @bindTo rheia.router, 'kindChanged', @_kindChanged
+
+      @$el.addClass('search').append """<input type="text"/>
+        <div class="ui-icon ui-icon-search"></div>
+        <div class="ui-icon small help"></div>
+        <div class="nb-results"></div>
+        <div class="error"></div>
+        <div class="results"></div>"""
+
+      # help tooltip
+      @$el.find('.help').attr 'title', @options.helpTip
+      
+      # bind on input changes and click events
+      @$el.find('input').keyup @_onChange
+      @$el.find('.ui-icon-search').click (event) => @triggerSearch()
+      @_results = @$el.find('.results').hide()[@_treeWidget]
+        openAtStart: true
+        hideEmpty: true
+        tooltipFct: @options.tooltipFct
+        dndType: @options.dndType
+        openElement: (event, category, id) => @$el.trigger 'openElement', [category, id]
+        removeElement: (event, category, id) => @$el.trigger 'removeElement', [category, id]
+      
+      # toggle results visibility
+      @$el.hover (event) =>
+        # stop closure if necessary
+        clearTimeout @_hideTimeout if @_hideTimeout?
+        @_onShowResults()
+      , (event) =>
+        @_hideTimeout = setTimeout (=> @_onHideResults()),1000
+
     # Frees DOM listeners
-    destroy: ->
-      @element.unbind()
-      @element.find('input, .ui-icon-search').unbind()
-      $.rheia.baseWidget::destroy.apply @, arguments
+    dispose: =>
+      @$el.find('input, .ui-icon-search').off()
+      super()
 
     # Parse the input query, and if correct, trigger the server call.
     #
     # @param force [Boolean] force the request sending, even if request is empty. But invalid request cannot be forced.
-    triggerSearch: (force = false) ->
+    triggerSearch: (force = false) =>
       # do NOT send multiple search in the same time
       return if @_searchPending
-      @element.removeClass('invalid').find('.error').hide()
+      @$el.removeClass('invalid').find('.error').hide()
 
       # parse query
       try 
-        query = parser.parse @element.find('input').val()
+        query = parser.parse @$el.find('input').val()
       catch exc
-        return @element.addClass('invalid').find('.error').show().text exc
+        return @$el.addClass('invalid').find('.error').show().text exc
 
       # avoid empty queries unless told to do
       return if query is '' and !force
@@ -116,62 +139,14 @@ define [
       return @setOption 'results', [] if query is ''
       # or trigger search
       console.log "new search of #{JSON.stringify query}"
-      @_trigger 'search', null, query
+      @$el.trigger 'search', query
 
-    # **private**
-    # Builds rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
-
-      @_treeWidget = if @options.isType then 'typeTree' else 'instanceTree'
-
-      # general change handler: refresh search
-      @bindTo rheia.router, 'modelChanged', => 
-        @_refresh = true
-        @triggerSearch()
-      
-      # Executable kind changed: refresh results
-      @_kindChanged = => 
-        return unless Array.isArray(@options.results) and @options.results.length
-        @_results[@_treeWidget] 'option', 'content', @options.results
-      @bindTo rheia.router, 'kindChanged', @_kindChanged
-
-      @element.addClass('search').append """<input type="text"/>
-        <div class="ui-icon ui-icon-search"></div>
-        <div class="ui-icon small help"></div>
-        <div class="nb-results"></div>
-        <div class="error"></div>
-        <div class="results"></div>"""
-
-      # help tooltip
-      @element.find('.help').attr 'title', @options.helpTip
-      
-      # bind on input changes and click events
-      @element.find('input').keyup (event) => @_onChange event
-      @element.find('.ui-icon-search').click (event) => @triggerSearch()
-      @_results = @element.find('.results').hide()[@_treeWidget]
-        openAtStart: true
-        hideEmpty: true
-        tooltipFct: @options.tooltipFct
-        dndType: @options.dndType
-        openElement: (event, category, id) => @_trigger 'openElement', event, category, id
-        removeElement: (event, category, id) => @_trigger 'removeElement', event, category, id
-      
-      # toggle results visibility
-      @element.hover (event) =>
-        # stop closure if necessary
-        clearTimeout @_hideTimeout if @_hideTimeout?
-        @_onShowResults()
-      , (event) =>
-        @_hideTimeout = setTimeout (=> @_onHideResults()),1000
-
-    # **private**
     # Method invoked when the widget options are set. Update popup if `results` changed.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['results']
+    setOption: (key, value) =>
+      return unless key in ['results']
       switch key
         when 'results'
           # checks that results are an array
@@ -187,19 +162,19 @@ define [
             html = i18n.search.oneResult
           else
             html = _.sprintf i18n.search.nbResults, @options.results.length
-          @element.find('.nb-results').html html
+          @$el.find('.nb-results').html html
 
           # set max height because results are absolutely positionned
-          @_results.css 'max-height', @element.offsetParent().height()*0.75
+          @_results.css 'max-height', @$el.offsetParent().height()*0.75
           # update tree content
-          @_results[@_treeWidget] 'option', 'content', @options.results
+          @_results[@_treeWidget] 'setOption', 'content', @options.results
 
           @_onShowResults() unless @_refresh
           @_refresh = false
 
     # **private**
     # Displays the result popup, with a slight delay to avoir openin if mouse leave the widget.
-    _onShowResults: ->
+    _onShowResults: =>
       if @options.results?.length > 0 and @_showTimeout is null
         # show results with slight delay
         @_showTimeout = setTimeout =>
@@ -211,7 +186,7 @@ define [
 
     # **private**
     # Hides the result popup, or cancel opening if necessary.
-    _onHideResults: ->
+    _onHideResults: =>
       if @options.results?.length > 0 and @_results.is ':visible'
         # cancels opening 
         if @_showTimeout?
@@ -224,9 +199,32 @@ define [
     # input change handler: waits a little before sending to server unless input is ENTER
     #
     # @param event [Event] keyboard event
-    _onChange: (event) ->
+    _onChange: (event) =>
       clearTimeout @_searchTimout if @_searchTimout?
       # manually triggers research
       return @triggerSearch true if event.keyCode is $.ui.keyCode.ENTER
       # defer search
       @_searchTimout = setTimeout (=> @triggerSearch()), 1000
+
+  # widget declaration
+  Search._declareWidget 'search', 
+
+    # Help text displayed when hovering the help icon
+    helpTip: ''
+
+    # Displayed results. Read-only: use setOption('results') to change.
+    results: []
+
+    # True to display types, false to display instances
+    isType: true
+      
+    # Tooltip generator used inside results (instance only). 
+    # This function takes displayed object as parameter, and must return a string, used as tooltip.
+    # If null is returned, no tooltip displayed
+    tooltipFct: null
+    
+    # Used scope for instance drag'n drop operations. Null to disable drop outside widget
+    dndType: null
+
+    # duration of result toggle animations
+    animDuration: 250

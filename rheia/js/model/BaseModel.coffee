@@ -121,9 +121,13 @@ define [
     _onRemove: (className, model, options = {}) =>
       return unless className is @_className
       # removes the deleted item after enrich it to allow recognition. An event will be triggered
-      @remove new @model(model), options
-      # propagates changes on collection to global change event
-      rheia.router.trigger 'modelChanged'
+      removed = @get model[@model.prototype.idAttribute]
+      # removes the deleted item
+      if removed
+        @remove removed 
+        removed.trigger 'destroy', removed, @, options
+        # propagates changes on collection to global change event
+        app.router.trigger 'modelChanged'
 
   # BaseLinkedCollection provides common behaviour for model wih linked objects collections.
   #

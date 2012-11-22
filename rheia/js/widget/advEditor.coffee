@@ -23,8 +23,8 @@ define [
   'underscore'
   'ace/ace'
   'i18n!nls/widget'
-  'widget/baseWidget'
-],  ($, _, ace, i18n) ->
+  'widget/base'
+],  ($, _, ace, i18n, Base) ->
 
   prompt = "<div class='prompt'>"+
     "<div class='find'>"+
@@ -50,25 +50,7 @@ define [
 
   # Widget that encapsulate the Ace editor to expose a more jQuery-ui compliant interface
   # Triggers a `change`event when necessary.
-  $.widget 'rheia.advEditor', $.rheia.baseWidget,
-
-    options:    
-
-      # the edited text
-      # read-only: use `setOption('text')` to modify.
-      text: ''
-
-      # mode used to parse content, 'text' by default.
-      # read-only: use `setOption('mode')` to modify.
-      mode: 'text'
- 
-      # theme used to display content, 'clouds' by default.
-      # read-only: use `setOption('theme')` to modify.
-      theme: 'clouds'
-
-      # number of spaces used to replace tabs, 2 by default.
-      # read-only: use `setOption('tabSize')` to modify.
-      tabSize: 2
+  class AdvEditor extends Base
 
     # **private**
     # the ace editor
@@ -82,31 +64,22 @@ define [
     # number of occurences previously found
     _foundNum: 0
 
-    # Frees DOM listeners
-    destroy: ->
-      @_editor.destroy()
-      $.rheia.baseWidget::destroy.apply @, arguments
-
-    # This method might be called when the editor is shown, to resize it properly
-    resize: ->
-      _.defer => @_editor.resize true
-
     # **private**
     # Builds rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
+    constructor: (element, options) ->
+      super element, options
       
-      @element.addClass 'adv-editor'
+      @$el.addClass 'adv-editor'
 
       # creates and wire the editor
-      node = $('<div></div>').appendTo @element
+      node = $('<div></div>').appendTo @$el
       @_editor = ace.edit node[0]
       session = @_editor.getSession()
       
       session.on 'change', => 
         # update inner value and fire change event
         @options.text = @_editor.getValue()
-        @_trigger 'change', null, @options.text
+        @$el.trigger 'change', @options.text
       
       # configure it
       session.setUseSoftTabs true
@@ -124,13 +97,13 @@ define [
         exec: => @_onShowPrompt true
 
       # fills its content
-      @_setOption 'text', @options.text
-      @_setOption 'tabSize', @options.tabSize
-      @_setOption 'theme', @options.theme
-      @_setOption 'mode', @options.mode
+      @setOption 'text', @options.text
+      @setOption 'tabSize', @options.tabSize
+      @setOption 'theme', @options.theme
+      @setOption 'mode', @options.mode
             
       # creates prompt
-      @_prompt = $(prompt).appendTo @element
+      @_prompt = $(prompt).appendTo @$el
 
       # progressive find while entering input
       @_prompt.on 'keyup', '.find input', _.throttle (=> @_onFind()), 100
@@ -142,16 +115,23 @@ define [
       # replace first and all occurences
       @_prompt.on 'click', '.first', (event) => @_onReplace event
       @_prompt.on 'click', '.all', (event) => @_onReplace event, true
-        
 
-    # **private**
+    # Frees DOM listeners
+    dispose: =>
+      @_editor.destroy()
+      super()
+
+    # This method might be called when the editor is shown, to resize it properly
+    resize: =>
+      _.defer => @_editor.resize true        
+
     # Method invoked when the widget options are set. Update rendering if `source` changed.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
+    setOption: (key, value) =>
       console.log "set option #{key}"
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['text', 'mode', 'theme', 'tabSize']
+      return unless key in ['text', 'mode', 'theme', 'tabSize']
       switch key
         when 'text' 
           # keeps the undo manager
@@ -178,7 +158,7 @@ define [
     # Show the find/replace prompt with an animation (Css)
     #
     # @param withReplace [Boolean] display the replace prompt
-    _onShowPrompt: (withReplace) ->
+    _onShowPrompt: (withReplace) =>
       # change the searched content
       selection = @_editor.session.getTextRange @_editor.getSelectionRange()
       @_prompt.find('.find input').val if selection then selection else ''
@@ -190,7 +170,7 @@ define [
     # Close the find/replace prompt
     #
     # @param event [Event] cancelled click event
-    _onClosePrompt: (event) -> 
+    _onClosePrompt: (event) => 
       event?.preventDefault()
       # hide prompt and focus editor
       @_prompt.removeClass 'shown'
@@ -201,7 +181,7 @@ define [
     #
     # @param event [Event] cancelled click event
     # @param next [Boolean] true to find next, false to find previous, other to find all
-    _onFind: (event, next) ->
+    _onFind: (event, next) =>
       event?.preventDefault()
       if next is true
         @_editor.findNext {}, true
@@ -216,7 +196,7 @@ define [
     #
     # @param event [Event] cancelled click event
     # @param all [Boolean] true to replace all occurences
-    _onReplace: (event, all) ->
+    _onReplace: (event, all) =>
       event?.preventDefault()
       value = @_prompt.find('.replace input').val()
       options = needle: @_prompt.find('.find input').val()
@@ -224,3 +204,22 @@ define [
         @_editor.replaceAll value, options
       else
         @_editor.replace value, options
+
+  # widget declaration
+  AdvEditor._declareWidget 'advEditor', 
+
+    # the edited text
+    # read-only: use `setOption('text')` to modify.
+    text: ''
+
+    # mode used to parse content, 'text' by default.
+    # read-only: use `setOption('mode')` to modify.
+    mode: 'text'
+
+    # theme used to display content, 'clouds' by default.
+    # read-only: use `setOption('theme')` to modify.
+    theme: 'clouds'
+
+    # number of spaces used to replace tabs, 2 by default.
+    # read-only: use `setOption('tabSize')` to modify.
+    tabSize: 2

@@ -98,7 +98,7 @@ define [
 
       # special case of items, that can be re-added when map is consulted
       # we need to unbound from previous model, and bound for new one
-      @bindTo Item.collection, 'readd', (previous, added) =>
+      @bindTo Item.collection, 'read', (previous, added) =>
         return unless previous.id is @model.id
         @unboundFrom previous, 'update', @_onSaved
         @model = added
@@ -121,10 +121,10 @@ define [
       # creates image carousel and map rendering
       @_imageWidget = @$el.find('.left .image').carousel(
         images: _.pluck @model.get('type').get('images'), 'file'
-        change: =>
-          # image changed: transition list also
-          @_onTransitionListChanged() if @_transitionList?
-          @_onChange()
+      ).on('change', =>
+        # image changed: transition list also
+        @_onTransitionListChanged() if @_transitionList?
+        @_onChange()
       ).data 'carousel'
 
       @_mapList = @$el.find '.map.field'
@@ -144,19 +144,19 @@ define [
       @_xWidget = @$el.find('.x.field').property(
         type: 'integer'
         allowNull: true
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       @_yWidget = @$el.find('.y.field').property(
         type: 'integer'
         allowNull: true
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property' 
 
       @_quantityWidget = @$el.find('.quantity.field').property(
         type: 'float'
         allowNull: false
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       @_transitionList = @$el.find '.transition.field'

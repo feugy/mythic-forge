@@ -136,6 +136,10 @@ define [
         @$el.find('.external-change').append "<p>#{@_externalChangeMessage}</p>"
 
     # **private**
+    # Avoid warning popup when edited object have been modified removed.
+    _notifyExternalRemove: =>
+
+    # **private**
     # Invoked when a model is created on the server.
     # Triggers the `affectId` event and then call `_onSaved`
     #
@@ -153,7 +157,7 @@ define [
       container = @$el.find '> table'
 
       # unbinds existing handlers and removes lines
-      widget.destroy() for name, widget of @_propWidgets
+      widget.$el.remove() for name, widget of @_propWidgets
       @_propWidgets = {}
       container.find('tr.prop').remove()
 
@@ -177,15 +181,14 @@ define [
         if (prop.type is 'object' or prop.type is 'array') and prop.def isnt 'Any'
           accepted = [prop.def]
         row = $("<tr class='prop'><td class='left'>#{name}#{i18n.labels.fieldSeparator}</td></tr>").appendTo container
-        widget = $('<td class="right"></td>').property(
+        @_propWidgets[name] = $('<td class="right"></td>').property(
           type: prop.type
           value: value
           isInstance: true
           accepted: accepted
           tooltipFct: utils.instanceTooltip
-          open: (event, instance) =>
-            # opens players, items, events
-            rheia.router.trigger 'open', instance._className, instance.id
+        ).on('change', @_onChange
+        ).on('open', (event, instance) =>
+          # opens players, items, events
+          rheia.router.trigger 'open', instance._className, instance.id
         ).appendTo(row).data 'property'
-        @_propWidgets[name] = widget
-        widget.setOption 'change', @_onChange

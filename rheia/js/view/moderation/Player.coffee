@@ -166,18 +166,18 @@ define [
         isInstance: true
         accepted: ['Item']
         tooltipFct: utils.instanceTooltip
-        change: @_onChange
-        open: (event, instance) =>
-          # opens items
-          rheia.router.trigger 'open', instance._className, instance.id
+      ).on('change', @_onChange
+      ).on('open', (event, instance) =>
+        # opens items
+        rheia.router.trigger 'open', instance._className, instance.id
       ).data 'property'
 
       @_passwordWidget = @$el.find('.password .right > *').property(
         type: 'string'
         allowNull: false
-        change: => 
-          @_passwordChanged = true
-          @_onChange()
+      ).on('change', => 
+        @_passwordChanged = true
+        @_onChange()
       ).data 'property'
 
       @_providerWidget = @$el.find '.provider.field'
@@ -187,24 +187,24 @@ define [
       @_firstNameWidget = @$el.find('.firstName.field').property(
         type: 'string'
         allowNull: false
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       @_lastNameWidget = @$el.find('.lastName.field').property(
         type: 'string'
         allowNull: false
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       @_lastConnectionWidget = @$el.find('.lastConnection.field').property(
         type: 'date'
         allowNull: true
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'property'
 
       @_prefsEditor = @$el.find('.prefs .field').advEditor(
         mode: 'json'
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'advEditor'
 
       super()
@@ -215,7 +215,7 @@ define [
       # superclass handles email
       super()
 
-      @model.set 'characters', @_charactersWidget.options.value
+      @model.set 'characters', @_charactersWidget.options.value.concat()
       @model.set 'provider', @_providerWidget.val() or null
       if @_passwordChanged
         @model.set 'password', if @model.get('provider')? then undefined else @_passwordWidget.options.value
@@ -233,7 +233,7 @@ define [
       @$el.find('> h1').html @_getRenderData().title
 
       @_passwordChanged = @_tempId?
-      @_charactersWidget.setOption 'value', @model.get('characters') or []
+      @_charactersWidget.setOption 'value', @model.get('characters').concat() or []
       @_providerWidget.val @model.get 'provider'
       @_passwordWidget.setOption 'value', unless @model.get('provider')? then '' else @model.get 'password'
       @_isAdminCheckbox.attr 'checked', @model.get 'isAdmin'
@@ -315,7 +315,7 @@ define [
           return _.sprintf(i18n.validator.spacesNotAllowed, i18n.labels.password) if value.match /\s/
           null
           
-      , i18n.labels.password, @_passwordWidget.element, null, (node) -> node.find('input').val()
+      , i18n.labels.password, @_passwordWidget.$el, null, (node) -> node.find('input').val()
 
     # **private**
     # Allows to compute the rendering's validity.

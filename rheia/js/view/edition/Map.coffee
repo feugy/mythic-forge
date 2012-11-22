@@ -152,38 +152,48 @@ define [
       super()
       @_kindWidget = @$el.find('select.field').change =>
         kind = @_kindWidget.find('option:selected').val()
-        if kind of Renderers
+        if kind of Renderers and @_mapWidget?
           renderer =  new Renderers[kind]() 
           @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
           @_mapWidget.setOption 'renderer', renderer
         @_onChange()
 
-      @_mapWidget = @$el.find('.map').authoringMap(
-        lowerCoord: {x:0, y:0}
-        displayGrid: true
-        displayMarkers: true
-        dndType: i18n.constants.fieldAffectation
-        affect: @_onAffect
-        coordChanged: =>
+      # hide commands until map created
+      if @_tempId?
+        @$el.find('.commands').hide()
+        @$el.find('.not-saved').show()
+      else
+        @$el.find('.commands').show()
+        @$el.find('.not-saved').hide()
+        # no map until saved
+        @_mapWidget = @$el.find('.map').authoringMap(
+          lowerCoord: {x:0, y:0}
+          displayGrid: true
+          displayMarkers: true
+          mapId: @model.id
+          dndType: i18n.constants.fieldAffectation
+        ).on('affect', @_onAffect
+        ).on('coordChanged', =>
           # reloads map content
           return if @_tempId?
           @model.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
-        selectionChanged: =>
+        ).on('selectionChanged', =>
           # update action bar button state
           @_removeSelectionButton.button 'option', 'disabled', @_mapWidget.options.selection.length is 0
-        zoomChanged: =>
+        ).on('zoomChanged', =>
           @_inhibitZoom = true
           @$el.find('.zoom').val @_mapWidget.options.zoom
-      ).data 'authoringMap'
+        ).data 'authoringMap'
+
+        # update map commands
+        @$el.find('.toggle-grid').removeAttr 'checked'
+        @$el.find('.toggle-grid').attr 'checked', 'checked' if @_mapWidget.options.displayGrid
+        @$el.find('.toggle-markers').removeAttr 'checked'
+        @$el.find('.toggle-markers').attr 'checked', 'checked' if @_mapWidget.options.displayMarkers
+        @$el.find('.zoom').val @_mapWidget.options.zoom
+
       # initiate renderer
       @_kindWidget.change()
-
-      # update map commands
-      @$el.find('.toggle-grid').removeAttr 'checked'
-      @$el.find('.toggle-grid').attr 'checked', 'checked' if @_mapWidget.options.displayGrid
-      @$el.find('.toggle-markers').removeAttr 'checked'
-      @$el.find('.toggle-markers').attr 'checked', 'checked' if @_mapWidget.options.displayMarkers
-      @$el.find('.zoom').val @_mapWidget.options.zoom
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -201,7 +211,7 @@ define [
       @_kindWidget.find('option:selected').removeAttr 'selected'
       @_kindWidget.find("option[value='#{kind}']").attr 'selected', 'selected'
       
-      if kind of Renderers
+      if kind of Renderers and @_mapWidget?
         renderer =  new Renderers[kind]() 
         @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
         @_mapWidget.setOption 'renderer', renderer
@@ -252,6 +262,15 @@ define [
       # and saves them
       Field.collection.save created
 
+    # **private**
+    # extends inherited method to create map widget when needed
+    _onCreated: (created) =>
+      return unless @_saveInProgress
+      super created
+      # refresh rendering
+      @_specificRender()
+      @_fillRendering()
+      
     # **private**
     # Field affectation handler.
     # Removes existing fields, and then creates new field with relevant type and image instead.

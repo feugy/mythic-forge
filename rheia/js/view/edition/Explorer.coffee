@@ -129,17 +129,17 @@ define [
         hideEmpty: false
         openAtStart: false
         animDuration: animDuration
-        open: (event, category) =>
-          # avoid multiple loading
-          node = $(event.currentTarget)
-          return if node.hasClass 'loaded'
-          node.addClass 'loaded'
-          # load the relevant category
-          loaders[category]() if category of loaders
-        openElement: (event, details) =>
-          rheia.router.trigger 'open', details.category, details.id
-        removeElement: (event, details) =>
-          rheia.router.trigger 'remove', details.category, details.id
+      ).on('open', (event, category) =>
+        # avoid multiple loading
+        node = @_tree.$el.find("[data-category=#{category}]")
+        return if node.hasClass 'loaded'
+        node.addClass 'loaded'
+        # load the relevant category
+        loaders[category]() if category of loaders
+      ).on('openElement', (event, details) =>
+        rheia.router.trigger 'open', details.category, details.id
+      ).on('removeElement', (event, details) =>
+        rheia.router.trigger 'remove', details.category, details.id
       ).data 'typeTree'
       # for chaining purposes
       @

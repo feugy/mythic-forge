@@ -102,7 +102,7 @@ define [
       @_validators.push new validators.Regexp {
         invalidError: i18n.msgs.invalidExecutableNameError
         regexp: /^\w*$/i
-      }, i18n.labels.name, @_nameWidget.element, null, (node) -> node.find('input').val()
+      }, i18n.labels.name, @_nameWidget.$el, null, (node) -> node.find('input').val()
 
     # **private**
     # Performs view specific save operations, right before saving the model.

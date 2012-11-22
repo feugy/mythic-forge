@@ -72,7 +72,7 @@ define [
 
 
     # The view destroyer: unbinds shortcuts
-    destroy: =>
+    dispose: =>
       # removes shortcuts
       $(document).unbind ".#{@cid}"
       $(window).unbind ".#{@cid}"
@@ -100,7 +100,7 @@ define [
         .bind('tabsadd', @_onTabAdded)
         .bind('tabsselect', (event, ui) => 
           @_actionBars?.select ui.index
-          @_views[ui.index].shown()
+          @_views[ui.index]?.shown()
         ).data 'tabs'
 
       # instanciates a tab widget for action bars

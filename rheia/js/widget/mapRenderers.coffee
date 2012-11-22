@@ -20,8 +20,7 @@
 
 define [
   'widget/authoringMap'
-],  (Renderer) ->
-
+],  (Map) ->
 
   # Compute the location of the point C regarding the straight between A and B
   #
@@ -44,7 +43,7 @@ define [
     c.top > coef*c.left + h
 
   {
-    hexagon: class HexagonRenderer extends Renderer
+    hexagon: class HexagonRenderer extends Map.Renderer
 
       # Initiate the renderer with map inner state. 
       # Value attributes `height`, `width`, `tileW` and `tileH`
@@ -243,7 +242,7 @@ define [
 
     # Diamond renderer creates isometric maps.
     # In terms of map coordinates, lowerCoord is displayed at upper-left corner, and upperCoord at lower-right corner.
-    diamond: class DiamondRenderer extends Renderer
+    diamond: class DiamondRenderer extends Map.Renderer
 
       # Initiate the renderer with map inner state. 
       # Value attributes `height`, `width`, `tileW` and `tileH`.
@@ -461,7 +460,7 @@ define [
         }
 
     # Square renderer creates classic checkerboard maps
-    square: class SquareRenderer extends Renderer
+    square: class SquareRenderer extends Map.Renderer
 
       # Initiate the renderer with map inner state.
       # Value attributes `height`, `width`, `tileW` and `tileH`

@@ -22,71 +22,14 @@ define [
   'jquery'
   'underscore'
   'utils/utilities'
-  'widget/baseWidget'
+  'widget/base'
   'mousewheel'
-],  ($, _, utils) ->
+],  ($, _, utils, Base) ->
 
 
   # Base widget for maps that allows drag'n drop affectation and selections.
   # It delegates rendering operations to a mapRenderer that you need to manually create and set.
-  $.widget 'rheia.authoringMap', $.rheia.baseWidget,
-
-    options:   
-
-      # delegate object used to draw tiles on map
-      renderer: null
-
-      # lower coordinates of the displayed map. Modification triggers the 'coordChanged' event, and reset map content.
-      # Read-only, use `setOption('lowerCoord', ...)` to modify.
-      lowerCoord: {x:0, y:0}
-
-      # upper coordinates of the displayed map. Automatically updates when upper coordinates changes.
-      # Read-only, do not modify manually.
-      upperCoord: {x:0, y:0}
-
-      # Awaited with and height for individual tiles, with normal zoom.
-      tileDim: 100
-
-      # Number of vertical displayed tiles 
-      verticalTileNum: 10
-
-      # Number of horizontal displayed tiles.
-      horizontalTileNum: 10
-
-      # Flag that indicates wether or not display the tile grid.
-      # Read-only, use `setOption('displayGrid', ...)` to modify.
-      displayGrid: true
-
-      # Flag that indicates wether or not display the tile coordinates (every 5 tiles).
-      # Read-only, use `setOption('displayMarkers', ...)` to modify.
-      displayMarkers: true
-
-      # Coordinates of the selected tiles.
-      # Read-only.
-      selection: []
-
-      # Current zoom.
-      # Read-only, use `setOption('zoom', ...)` to modify.
-      zoom: 1
-    
-      # Minimum zoom
-      minZoom: 0.1
-    
-      # maximum zoom
-      maxZoom: 2
-
-      # string used to allow only a specific type of drag'n drop operations
-      dndType: null
-
-      # color used for markers, grid, and so on.
-      colors:
-        selection: '#666'
-        markers: 'red'
-        grid: '#888'
-        hover: '#ccc'
-
-      # angle use to simulate perspective. 60 means view from above. 45 means iso perspective
-      angle: 45
+  class AuthoringMap extends Base
 
     # **private**
     # displayed map content. 
@@ -144,14 +87,19 @@ define [
     # enable selection
     _selectable: true
 
+    # Build rendering
+    constructor: (element, options) ->
+      super element, options
+      @_create()
+
     # Adds field to map. Will be effective only if the field is inside displayed bounds.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
     # @param added [Array<Object>] added data (JSON array). 
-    addData: (added) ->
+    addData: (added) =>
       o = @options
       for data in added
-        if data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
+        if o.mapId is data.mapId and data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
           @_data.push data
           img = "/images/#{data.typeId}-#{data.num}.png"
           unless img in @_loadedImages
@@ -164,11 +112,11 @@ define [
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
     # @param removed [Field] removed data (JSON array). 
-    removeData: (removed) ->
+    removeData: (removed) =>
       o = @options     
-      ctx = @element.find('.fields')[0].getContext '2d'
+      ctx = @$el.find('.fields')[0].getContext '2d'
       for data in removed
-        if data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
+        if o.mapId is data.mapId and data.x >= o.lowerCoord.x and data.x <= o.upperCoord.x and data.y >= o.lowerCoord.y and data.y <= o.upperCoord.y
           # draw white tile at removed field coordinate
           o.renderer.drawTile ctx, data, 'white'
           # removes from local cache
@@ -180,14 +128,51 @@ define [
     # 
     # @param coord [Object] checked coordinates
     # @return the corresponding data or null.
-    getData: (coord) ->
+    getData: (coord) =>
       return data for data in @_data when data.x is coord.x and data.y is coord.y
       null
 
+    # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
+    #
+    # @param key [String] the set option's key
+    # @param value [Object] new value for this option    
+    setOption: (key, value) =>
+      return unless key in ['renderer', 'lowerCoord', 'displayGrid', 'displayMarkers', 'zoom', 'mapId']
+      o = @options
+      old = o[key]
+      o[key] = value
+      switch key
+        when 'renderer'
+          if value?
+            @_create()
+          else
+            # restore previous renderer
+            o[key] = old
+        when 'mapId'
+          if old isnt value
+            # reset all rendering: fields and items.
+            canvas = @$el.find('.fields')[0]
+            canvas.width = canvas.width
+        when 'lowerCoord'
+          # computes lower coordinates
+          o.upperCoord = o.renderer.nextCorner o.lowerCoord
+          console.log "new displayed coord: ", o.lowerCoord, ' to: ', o.upperCoord
+          # creates a clone layer while reloading
+          @_cloneLayer = $("<canvas width=\"#{o.renderer.width*3}\" height=\"#{o.renderer.height*3}\"></canvas>")
+          # empty datas
+          @_data = []
+          @$el.trigger 'coordChanged'
+        when 'displayGrid'
+          @_drawGrid()
+        when 'displayMarkers'
+          @_drawMarkers()
+        when 'zoom'
+          # change zoom without triggering the event
+          @_zoom @options.zoom, true
+
     # **private**
-    # Build rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
+    # Re-builds rendering
+    _create: =>
 
       # Initialize internal state
       @_container = null
@@ -202,12 +187,12 @@ define [
       @_loadedImages  = []
       @_pendingImages = 0
 
-      @element.empty().removeClass().addClass 'map-widget'
+      @$el.empty().removeClass().addClass 'map-widget'
       o = @options
       return unless o.renderer?
       o.renderer.init @
 
-      @element.css(
+      @$el.css(
         height: o.renderer.height
         width: o.renderer.width
       ).mousewheel (event, delta) => 
@@ -224,12 +209,11 @@ define [
       ).draggable(
         distance: 5
         scope: o.dndType
-        helper: (event) => @_mapDragHelper event
-        start: (event) => @_onDragStart event
-        drag: (event) => @_onDrag event
-        stop: (event, details) => @_onDragStop event, details
-      ).on('click', (event) =>
-        @_onClick event
+        helper: @_mapDragHelper
+        start: @_onDragStart
+        drag: @_onDrag
+        stop: @_onDragStop
+      ).on('click', @_onClick
       ).on('mousemove', (event) => 
         return unless @_moveJumper++ % 3 is 0
         @_cursor = @options.renderer.posToCoord @_mousePos event
@@ -237,12 +221,12 @@ define [
       ).on('mouseleave', (event) => 
         @_cursor = null
         @_drawCursor()
-      ).appendTo @element
+      ).appendTo @$el
 
       # creates the field canvas element      
       $("""<canvas class="fields movable" height="#{o.renderer.height*3}" width="#{o.renderer.width*3}"></canvas>""").droppable(
         scope: o.dndType
-        drop: (event, details) => @_onDrop event, details
+        drop: @_onDrop
       ).appendTo @_container
 
       # creates the grid canvas element      
@@ -259,44 +243,10 @@ define [
       @_drawMarkers()
 
       # image loading loading handler
-      @bindTo rheia.router, 'imageLoaded', => @_onImageLoaded.apply @, arguments
+      @bindTo rheia.router, 'imageLoaded', @_onImageLoaded
   
       # gets first data
-      _.defer =>  @setOption 'lowerCoord', o.lowerCoord
-
-    # **private**
-    # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
-    #
-    # @param key [String] the set option's key
-    # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['renderer', 'lowerCoord', 'displayGrid', 'displayMarkers', 'zoom']
-      o = @options
-      old = o[key]
-      o[key] = value
-      switch key
-        when 'renderer'
-          if value?
-            @_create()
-          else
-            # restore previous renderer
-            o[key] = old
-        when 'lowerCoord'
-          # computes lower coordinates
-          o.upperCoord = o.renderer.nextCorner o.lowerCoord
-          console.log "new displayed coord: ", o.lowerCoord, ' to: ', o.upperCoord
-          # creates a clone layer while reloading
-          @_cloneLayer = $("<canvas width=\"#{o.renderer.width*3}\" height=\"#{o.renderer.height*3}\"></canvas>")
-          # empty datas
-          @_data = []
-          @_trigger 'coordChanged'
-        when 'displayGrid'
-          @_drawGrid()
-        when 'displayMarkers'
-          @_drawMarkers()
-        when 'zoom'
-          # change zoom without triggering the event
-          @_zoom @options.zoom, true
+      _.defer => @setOption 'lowerCoord', o.lowerCoord
 
     # **private**
     # Returns the DOM node moved by drag'n drop operation within the map.
@@ -304,7 +254,7 @@ define [
     #
     # @param event [Event] the drag start event
     # @return the moved DOM node.
-    _mapDragHelper: (event) -> 
+    _mapDragHelper: (event) => 
       @_container
 
     # **private**
@@ -313,7 +263,7 @@ define [
     # @return the mouse position
     # @option return left the left offset relative to container
     # @option return top the top offset relative to container
-    _mousePos: (event) ->
+    _mousePos: (event) =>
       offset = @_container.offset()
       {
         left: event.pageX-offset.left
@@ -323,7 +273,7 @@ define [
     # **private**
     # If no image loading remains, and if a clone layer exists, then its content is 
     # copied into the field layer
-    _replaceFieldClone: ->
+    _replaceFieldClone: =>
       o = @options
       # only if no image loading is pendinf
       return unless @_pendingImages is 0 and @_cloneLayer?
@@ -338,8 +288,8 @@ define [
 
     # **private**
     # Redraws the grid wireframe.
-    _drawGrid: ->
-      canvas = @element.find('.grid')[0]
+    _drawGrid: =>
+      canvas = @$el.find('.grid')[0]
       ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       o = @options
@@ -350,8 +300,8 @@ define [
 
     # **private**
     # Redraws the grid markers.
-    _drawMarkers: ->
-      canvas = @element.find('.markers')[0]
+    _drawMarkers: =>
+      canvas = @$el.find('.markers')[0]
       ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       o = @options
@@ -365,11 +315,11 @@ define [
 
     # **private**
     # Draws the current selection on the selection layer
-    _drawSelection: ->
+    _drawSelection: =>
       return unless @_selectable
       console.log 'redraws map selection'
       # clear selection
-      canvas = @element.find('.selection')[0]
+      canvas = @$el.find('.selection')[0]
       ctx = canvas.getContext '2d'
       canvas.width = canvas.width
       ctx.fillStyle = @options.colors.selection
@@ -377,8 +327,8 @@ define [
 
     # **private**
     # Redraws cursor on stored position (@_cursor)
-    _drawCursor: ->
-      canvas = @element.find('.hover')[0]
+    _drawCursor: =>
+      canvas = @$el.find('.hover')[0]
       canvas.width = canvas.width
       return unless @_cursor
       @options.renderer.drawTile canvas.getContext('2d'), @_cursor, @options.colors.hover
@@ -388,7 +338,7 @@ define [
     # 
     # @param zoom [Number] the new zoom value.
     # @param noEvent [Boolean] do not change rendering, used when setting zoom programmatically.
-    _zoom: (zoom, noEvent) ->
+    _zoom: (zoom, noEvent) =>
       o = @options
       # avoid weird values by rounding.
       zoom = Math.round(zoom*100)/100;
@@ -424,9 +374,9 @@ define [
         @addData tmp
 
         # trigger event
-        @_trigger 'zoomChanged' unless noEvent
+        @$el.trigger 'zoomChanged' unless noEvent
         # and reload coordinages
-        @_zoomTimer = setTimeout =>
+        @_zoomTimer = _.delay =>
           # compute new lowerCoord
           @setOption 'lowerCoord', @options.lowerCoord
         , 300
@@ -438,7 +388,7 @@ define [
     # @param success [Boolean] true if image was successfully loaded
     # @param src [String] the loaded image url
     # @param img [Image] an Image object, null in case of failure
-    _onImageLoaded: (success, src, img) -> 
+    _onImageLoaded: (success, src, img) => 
       o = @options
       # do nothing if loading failed.
       return unless src in @_loadedImages
@@ -448,7 +398,7 @@ define [
         
       return @_replaceFieldClone() unless success
         
-      ctx = @element.find('.fields')[0].getContext '2d'
+      ctx = @$el.find('.fields')[0].getContext '2d'
       # write on field layer, unless a clone layer exists
       ctx = @_cloneLayer[0].getContext '2d' if @_cloneLayer?
 
@@ -468,7 +418,7 @@ define [
     # @option details draggable [Object] operation source
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
-    _onDrop: (event, details) ->
+    _onDrop: (event, details) =>
       o = this.options
       return unless @_cursor
       # extract dragged datas
@@ -482,7 +432,7 @@ define [
           break
       console.log "drops images #{idx} of field #{id} at coordinates x:#{@_cursor.x}, y:#{@_cursor.y}, in selection: #{inSelection}"
       # triggers affectation.
-      @_trigger 'affect', event,
+      @$el.trigger 'affect',
         typeId: id
         num: idx,
         coord: @_cursor,
@@ -494,10 +444,10 @@ define [
     #
     # @param event [Event] drag'n drop start mouse event
     # @return false to cancel the jQuery drag'n drop operation
-    _onDragStart: (event) ->
+    _onDragStart: (event) =>
       o = @options
       # computes the absolute position and dimension of the widget
-      offset = @element.offset()
+      offset = @$el.offset()
       @_dim = $.extend {}, offset
       @_dim.right = @_dim.left + o.renderer.width
       @_dim.bottom = @_dim.top + o.renderer.height
@@ -510,12 +460,10 @@ define [
           left: event.pageX+o.renderer.width-@_offset.left
           top: event.pageY+o.renderer.height-@_offset.top
         # adds a layer to draw selection
-        @_selectLayer = @element.find('.selection').clone()
+        @_selectLayer = @$el.find('.selection').clone()
         @_container.append @_selectLayer
-        @_onDragTemp = (event) => @_onDrag event
-        @_onSelectionEndTemp = (event) => @_onSelectionEnd event
-        $(document).mousemove @_onDragTemp
-        $(document).mouseup @_onSelectionEndTemp
+        $(document).mousemove @_onDrag
+        $(document).mouseup @_onSelectionEnd
         cancel = true
 
         # empties current selection
@@ -531,7 +479,7 @@ define [
     #
     # @param event [Event] drag'n drop mouse event
     # @return false to cancel the drag'n drop operation
-    _onDrag: (event) ->
+    _onDrag: (event) =>
       o = @options
       while !('pageX' of event) 
         event = event.originalEvent
@@ -573,7 +521,7 @@ define [
     # @option details draggable [Object] operation source
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
-    _onDragStop: (event, details) ->
+    _onDragStop: (event, details) =>
       delete this.options._dim
       if event.shiftKey and @_selectable
         # selection end
@@ -617,11 +565,11 @@ define [
     # Drag'n drop selection end handler.
     # Adds all selected tiles to current selection and redraws it
     # @param event [Event] drag'n drop selection end event
-    _onSelectionEnd: (event) ->
+    _onSelectionEnd: (event) =>
       o = @options
       # unbinds temporary handlers
-      $(document).unbind 'mousemove', @_onDragTemp
-      $(document).unbind 'mouseup', @_onSelectionEndTemp
+      $(document).unbind 'mousemove', @_onDrag
+      $(document).unbind 'mouseup', @_onSelectionEnd
       return unless @_start
 
       # removes temporary layer
@@ -647,12 +595,12 @@ define [
       @_start = null;
       # redraw selection
       @_drawSelection()
-      @_trigger 'selectionChanged'
+      @$el.trigger 'selectionChanged'
 
     # **private**
     # Click handler that toggle the clicked tile from selection if the ctrl key is pressed
     # @param event [Event] click event
-    _onClick: (event) ->
+    _onClick: (event) =>
       return unless @_selectable
       coord = @options.renderer.posToCoord @_mousePos event
       console.log "click on tile x:#{coord.x} y:#{coord.y} with control key #{event.ctrlKey}"
@@ -670,8 +618,68 @@ define [
       # selects the clicked tile and redraw
       @options.selection.push coord if add
       @_drawSelection()
-      @_trigger 'selectionChanged'
+      @$el.trigger 'selectionChanged'
 
+  # widget declaration
+  AuthoringMap._declareWidget 'authoringMap', 
+
+    # delegate object used to draw tiles on map
+    renderer: null
+
+    # map id, to ignore items and fields that do not belongs to the displayed map
+    mapId: null
+
+    # lower coordinates of the displayed map. Modification triggers the 'coordChanged' event, and reset map content.
+    # Read-only, use `setOption('lowerCoord', ...)` to modify.
+    lowerCoord: {x:0, y:0}
+
+    # upper coordinates of the displayed map. Automatically updates when upper coordinates changes.
+    # Read-only, do not modify manually.
+    upperCoord: {x:0, y:0}
+
+    # Awaited with and height for individual tiles, with normal zoom.
+    tileDim: 100
+
+    # Number of vertical displayed tiles 
+    verticalTileNum: 10
+
+    # Number of horizontal displayed tiles.
+    horizontalTileNum: 10
+
+    # Flag that indicates wether or not display the tile grid.
+    # Read-only, use `setOption('displayGrid', ...)` to modify.
+    displayGrid: true
+
+    # Flag that indicates wether or not display the tile coordinates (every 5 tiles).
+    # Read-only, use `setOption('displayMarkers', ...)` to modify.
+    displayMarkers: true
+
+    # Coordinates of the selected tiles.
+    # Read-only.
+    selection: []
+
+    # Current zoom.
+    # Read-only, use `setOption('zoom', ...)` to modify.
+    zoom: 1
+  
+    # Minimum zoom
+    minZoom: 0.1
+  
+    # maximum zoom
+    maxZoom: 2
+
+    # string used to allow only a specific type of drag'n drop operations
+    dndType: null
+
+    # color used for markers, grid, and so on.
+    colors:
+      selection: '#666'
+      markers: 'red'
+      grid: '#888'
+      hover: '#ccc'
+
+    # angle use to simulate perspective. 60 means view from above. 45 means iso perspective
+    angle: 45
 
   # The map renderer is used to render tiles on the map
   # Extending this class allows to have different tiles type: hexagonal, diamond...
@@ -767,3 +775,8 @@ define [
     # @param pos [Object] current screen position (left and top) of the container
     # @return screen offset (left and top) of the container
     replaceContainer: (pos) => throw new Error 'the `replaceContainer` method must be implemented'
+
+  return {
+    Widget: AuthoringMap
+    Renderer: MapRenderer
+  }

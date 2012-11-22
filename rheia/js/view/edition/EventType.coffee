@@ -130,7 +130,7 @@ define [
     # Removes existing properties widget, and creates new ones from _editedProperties
     _updateProperties: () =>
       # unbinds existing handlers
-      @$el.find('.properties > tbody > tr > td > *').unbind()
+      @$el.find('.properties > tbody > tr > td > *').off()
       
       # remove existing lines
       @$el.find('.properties > tbody > tr').remove()
@@ -150,7 +150,7 @@ define [
 
         # input for property's name
         name = $("""<input class="uidName" type="text" value="#{uidName}"/>""")
-            .keyup(@_onPropertyChange).wrap '<td></td>'
+            .on('keyup', @_onPropertyChange).wrap '<td></td>'
         line.append name.parent()
 
         # select for property's type
@@ -158,14 +158,14 @@ define [
         for name, value of i18n.labels.propertyTypes
           markup += """<option value="#{name}" #{if prop.type is name then 'selected="selected"'}>#{value}</option>"""
         markup += '</select>';
-        select = $("""<select class="type">#{markup}</select>""").change(@_onPropertyChange).wrap '<td></td>'
+        select = $("""<select class="type">#{markup}</select>""").on('change', @_onPropertyChange).wrap '<td></td>'
         line.append select.parent()
 
         # at last, property widget for default value
         defaultValue = $('<div class="defaultValue"></div>').property(
           type: prop.type, 
           value: prop.def,
-          change:@_onPropertyChange
+        ).on('change', @_onPropertyChange
         ).wrap '<td></td>'
 
         line.append defaultValue.parent()
@@ -229,7 +229,7 @@ define [
         newType = row.find('.type').val()
         # updates default value if type changes
         if newType isnt @_editedProperties[uidName]?.type
-          row.find('.defaultValue').property 'option', 'type', newType
+          row.find('.defaultValue').property 'setOption', 'type', newType
         newProperties[uidName] =
           type: newType
           def: row.find('.defaultValue').data('property').options.value

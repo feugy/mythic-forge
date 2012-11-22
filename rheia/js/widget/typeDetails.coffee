@@ -23,10 +23,10 @@ define [
   'utils/utilities'
   'i18n!nls/common'
   'i18n!nls/widget'
-  'widget/baseWidget'
+  'widget/base'
   'widget/carousel'
   'widget/toggleable'
-], ($, utils, i18n, i18nWidget) ->
+], ($, utils, i18n, i18nWidget, Base) ->
 
   i18n = $.extend true, i18n, i18nWidget
 
@@ -34,11 +34,7 @@ define [
   # Draws the type image for EventType and ItemType, use a carousel for FieldType, and displays 
   # just name for others
   # Displays a contextual menu, but handlers are difined by typeTree widget.
-  $.widget 'rheia.typeDetails', $.rheia.baseWidget,
-
-    options:  
-      # The displayed type model
-      model: null
+  class TypeDetails extends Base
 
     # **private**
     # pending image source
@@ -48,17 +44,11 @@ define [
     # contextual menu
     _menu: null
 
-    # Frees DOM listeners
-    destroy: ->
-      @_element.off()
-      $.rheia.baseWidget::destroy.apply @, arguments
-
-    # **private**
     # Builds rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
+    constructor: (element, options) ->
+      super element, options
       
-      @element.addClass('type-details').empty()
+      @$el.addClass('type-details').empty()
       name = null
       category = @options.model._className
       categoryClass = utils.dashSeparated category
@@ -78,7 +68,7 @@ define [
           category = @options.model.kind
           categoryClass = utils.dashSeparated category
 
-      @element.addClass(@options.model.id)
+      @$el.addClass(@options.model.id)
         .data('id', @options.model.id)
         .data('category', category)
         .addClass(categoryClass)
@@ -88,9 +78,9 @@ define [
       if category is 'FieldType'
         $('<div></div>').carousel(
           images: @options.model.get 'images'
-        ).prependTo @element
+        ).prependTo @$el
 
-        @element.draggable(
+        @$el.draggable(
           scope: i18n.constants.fieldAffectation
           appendTo: 'body'
           cursorAt: top:-5, left:-5
@@ -106,16 +96,16 @@ define [
             dragged
         )
       else
-        @element.prepend "<img/>" if category in ['ItemType', 'EventType']
-        @element.toggleClass 'inactive', !@options.model.get 'active' if category in ['TurnRule', 'Rule']
+        @$el.prepend "<img/>" if category in ['ItemType', 'EventType']
+        @$el.toggleClass 'inactive', !@options.model.get 'active' if category in ['TurnRule', 'Rule']
 
       # adds a contextual menu that opens on right click
       @_menu = $("""<ul class="menu">
           <li class="open"><i class="x-small ui-icon open"></i>#{_.sprintf i18n.typeDetails.open, name}</li>
           <li class="remove"><i class="x-small ui-icon remove"></i>#{_.sprintf i18n.typeDetails.remove, name}</li>
-        </ul>""").toggleable().appendTo(@element).data 'toggleable'
+        </ul>""").toggleable().appendTo(@$el).data 'toggleable'
 
-      @element.on 'contextmenu', (event) =>
+      @$el.on 'contextmenu', (event) =>
         event?.preventDefault()
         event?.stopImmediatePropagation()
         @_menu.open event?.pageX, event?.pageY
@@ -125,8 +115,8 @@ define [
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['model']
+    setOption: (key, value) =>
+      return unless key in ['model']
       switch key
         when 'model' 
           @options.model = value
@@ -138,7 +128,13 @@ define [
     # @param success [Boolean] true if image loaded, false otherwise
     # @param src [String] original image source url
     # @param img [Image] an Image object, null in case of failure
-    _onImageLoaded: (success, src, img) ->
+    _onImageLoaded: (success, src, img) =>
       return unless @_pendingImage is src
       @unboundFrom rheia.router, 'imageLoaded'
-      @element.find("img").replaceWith $(img).clone() if success
+      @$el.find("img").replaceWith $(img).clone() if success
+
+  # widget declaration
+  TypeDetails._declareWidget 'typeDetails', 
+
+    # The displayed type model
+    model: null

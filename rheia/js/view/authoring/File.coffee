@@ -127,9 +127,9 @@ define [
 
       # instanciate the content editor
       @_editorWidget = $('<div class="content"></div>').advEditor(
-        change: @_onChange
+      ).on('change', @_onChange
       ).data 'advEditor'
-      @$el.empty().append @_editorWidget.element
+      @$el.empty().append @_editorWidget.$el
 
       @_image = $('<img/>').appendTo @$el
 
@@ -145,11 +145,11 @@ define [
       @$el.toggleClass 'image', @_mode is 'img'
       if @_mode is 'img'
         # hide editor and display an image instead
-        @_editorWidget.element.hide()
+        @_editorWidget.$el.hide()
         imageType = "image/#{@model.extension}"
         @_image.attr 'src', "data:#{imageType};base64,#{btoa @model.get 'content'}"
       else
-        @_editorWidget.element.show()
+        @_editorWidget.$el.show()
         @_editorWidget.setOption 'mode', @_mode
         @_editorWidget.setOption 'text', @model.get 'content'
 

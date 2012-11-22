@@ -26,17 +26,12 @@ define [
   'widget/authoringMap'
   'widget/mapItem'
   'widget/toggleable'
-],  ($, _, utils, i18n) ->
+],  ($, _, utils, i18n, Map) ->
 
   # Specific map that adds items support to authoring Map, and remove selection features
   # triggers an `itemClicked` event with model as attribute when clicked
-  $.widget 'rheia.moderationMap', $.rheia.authoringMap,
+  class ModerationMap extends Map.Widget
     
-    options:   
-
-      # map id, to ignore items and fields that do not belongs to the displayed map
-      mapId: null
-
     # **private**
     # disable selection for this widget
     _selectable: false
@@ -73,14 +68,14 @@ define [
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
     # @param added [Array<Object>] added data (JSON array). 
-    addData: (added) ->
+    addData: (added) =>
       o = @options
 
       # end of item loading: removes old items and reset layer position
       checkLoadingEnd = =>
         return unless @_loading is 0
         # removes previous widgets
-        widget.destroy() for id, widget of @_oldWidgets
+        widget.$el.remove() for id, widget of @_oldWidgets
         @_oldWidgets = {}
         # all widget are loaded: reset position
         @_itemLayer.css 
@@ -104,85 +99,81 @@ define [
             @_itemWidgets[id] = $('<span></span>').mapItem(
               model: obj
               map: @
-              loaded: =>
-                @_loading--
-                checkLoadingEnd()
-              destroy: (event, widget) =>
-                # when reloading, it's possible that widget have already be replaced
-                return unless @_itemWidgets[id] is widget
-                delete @_itemWidgets[id]
+            ).on('loaded', =>
+              @_loading--
+              checkLoadingEnd()
+            ).on('dispose', (event, widget) =>
+              # when reloading, it's possible that widget have already be replaced
+              return unless @_itemWidgets[id] is widget
+              delete @_itemWidgets[id]
             ).data 'mapItem'
             # and adds it to item layer
-            @_itemLayer.append @_itemWidgets[id].element
+            @_itemLayer.append @_itemWidgets[id].$el
 
       checkLoadingEnd()
       
       # let superclass manage fields
-      $.rheia.authoringMap::addData.call @, fields if fields.length > 0
+      super fields if fields.length > 0
 
     # Checks if the corresponding item is displayed or not
     # 
     # @param item [Object] checked item
     # @return true if the map contains a mapItem widget that displays this item
-    hasItem: (item) ->
+    hasItem: (item) =>
       @_itemWidgets[item?.id]?
 
     # Removes field or itemsfrom map. Will be effective only if the field was displayed.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
     # @param removed [Field] removed data (JSON array). 
-    removeData: (removed) ->
+    removeData: (removed) =>
       # separate fields from items
       fields = []
       for obj in removed
         if obj._className is 'Item'
           # immediately removes corresponding widget
-          @_itemWidgets[obj.id]?.destroy()
+          @_itemWidgets[obj.id]?.$el.remove()
         else unless obj._className?
           fields.push obj.toJSON() if @options.mapId is obj.get 'mapId'
 
       # let superclass manage fields
-      $.rheia.authoringMap::removeData.call @, fields if fields.length > 0
-
-    # Removes created popup menu
-    destroy: =>
-      @_popupMenu?.element.off 'click'
-      @_popupMenu?.element.remove()
-      $.rheia.baseWidget::destroy.call @, arguments
-
-    # **private**
-    # Build rendering
-    _create: ->
-      # superclass call
-      $.rheia.authoringMap::_create.apply @, arguments
-
-      # adds the item layer.    
-
-      @_itemLayer = $("<div class='items movable'></div>").appendTo @_container
-      if @options.renderer?
-        @_itemLayer.css
-          height: @options.renderer.height*3
-          width: @options.renderer.width*3
+      super fields if fields.length > 0
           
-    # **private**
     # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
     #
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
+    setOption: (key, value) =>
       switch key
         when 'lowerCoord'
           @_oldWidgets = _.clone @_itemWidgets
         when 'mapId'
           if @options.mapId isnt value
-            # reset all rendering: fields and items.
-            canvas = @element.find('.fields')[0]
-            canvas.width = canvas.width
-            widget.destroy() for id, widget of @_itemWidgets
+            # reset all items rendering.
+            widget.$el.remove() for id, widget of @_itemWidgets
             @_itemWidgets = {}
 
       # superclass inherited behaviour
-      $.rheia.authoringMap::_setOption.apply @, arguments
+      super key, value
+
+    # Removes created popup menu
+    dispose: =>
+      @_popupMenu?.$el.off 'click'
+      @_popupMenu?.$el.remove()
+      super()
+
+    # **private**
+    # Build rendering
+    _create: =>
+      # superclass call
+      super()
+
+      # adds the item layer.    
+      @_itemLayer = $("<div class='items movable'></div>").appendTo @_container
+      if @options.renderer?
+        @_itemLayer.css
+          height: @options.renderer.height*3
+          width: @options.renderer.width*3
 
     # **private**
     # Returns the DOM node moved by drag'n drop operation within the map.
@@ -190,10 +181,10 @@ define [
     #
     # @param event [Event] the drag start event
     # @return the moved DOM node.
-    _mapDragHelper: (event) ->
+    _mapDragHelper: (event) =>
       moved = @_container
       # move from the map: search for an item wbove position
-      offset = @element.offset()
+      offset = @$el.offset()
       pos = @options.renderer.posToCoord 
         left: event.pageX+@options.renderer.width-offset.left
         top: event.pageY+@options.renderer.height-offset.top
@@ -228,22 +219,22 @@ define [
     #
     # @param event [Event] drag'n drop start mouse event
     # @return false to cancel the jQuery drag'n drop operation
-    _onDragStart: (event) ->
+    _onDragStart: (event) =>
       #  cancels drag if we have multiple dragged target
       return false if @_dragged.length > 1
       # reset dragged candidate if needed
       @_dragged = [] unless @_dragged.length is 1
       # call inherited method
-      $.rheia.authoringMap::_onDragStart.apply @, arguments
+      super event
 
     # **private**
     # Drag handler, that allows drag operation on items going outside widget bounds
     #
     # @param event [Event] drag'n drop mouse event
     # @return false to cancel the drag'n drop operation
-    _onDrag: (event) ->
+    _onDrag: (event) =>
       # call inherited method
-      @_draggedInside = $.rheia.authoringMap::_onDrag.apply @, arguments
+      @_draggedInside = super event
       # always allows item drag operations
       return true if @_dragged.length is 1
       # otherwise returns inherited result
@@ -259,16 +250,16 @@ define [
     # @option details draggable [Object] operation source
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
-    _onDragStop: (event, details) ->
-      @_popupMenu?.element.off 'click'
-      @_popupMenu?.element.remove()
+    _onDragStop: (event, details) =>
+      @_popupMenu?.$el.off 'click'
+      @_popupMenu?.$el.remove()
       if @_dragged.length is 1
         # if inside, do drop. otherwise, does nothing
         if @_draggedInside
           console.log "dragged item #{@_dragged[0].id} inside map"
           @_onDrop event, details 
       else
-       $.rheia.authoringMap::_onDragStop.apply @, arguments
+       super event, details
 
     # **private**
     # Map drop handler. Triggers affectation of item types.
@@ -278,26 +269,26 @@ define [
     # @option details draggable [Object] operation source
     # @option details helper [Object] moved object
     # @option details position [Object] current position of the moved object
-    _onDrop: (event, details) ->
+    _onDrop: (event, details) =>
       return unless @_cursor
       instance = details?.helper?.data 'instance'
       if instance?
         console.log "drops instance #{instance.id} at coordinates x:#{@_cursor.x}, y:#{@_cursor.y}"
         # we dragged an item inside map
-        @_trigger 'affectInstance', event,
+        @$el.trigger 'affectInstance',
           instance: instance
           coord: @_cursor,
           mapId: @options.mapId
       else
-        $.rheia.authoringMap::_onDrop.apply @, arguments
+        super event, details
 
     # **private**
     # Click handler that toggle the clicked tile from selection if the ctrl key is pressed
     # @param event [Event] click event
-    _onClick: (event) ->
+    _onClick: (event) =>
       coord = @options.renderer.posToCoord @_mousePos event
-      @_popupMenu?.element.off 'click'
-      @_popupMenu?.element.remove()
+      @_popupMenu?.$el.off 'click'
+      @_popupMenu?.$el.remove()
 
       @_clicked = []
       for id, widget of @_itemWidgets
@@ -306,7 +297,7 @@ define [
 
       if @_clicked.length is 1
         # trigger item opening
-        @_trigger 'itemClicked', event, @_clicked[0]
+        @$el.trigger 'itemClicked', @_clicked[0]
       else if @_clicked.length > 1
         # stops event to avoid closing menu immediately
         event.preventDefault()
@@ -322,7 +313,10 @@ define [
         @_popupMenu.open event.pageX+5, event.pageY+5
 
         # adds a click handler inside menu
-        @_popupMenu.element.on 'click', (event) =>
+        @_popupMenu.$el.on 'click', (event) =>
           id = $(event.target).closest('li').data 'id'
           return unless id?
-          @_trigger 'itemClicked', event, @_itemWidgets[id].options.model
+          @$el.trigger 'itemClicked', @_itemWidgets[id].options.model
+
+  # widget declaration
+  ModerationMap._declareWidget 'moderationMap', $.fn.authoringMap.defaults

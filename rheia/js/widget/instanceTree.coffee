@@ -24,28 +24,17 @@ define [
   'i18n!nls/common'
   'widget/typeTree'
   'widget/instanceDetails'
-], ($, utils, i18n) ->
+], ($, utils, i18n, TypeTree) ->
 
   # A tree that displays instances models.
   # Organize models in categories.
   # Triggers `open` event when opening a category (with category in parameter)
   # Triggers `openElement` event when clicking an item, or its open contextual menu item (with category and id in parameter)
   # Triggers `removeElement` event when clicking an item remove contextual menu item (with category and id in parameter)
-  $.widget 'rheia.instanceTree', $.rheia.typeTree,
+  class InstanceTree extends TypeTree
 
-    options:
-
-      # Tooltip generator used. 
-      # This function takes displayed object as parameter, and must return a string, used as tooltip.
-      # If null is returned, no tooltip displayed
-      tooltipFct: null
-      
-      # Used scope for instance drag'n drop operations. Null to disable drop outside widget
-      dndType: null
-
-    # **private**
     # Builds rendering
-    _create: ->
+    constructor: (element, options) ->
       # list of displayed categories
       @_categories = [
         name: i18n.titles.categories.players
@@ -58,8 +47,8 @@ define [
         id: 'Event'
       ]
 
-      $.rheia.typeTree::_create.apply @, arguments
-      @element.addClass('instance-tree')
+      super element, options
+      @$el.addClass('instance-tree')
     
     # **private**
     # Render models of a single category. 
@@ -67,7 +56,7 @@ define [
     # @param content [Array] models contained in a given category
     # @param container [Object] DOM node that will display the category content
     # @param category [String] the displayed category id
-    _renderModels: (content, container, category) ->
+    _renderModels: (content, container, category) =>
       for model in content
         $('<div></div>').instanceDetails(
           value: model
@@ -76,3 +65,14 @@ define [
         ).appendTo(container)
         .data('id', model.id)
         .data 'category', category
+
+  # widget declaration
+  InstanceTree._declareWidget 'instanceTree', $.extend true, {}, $.fn.typeTree.defaults, 
+
+    # Tooltip generator used. 
+    # This function takes displayed object as parameter, and must return a string, used as tooltip.
+    # If null is returned, no tooltip displayed
+    tooltipFct: null
+    
+    # Used scope for instance drag'n drop operations. Null to disable drop outside widget
+    dndType: null

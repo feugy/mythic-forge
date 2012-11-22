@@ -143,7 +143,7 @@ define [
       node = $(event.target).closest('div, ul').addClass 'selected'
 
       folder = item.get 'isFolder'
-      @_menu.element.empty().data('folder', folder).data 'path', path
+      @_menu.$el.empty().data('folder', folder).data 'path', path
       if folder
         content = """
           <li class='new new-file'><i class='x-small ui-icon new-file'></i>#{i18n.labels.newFile}</li>
@@ -155,7 +155,7 @@ define [
         <li class='rename'><i class='x-small ui-icon rename'></i>#{_.sprintf i18n.labels.renameFSItem, name}</li>
         <li class='remove'><i class='x-small ui-icon remove'></i>#{_.sprintf i18n.labels.removeFSItem, name}</li>
       """
-      @_menu.element.append content
+      @_menu.$el.append content
       @_menu.open event?.pageX, event?.pageY
 
     # **private**
@@ -169,7 +169,7 @@ define [
       # redraw all content inside parent.
       @$el.empty()
       @$el.append renderItem subItem for subItem in collection.models
-      @$el.append @_menu.element
+      @$el.append @_menu.$el
 
     # **private**
     # New item added handler: update the tree if this item should appear

@@ -20,68 +20,51 @@
 
 define [
   'jquery'
-  'widget/baseWidget'
-],  ($) ->
+  'widget/base'
+],  ($, Base) ->
 
   # The toggleable widget pops-up at screen to display something, and then hides
   # when clicking somewhere else, or when manually destroyed.
   # It can be automatically closed if mouse does not hover it.
-  $.widget 'rheia.toggleable', $.rheia.baseWidget,  
-  
-    options:    
-        
-      # Animations speed in millis.
-      animationSpeed: 250
-      
-      # Widget open status.
-      # Read-only: use `open()` and `close()` to modify
-      open: true
-      
-      # Widget open status after creation.
-      initialyClosed: true
-      
-      # If true, widget will close when mouse ceases to hover it
-      closeOnOut: true
-       
-      # If true, closes the widget when clicking in the document
-      closeOnClickDocument: true
-
-      # An automatic closure delay, cancelled if mouse hover the widget.
-      firstShowDelay: 4000
-     
-      # Delay before closure when mouse stops to hover the widget.
-      # Cancelled if mouse hover the widget.
-      closeDelay: 1000
-      
-      # If true, widget is destroyed after close
-      destroyOnClose: false
+  class Toggleable extends Base  
           
     # Closure timeout
     _closeTimeout: null
     
     # generated id for click handlers on document
     _id: null
+        
+    # **private**
+    # Rendering building
+    constructor: (element, options) ->
+      super element, options
+      
+      @$el.addClass 'toggleable'
+      @_id =  parseInt Math.random()*1000000000
+      if @options.initialyClosed
+        @options.open = false
+        @$el.hide()
 
     # opens the widget, with an animation.
     #
     # @param left [Number] Mouse position: absolute left coordinate
     # @param top [Number] Mouse position: absolute top coordinate
-    open: (left, top) ->
+    open: (left, top) =>
       # stops timeout
       @_onMouseIn()
 
       # positionnate relatively to the widget parent, taking scroll into account
       # element must not be hidden
-      parent = @element.show().offsetParent()
-      @element.hide()
+      parent = @$el.show().offsetParent()
+      @$el.hide()
       parentOffset = parent.offset() or top:0, left: 0
       left -= parentOffset.left + (parent.scrollLeft() or 0)
       top -= parentOffset.top + (parent.scrollTop() or 0)
 
       # Widget and window inner sizes
       dim = 
-        w: @element.outerWidth true
-        h: @element.outerHeight true
+        w: @$el.outerWidth true
+        h: @$el.outerHeight true
 
       win = 
         w: parent.scrollLeft() + parent.outerWidth true
@@ -91,15 +74,15 @@ define [
       left -= left+dim.w+10 - win.w if left+dim.w > win.w
 
       @options.open = true
-      @element.css(
+      @$el.css(
         left: left
         top: top
       ).stop().fadeIn @options.animationSpeed
               
       if @options.closeOnOut
         # attaches hover handler and automatic close if nothing happens
-        @element.on 'mouseenter.toggleable', => @_onMouseIn()
-        @element.on 'mouseleave.toggleable', => @_onMouseOut()
+        @$el.on 'mouseenter.toggleable', => @_onMouseIn()
+        @$el.on 'mouseleave.toggleable', => @_onMouseOut()
         @_closeTimeout = setTimeout (=> @_onMouseOut()), @options.firstShowDelay
       
       if @options.closeOnClickDocument
@@ -107,40 +90,58 @@ define [
         $(document).on "click.toggleable.#{@_id}", => @close()
     
     # Closes widget with an animation
-    close: ->
+    close: =>
       @options.open = false
-      @element.off('.toggleable').stop().fadeOut @options.animationSpeed
+      @$el.off('.toggleable').stop().fadeOut @options.animationSpeed
       $(document).off ".toggleable.#{@_id}"
       if @options.destroyOnClose
-        @element.remove() 
+        @$el.remove() 
         @destroy()
 
     # Destroyer: free dom handlers
-    destroy: ->
-      @element.off '.toggleable'
+    dispose: =>
+      @$el.off '.toggleable'
       $(document).off ".toggleable.#{@_id}"
       # superclass call
-      $.rheia.baseWidget::destroy.apply this, arguments
+      super()
 
     # **private**
     # Mouse leave handler. Closes widget after a timeout
-    _onMouseOut: ->
+    _onMouseOut: =>
       @_closeTimeout = setTimeout (=> @close()), @options.closeDelay
 
     # **private**
     # Mouse enter handler. Cancels close timer
-    _onMouseIn: ->
+    _onMouseIn: =>
       return unless @_closeTimeout?
       clearTimeout @_closeTimeout
       @_closeTimeout = null
-        
-    # **private**
-    # Rendering building
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
-      
-      @element.addClass 'toggleable'
-      @_id =  parseInt Math.random()*1000000000
-      if @options.initialyClosed
-        @options.open = false
-        @element.hide()
+
+  # widget declaration
+  Toggleable._declareWidget 'toggleable', 
+
+    # Animations speed in millis.
+    animationSpeed: 250
+    
+    # Widget open status.
+    # Read-only: use `open()` and `close()` to modify
+    open: true
+    
+    # Widget open status after creation.
+    initialyClosed: true
+    
+    # If true, widget will close when mouse ceases to hover it
+    closeOnOut: true
+     
+    # If true, closes the widget when clicking in the document
+    closeOnClickDocument: true
+
+    # An automatic closure delay, cancelled if mouse hover the widget.
+    firstShowDelay: 4000
+   
+    # Delay before closure when mouse stops to hover the widget.
+    # Cancelled if mouse hover the widget.
+    closeDelay: 1000
+    
+    # If true, widget is destroyed after close
+    destroyOnClose: false

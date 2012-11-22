@@ -78,13 +78,13 @@ define [
       @_fromWidget = @$el.find('.from').property(
         type: 'object'
         allowNull: true
-        change: @_onChange
         isInstance: true
         accepted: ['Item']
         tooltipFct: utils.instanceTooltip
-        open: (event, instance) =>
-          # opens players, items, events
-          rheia.router.trigger 'open', instance._className, instance.id
+      ).on('change', @_onChange
+      ).on('open:', (event, instance) =>
+        # opens players, items, events
+        rheia.router.trigger 'open', instance._className, instance.id
       ).data 'property'
 
       super()

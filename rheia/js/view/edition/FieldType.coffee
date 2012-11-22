@@ -164,7 +164,7 @@ define [
           # is it an upload ?
           if arg? and addImage.options.source isnt null
             # transforms it into a regular image widget
-            addImage.element.removeClass 'add-image'
+            addImage.$el.removeClass 'add-image'
             addImage.change = @_onImageChange
             @_imageWidgets.push addImage
             @_addNewImage()
@@ -184,5 +184,5 @@ define [
         else 
           removed = []
       # Destroy the found widgets
-      @_imageWidgets.splice(i, 1)[0].element.remove() for i in removed.reverse()
+      @_imageWidgets.splice(i, 1)[0].$el.remove() for i in removed.reverse()
       @_onChange event

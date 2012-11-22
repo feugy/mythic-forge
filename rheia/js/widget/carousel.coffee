@@ -22,42 +22,25 @@ define [
   'jquery'
   'underscore'
   'i18n!nls/widget'
-  'widget/baseWidget'
-],  ($, _, i18n) ->
+  'widget/base'
+],  ($, _, i18n, Base) ->
 
   # Displays and navigate along several images, with two nav buttons.
   # One image displayed at a time.
-  $.widget 'rheia.carousel', $.rheia.baseWidget,
+  class Carousel extends Base
 
-    options:     
-      
-      # displayed images. An array of images urls.
-      # read-only: use `setOption('images')` to modify
-      images: []
-      
-      # current displayed image index.
-      # read-only: use `setOption('current')` to modify
-      current: 0
-      
-      # navigation animation speed, in millis.
-      speed: 300,
-      
-      # Css class added to images.
-      imageClass: 'thumbnail'
-
-    # **private**
     # builds rendering
-    _create: ->
-      $.rheia.baseWidget::_create.apply @, arguments
+    constructor: (element, options) ->
+      super element, options
       
       # creates a container for images, and two navigation buttons
-      @element.addClass('carousel').append """
+      @$el.addClass('carousel').append """
         <div class="previous"></div>
         <div class="mask"><div class="container"></div></div>
         <div class="next"></div>"""
       # instanciates navigation buttons
 
-      @element.find('.next').button(
+      @$el.find('.next').button(
           text: false
           disabled: true
         ).click (event) =>
@@ -65,7 +48,7 @@ define [
           event.stopImmediatePropagation()
           @_setCurrent @options.current+1
 
-      @element.find('.previous').button(
+      @$el.find('.previous').button(
           text: false
           disabled: true
         ).click (event) =>
@@ -77,11 +60,21 @@ define [
       @bindTo rheia.router, 'imageLoaded', (success, src, image) => 
         img = _(@options.images).find (source) -> _(src).endsWith source
         return unless img?
-        @element.find("img[data-src='#{img}']").replaceWith $(image).clone()
-        @element.find('img').addClass @options.imageClass
+        @$el.find("img[data-src='#{img}']").replaceWith $(image).clone()
+        @$el.find('img').addClass @options.imageClass
 
       # first displayal, when dom is attached
       _.defer => @_displayImages @options.images
+
+    # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
+    #
+    # @param key [String] the set option's key
+    # @param value [Object] new value for this option    
+    setOption: (key, value) =>
+      return unless key in ['current', 'images']
+      switch key
+        when 'current' then @_setCurrent value
+        when 'images' then @_displayImages value
 
     # **private**
     # Updates the current displayed image, with navigation animation.
@@ -90,10 +83,10 @@ define [
     # `change` event is possibly triggered.
     #
     # @param value [Number] new image index.
-    _setCurrent: (value) ->
+    _setCurrent: (value) =>
       # first check the value
       return unless value >= 0 and value < @options.images.length
-      container = @element.find '.container'
+      container = @$el.find '.container'
 
       # compute the image width for moves: we need to be attached to body
       imageWidth = container.children().outerWidth true
@@ -107,27 +100,27 @@ define [
       , @options.speed
 
       # updates nav buttons.
-      @element.find('.previous').button 'option', 'disabled', value is 0
-      @element.find('.next').button 'option', 'disabled', value is @options.images.length-1
+      @$el.find('.previous').button 'option', 'disabled', value is 0
+      @$el.find('.next').button 'option', 'disabled', value is @options.images.length-1
       
       # if we modified the index
       if value isnt @options.current
         # updates it and triggers event
         @options.current = value
-        @_trigger 'change'
+        @$el.trigger 'change'
       
     # **private**
     # Removes current images and displays the new image array.
     # Tries to keep the current position.
     #
     # @param images [Array<String>] the new image array (contains url strings)
-    _displayImages: (images) ->
+    _displayImages: (images) =>
       # removes previous images
-      @element.find('.container').empty()
+      @$el.find('.container').empty()
       @options.images = if Array.isArray images then images else []
 
       # displays new ones
-      container = @element.find '.container'
+      container = @$el.find '.container'
       for image in @options.images
         container.append """<img class="#{@options.imageClass}" data-src="#{image}"/>"""
         rheia.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
@@ -138,13 +131,19 @@ define [
       else
         @_setCurrent 0
 
-    # **private**
-    # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
-    #
-    # @param key [String] the set option's key
-    # @param value [Object] new value for this option    
-    _setOption: (key, value) ->
-      return $.rheia.baseWidget::_setOption.apply @, arguments unless key in ['current', 'images']
-      switch key
-        when 'current' then @_setCurrent value
-        when 'images' then @_displayImages value
+  # widget declaration
+  Carousel._declareWidget 'carousel', 
+      
+    # displayed images. An array of images urls.
+    # read-only: use `setOption('images')` to modify
+    images: []
+    
+    # current displayed image index.
+    # read-only: use `setOption('current')` to modify
+    current: 0
+    
+    # navigation animation speed, in millis.
+    speed: 300,
+    
+    # Css class added to images.
+    imageClass: 'thumbnail'
