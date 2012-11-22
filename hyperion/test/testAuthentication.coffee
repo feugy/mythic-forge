@@ -339,7 +339,7 @@ describe 'Authentication tests', ->
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
-            username: player.get 'email'
+            username: player.email
             password: clearPassword
         , (err, res, body) ->
           return done err if err?
@@ -350,7 +350,7 @@ describe 'Authentication tests', ->
           token = url.query.replace 'token=', ''
           assert.isNotNull token
           # then account has been populated with new token
-          Player.findOne {email:player.get 'email'}, (err, saved) ->
+          Player.findOne {email:player.email}, (err, saved) ->
             return done "Failed to find created account in db: #{err}" if err?
             assert.equal saved.token, token
             assert.isNotNull saved.lastConnection
@@ -364,7 +364,7 @@ describe 'Authentication tests', ->
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
-            username: player.get 'email'
+            username: player.email
             password: 'toto'
         , (err, res, body) ->
           return done err if err?
@@ -398,7 +398,7 @@ describe 'Authentication tests', ->
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
-            username: player.get 'email'
+            username: player.email
         , (err, res, body) ->
           return done err if err?
           # then the success page is displayed

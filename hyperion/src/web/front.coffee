@@ -35,10 +35,10 @@ authorizedTokens = {}
 notifier.on notifier.NOTIFICATION, (event, state, player) ->
   return unless event is 'players'
   if state is 'connect'
-    if player.get 'isAdmin'
+    if player.isAdmin
       logger.debug "allow static connection from player #{player.id}"
       # adds an entry to grant access on secured RIA 
-      token = player.get 'token'
+      token = player.token
       authorizedTokens[token] = player.id 
   else if state is 'disconnect'
     logger.debug "deny static connection from player #{player.id}"

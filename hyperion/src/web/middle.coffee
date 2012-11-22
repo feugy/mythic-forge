@@ -161,7 +161,7 @@ checkAdmin = (handshakeData, callback) ->
   # check connected user rights
   playerService.getByEmail handshakeData?.playerEmail, false, (err, player) ->
     return callback "Failed to consult connected player: #{err}" if err?
-    callback null, player?.get 'isAdmin'
+    callback null, player?.isAdmin
 
 # Creates routes to allow authentication from an OAuth/OAuth2 provider:
 #
@@ -265,7 +265,7 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
 notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
   if event is 'disconnect'
     # close socket of disconnected user.
-    closeSocket details[0].get('socketId'), details[0].get('email'), details[1] 
+    closeSocket details[0].socketId, details[0].email, details[1] 
   logger.debug "broadcast of #{scope}:#{event}"
   adminNS.emit.apply adminNS, [scope, event].concat details
 
@@ -324,9 +324,9 @@ unless noSecurity
       return callback err if err?
       # if player exists, authorization awarded !
       if player?
-        logger.info "Player #{player.get 'email'} connected with token #{token}"
+        logger.info "Player #{player.email} connected with token #{token}"
         # this will allow to store connected player into the socket details
-        handshakeData.playerEmail = player.get 'email'
+        handshakeData.playerEmail = player.email
       callback null, player?
 
   # When a client connects, returns it immediately its token
@@ -342,7 +342,7 @@ unless noSecurity
     # set socket id to player
     playerService.getByEmail email, (err, player) ->
       return logger.warn "Failed to retrieve player #{email} to set its socket id: #{err or 'no player found'}" if err? or player is null
-      player.set 'socketId', socket.id
+      player.socketId = socket.id
       player.save (err) ->
         return logger.warn "Failed to set socket id of player #{email}: #{err}" if err?
         connectedList.push email unless email in connectedList

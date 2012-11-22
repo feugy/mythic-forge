@@ -12,7 +12,6 @@
 
 - Rheia
   - bugs
-  - **[TODO]** handle rule requires
   - edition perspective
     - Maps
       - diamond map widget
@@ -137,6 +136,8 @@
     - spaces inside tab names 
     - rule with category appears in turnRules in search results
     - browser do not retain passwords
+    - model destruction, and remaining destroyed items on map
+  - **[TODO]** handle rule requires
   - perspective loader
   - login page
   - logout button

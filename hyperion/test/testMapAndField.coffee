@@ -59,7 +59,7 @@ describe 'Map and Field tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal docs[0].get('name'),  'map1'
+        assert.equal docs[0].name,  'map1'
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -97,7 +97,7 @@ describe 'Map and Field tests', ->
         awaited = true
 
       # when modifying and saving an item
-      map.set 'name', 'map3'
+      map.name= 'map3'
       awaited = false
       map.save ->
 
@@ -105,7 +105,7 @@ describe 'Map and Field tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal docs[0].get('name'), 'map3'
+          assert.equal docs[0].name, 'map3'
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -119,9 +119,9 @@ describe 'Map and Field tests', ->
           return done "Can't find field by map: #{err}" if err?
           assert.equal fields.length, 1
           assert.ok field.equals fields[0]
-          assert.equal fields[0].get('mapId'), map._id
-          assert.equal fields[0].get('x'), 0
-          assert.equal fields[0].get('y'), 0
+          assert.equal fields[0].mapId, map._id
+          assert.equal fields[0].x, 0
+          assert.equal fields[0].y, 0
           done()
 
     it 'should field be removed', (done) ->
@@ -144,7 +144,7 @@ describe 'Map and Field tests', ->
       field.save (err)->
         return done "Can't save field: #{err}" if err?
         # when updating it
-        field.set 'x', 20
+        field.x= 20
         field.save (err) ->
           assert.ok err isnt null
           assert.equal err.message, 'only creations are allowed on fields', "Unexpected error: #{err}"

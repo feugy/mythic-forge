@@ -77,7 +77,7 @@ ItemType = typeFactory 'ItemType',
           return next new Error "Failed to update type instances: #{err}" if err?
           # save all the modified instances
           async.forEach instances, (instance, done) -> 
-            instance.set 'quantity', quantity 
+            instance.quantity = quantity 
             instance.save done
       else
         # save type

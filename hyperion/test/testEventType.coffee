@@ -49,8 +49,8 @@ describe 'EventType tests', ->
           throw new Error err
           done()
         # then their properties ar not mixed
-        keys = Object.keys(type.get('properties'))
-        keys2 = Object.keys(type2.get('properties'))
+        keys = Object.keys type.properties
+        keys2 = Object.keys type2.properties
         assert.equal keys.length, 1 
         assert.equal keys[0], 'weight'
         assert.equal keys2.length, 1
@@ -61,7 +61,7 @@ describe 'EventType tests', ->
     # given a new EventType
     type = new EventType()
     name = 'talk'
-    type.set 'name', name
+    type.name= name
 
     # when saving it
     type.save (err, saved) ->
@@ -72,17 +72,17 @@ describe 'EventType tests', ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
-        assert.equal types[0].get('name'), name
+        assert.equal types[0].name, name
         done()
 
   it 'should name and desc be internationalizables', (done) -> 
     # given a new EventType with translated name
     type = new EventType()
     name = 'talk'
-    type.set 'name', name
+    type.name= name
     type.locale = 'fr'
     nameFr = 'discussion'
-    type.set 'name', nameFr
+    type.name= nameFr
 
     # when saving it
     type.save (err, saved) ->
@@ -90,17 +90,17 @@ describe 'EventType tests', ->
 
       # then translations are available
       saved.locale = null
-      assert.equal saved.get('name'), name
+      assert.equal saved.name, name
       saved.locale = 'fr'
-      assert.equal saved.get('name'), nameFr
+      assert.equal saved.name, nameFr
 
       # when setting the tanslated description and saving it
       saved.locale = null
       desc = 'a speech between players'
-      saved.set 'desc', desc
+      saved.desc= desc
       saved.locale = 'fr'
       descFr = 'une discussion entre joueurs' 
-      saved.set 'desc', descFr
+      saved.desc= descFr
 
       saved.save (err, saved) ->
         throw new Error "Can't save type: #{err}" if err?
@@ -110,18 +110,18 @@ describe 'EventType tests', ->
           # then it's the only one document
           assert.equal 1, types.length
           # then it's values were saved
-          assert.equal types[0].get('name'), name
-          assert.equal types[0].get('desc'), desc
+          assert.equal types[0].name, name
+          assert.equal types[0].desc, desc
           types[0].locale = 'fr'
-          assert.equal types[0].get('name'), nameFr
-          assert.equal types[0].get('desc'), descFr
+          assert.equal types[0].name, nameFr
+          assert.equal types[0].desc, descFr
           done()
 
   describe 'given a type with a property', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
       type = new EventType()
-      type.set 'name', 'talk'
+      type.name= 'talk'
       type.setProperty 'content', 'string', '---'
       type.save (err, saved) -> 
         type = saved
@@ -150,23 +150,23 @@ describe 'EventType tests', ->
           # then it's the only one document
           assert.equal types.length, 1
           # then only the relevant values were modified
-          assert.equal types[0].get('name'), 'talk',
-          assert.ok 'length' of types[0].get('properties'), 'no length in properties'
-          assert.equal types[0].get('properties').length?.type, 'integer'
-          assert.equal types[0].get('properties').length?.def, 100
+          assert.equal types[0].name, 'talk',
+          assert.ok 'length' of types[0].properties, 'no length in properties'
+          assert.equal types[0].properties.length?.type, 'integer'
+          assert.equal types[0].properties.length?.def, 100
           done()
 
     it 'should type properties be updated', (done) ->
-      assert.ok 'content' of type.get('properties'), 'no content in properties'
-      assert.equal type.get('properties').content?.type, 'string'
-      assert.equal type.get('properties').content?.def, '---'
+      assert.ok 'content' of type.properties, 'no content in properties'
+      assert.equal type.properties.content?.type, 'string'
+      assert.equal type.properties.content?.def, '---'
 
       # when updating a property 
       type.setProperty 'content', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
-        assert.equal saved.get('properties').content?.type, 'integer'
-        assert.equal saved.get('properties').content?.def, 10
+        assert.equal saved.properties.content?.type, 'integer'
+        assert.equal saved.properties.content?.def, 10
         done()
 
     it 'should type properties be removed', (done) ->
@@ -178,7 +178,7 @@ describe 'EventType tests', ->
           return done()
 
         # then the property was removed
-        assert.ok not ('content' of saved.get('properties')), 'content still in properties'
+        assert.ok not ('content' of saved.properties), 'content still in properties'
         done()
 
     it 'should unknown type properties fail on remove', (done) ->
@@ -230,7 +230,7 @@ describe 'EventType tests', ->
         block = ->
           Event.find {type: type._id}, (err, events) ->
             for event in events
-              assert.equal event.get('length'), defaultLength
+              assert.equal event.length, defaultLength
               assert.ok event._id+'' in updates
             watcher.removeAllListeners 'change'
             done()
@@ -251,7 +251,7 @@ describe 'EventType tests', ->
         block = ->
           Event.find {type: type._id}, (err, events) ->
             for event in events
-              assert.ok undefined is event.get('content'), 'content still present'
+              assert.ok undefined is event.content, 'content still present'
               assert.ok event._id+'' in updates
             watcher.removeAllListeners 'change'
             done()

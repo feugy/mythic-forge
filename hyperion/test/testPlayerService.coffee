@@ -70,10 +70,10 @@ describe 'PlayerService tests', ->
     service.register 'Jack', 'toto', (err, player) ->
       return done "Can't register: #{err}" if err?
       # then a player is returned
-      assert.equal 'Jack', player.get 'email'
-      assert.isNotNull player.get 'password'
-      assert.notEqual 'toto', player.get 'password'
-      assert.equal 0, player.get('characters').length
+      assert.equal 'Jack', player.email
+      assert.isNotNull player.password
+      assert.notEqual 'toto', player.password
+      assert.equal 0, player.characters.length
       done()
 
   it 'should password be mandatory during registration', (done) ->
@@ -113,38 +113,38 @@ describe 'PlayerService tests', ->
         
     it 'should register failed when reusing email', (done) ->
       # when registering with used email
-      service.register player.get('email'), 'toto', (err, account) ->
+      service.register player.email, 'toto', (err, account) ->
         # then an error is triggered
-        assert.equal "Email #{player.get 'email'} is already used", err
+        assert.equal "Email #{player.email} is already used", err
         assert.ok null is account
         done()
          
     it 'should getByEmail returned player without character resolved', (done) ->
       # when retrieving the player by email
-      service.getByEmail player.get('email'), false, (err, account) ->
+      service.getByEmail player.email, false, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account
         assert.ok player.equals account
-        assert.equal 1, account.get('characters').length 
+        assert.equal 1, account.characters.length 
         # then the character was retrieved
-        assert.ok item2.equals account.get('characters')[0]
+        assert.ok item2.equals account.characters[0]
         # then the character linked has not been resolved
-        assert.equal item1.id, account.get('characters')[0].get('friends')[0]
+        assert.equal item1.id, account.characters[0].friends[0]
         done()  
        
     it 'should getByEmail returned player with character resolved', (done) ->
       # when retrieving the player by email
-      service.getByEmail player.get('email'), (err, account) ->
+      service.getByEmail player.email, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account
         assert.ok player.equals account
-        assert.equal 1, account.get('characters').length 
+        assert.equal 1, account.characters.length 
         # then the character was retrieved
-        assert.ok item2.equals account.get('characters')[0]
+        assert.ok item2.equals account.characters[0]
         # then the character linked has been resolved
-        assert.ok item1.equals account.get('characters')[0].get('friends')[0]
+        assert.ok item1.equals account.characters[0].friends[0]
         done()   
 
     it 'should getByToken returned player', (done) ->
@@ -155,15 +155,15 @@ describe 'PlayerService tests', ->
         assert.isNotNull account
         assert.ok player.equals account
         # then token changed
-        assert.notEqual token, account.get 'token'
-        assert.equal date.getTime(), account.get('lastConnection').getTime()
-        token = account.get 'token'
+        assert.notEqual token, account.token
+        assert.equal date.getTime(), account.lastConnection.getTime()
+        token = account.token
         done()
 
     it 'should getByToken not returned expired player', (done) ->
       # given a expired token
-      player.set 'token', token
-      player.set 'lastConnection', expiredDate
+      player.token= token
+      player.lastConnection= expiredDate
       player.save (err, saved) ->
         return done err if err?
         player = saved
@@ -177,7 +177,7 @@ describe 'PlayerService tests', ->
           assert.equal 'disconnect', notifications[0][0]
           assert.isTrue saved.equals(notifications[0][1]), 'notification do not contains disconnected player'
           # then token was removed in database
-          Player.findOne {email:player.get 'email'}, (err, saved) ->
+          Player.findOne {email:player.email}, (err, saved) ->
             return done err if err?
             assert.isNull saved.token
             done()    
@@ -192,17 +192,17 @@ describe 'PlayerService tests', ->
 
     it 'should disconnect reset token to null', (done) ->
       # when disconneting the player
-      service.disconnect player.get('email'), '', (err, account) ->
+      service.disconnect player.email, '', (err, account) ->
         return done "Can't disconnect: #{err}" if err?
         # then the player was returned without token
         assert.isNotNull account
         assert.ok player.equals account
-        assert.isNull account.get 'token'
+        assert.isNull account.token
         assert.equal 1, notifications.length
         assert.equal 'disconnect', notifications[0][0]
         assert.isTrue account.equals(notifications[0][1]), 'notification do not contains disconnected player'
         # then token was removed in database
-        Player.findOne {email:player.get 'email'}, (err, saved) ->
+        Player.findOne {email:player.email}, (err, saved) ->
           return done err if err?
           assert.isNull saved.token
           done()    

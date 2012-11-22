@@ -54,14 +54,14 @@ filterModified = (item, modified) ->
   modified.push(item) if item?.isModified()
   # do not go further if not an item
   return unless item instanceof Item
-  properties = item.type.get('properties')
+  properties = item.type.properties
   for prop, def of properties
     if def.type is 'object'
-      value = item.get prop
+      value = item[prop]
       # recurse if needed on linked object that are resolved
       filterModified(value, modified) if value? and (typeof value) isnt 'string'
     else if def.type is 'array'
-      values = item.get prop
+      values = item[prop]
       if values
         for value, i in values
           # recurse if needed on linked object that are resolved
@@ -418,17 +418,17 @@ class _RuleService
       updateDb = (rule, saved, removed, end) =>
         # at the end, save and remove modified items
         removeModel = (target, removeEnd) =>
-          logger.debug "remove model #{target.get '_id'}"
+          logger.debug "remove model #{target._id}"
           target.remove (err) =>
             # stop a first execution error.
-            removeEnd if err? then "Failed to remove model #{target.get '_id'} at the end of the turn: #{err}" else undefined
+            removeEnd if err? then "Failed to remove model #{target._id} at the end of the turn: #{err}" else undefined
         # first removals
         async.forEach removed, removeModel, => 
           saveModel = (target, saveEnd) =>
-            logger.debug "save model #{target.get '_id'}"
+            logger.debug "save model #{target._id}"
             target.save (err) =>
               # stop a first execution error.
-              saveEnd if err? then "Failed to save model #{target.get '_id'} at the end of the turn: #{err}" else undefined
+              saveEnd if err? then "Failed to save model #{target._id} at the end of the turn: #{err}" else undefined
           # then saves
           async.forEach saved, saveModel, (err) =>
             if err?
@@ -461,7 +461,7 @@ class _RuleService
           execute = (target, executeEnd) =>
             rule.execute target, (err) =>
               # stop a first execution error.
-              return executeEnd "failed to execute rule #{rule.name} on target #{target.get '_id'}: #{err}" if err?
+              return executeEnd "failed to execute rule #{rule.name} on target #{target._id}: #{err}" if err?
               # store modified object for later
               saved.push obj for obj in rule.created
               filterModified target, saved

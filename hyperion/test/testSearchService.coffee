@@ -67,44 +67,44 @@ describe 'SearchService tests', ->
             stock: {type:'array', def:'Item'}
             strength: {type:'integer', def:10}
             knight: {type:'boolean', def:false}
-          character.set 'locale', 'fr'
-          character.set 'name', 'personnage'
-          character.set 'desc', "personne qu'un joueur peut incarner"
-          character.set 'locale', 'default'
+          character.locale = 'fr'
+          character.name = 'personnage'
+          character.desc = "personne qu'un joueur peut incarner"
+          character.locale = 'default'
           character.save (err, saved) ->
             return done err if err?
             character = saved
             sword = new ItemType name: 'sword', desc: 'a simple bastard sword', quantifiable: true, properties:
               color: {type:'string', def:'grey'}
               strength: {type:'integer', def:10}
-            sword.set 'locale', 'fr'
-            sword.set 'name', 'épée'
-            sword.set 'desc', "une simple épée batarde"
-            sword.set 'locale', 'default'
+            sword.locale = 'fr'
+            sword.name = 'épée'
+            sword.desc = "une simple épée batarde"
+            sword.locale = 'default'
             sword.save (err, saved) ->
               return done err if err?
               sword = saved
               talk = new EventType name: 'talk', desc: 'a speech between players', properties:
                 content: {type:'string', def:'---'}
                 to: {type:'object', def: 'Item'}
-              talk.set 'locale', 'fr'
-              talk.set 'name', 'discussion'
-              talk.set 'desc', "une discussion entre joueurs"
-              talk.set 'locale', 'default'
+              talk.locale = 'fr'
+              talk.name = 'discussion'
+              talk.desc = "une discussion entre joueurs"
+              talk.locale = 'default'
               talk.save (err, saved) ->
                 return done err if err?
                 talk = saved
                 world = new Map name: 'world map', kind: 'square'
-                world.set 'locale', 'fr'
-                world.set 'name', 'carte du monde'
-                world.set 'locale', 'default'
+                world.locale = 'fr'
+                world.name = 'carte du monde'
+                world.locale = 'default'
                 world.save (err, saved) ->
                   return done err if err?
                   world = saved
                   underworld = new Map name: 'underworld', kind: 'diamond'
-                  underworld.set 'locale', 'fr'
-                  underworld.set 'name', 'sous-sol'
-                  underworld.set 'locale', 'default'
+                  underworld.locale = 'fr'
+                  underworld.name = 'sous-sol'
+                  underworld.locale = 'default'
                   underworld.save (err, saved) ->
                     return done err if err?
                     underworld = saved
@@ -176,7 +176,7 @@ describe 'SearchService tests', ->
         done()
 
     it 'should search by map name', (done) ->
-      service.searchInstances {'map.name':"#{underworld.get 'name'}"}, (err, results)->
+      service.searchInstances {'map.name':"#{underworld.name}"}, (err, results)->
         return done err if err?
         assert.equal results?.length, 1
         assert.contains results, roland, 'roland not returned'
@@ -207,7 +207,7 @@ describe 'SearchService tests', ->
         done()
 
     it 'should search by type name', (done) ->
-      service.searchInstances {'type.name':"#{talk.get 'name'}"}, (err, results)->
+      service.searchInstances {'type.name':"#{talk.name}"}, (err, results)->
         return done err if err?
         assert.equal results?.length, 3
         assert.contains results, talk1, 'talk1 not returned'
@@ -335,7 +335,7 @@ describe 'SearchService tests', ->
         done()
 
     it 'should search players by exact email', (done) ->
-      service.searchInstances {email:"#{john.get 'email'}"}, (err, results)->
+      service.searchInstances {email:"#{john.email}"}, (err, results)->
         return done err if err?
         assert.equal results?.length, 1
         assert.contains results, john, 'john not returned'
@@ -588,10 +588,10 @@ describe 'SearchService tests', ->
                     return done() unless def?
                     obj = new def.clazz def.args
                     if def.translated
-                      obj.set 'locale', 'fr'
+                      obj.locale = 'fr'
                       for attr, translation of def.translated
-                        obj.set attr, translation
-                      obj.set 'locale', 'default'
+                        obj[attr] = translation
+                      obj.locale = 'default'
                     obj.save (err, saved) ->
                       return done err if err?
                       def.store.push saved
@@ -635,7 +635,7 @@ describe 'SearchService tests', ->
         done()
 
     it 'should search by exact name', (done) ->
-      service.searchTypes {name:"#{itemTypes[0].get('name')}"}, (err, results)->
+      service.searchTypes {name:"#{itemTypes[0].name}"}, (err, results)->
         return done err if err?
         assert.equal results?.length, 1
         assert.contains results, itemTypes[0], 'first item type not returned'
@@ -662,7 +662,7 @@ describe 'SearchService tests', ->
         done()
 
     it 'should search by exact desc', (done) ->
-      service.searchTypes {desc:"#{eventTypes[1].get('desc')}"}, (err, results)->
+      service.searchTypes {desc:"#{eventTypes[1].desc}"}, (err, results)->
         return done err if err?
         assert.equal results?.length, 1
         assert.contains results, eventTypes[1], 'second event type not returned'

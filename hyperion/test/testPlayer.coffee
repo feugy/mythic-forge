@@ -74,11 +74,11 @@ describe 'Player tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal 'Joe', docs[0].get 'email'
-        assert.isNotNull docs[0].get 'password'
+        assert.equal 'Joe', docs[0].email
+        assert.isNotNull docs[0].password
         assert.isTrue player.checkPassword 'toto'
-        assert.equal 1, docs[0].get('characters').length
-        assert.ok item.equals docs[0].get('characters')[0]
+        assert.equal 1, docs[0].characters.length
+        assert.ok item.equals docs[0].characters[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -123,7 +123,7 @@ describe 'Player tests', ->
         awaited = true
 
       # when modifying password and saving a player
-      player.set 'password', 'titi'
+      player.password= 'titi'
       awaited = false
       player.save (err, saved) ->
         throw new Error "Can't update player password: #{err}" if err?
@@ -143,7 +143,7 @@ describe 'Player tests', ->
         awaited = true
 
       # when modifying and saving a player
-      player.set 'characters', []
+      player.characters= []
       awaited = false
       player.save ->
 
@@ -152,7 +152,7 @@ describe 'Player tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal 'Jack', docs[0].get 'email'
-          assert.equal 0, docs[0].get('characters').length
+          assert.equal 'Jack', docs[0].email
+          assert.equal 0, docs[0].characters.length
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()

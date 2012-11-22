@@ -62,8 +62,8 @@ describe 'Item tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal docs[0].get('x'), 10
-        assert.equal docs[0].get('y'), -3
+        assert.equal docs[0].x, 10
+        assert.equal docs[0].y, -3
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -73,14 +73,14 @@ describe 'Item tests', ->
     item.save (err)->
       return done "Can't save item: #{err}" if err?
       # then the default value was set
-      assert.equal item.get('rocks'), 100
+      assert.equal item.rocks, 100
       done()
 
   describe 'given an Item', ->
 
     beforeEach (done) ->
       item = new Item {x: 150, y: 300, type: type}
-      item.save -> done()
+      item.save done
 
     it 'should item be removed', (done) ->
       # then a removal event was issued
@@ -112,7 +112,7 @@ describe 'Item tests', ->
         awaited = true
 
       # when modifying and saving an item
-      item.set 'x', -100
+      item.x= -100
       awaited = false
       item.save ->
 
@@ -121,8 +121,8 @@ describe 'Item tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal docs[0].get('x'), -100
-          assert.equal docs[0].get('y'), 300
+          assert.equal docs[0].x, -100
+          assert.equal docs[0].y, 300
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -136,16 +136,18 @@ describe 'Item tests', ->
         awaited = true
 
       # when modifying a dynamic property
-      item.set 'rocks', 200
+      item.rocks= 200
       awaited = false
-      item.save ->
+
+      item.save (err) ->
+        return done err if err?
 
         Item.findOne {_id: item._id}, (err, doc) ->
           return done "Can't find item: #{err}" if err?
           # then only the relevant values were modified
-          assert.equal doc.get('x'), 150
-          assert.equal doc.get('y'), 300
-          assert.equal doc.get('rocks'), 200
+          assert.equal doc.x, 150
+          assert.equal doc.y, 300
+          assert.equal doc.rocks, 200
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -190,34 +192,34 @@ describe 'Item tests', ->
 
     it 'should quantity not be set on unquantifiable type', (done) ->
       # given a unquantifiable type
-      type.set 'quantifiable', false
+      type.quantifiable= false
       type.save (err) ->
         return done err if err?
         # when setting quantity on item
-        item.set 'quantity', 10
+        item.quantity= 10
         item.save (err, saved) ->
           return done err if err?
           # then quantity is set to null
-          assert.isNull saved.get 'quantity'
+          assert.isNull saved.quantity
           done()
 
     it 'should quantity be set on quantifiable type', (done) ->
       # given a unquantifiable type
-      type.set 'quantifiable', true
+      type.quantifiable= true
       type.save (err) ->
         return done err if err?
         # when setting quantity on item
-        item.set 'quantity', 10
+        item.quantity= 10
         item.save (err, saved) ->
           return done err if err?
           # then quantity is set to relevant quantity
-          assert.equal 10, saved.get 'quantity'
+          assert.equal 10, saved.quantity
           # when setting quantity to null
-          item.set 'quantity', null
+          item.quantity= null
           item.save (err, saved) ->
             return done err if err?
             # then quantity is set to 0
-            assert.equal 0, saved.get 'quantity'
+            assert.equal 0, saved.quantity
             done()
 
   describe 'given a type with object properties and several Items', -> 
@@ -237,56 +239,56 @@ describe 'Item tests', ->
             item2.save (err, saved) -> 
               return done err  if err?
               item2 = saved
-              item.set 'affluents', [item2]
+              item.affluents= [item2]
               item.save (err) ->
                 return done err  if err?
                 done()
 
     it 'should id be stored for linked object', (done) ->
       # when retrieving an item
-      Item.findOne {name: item2.get 'name'}, (err, doc) ->
+      Item.findOne {name: item2.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # then linked items are replaced by their ids
-        assert.ok item._id.equals doc.get('end')
+        assert.ok item._id.equals doc.end
         done()
 
     it 'should ids be stored for linked arrays', (done) ->
       # when resolving an item
-      Item.findOne {name: item.get 'name'}, (err, doc) ->
+      Item.findOne {name: item.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
-        assert.equal doc.get('affluents').length, 1
-        assert.ok item2._id.equals doc.get('affluents')[0]
+        assert.equal doc.affluents.length, 1
+        assert.ok item2._id.equals doc.affluents[0]
         done()
 
     it 'should getLinked retrieves linked objects', (done) ->
       # given a unresolved item
-      Item.findOne {name: item2.get 'name'}, (err, doc) ->
+      Item.findOne {name: item2.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # when resolving it
         doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          assert.ok item._id.equals doc.get('end')._id
-          assert.equal doc.get('end').get('name'), item.get('name')
-          assert.equal doc.get('end').get('end'), item.get('end')
-          assert.equal doc.get('end').get('affluents')[0], item.get('affluents')[0]
+          assert.ok item._id.equals doc.end._id
+          assert.equal doc.end.name, item.name
+          assert.equal doc.end.end, item.end
+          assert.equal doc.end.affluents[0], item.affluents[0]
           done()
 
     it 'should getLinked retrieves linked arrays', (done) ->
       # given a unresolved item
-      Item.findOne {name: item.get 'name'}, (err, doc) ->
+      Item.findOne {name: item.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # when resolving it
         doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          assert.equal doc.get('affluents').length, 1
-          linked = doc.get('affluents')[0]
+          assert.equal doc.affluents.length, 1
+          linked = doc.affluents[0]
           assert.ok item2._id.equals linked._id
-          assert.equal linked.get('name'), item2.get('name')
-          assert.equal linked.get('end'), item2.get('end')
-          assert.equal linked.get('affluents').length, 0
+          assert.equal linked.name, item2.name
+          assert.equal linked.end, item2.end
+          assert.equal linked.affluents.length, 0
           done()
 
     it 'should getLinked retrieves all properties of all objects', (done) ->
@@ -297,15 +299,15 @@ describe 'Item tests', ->
         Item.getLinked docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
-          assert.ok item._id.equals docs[0].get('end')._id
-          assert.equal docs[0].get('end').get('name'), item.get('name')
-          assert.equal docs[0].get('end').get('end'), item.get('end')
-          assert.equal docs[0].get('end').get('affluents')[0], item.get('affluents')[0]
+          assert.ok item._id.equals docs[0].end._id
+          assert.equal docs[0].end.name, item.name
+          assert.equal docs[0].end.end, item.end
+          assert.equal docs[0].end.affluents[0], item.affluents[0]
           # then the second item has resolved links
-          assert.equal docs[1].get('affluents').length, 1
-          linked = docs[1].get('affluents')[0]
+          assert.equal docs[1].affluents.length, 1
+          linked = docs[1].affluents[0]
           assert.ok item2._id.equals linked._id
-          assert.equal linked.get('name'), item2.get('name')
-          assert.equal linked.get('end'), item2.get('end')
-          assert.equal linked.get('affluents').length, 0
+          assert.equal linked.name, item2.name
+          assert.equal linked.end, item2.end
+          assert.equal linked.affluents.length, 0
           done()

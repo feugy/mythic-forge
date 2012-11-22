@@ -34,7 +34,7 @@ describe 'FieldType tests', ->
     # given a new FieldType
     type = new FieldType()
     name = 'montain'
-    type.set 'name', name
+    type.name = name
 
     # when saving it
     type.save (err, saved) ->
@@ -45,17 +45,17 @@ describe 'FieldType tests', ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
-        assert.equal types[0].get('name'), name
+        assert.equal types[0].name, name
         done()
 
   it 'should name and desc be internationalizables', (done) -> 
     # given a new FieldType with translated name
     type = new FieldType()
     name = 'dust'
-    type.set 'name', name
+    type.name = name
     type.locale = 'fr'
     nameFr = 'poussière'
-    type.set 'name', nameFr
+    type.name = nameFr
 
     # when saving it
     type.save (err, saved) ->
@@ -63,17 +63,17 @@ describe 'FieldType tests', ->
 
       # then translations are available
       saved.locale = null
-      assert.equal saved.get('name'), name
+      assert.equal saved.name, name
       saved.locale = 'fr'
-      assert.equal saved.get('name'), nameFr
+      assert.equal saved.name, nameFr
 
       # when setting the tanslated description and saving it
       saved.locale = null
       desc = 'another one bites the dust'
-      saved.set 'desc', desc
+      saved.desc = desc
       saved.locale = 'fr'
       descFr = 'encore un qui mort la poussière' 
-      saved.set 'desc', descFr
+      saved.desc = descFr
 
       saved.save (err, saved) ->
         throw new Error "Can't save type: #{err}" if err?
@@ -83,11 +83,11 @@ describe 'FieldType tests', ->
           # then it's the only one document
           assert.equal 1, types.length
           # then it's values were saved
-          assert.equal types[0].get('name'), name
-          assert.equal types[0].get('desc'), desc
+          assert.equal types[0].name, name
+          assert.equal types[0].desc, desc
           types[0].locale = 'fr'
-          assert.equal types[0].get('name'), nameFr
-          assert.equal types[0].get('desc'), descFr
+          assert.equal types[0].name, nameFr
+          assert.equal types[0].desc, descFr
           done()
 
   describe 'given a type', ->

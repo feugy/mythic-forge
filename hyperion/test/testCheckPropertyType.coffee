@@ -111,7 +111,7 @@ describe 'Dynamic properties check tests', ->
     {name: 'a float', value: -0.4, status: 'rejected'}
     {name: 'a string', value: 'hi !', status: 'accepted'}
     {name: 'an empty string', value: '', status: 'accepted'}
-    {name: 'an constructed string', value: new String('Coucou !'), status: 'rejected'}
+    {name: 'an constructed string', value: new String('Coucou !'), status: 'accepted'}
     {name: 'true', value: true, status: 'rejected'}
     {name: 'false', value: false, status: 'rejected'}
     {name: 'a date', value: new Date(), status: 'rejected'}
@@ -130,7 +130,7 @@ describe 'Dynamic properties check tests', ->
     {name: 'a float', value: -0.4, status: 'rejected'}
     {name: 'a string', value: 'hi !', status: 'accepted'}
     {name: 'an empty string', value: '', status: 'accepted'}
-    {name: 'an constructed string', value: new String('Coucou !'), status: 'rejected'}
+    {name: 'an constructed string', value: new String('Coucou !'), status: 'accepted'}
     {name: 'true', value: true, status: 'rejected'}
     {name: 'false', value: false, status: 'rejected'}
     {name: 'a date', value: new Date(), status: 'rejected'}

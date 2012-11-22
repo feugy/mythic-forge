@@ -50,7 +50,7 @@ class _PlayerService
         now = new moment()  
         now.milliseconds 0
         now.subtract 'seconds', 60
-        player.set 'lastConnection', now.toDate()
+        player.lastConnection = now.toDate()
         player.save()
     , 60000
 
@@ -175,12 +175,12 @@ class _PlayerService
     logger.debug "consult player by email: #{email}"
     Player.findOne {email: email}, (err, player) =>
       return callback err, null if err?
-      if player? and player.get('characters').length isnt 0 and withLinked
+      if player? and player.characters.length isnt 0 and withLinked
         logger.debug 'resolves its character'
         # resolve the character
-        Item.getLinked player.get('characters'), (err, instances) =>
+        Item.getLinked player.characters, (err, instances) =>
           return callback err, null if err?
-          player.set 'characters', instances
+          player.characters = instances
           callback null, player
       else 
         callback null, player
@@ -198,19 +198,19 @@ class _PlayerService
       # no player found
       return callback null, null unless player?
       # not an admin during a deployement: not authorinzed
-      return callback 'Deployment in progress', null if deployementService.deployedVersion()? and !player.get 'isAdmin'
+      return callback 'Deployment in progress', null if deployementService.deployedVersion()? and !player.isAdmin
 
       # check expiration date
-      if player.get('lastConnection').getTime()+expiration*1000 < new Date().getTime()
+      if player.lastConnection.getTime()+expiration*1000 < new Date().getTime()
         # expired token: set it to null
-        player.set 'token', null
+        player.token = null
         player.save (err, saved) =>
           return callback "Failed to reset player's expired token: #{err}" if err?
           notifier.notify 'players', 'disconnect', saved, 'expired'
           callback "Expired token"
       else 
         # change token for security reason
-        player.set 'token', utils.generateToken 24
+        player.token = utils.generateToken 24
         player.save (err, saved) =>
           return callback "Failed to change player's token: #{err}" if err?
           callback null, saved
@@ -227,7 +227,7 @@ class _PlayerService
       return callback err if err?
       return callback "No player with email #{email} found" unless player?
       # set token to null
-      player.set 'token', null
+      player.token = null
       player.save (err, saved) =>
         return callback "Failed to reset player's token: #{err}" if err?
         # send disconnection event
@@ -245,13 +245,13 @@ class _PlayerService
 setTokens = (player, provider, callback) ->
   # update the saved token and last connection date
   token = utils.generateToken 24
-  player.set 'token', token
+  player.token = token
   # avoid milliseconds to simplify usage
   now = new Date()
   now.setMilliseconds 0
   player.set 'lastConnection', now
   player.save (err, newPlayer) ->
     return callback "Failed to update player: #{err}" if err?
-    logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.get 'email'}"
+    logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email}"
     notifier.notify 'players', 'connect', newPlayer
     callback null, token, newPlayer

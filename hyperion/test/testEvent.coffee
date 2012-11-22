@@ -82,10 +82,10 @@ describe 'Event tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal docs[0].get('content'), 'hello !'
-        assert.ok item.equals docs[0].get 'from'
-        assert.closeTo docs[0].get('created').getTime(), new Date().getTime(), 500
-        assert.equal docs[0].get('created').getTime(), docs[0].get('updated').getTime()
+        assert.equal docs[0].content, 'hello !'
+        assert.ok item.equals docs[0].from
+        assert.closeTo docs[0].created.getTime(), new Date().getTime(), 500
+        assert.equal docs[0].created.getTime(), docs[0].updated.getTime()
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
@@ -95,7 +95,7 @@ describe 'Event tests', ->
     event.save (err)->
       return done "Can't save event: #{err}" if err?
       # then the default value was set
-      assert.equal event.get('content'), '---'
+      assert.equal event.content, '---'
       done()
 
   describe 'given an Event', ->
@@ -127,9 +127,9 @@ describe 'Event tests', ->
             # then it's the only one document
             assert.equal docs.length, 1
             # then only the relevant values were modified
-            assert.isNull docs[0].get 'from'
-            assert.closeTo docs[0].get('updated').getTime(), new Date().getTime(), 500
-            assert.notEqual docs[0].get('created').getTime(), docs[0].get('updated').getTime()
+            assert.isNull docs[0].from
+            assert.closeTo docs[0].updated.getTime(), new Date().getTime(), 500
+            assert.notEqual docs[0].created.getTime(), docs[0].updated.getTime()
             assert.ok awaited, 'watcher wasn\'t invoked'
             done()
       , 10
@@ -174,7 +174,7 @@ describe 'Event tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal docs[0].get('content'), 'world'
+          assert.equal docs[0].content, 'world'
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
@@ -220,49 +220,49 @@ describe 'Event tests', ->
 
     it 'should id be stored for linked object', (done) ->
       # when retrieving an event
-      Event.findOne {content: event2.get 'content'}, (err, doc) ->
+      Event.findOne {content: event2.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # then linked events are replaced by their ids
-        assert.ok event._id.equals doc.get('father')
+        assert.ok event._id.equals doc.father
         done()
 
     it 'should ids be stored for linked arrays', (done) ->
       # when resolving an event
-      Event.findOne {content: event.get 'content'}, (err, doc) ->
+      Event.findOne {content: event.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # then linked arrays are replaced by their ids
-        assert.equal doc.get('children').length, 1
-        assert.ok event2._id.equals doc.get('children')[0]
+        assert.equal doc.children.length, 1
+        assert.ok event2._id.equals doc.children[0]
         done()
 
     it 'should getLinked retrieves linked objects', (done) ->
       # given a unresolved event
-      Event.findOne {content: event2.get 'content'}, (err, doc) ->
+      Event.findOne {content: event2.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # when resolving it
         doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
-          assert.ok event._id.equals doc.get('father')._id
-          assert.equal doc.get('father').get('content'), event.get('content')
-          assert.equal doc.get('father').get('father'), event.get('father')
-          assert.equal doc.get('father').get('children')[0], event.get('children')[0]
+          assert.ok event._id.equals doc.father._id
+          assert.equal doc.father.content, event.content
+          assert.equal doc.father.father, event.father
+          assert.equal doc.father.children[0], event.children[0]
           done()
 
     it 'should getLinked retrieves linked arrays', (done) ->
       # given a unresolved event
-      Event.findOne {content: event.get 'content'}, (err, doc) ->
+      Event.findOne {content: event.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # when resolving it
         doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
-          assert.equal doc.get('children').length, 1
-          linked = doc.get('children')[0]
+          assert.equal doc.children.length, 1
+          linked = doc.children[0]
           assert.ok event2._id.equals linked._id
-          assert.equal linked.get('content'), event2.get('content')
-          assert.equal linked.get('father'), event2.get('father')
-          assert.equal linked.get('children').length, 0
+          assert.equal linked.content, event2.content
+          assert.equal linked.father, event2.father
+          assert.equal linked.children.length, 0
           done()
 
     it 'should getLinked retrieves all properties of all objects', (done) ->
@@ -273,15 +273,15 @@ describe 'Event tests', ->
         Event.getLinked docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first event has resolved links
-          assert.ok event._id.equals docs[1].get('father')._id
-          assert.equal docs[1].get('father').get('content'), event.get('content')
-          assert.equal docs[1].get('father').get('father'), event.get('father')
-          assert.equal docs[1].get('father').get('children')[0], event.get('children')[0]
+          assert.ok event._id.equals docs[1].father._id
+          assert.equal docs[1].father.content, event.content
+          assert.equal docs[1].father.father, event.father
+          assert.equal docs[1].father.children[0], event.children[0]
           # then the second event has resolved links
-          assert.equal docs[0].get('children').length, 1
-          linked = docs[0].get('children')[0]
+          assert.equal docs[0].children.length, 1
+          linked = docs[0].children[0]
           assert.ok event2._id.equals linked._id
-          assert.equal linked.get('content'), event2.get('content')
-          assert.equal linked.get('father'), event2.get('father')
-          assert.equal linked.get('children').length, 0
+          assert.equal linked.content, event2.content
+          assert.equal linked.father, event2.father
+          assert.equal linked.children.length, 0
           done()

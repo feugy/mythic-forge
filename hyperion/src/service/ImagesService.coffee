@@ -84,11 +84,11 @@ class _ImagesService
 
       switch args.length
         when 1 
-          existing = model.get 'descImage'
+          existing = model.descImage
         when 2 
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
-          existing = model.get('images')[suffix]?.file
+          existing = model.images[suffix]?.file
         else throw new Error "save must be called with arguments (modelName, id, ext, imageData, [idx], callback)"
 
       proceed = (err) =>
@@ -98,9 +98,9 @@ class _ImagesService
           return callback "Failed to save image #{suffix} on model #{model._id}: #{err}" if err?
           # updates correct attribute
           if args.length is 1
-            model.set 'descImage', fileName
+            model.descImage = fileName
           else 
-            images = model.get 'images'
+            images = model.images
             if modelName is 'ItemType'
               # save meta data at correct index, keeping existing informations
               previous = images[suffix] || {width:0, height:0}
@@ -110,7 +110,7 @@ class _ImagesService
               # fot other, just keep the name
               images[suffix] = fileName
 
-            model.set 'images', images
+            model.images = images
             model.markModified 'images'
           # saves model
           model.save (err, saved) =>
@@ -168,11 +168,11 @@ class _ImagesService
 
       switch args.length
         when 1 
-          existing = model.get 'descImage'
+          existing = model.descImage
         when 2 
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
-          existing = model.get('images')[suffix]?.file
+          existing = model.images[suffix]?.file
         else throw new Error "semove must be called with arguments (model, [idx], callback)"
 
       # removes the existing file
@@ -180,9 +180,9 @@ class _ImagesService
         return callback "Failed to remove image #{suffix} on model #{model._id}: #{err}" if err? and err.code isnt 'ENOENT'
         # updates correct attribute
         if args.length is 1
-          model.set 'descImage', null
+          model.descImage = null
         else 
-          images = model.get 'images'
+          images = model.images
           # removes correct index
           if suffix is images.length-1
             images.splice suffix, 1
@@ -192,7 +192,7 @@ class _ImagesService
             else
               images[suffix] = null
               
-          model.set 'images', images
+          model.images = images
           model.markModified 'images'
         # save model
         model.save (err, saved) =>

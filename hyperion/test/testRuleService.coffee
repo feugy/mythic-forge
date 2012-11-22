@@ -74,11 +74,11 @@ describe 'RuleService tests', ->
             @name= 'rule 3'
           canExecute: (actor, target, callback) =>
             target.getLinked ->
-              callback null, if target.get('pilot').equals actor then [] else null
+              callback null, if target.pilot.equals actor then [] else null
           execute: (actor, target, params, callback) =>
             target.getLinked ->
               target.x++
-              target.get('pilot').x++
+              target.pilot.x++
               callback null, 'driven left'
         module.exports = new DriveLeft()"""
     script.save (err) ->
@@ -131,11 +131,11 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 4'
           canExecute: (actor, target, callback) =>
-            callback null, if actor.get('stock').length is 0 then [] else null
+            callback null, if actor.stock.length is 0 then [] else null
           execute: (actor, target, params, callback) =>
             part = new Item {type:actor.type, name: 'part'}
             @created.push part
-            actor.set 'stock', [part]
+            actor.stock = [part]
             callback null, 'part added'
         )()"""
     script.save (err) ->
@@ -167,8 +167,8 @@ describe 'RuleService tests', ->
 
                 # then the container was modified on database
                 Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
-                  assert.equal 1, existing.get('stock').length
-                  assert.ok created._id.equals existing.get('stock')[0]
+                  assert.equal 1, existing.stock.length
+                  assert.ok created._id.equals existing.stock[0]
                   done()
 
   it 'should rule delete existing objects', (done) ->
@@ -180,7 +180,7 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 5'
           canExecute: (actor, target, callback) =>
-            callback null, (part for part in actor.get('stock') when target.equals(part))
+            callback null, (part for part in actor.stock when target.equals(part))
           execute: (actor, target, params, callback) =>
             @removed.push target
             callback null, 'part removed'
@@ -221,8 +221,8 @@ describe 'RuleService tests', ->
                     return done "Item not created" if err?
 
                     existing.getLinked ->
-                      assert.equal 1, existing.get('stock').length
-                      assert.equal null, existing.get('stock')[0]
+                      assert.equal 1, existing.stock.length
+                      assert.equal null, existing.stock[0]
                       done()
 
   describe 'given a player and a dumb rule', ->
@@ -437,7 +437,7 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 2'
             canExecute: (actor, target, callback) =>
-              callback null, if target.get('x').valueOf() is 1 then [] else null
+              callback null, if target.x is 1 then [] else null
             execute: (actor, target, params, callback) =>
               target.x++
               callback null, 'target moved'
@@ -503,7 +503,7 @@ describe 'RuleService tests', ->
             select: (callback) =>
               Item.find {type: new ObjectId "#{type1._id}"}, callback
             execute: (target, callback) =>
-              target.set 'fed', target.get('fed')+1
+              target.fed++
               callback null
           )()"""
       script.save (err) ->
@@ -515,11 +515,11 @@ describe 'RuleService tests', ->
           # then the both dogs where fed
           Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
-            assert.equal 1, existing.get('fed'), 'lassie wasn\'t fed'
+            assert.equal 1, existing.fed, 'lassie wasn\'t fed'
          
             Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
               return done "Unable to find item: #{err}" if err?
-              assert.equal 1, existing.get('fed'), 'medor wasn\'t fed'
+              assert.equal 1, existing.fed, 'medor wasn\'t fed'
               done()
 
     it 'should turn rule be executed in right order', (done) ->
@@ -535,8 +535,8 @@ describe 'RuleService tests', ->
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
               execute: (target, callback) =>
-                target.set 'fed', 1
-                target.set 'execution', target.get('execution')+','+@name
+                target.fed = 1
+                target.execution = target.execution+','+@name
                 callback null
             )()"""
       ,
@@ -551,8 +551,8 @@ describe 'RuleService tests', ->
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
               execute: (target, callback) =>
-                target.set 'fed', 10
-                target.set 'execution', target.get('execution')+','+@name
+                target.fed = 10
+                target.execution = target.execution+','+@name
                 callback null
             )()"""
       ], (script, next) ->
@@ -579,8 +579,8 @@ describe 'RuleService tests', ->
           # then lassie fed status was reseted, and execution order is correct
           Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
-            assert.equal ',rule 8,rule 7', existing.get('execution'), 'wrong execution order'
-            assert.equal 1, existing.get('fed'), 'lassie was fed'
+            assert.equal ',rule 8,rule 7', existing.execution, 'wrong execution order'
+            assert.equal 1, existing.fed, 'lassie was fed'
             done()
 
     it 'should turn selection failure be reported', (done) ->
@@ -707,7 +707,7 @@ describe 'RuleService tests', ->
               select: (callback) =>
                 Item.find {name: 'medor'}, callback
               execute: (target, callback) =>
-                target.set 'fed', 18
+                target.fed = 18
                 target.save = (cb) -> cb new Error 'update failure'
                 callback null
             )()"""
@@ -815,9 +815,9 @@ describe 'RuleService tests', ->
               @name= 'rule 9'
               @active = false
             select: (callback) =>
-              Item.find {name: "#{item1.get('name')}"}, callback
+              Item.find {name: "#{item1.name}"}, callback
             execute: (target, callback) =>
-              target.set 'fed', -1
+              target.fed = -1
               callback null
           )()"""
       script.save (err) ->
@@ -829,7 +829,7 @@ describe 'RuleService tests', ->
           # then lassie wasn't fed
           Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
-            assert.equal 0, existing.get('fed'), 'disabled rule was executed'
+            assert.equal 0, existing.fed, 'disabled rule was executed'
             done()
 
     it 'should disabled rule not be resolved', (done) ->
@@ -845,7 +845,7 @@ describe 'RuleService tests', ->
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
-              target.set 'name', 'changed !'
+              target.name = 'changed !'
               callback null, 'hello !'
           )()"""
       script.save (err) ->
@@ -871,7 +871,7 @@ describe 'RuleService tests', ->
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
-              target.set 'name', 'changed !'
+              target.name = 'changed !'
               callback null, 'hello !'
           )()"""
       script.save (err) ->

@@ -192,10 +192,10 @@ describe 'server tests', ->
         socket.once 'getTypes-resp', (err, types) ->
           return done err if err?
           assert.equal types.length, 1
-          assert.ok character.get('_id').equals types[0]._id
-          assert.equal types[0]._name.default, character.get('name')
+          assert.ok character._id.equals types[0]._id
+          assert.equal types[0]._name.default, character.name
           assert.ok 'name' of types[0].properties
-          assert.equal types[0].properties.name.type, character.get('properties').name.type
+          assert.equal types[0].properties.name.type, character.properties.name.type
           done()
 
         # when retrieving types by ids
@@ -217,10 +217,10 @@ describe 'server tests', ->
           assert.equal items[1].name, 'John'
           assert.ok character._id.equals items[0].type._id
           assert.ok 'name' of items[0].type.properties
-          assert.equal items[0].type.properties.name.type, character.get('properties').name.type
+          assert.equal items[0].type.properties.name.type, character.properties.name.type
           assert.ok character._id.equals items[1].type._id
           assert.ok 'name' of items[1].type.properties
-          assert.equal items[1].type.properties.name.type, character.get('properties').name.type
+          assert.equal items[1].type.properties.name.type, character.properties.name.type
           done()
           # TODO tests link resolution
 
@@ -243,10 +243,10 @@ describe 'server tests', ->
           assert.equal events[1].step, 'death'
           assert.ok life._id.equals events[0].type._id
           assert.ok 'concerns' of events[0].type.properties
-          assert.equal events[0].type.properties.concerns.type, life.get('properties').concerns.type
+          assert.equal events[0].type.properties.concerns.type, life.properties.concerns.type
           assert.ok life._id.equals events[1].type._id
           assert.ok 'concerns' of events[1].type.properties
-          assert.equal events[1].type.properties.concerns.type, life.get('properties').concerns.type
+          assert.equal events[1].type.properties.concerns.type, life.properties.concerns.type
           # then their links where resolved
           assert.equal events[0].concerns._className, 'Item'
           assert.ok jack.equals events[0].concerns
@@ -276,11 +276,11 @@ describe 'server tests', ->
                     constructor: ->
                       @name= 'rename'
                     canExecute: (actor, target, callback) =>
-                      callback null, if target.get('name') is 'Jack' then [] else null
+                      callback null, if target.name is 'Jack' then [] else null
                     execute: (actor, target, params, callback) =>
                       @created.push new Item({type: target.type, name:'Peter'})
                       @removed.push actor
-                      target.set('name', 'Joe')
+                      target.name = 'Joe'
                       callback null, 'target renamed'
                   )()"""
 
@@ -303,7 +303,7 @@ describe 'server tests', ->
             done()
 
           # when searching all types
-          socket.emit 'searchTypes', '{"or": [{"name": "/'+map.get('name')+'/i"}, {"id": "'+character._id+'"}]}'
+          socket.emit 'searchTypes', '{"or": [{"name": "/'+map.name+'/i"}, {"id": "'+character._id+'"}]}'
 
         it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client

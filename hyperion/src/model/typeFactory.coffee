@@ -37,9 +37,9 @@ logger = require('../logger').getLogger 'model'
 # @option properties def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
 processLinks = (instance, properties) ->
   for name, property of properties
-    value = instance.get name
+    value = instance[name]
     if property.type is 'object'
-      instance.set(name, value._id.toString()) if value isnt null and typeof value is 'object' and '_id' of value
+      instance[name] = value._id.toString() if value isnt null and typeof value is 'object' and '_id' of value
     else if property.type is 'array'
       if value
         for linked, i in value
@@ -47,7 +47,6 @@ processLinks = (instance, properties) ->
 
 # Extends original Mongoose toObject method to add className when requireing json.
 originalToObject = mongoose.Document.prototype.toObject
-
 mongoose.Document.prototype.toObject = (options) ->
   obj = originalToObject.call @, options
   if options?.json
@@ -56,6 +55,33 @@ mongoose.Document.prototype.toObject = (options) ->
     if @_className is 'Player'
       obj.prefs = @prefs
   obj
+
+# Extends _registerHook to construct dynamic properties in Document constructor
+original_registerHooks = mongoose.Document.prototype._registerHooks
+mongoose.Document.prototype._registerHooks = ->
+  ret = original_registerHooks.apply @, arguments
+  @_defineProperties()
+  ret
+# Extends init method to construct dynamic properties in init
+originalInit = mongoose.Document.prototype.init
+mongoose.Document.prototype.init = ->
+  ret = originalInit.apply @, arguments
+  @_defineProperties()
+  ret
+
+# Initialize dynamic properties from type when needed
+mongoose.Document.prototype._defineProperties = ->
+  if @type?.properties?
+    # define setters and getters for properties once the instance have been initialized
+    for name, prop of @type.properties
+      ((name) =>
+        unless Object.getOwnPropertyDescriptor(@, name)?
+          Object.defineProperty @, name,
+            enumerable: true
+            configurable: true
+            get: -> @get name
+            set: (v) -> @set name, v
+      )(name)
 
 # Factory that creates an abstract type.
 # Provides:
@@ -196,7 +222,7 @@ module.exports = (typeName, spec, options = {}) ->
     AbstractType.methods.setProperty = (name, type, def) ->
       # Do not store strings, store dates instead
       def = new Date def if type is 'date' and 'string' is utils.type def
-      @get('properties')[name] = {type: type, def: def}
+      @properties[name] = {type: type, def: def}
       @markModified 'properties'
       @_updatedProps = [] unless @_updatedProps?
       @_updatedProps.push name
@@ -206,8 +232,8 @@ module.exports = (typeName, spec, options = {}) ->
     #
     # @param name [String] the unic name of the property.
     AbstractType.methods.unsetProperty = (name) ->
-      throw new Error "Unknown property #{name} for type #{@name}" unless @get('properties')[name]?
-      delete @get('properties')[name]
+      throw new Error "Unknown property #{name} for type #{@name}" unless @properties[name]?
+      delete @properties[name]
       @markModified 'properties'
       @_deletedProps = [] unless @_deletedProps?
       @_deletedProps.push name
@@ -224,20 +250,22 @@ module.exports = (typeName, spec, options = {}) ->
           # add default value in instances that do not have the added properties yet.
           if @_updatedProps?
             for name in @_updatedProps
-              prop = @get('properties')[name]
+              prop = @properties[name]
               def = prop.def
               switch prop.type
                 when 'array' then def = []
                 when 'object' then def = null
 
-              if not(name of instance)
+              if undefined is instance.get name
+                # use getter here because property was not defined yet
                 instance.set name, def
                 saved.push instance unless saved in instance
-              # TODO: check value type. 
+                # TODO: check value type. 
 
           # removes deleted properties from instances.
           if @_deletedProps?
             for name in @_deletedProps
+
               instance.set name, undefined
               delete instance._doc[name]
               saved.push instance unless saved in instance
@@ -261,9 +289,10 @@ module.exports = (typeName, spec, options = {}) ->
       require("./#{options.typeClass}").findCached [instance.type], (err, types) ->
         return next(new Error "Unable to init instance #{instance._id}. Error while resolving its type: #{err}") if err?
         return next(new Error "Unable to init instance #{instance._id} because there is no type with id #{instance.type}") unless types.length is 1    
-        # Do the replacement.
+        # do the replacement
         instance.type = types[0]
         next()
+
 
     # This method retrieves linked objects in properties.
     # All `object` and `array` properties are resolved. 
@@ -289,9 +318,9 @@ module.exports = (typeName, spec, options = {}) ->
       for instance in instances
         logger.debug "search linked ids in #{instance._id}"
         # gets the corresponding properties definitions
-        properties = instance.type.get 'properties'
+        properties = instance.type.properties
         for prop, def of properties
-          value = instance.get(prop)
+          value = instance[prop]
           if def.type is 'object' and typeof value is 'string'
             # Do not resolve objects that were previously resolved
             logger.debug "found #{value} in property #{prop}"
@@ -315,10 +344,10 @@ module.exports = (typeName, spec, options = {}) ->
       , ->
         # process again each properties to replace ObjectIds with real objects, and remove unknown ids
         for instance in instances
-          properties = instance.type.get 'properties'
+          properties = instance.type.properties
           logger.debug "replace linked ids in #{instance._id}"
           for prop, def of properties
-            value = instance.get(prop)
+            value = instance[prop]
             if def.type is 'object' and typeof value is 'string'
               link = null
               for l in linked
@@ -348,24 +377,25 @@ module.exports = (typeName, spec, options = {}) ->
     # @param next [Function] function that must be called to proceed with other middleware.
     # Calling it with an argument indicates the the validation failed and cancel the instante save.
     AbstractType.pre 'save', (next) ->
-      properties = @type.get 'properties'
+      properties = @type.properties
       # get through all existing attributes
       attrs = Object.keys @_doc;
       for attr in attrs when attr isnt '__v' # ignore versionning attribute
         # not in schema, nor in type
         if attr of properties
-          err = utils.checkPropertyType @get(attr), properties[attr] 
+          # use not property cause it's not always defined at this moment
+          err = utils.checkPropertyType @_doc[attr], properties[attr] 
           next(new Error "Unable to save instance #{@_id}. Property #{attr}: #{err}") if err?
         else unless attr of AbstractType.paths
           next new Error "Unable to save instance #{@_id}: unknown property #{attr}"
 
       # set the default values
-      for prop, value of @type.get 'properties'
-        if undefined is @get prop
-          @set prop, if value.type is 'array' then [] else if value.type is 'object' then null else value.def
+      for prop, value of properties
+        if undefined is @[prop]
+          @[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
         # Do not store strings, store dates instead
-        if value.type is 'date' and 'string' is utils.type @get prop
-          @set prop, new Date @get prop
+        if value.type is 'date' and 'string' is utils.type @[prop]
+          @[prop] = new Date @[prop]
 
       # replace links by them _ids
       processLinks this, properties

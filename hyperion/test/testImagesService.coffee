@@ -56,9 +56,9 @@ describe 'ImagesService tests', ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          assert.equal saved.get('descImage'), "#{iType._id}-type.png"
+          assert.equal saved.descImage, "#{iType._id}-type.png"
           # then the file exists and is equal to the original file
-          file = path.join imagesPath, saved.get('descImage')
+          file = path.join imagesPath, saved.descImage
           assert.ok fs.existsSync file
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
@@ -72,9 +72,9 @@ describe 'ImagesService tests', ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          assert.equal saved.get('descImage'), "#{fType._id}-type.png"
+          assert.equal saved.descImage, "#{fType._id}-type.png"
           # then the file exists and is equal to the original file
-          file = path.join imagesPath, saved.get('descImage')
+          file = path.join imagesPath, saved.descImage
           assert.ok fs.existsSync file
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
@@ -89,7 +89,7 @@ describe 'ImagesService tests', ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          images = saved.get('images')[idx]
+          images = saved.images[idx]
           assert.equal images?.file, "#{iType._id}-#{idx}.png"
           assert.equal images?.width, 0
           assert.equal images?.height, 0
@@ -109,9 +109,9 @@ describe 'ImagesService tests', ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          assert.equal saved.get('images')[idx], "#{fType._id}-#{idx}.png"
+          assert.equal saved.images[idx], "#{fType._id}-#{idx}.png"
           # then the file exists and is equal to the original file
-          file = path.join imagesPath, saved.get('images')[idx]
+          file = path.join imagesPath, saved.images[idx]
           assert.ok fs.existsSync file
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
@@ -128,8 +128,8 @@ describe 'ImagesService tests', ->
             # given an instance image
             service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), 0, (err, saved) ->
               throw new Error err if err?
-              assert.equal saved.get('descImage'), "#{iType._id}-type.png"
-              images = saved.get('images')[0]
+              assert.equal saved.descImage, "#{iType._id}-type.png"
+              images = saved.images[0]
               assert.equal images?.file, "#{iType._id}-0.png"
               # when removing the type
               iType.remove (err) ->
@@ -155,8 +155,8 @@ describe 'ImagesService tests', ->
             # given an instance image
             service.uploadImage 'FieldType', fType._id, 'png', data.toString('base64'), 0, (err, saved) ->
               throw new Error err if err?
-              assert.equal saved.get('descImage'), "#{fType._id}-type.png"
-              assert.equal saved.get('images')[0], "#{fType._id}-0.png"
+              assert.equal saved.descImage, "#{fType._id}-type.png"
+              assert.equal saved.images[0], "#{fType._id}-0.png"
               # when removing the type
               fType.remove (err) ->
                 # wait a while for files to be deleted
@@ -199,21 +199,21 @@ describe 'ImagesService tests', ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          assert.equal saved.get('descImage'), "#{iType._id}-type.png"
+          assert.equal saved.descImage, "#{iType._id}-type.png"
           # then the file exists and is equal to the original file
-          file = path.join imagesPath, saved.get('descImage')
+          file = path.join imagesPath, saved.descImage
           assert.ok fs.existsSync file
           assert.equal fs.readFileSync(file).toString(), data.toString()
           done()
 
     it 'should existing type image be removed', (done) ->
-      file = path.join imagesPath, iType.get 'descImage'
+      file = path.join imagesPath, iType.descImage
       # when removing the type image
       service.removeImage 'ItemType', iType._id, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
         # then the type image is updated in model
-        assert.equal saved.get('descImage'), null
+        assert.equal saved.descImage, null
         # then the file do not exists anymore
         assert.ok !(fs.existsSync(file))
         done()
@@ -228,7 +228,7 @@ describe 'ImagesService tests', ->
           # then no error found
           assert.ok err is null, "unexpected error '#{err}'"
           # then the description image is updated in model
-          images = saved.get('images')[idx]
+          images = saved.images[idx]
           assert.equal images?.file, "#{iType._id}-#{idx}.png"
           assert.equal images?.width, 0
           assert.equal images?.height, 0
@@ -240,13 +240,13 @@ describe 'ImagesService tests', ->
 
     it 'should existing instance image be removed', (done) ->
       idx = 0
-      file = path.join imagesPath, iType.get('images')[idx].file
+      file = path.join imagesPath, iType.images[idx].file
       # when removing the first instance image
       service.removeImage 'ItemType', iType._id, idx, (err, saved) ->
         # then no error found
         assert.ok err is null, "unexpected error '#{err}'"
         # then the instance image is updated in model
-        assert.equal saved.get('images')[idx], undefined
+        assert.equal saved.images[idx], undefined
         # then the file do not exists anymore
         assert.ok !(fs.existsSync(file))
         done()
@@ -257,14 +257,14 @@ describe 'ImagesService tests', ->
         throw new Error err if err?
         # given it saved as second instance image
         service.uploadImage 'ItemType', iType._id, 'png', data.toString('base64'), 1, (err, saved) ->
-          file = path.join imagesPath, iType.get('images')[0].file
+          file = path.join imagesPath, iType.images[0].file
           # when removing the first instance image
           service.removeImage 'ItemType', iType._id, 0, (err, saved) ->
             # then no error found
             assert.ok err is null, "unexpected error '#{err}'"
             # then the instance image is updated in model
-            assert.equal saved.get('images').length, 2
-            assert.equal saved.get('images')[0]?.file, null
+            assert.equal saved.images.length, 2
+            assert.equal saved.images[0]?.file, null
             # then the file do not exists anymore
             assert.ok !(fs.existsSync(file))
             done()

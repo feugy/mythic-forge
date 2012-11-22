@@ -150,32 +150,28 @@ addI18n = (schema, field, options = {}) ->
 checkPropertyType = (value,  property) ->
   err = null
 
-  # string and text: null or typeof is string
-  checkString = ->
-    err = "#{value} isn't a valid string" unless value is null or 
-      typeof value is 'string'
+  # string and text: null or type is string
+  checkString = (val) ->
+    err = "'#{val}' isn't a valid string" unless val is null or 'string' is type val
 
   # object: null or string (id) or object with a collection that have the good name.    
   checkObject = (val) ->
-    err = "#{value} isn't a valid #{property.def}" unless val is null or typeof val is 'string' or
-      (typeof val is 'object' and val?.collection?.name is property.def.toLowerCase()+'s')
+    err = "#{value} isn't a valid #{property.def}" unless val is null or 'string' is type(val)  or
+      ('object' is type(val) and val?.collection?.name is property.def.toLowerCase()+'s')
 
   switch property.type 
     # integer: null or float = int value of a number/object
     when 'integer' then err = "#{value} isn't a valid integer" unless value is null or 
-      ((typeof value is 'number' or typeof value is 'object') and 
-      parseFloat(value, 10) is parseInt(value, 10))
+      ('number' is type(value) and parseFloat(value, 10) is parseInt(value, 10))
     # foat: null or float value of a number/object
     when 'float' then err = "#{value} isn't a valid float" unless value is null or 
-      ((typeof value is 'number' or typeof value is 'object') and not 
-      isNaN parseFloat(value, 10))
+      ('number' is type(value) and not isNaN parseFloat(value, 10))
     # boolean: null or value is false or true and not a string
     when 'boolean' 
       strVal = "#{value}".toLowerCase()
       err = "#{value} isn't a valid boolean" if value isnt null and
-        (typeof value is 'string' or 
-        (strVal isnt 'true' and strVal isnt 'false'))
-    # date : null or typeof is date
+        ('string' is type(value) or (strVal isnt 'true' and strVal isnt 'false'))
+    # date : null or type is date
     when 'date' 
       if value isnt null
         if 'string' is type value 
@@ -189,8 +185,8 @@ checkPropertyType = (value,  property) ->
         checkObject obj for obj in value
       else 
         err = "#{value} isn't a valid array of #{property.def}"
-    when 'string' then checkString()
-    when 'text' then checkString()
+    when 'string' then checkString value
+    when 'text' then checkString value
     else err = "#{property.type} isn't a valid type"
   err
 

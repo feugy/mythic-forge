@@ -85,11 +85,11 @@ class _AdminService
       when 'Player' then modelClass = Player
       when 'Item' 
         populateTypeAndSave = (model) ->
-          ItemType.findCached [model?.get('type')?._id], (err, types) ->
+          ItemType.findCached [model?.type?._id], (err, types) ->
             return callback "Failed to save item #{values._id}. Error while resolving its type: #{err}" if err?
             return callback "Failed to save item #{values._id} because there is no type with id #{values?.type?._id}" unless types.length is 1    
             # Do the replacement.
-            model.set 'type', types[0]
+            model.type = types[0]
             _save model
 
         # Do not store maps with string ids
@@ -104,19 +104,19 @@ class _AdminService
 
             # update values
             for key, value of values
-              model.set key, value unless key in ['_id', 'type', 'map']
+              model[key] = value unless key in ['_id', 'type', 'map']
 
             # update map value
-            if model.get('map')?._id?.toString() isnt values.map?._id?.toString()
+            if model.map?._id?.toString() isnt values.map?._id?.toString()
               if values.map?._id
                 # resolve map
                 return Map.findCached [values.map._id], (err, maps) ->
                   return callback "Failed to save item #{values._id}. Error while resolving its map: #{err}" if err?
                   return callback "Failed to save item #{values._id} because there is no map with id #{item.map}" unless maps.length is 1  
-                  model.set 'map', maps[0]
+                  model.map = maps[0]
                   populateTypeAndSave model
               else
-                model.set 'map', null
+                model.map = null
                 populateTypeAndSave model
             else
               populateTypeAndSave model
@@ -126,11 +126,11 @@ class _AdminService
 
       when 'Event' 
         populateTypeAndSave = (model) ->
-          EventType.findCached [model?.get('type')?._id], (err, types) ->
+          EventType.findCached [model?.type?._id], (err, types) ->
             return callback "Failed to save event #{values._id}. Error while resolving its type: #{err}" if err?
             return callback "Failed to save event #{values._id} because there is no type with id #{values?.type?._id}" unless types.length is 1    
             # Do the replacement.
-            model.set 'type', types[0]
+            model.type = types[0]
             _save model
 
         if '_id' of values
@@ -141,19 +141,19 @@ class _AdminService
 
             # update values
             for key, value of values
-              model.set key, value unless key in ['_id', 'type']
+              model[key] = value unless key in ['_id', 'type']
 
             # update from value
-            if model.get('from')?._id isnt values.from?._id
+            if model.from?._id isnt values.from?._id
               if values.from?._id
                 # resolve map
                 return Item.findCached [values.from._id], (err, froms) ->
                   return callback "Failed to save event #{values._id}. Error while resolving its from: #{err}" if err?
                   return callbacl "Failed to save event #{values._id} because there is no from with id #{item.from}" unless froms.length is 1  
-                  model.set 'from', froms[0]
+                  model.from = froms[0]
                   populateTypeAndSave model
               else
-                model.set 'from', null
+                model.from = null
                 populateTypeAndSave model
             else
               populateTypeAndSave model
@@ -201,11 +201,11 @@ class _AdminService
         model = models[0]
 
         for key, value of values
-          model.set key, value unless key in ['_id', 'properties', 'characters']
+          model[key] = value unless key in ['_id', 'properties', 'characters']
           # manually set and unset properties
           if key is 'properties'
             # at the begining, all existing properties may be unset
-            unset = _(model.get 'properties').keys()
+            unset = _(model.properties).keys()
             set = []
             for name, prop of value
               idx = unset.indexOf(name)
@@ -216,7 +216,7 @@ class _AdminService
                 # property already exists: do not unset
                 unset.splice idx, 1
                 # and update values if necessary
-                if model.get('properties')[name].type isnt prop.type or model.get('properties')[name].def isnt prop.def
+                if model.properties[name].type isnt prop.type or model.properties[name].def isnt prop.def
                   set.push([name, prop.type, prop.def])
 
             # at last, add new properties
@@ -226,10 +226,10 @@ class _AdminService
 
           else if key is 'characters'
             # manually mark characters as modified if needed
-            previous = _.pluck model.get('characters'), '_id'
+            previous = _.pluck model.characters, '_id'
             newly = _.pluck value, '_id'
             if _.difference(newly, previous).length isnt 0
-              model.set 'characters', value
+              model.characters = value
               model.markModified 'characters'
 
         _save model
@@ -320,7 +320,7 @@ class _AdminService
       return callback "Unexisting #{modelName} with id #{values._id}", modelName if err? or models.length is 0
       # special player case: purge and disconnect before removing
       if modelName is 'Player'
-        playerService.disconnect models[0].get('email'), 'removal', (err) ->
+        playerService.disconnect models[0].email, 'removal', (err) ->
           return callback err, modelName if err?
           models[0].remove (err) -> callback err, modelName, Player.purge models[0] 
       else

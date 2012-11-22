@@ -50,8 +50,8 @@ describe 'ItemType tests', ->
       type2.save (err) ->
         return done err if err?
         # then their properties ar not mixed
-        keys = Object.keys(type.get('properties'))
-        keys2 = Object.keys(type2.get('properties'))
+        keys = Object.keys(type.properties)
+        keys2 = Object.keys(type2.properties)
         assert.equal keys.length, 1 
         assert.equal keys[0], 'wheels'
         assert.equal keys2.length, 1
@@ -62,7 +62,7 @@ describe 'ItemType tests', ->
     # given a new ItemType
     type = new ItemType()
     name = 'montain'
-    type.set 'name', name
+    type.name = name
 
     # when saving it
     type.save (err, saved) ->
@@ -73,17 +73,17 @@ describe 'ItemType tests', ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
-        assert.equal types[0].get('name'), name
+        assert.equal types[0].name, name
         done()
 
   it 'should name and desc be internationalizables', (done) -> 
     # given a new ItemType with translated name
     type = new ItemType()
     name = 'dust'
-    type.set 'name', name
+    type.name = name
     type.locale = 'fr'
     nameFr = 'poussière'
-    type.set 'name', nameFr
+    type.name = nameFr
 
     # when saving it
     type.save (err, saved) ->
@@ -91,17 +91,17 @@ describe 'ItemType tests', ->
 
       # then translations are available
       saved.locale = null
-      assert.equal saved.get('name'), name
+      assert.equal saved.name, name
       saved.locale = 'fr'
-      assert.equal saved.get('name'), nameFr
+      assert.equal saved.name, nameFr
 
       # when setting the tanslated description and saving it
       saved.locale = null
       desc = 'another one bites the dust'
-      saved.set 'desc', desc
+      saved.desc = desc
       saved.locale = 'fr'
       descFr = 'encore un qui mort la poussière' 
-      saved.set 'desc', descFr
+      saved.desc = descFr
 
       saved.save (err, saved) ->
         return done "Can't save type: #{err}" if err?
@@ -111,11 +111,11 @@ describe 'ItemType tests', ->
           # then it's the only one document
           assert.equal 1, types.length
           # then it's values were saved
-          assert.equal types[0].get('name'), name
-          assert.equal types[0].get('desc'), desc
+          assert.equal types[0].name, name
+          assert.equal types[0].desc, desc
           types[0].locale = 'fr'
-          assert.equal types[0].get('name'), nameFr
-          assert.equal types[0].get('desc'), descFr
+          assert.equal types[0].name, nameFr
+          assert.equal types[0].desc, descFr
           done()
 
   it 'should date property always be stores as Date', (done) -> 
@@ -128,15 +128,15 @@ describe 'ItemType tests', ->
       return done err if err?
 
       # then the default time value is null
-      assert.property saved.get('properties'), 'time'
-      assert.isNull saved.get('properties').time.def
+      assert.property saved.properties, 'time'
+      assert.isNull saved.properties.time.def
       type = saved
           
       # then a saved instance will have a null default value
       new Item(type: type).save (err, saved) ->
         return done err if err?
 
-        assert.isNull saved.get 'time'
+        assert.isNull saved.time
 
         # when setting the default value to a valid string
         type.setProperty 'time', 'date', "2012-10-12T08:00:00.000Z"
@@ -144,16 +144,16 @@ describe 'ItemType tests', ->
           return done err if err?
 
           # then the default value is a date
-          assert.instanceOf saved.get('properties').time.def, Date 
-          assert.deepEqual saved.get('properties').time.def, new Date("2012-10-12T08:00:00.000Z")
+          assert.instanceOf saved.properties.time.def, Date 
+          assert.deepEqual saved.properties.time.def, new Date("2012-10-12T08:00:00.000Z")
           type = saved
 
            # then a saved instance will have a date default value
           new Item(type: type).save (err, saved) ->
             return done err if err?
 
-            assert.instanceOf saved.get('time'), Date
-            assert.deepEqual saved.get('time'), new Date("2012-10-12T08:00:00.000Z")
+            assert.instanceOf saved.time, Date
+            assert.deepEqual saved.time, new Date("2012-10-12T08:00:00.000Z")
 
             # when setting the default value to a valid date
             time = new Date()
@@ -162,16 +162,16 @@ describe 'ItemType tests', ->
               return done err if err?
 
               # then the default value is a date
-              assert.instanceOf saved.get('properties').time.def, Date 
-              assert.deepEqual saved.get('properties').time.def, time
+              assert.instanceOf saved.properties.time.def, Date 
+              assert.deepEqual saved.properties.time.def, time
               type = saved
 
               # then a saved instance will have a date default value
               new Item(type: type).save (err, saved) ->
                 return done err if err? 
 
-                assert.instanceOf saved.get('time'), Date
-                assert.deepEqual saved.get('time'), time
+                assert.instanceOf saved.time, Date
+                assert.deepEqual saved.time, time
 
                 # when saving an instance with an invalid date
                 new Item(type: type, time: "invalid").save (err) ->
@@ -189,7 +189,7 @@ describe 'ItemType tests', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
       type = new ItemType()
-      type.set 'name', 'river'
+      type.name = 'river'
       type.setProperty 'color', 'string', 'blue'
       type.save (err, saved) -> 
         type = saved
@@ -218,23 +218,23 @@ describe 'ItemType tests', ->
           # then it's the only one document
           assert.equal types.length, 1
           # then only the relevant values were modified
-          assert.equal types[0].get('name'), 'river',
-          assert.ok 'depth' of types[0].get('properties'), 'no depth in properties'
-          assert.equal types[0].get('properties').depth?.type, 'integer'
-          assert.equal types[0].get('properties').depth?.def, 10
+          assert.equal types[0].name, 'river',
+          assert.ok 'depth' of types[0].properties, 'no depth in properties'
+          assert.equal types[0].properties.depth?.type, 'integer'
+          assert.equal types[0].properties.depth?.def, 10
           done()
 
     it 'should type properties be updated', (done) ->
-      assert.ok 'color' of type.get('properties'), 'no color in properties'
-      assert.equal type.get('properties').color?.type, 'string'
-      assert.equal type.get('properties').color?.def, 'blue'
+      assert.ok 'color' of type.properties, 'no color in properties'
+      assert.equal type.properties.color?.type, 'string'
+      assert.equal type.properties.color?.def, 'blue'
 
       # when updating a property 
       type.setProperty 'color', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
-        assert.equal saved.get('properties').color?.type, 'integer'
-        assert.equal saved.get('properties').color?.def, 10
+        assert.equal saved.properties.color?.type, 'integer'
+        assert.equal saved.properties.color?.def, 10
         done()
 
     it 'should type properties be removed', (done) ->
@@ -246,7 +246,7 @@ describe 'ItemType tests', ->
           return done()
 
         # then the property was removed
-        assert.ok not ('color' of saved.get('properties')), 'color still in properties'
+        assert.ok not ('color' of saved.properties), 'color still in properties'
         done()
 
     it 'should unknown type properties fail on remove', (done) ->
@@ -276,7 +276,7 @@ describe 'ItemType tests', ->
           item2.save (err) ->
             return done err if err?
             item3 = new Item {type: type, affluents: []}
-            item3.save (err) -> 
+            item3.save (err) ->
               done err
 
     it 'should existing items be updated when setting a type property', (done) ->
@@ -296,8 +296,8 @@ describe 'ItemType tests', ->
         next = ->
           Item.find {type: type._id}, (err, items) ->
             for item in items
-              assert.isDefined item.get 'depth'
-              assert.equal item.get('depth'), defaultDepth
+              assert.isDefined item.depth
+              assert.equal item.depth, defaultDepth
               assert.ok item._id.toString() in updates
             done()
         setTimeout next, 500
@@ -320,7 +320,7 @@ describe 'ItemType tests', ->
           Item.find {type: type._id}, (err, items) ->
             return done err if err?
             for item in items
-              assert.ok undefined is item.get('color'), 'color still present'
+              assert.ok undefined is item.color, 'color still present'
               assert.ok item._id.toString() in updates
             done()
         setTimeout next, 50
@@ -335,7 +335,7 @@ describe 'ItemType tests', ->
         assert.ok instance.color is undefined
 
       # when setting quantifiable to true
-      type.set 'quantifiable', true
+      type.quantifiable = true
       type.save (err) -> 
         return done err if err?
 
@@ -344,18 +344,18 @@ describe 'ItemType tests', ->
             return done err if err?
             # then all items have their quantity to 0
             for item in items
-              assert.equal 0, item.get('quantity') , 'quantity not set to 0'
+              assert.equal 0, item.quantity , 'quantity not set to 0'
               assert.ok item._id.toString() in updates
 
             # when setting quantifiable to false
-            type.set 'quantifiable', false
+            type.quantifiable = false
             type.save (err) -> 
               return done err if err?
               next2 = ->
                 Item.find {type: type._id}, (err, items) ->
                   # then all
                   for item in items
-                    assert.isNull item.get('quantity') , 'quantity not set to null'
+                    assert.isNull item.quantity , 'quantity not set to null'
                     assert.ok item._id.toString() in updates
                   done()
 

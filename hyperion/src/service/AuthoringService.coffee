@@ -326,9 +326,9 @@ purge = (err) ->
 # @param player [Player] the concerned author
 # @return the author string.
 getAuthor = (player) ->
-  firstName = player.get('firstName') or ''
-  lastName = player.get('lastName') or ''
-  lastName = player.get 'email' unless lastName or firstName
-  email = player.get 'email'
+  firstName = player.firstName or ''
+  lastName = player.lastName or ''
+  lastName = player.email unless lastName or firstName
+  email = player.email
   email += '@unknown.org' unless -1 isnt email.indexOf '@'
   "#{firstName} #{lastName} <#{email}>"

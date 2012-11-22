@@ -73,7 +73,7 @@ describe 'AdminService tests', ->
     item = []
     maps = []
     event = []
-    testUtils.cleanFolder utils.confKey('executable.source'), -> 
+    testUtils.cleanFolder utils.confKey('executable.source'), ->
       Executable.resetAll -> 
         ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop -> Field.collection.drop ->
@@ -218,8 +218,8 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
-      assert.equal model.get('name'), values.name
-      assert.equal model.get('properties'), values.properties
+      assert.equal model.name, values.name
+      assert.equal model.properties, values.properties
 
       # then the model exists in DB
       ItemType.findById model._id, (err, obj) ->
@@ -246,8 +246,8 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
-      assert.equal model.get('name'), values.name
-      assert.equal model.get('properties'), values.properties
+      assert.equal model.name, values.name
+      assert.equal model.properties, values.properties
 
       # then the model exists in DB
       EventType.findById model._id, (err, obj) ->
@@ -274,7 +274,7 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
-      assert.equal model.get('name'), values.name
+      assert.equal model.name, values.name
 
       # then the model exists in DB
       FieldType.findById model._id, (err, obj) ->
@@ -351,8 +351,8 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok model._id?
-      assert.equal model.get('name'), values.name
-      assert.equal model.get('kind'), 'hexagon'
+      assert.equal model.name, values.name
+      assert.equal model.kind, 'hexagon'
 
       # then the model exists in DB
       Map.findById model._id, (err, obj) ->
@@ -398,7 +398,7 @@ describe 'AdminService tests', ->
     # given an item for this type
     new Item({type: itemTypes[1]}).save (err, item) ->
       return done "Can't save item: #{err}" if err?
-      assert.equal item.get('strength'), 10
+      assert.equal item.strength, 10
         
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
@@ -418,10 +418,10 @@ describe 'AdminService tests', ->
 
         # then the created values are returned
         assert.ok itemTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
-        assert.equal model.get('name'), itemTypes[1].get('name')
-        assert.ok 'desc' of model.get('properties'), 'Desc not added in properties'
-        assert.equal model.get('properties').desc.type, 'string'
-        assert.equal model.get('properties').desc.def, 'to be defined'
+        assert.equal model.name, itemTypes[1].name
+        assert.ok 'desc' of model.properties, 'Desc not added in properties'
+        assert.equal model.properties.desc.type, 'string'
+        assert.equal model.properties.desc.def, 'to be defined'
 
         # then the model exists in DB
         ItemType.findById model._id, (err, obj) ->
@@ -437,8 +437,8 @@ describe 'AdminService tests', ->
             # then the instance has has only property property desc
             Item.findById item._id, (err, item) ->
               return done "Can't get item from db #{err}" if err?
-              assert.equal 'to be defined', item.get('desc')
-              assert.ok item.get('strength') is undefined, 'Item still has strength property'
+              assert.equal 'to be defined', item.desc
+              assert.isUndefined item.strength, 'Item still has strength property'
               watcher.removeAllListeners 'change'
               done()
 
@@ -449,7 +449,7 @@ describe 'AdminService tests', ->
     # given an event for this type
     new Event({type: eventTypes[1]}).save (err, event) ->
       return done "Can't save event: #{err}" if err?
-      assert.equal event.get('content'), 'hello'
+      assert.equal event.content, 'hello'
         
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
@@ -468,10 +468,10 @@ describe 'AdminService tests', ->
         return done "Can't save eventType: #{err}" if err?
         # then the created values are returned
         assert.ok eventTypes[1]._id.equals(model._id), 'Saved model doesn\'t match parameters'
-        assert.equal model.get('name'), eventTypes[1].get('name')
-        assert.ok 'desc' of model.get('properties'), 'Desc not added in properties'
-        assert.equal model.get('properties').desc.type, 'string'
-        assert.equal model.get('properties').desc.def, 'to be defined'
+        assert.equal model.name, eventTypes[1].name
+        assert.ok 'desc' of model.properties, 'Desc not added in properties'
+        assert.equal model.properties.desc.type, 'string'
+        assert.equal model.properties.desc.def, 'to be defined'
 
         # then the model exists in DB
         EventType.findById model._id, (err, obj) ->
@@ -487,15 +487,15 @@ describe 'AdminService tests', ->
             # then the instance has has only property property desc
             Event.findById event._id, (err, event) ->
               return done "Can't get event from db #{err}" if err?
-              assert.equal 'to be defined', event.get('desc')
-              assert.ok event.get('content') is undefined, 'Event still has content property'
+              assert.equal 'to be defined', event.desc
+              assert.isUndefined event.content, 'Event still has content property'
               watcher.removeAllListeners 'change'
               done()
 
   it 'should save update existing field type', (done) ->
     # given existing values
     values = fieldTypes[1]
-    values.set 'desc', 'to be defined'
+    values.desc = 'to be defined'
 
     awaited = false
     # then a creation event was issued
@@ -511,8 +511,8 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok fieldTypes[1]._id.equals model._id
-      assert.equal model.get('name'), values.get('name')
-      assert.equal model.get('desc'), 'to be defined'
+      assert.equal model.name, values.name
+      assert.equal model.desc, 'to be defined'
 
       # then the model exists in DB
       FieldType.findById model._id, (err, obj) ->
@@ -536,7 +536,7 @@ describe 'AdminService tests', ->
   it 'should save update existing map', (done) ->
     # given existing values
     values = maps[0]
-    values.set 'kind', 'square'
+    values.kind = 'square'
 
     awaited = false
     # then a creation event was issued
@@ -553,8 +553,8 @@ describe 'AdminService tests', ->
       # then the created values are returned
       assert.ok model?
       assert.ok maps[0]._id.equals model._id
-      assert.equal model.get('name'), values.get('name')
-      assert.equal model.get('kind'), 'square', 'returned value not updated'
+      assert.equal model.name, values.name
+      assert.equal model.kind, 'square', 'returned value not updated'
 
       # then the model exists in DB
       Map.findById model._id, (err, obj) ->
@@ -623,18 +623,18 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Field.findById returned[0]._id, (err, obj) ->
         return done "Can't find field in db #{err}" if err?
-        assert.equal obj.get('mapId'), toBeSaved[1].mapId
-        assert.equal obj.get('typeId'), toBeSaved[1].typeId
-        assert.equal obj.get('x'), toBeSaved[1].x
-        assert.equal obj.get('y'), toBeSaved[1].y
+        assert.equal obj.mapId, toBeSaved[1].mapId
+        assert.equal obj.typeId, toBeSaved[1].typeId
+        assert.equal obj.x, toBeSaved[1].x
+        assert.equal obj.y, toBeSaved[1].y
         assert.ok returned[0].equals obj
         # then the model exists in DB
         Field.findById returned[1]._id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          assert.equal obj.get('mapId'), toBeSaved[0].mapId
-          assert.equal obj.get('typeId'), toBeSaved[0].typeId
-          assert.equal obj.get('x'), toBeSaved[0].x
-          assert.equal obj.get('y'), toBeSaved[0].y
+          assert.equal obj.mapId, toBeSaved[0].mapId
+          assert.equal obj.typeId, toBeSaved[0].typeId
+          assert.equal obj.x, toBeSaved[0].x
+          assert.equal obj.y, toBeSaved[0].y
           assert.ok returned[1].equals obj
           watcher.removeAllListeners 'change'
           done()
@@ -678,10 +678,10 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Field.findById returned[0]._id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          assert.equal obj.get('mapId'), toBeSaved[1].mapId
-          assert.equal obj.get('typeId'), toBeSaved[1].typeId
-          assert.equal obj.get('x'), toBeSaved[1].x
-          assert.equal obj.get('y'), toBeSaved[1].y
+          assert.equal obj.mapId, toBeSaved[1].mapId
+          assert.equal obj.typeId, toBeSaved[1].typeId
+          assert.equal obj.x, toBeSaved[1].x
+          assert.equal obj.y, toBeSaved[1].y
           assert.ok returned[0].equals obj
           watcher.removeAllListeners 'change'
           done()
@@ -717,11 +717,11 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Item.findById returned._id, (err, obj) ->
         return done "Can't find item in db #{err}" if err?
-        assert.ok maps[0]._id.equals(obj.get('map')._id), "unexpected map id #{obj.get('map')._id}"
-        assert.ok itemTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
-        assert.equal obj.get('x'), toBeSaved.x
-        assert.equal obj.get('y'), toBeSaved.y
-        assert.equal obj.get('strength'), toBeSaved.strength
+        assert.ok maps[0]._id.equals(obj.map._id), "unexpected map id #{obj.map._id}"
+        assert.ok itemTypes[1]._id.equals(obj.type._id), "unexpected type id #{obj.type._id}"
+        assert.equal obj.x, toBeSaved.x
+        assert.equal obj.y, toBeSaved.y
+        assert.equal obj.strength, toBeSaved.strength
         assert.ok obj.equals returned
         watcher.removeAllListeners 'change'
         done()
@@ -752,11 +752,11 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Item.findById returned._id, (err, obj) ->
           return done "Can't find item in db #{err}" if err?
-          assert.ok maps[0]._id.equals(obj.get('map')._id), "unexpected map id #{obj.get('map')._id}"
-          assert.ok itemTypes[0]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
-          assert.equal obj.get('x'), toBeSaved.x
-          assert.equal obj.get('y'), toBeSaved.y
-          assert.equal obj.get('strength'), toBeSaved.strength
+          assert.ok maps[0]._id.equals(obj.map._id), "unexpected map id #{obj.map._id}"
+          assert.ok itemTypes[0]._id.equals(obj.type._id), "unexpected type id #{obj.type._id}"
+          assert.equal obj.x, toBeSaved.x
+          assert.equal obj.y, toBeSaved.y
+          assert.equal obj.strength, toBeSaved.strength
           assert.ok obj.equals returned
           watcher.removeAllListeners 'change'
           done()
@@ -783,8 +783,8 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Event.findById returned._id, (err, obj) ->
         return done "Can't find event in db #{err}" if err?
-        assert.ok eventTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
-        assert.equal obj.get('content'), toBeSaved.content
+        assert.ok eventTypes[1]._id.equals(obj.type._id), "unexpected type id #{obj.type._id}"
+        assert.equal obj.content, toBeSaved.content
         assert.ok obj.equals returned
         watcher.removeAllListeners 'change'
         done()
@@ -815,8 +815,8 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Event.findById returned._id, (err, obj) ->
           return done "Can't find event in db #{err}" if err?
-          assert.ok eventTypes[1]._id.equals(obj.get('type')._id), "unexpected type id #{obj.get('type')._id}"
-          assert.equal obj.get('content'), toBeSaved.content
+          assert.ok eventTypes[1]._id.equals(obj.type._id), "unexpected type id #{obj.type._id}"
+          assert.equal obj.content, toBeSaved.content
           assert.ok obj.equals returned
           watcher.removeAllListeners 'change'
           done()
