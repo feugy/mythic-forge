@@ -278,7 +278,7 @@ describe 'server tests', ->
                     canExecute: (actor, target, callback) =>
                       callback null, if target.name is 'Jack' then [] else null
                     execute: (actor, target, params, callback) =>
-                      @created.push new Item({type: target.type, name:'Peter'})
+                      @saved.push new Item({type: target.type, name:'Peter'})
                       @removed.push actor
                       target.name = 'Joe'
                       callback null, 'target renamed'

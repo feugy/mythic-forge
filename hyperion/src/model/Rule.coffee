@@ -35,8 +35,8 @@ class Rule
   # Active status. true by default
   active: true
 
-  # All objects created by the rule must be added to this array to be saved in database
-  created: []
+  # All objects created or saved by the rule must be added to this array to be saved in database
+  saved: []
 
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
@@ -44,7 +44,7 @@ class Rule
   # Construct a rule, with a friendly name and a category.
   constructor: (@name, @category = '') ->
     @removed= []
-    @created= []
+    @saved= []
     @active= true
  
   # This method indicates wheter or not the rule apply to a given situation.

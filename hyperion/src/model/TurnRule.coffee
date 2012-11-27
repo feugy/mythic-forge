@@ -26,8 +26,8 @@
 # which is invoked when the rule must be effectivly applied.
 class TurnRule
 
-  # All objects created by the rule must be added to this array to be saved in database
-  created: []
+  # All objects created or saved by the rule must be added to this array to be saved in database
+  saved: []
 
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
@@ -41,7 +41,7 @@ class TurnRule
   # Construct a rule, with a friendly name.
   constructor: (@name, @rank = 0) ->
     @removed= []
-    @created= []
+    @saved= []
     @active= true
  
   # This method select a set of element on which execute will be applied.

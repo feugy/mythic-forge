@@ -325,7 +325,7 @@ class _RuleService
         return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}" unless rule?
         
         # reinitialize creation and removal arrays.
-        rule.created = []
+        rule.saved = []
         rule.removed = []
         # otherwise, execute the rule
         try 
@@ -338,7 +338,7 @@ class _RuleService
             async.forEach rule.removed, ((item, end) -> item.remove (err)-> end err), (err) => 
               return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
               # adds new objects to be saved
-              saved = saved.concat rule.created
+              saved = saved.concat rule.saved
               # looks for modified linked objects
               filterModified actor, saved
               filterModified target, saved
@@ -463,7 +463,7 @@ class _RuleService
               # stop a first execution error.
               return executeEnd "failed to execute rule #{rule.name} on target #{target._id}: #{err}" if err?
               # store modified object for later
-              saved.push obj for obj in rule.created
+              saved.push obj for obj in rule.saved
               filterModified target, saved
               removed.push obj for obj in rule.removed
               executeEnd()

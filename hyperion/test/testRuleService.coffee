@@ -134,7 +134,7 @@ describe 'RuleService tests', ->
             callback null, if actor.stock.length is 0 then [] else null
           execute: (actor, target, params, callback) =>
             part = new Item {type:actor.type, name: 'part'}
-            @created.push part
+            @saved.push part
             actor.stock = [part]
             callback null, 'part added'
         )()"""
