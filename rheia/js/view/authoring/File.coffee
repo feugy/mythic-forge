@@ -95,7 +95,7 @@ define [
       super id, 'file'
       
       # only if content is not already loaded
-      unless @model.get('content')?
+      unless @model.content?
         # get the file content, and display it when arrived without external warning
         @_saveInProgress = true
         FSItem.collection.fetch item:@model
@@ -136,7 +136,7 @@ define [
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: => 
-      @model.set 'content', @_editorWidget.options.text unless @_mode is 'img'
+      @model.content = @_editorWidget.options.text unless @_mode is 'img'
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -147,11 +147,11 @@ define [
         # hide editor and display an image instead
         @_editorWidget.$el.hide()
         imageType = "image/#{@model.extension}"
-        @_image.attr 'src', "data:#{imageType};base64,#{btoa @model.get 'content'}"
+        @_image.attr 'src', "data:#{imageType};base64,#{btoa @model.content}"
       else
         @_editorWidget.$el.show()
         @_editorWidget.setOption 'mode', @_mode
-        @_editorWidget.setOption 'text', @model.get 'content'
+        @_editorWidget.setOption 'text', @model.content
 
       # to update displayed icon
       @_onChange()
@@ -163,7 +163,7 @@ define [
       if @_mode is 'img'
         @_canSave = false
       else
-        @_canSave = @model.get('content') isnt @_editorWidget.options.text 
+        @_canSave = @model.content isnt @_editorWidget.options.text 
       super()
 
     # **private**
@@ -190,7 +190,7 @@ define [
     _onChangeVersion: (item, content) =>
       return unless @model.equals item
       # update content
-      @model.set 'content', content
+      @model.content = content
       # and refresh rendering
       @_saveInProgress = true
       @_onSaved @model

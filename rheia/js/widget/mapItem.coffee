@@ -24,6 +24,9 @@ define [
   'widget/loadableImage'
 ],  ($, utils, LoadableImage) ->
 
+  defaultHeight = 100;
+  defaultWidth = 100;
+
   # List of executing animations
   _anims = []
 
@@ -76,8 +79,8 @@ define [
     # Builds rendering. Image is computed from the model type image and instance number
     constructor: (element, options) ->
       # compute item image
-      @_imageSpec = options.model.get('type').get('images')?[options.model.get 'imageNum']
-      options.source = @_imageSpec?.file
+      @_imageSpec = options.model.type.images?[options.model.imageNum] 
+      options.source = @_imageSpec?.file or options.model.type.descImage
 
       super element, options
       
@@ -96,10 +99,11 @@ define [
     #
     # @param defer [Boolean] allow to differ the application of new position. false by default
     _positionnate: (defer = false) =>
+      return unless @_imageSpec?
       return unless @options.map?
       coordinates = 
-        x: @options.model.get 'x'
-        y: @options.model.get 'y'
+        x: @options.model.x
+        y: @options.model.y
 
       o = @options.map.options
 
@@ -125,6 +129,7 @@ define [
     # **private**
     # Shows relevant sprite image regarding the current model animation and current timing
     _renderSprite: =>
+      return unless @_imageSpec?
       # do we have a transition ?
       transition = @options.model.getTransition()
       transition = null unless @_imageSpec.sprites? and transition of @_imageSpec.sprites
@@ -165,6 +170,7 @@ define [
     #
     # @param current [Number] the current timestamp. Null to stop current animation.
     _onFrame: (current) =>
+      return unless @_imageSpec?
       # loop until the end of the animation
       if current? and current-@_start < @_sprite.duration
         # only animate at needed frames
@@ -214,8 +220,8 @@ define [
         # displays image data and hides alertnative text
         @_image.css 
           background: "url(#{utils.getImageString img})"
-          width: @_imageSpec.width
-          height: @_imageSpec.height
+          width: @_imageSpec?.width or defaultWidth
+          height: @_imageSpec?.height or defaultHeight
 
         @$el.find('.alt').remove()
       else 
@@ -223,8 +229,8 @@ define [
         @_createAlt()
 
       @$el.css
-        width: @_imageSpec.width
-        height: @_imageSpec.height
+        width: @_imageSpec?.width or defaultWidth
+        height: @_imageSpec?.height or defaultHeight
 
       @_positionnate()
 
@@ -240,7 +246,7 @@ define [
     _onUpdate: (model, changes) =>
       @options.model = model
       # removes if map has changed
-      return @$el.remove() if @options.model?.get('map')?.id isnt @options.map?.options.mapId
+      return @$el.remove() if @options.model?.map?.id isnt @options.map?.options.mapId
 
       if 'x' of changes or 'y' of changes
         # positionnate with animation if transition changed
@@ -249,6 +255,12 @@ define [
       # render new animation if needed
       if 'transition' of changes and changes.transition?
         @_renderSprite()
+
+      if 'imageNum' of changes
+        # compute new item image
+        @_imageSpec = @options.model.type.images?[@options.model.imageNum] 
+        @setOption 'source', @_imageSpec?.file or @options.model.type.descImage
+
 
   # widget declaration
   MapItem._declareWidget 'mapItem', $.extend true, {}, $.fn.loadableImage.defaults, 

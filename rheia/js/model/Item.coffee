@@ -58,7 +58,6 @@ define [
       for existing in previous
         @trigger 'read', existing, @get existing.id
 
-
     # **private**
     # Callback invoked when a database update is received.
     # Update the model from the current collection if needed, and fire event 'update'.
@@ -100,8 +99,12 @@ define [
     @collection: new _Items @
 
     # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['map', 'x', 'y', 'imageNum', 'state', 'transition', 'quantity', 'type']
+
+    # **private**
     # Provide the transition used to animate items.
-    # Do not use directly used `model.get('transition')` because it's not reset when not appliable.
+    # Do not use directly used `model.getTransition` because it's not reset when not appliable.
     _transition: null
 
     # **private**
@@ -129,14 +132,14 @@ define [
           map = Map.collection.get attributes.map
           unless map
             # trick: do not retrieve map, and just construct with empty name.
-            @set 'map', new Map _id: attributes.map
+            @map = new Map _id: attributes.map
           else 
-            @set 'map', map
+            @map = map
         else
           # or construct directly
           map = new Map attributes.map
           Map.collection.add map
-          @set 'map', map
+          @map = map
 
     # Overrides inherited setter to handle i18n fields.
     #

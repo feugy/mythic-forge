@@ -106,6 +106,10 @@ define [
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Player'
 
+    # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['email', 'provider', 'lastConnection', 'firstName', 'lastName', 'password', 'isAdmin', 'characters', 'prefs']
+
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
 

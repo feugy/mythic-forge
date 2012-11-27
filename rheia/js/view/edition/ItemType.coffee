@@ -68,8 +68,8 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new ItemType()
-      @model.set 'name', i18n.labels.newName
-      @model.set 'descImage', null
+      @model.name = i18n.labels.newName
+      @model.descImage = null
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -77,17 +77,17 @@ define [
       # superclass handles description image, name, description and properties
       super()
 
-      @model.set 'quantifiable', @_quantifiable.attr('checked') isnt undefined
+      @model.quantifiable = @_quantifiable.attr('checked') isnt undefined
 
       # update images specifications. File upload will be handled separately
       newImages = @_computeImageSpecs()
       image.file = '' for image in newImages when image.file isnt null and typeof image.file isnt 'string'
-      @model.set 'images', newImages
+      @model.images = newImages
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      if @model.get 'quantifiable'
+      if @model.quantifiable
         @_quantifiable.attr 'checked', 'checked'
       else 
         @_quantifiable.removeAttr 'checked'
@@ -104,7 +104,7 @@ define [
       super()
       # keeps instance images uploads       
       currents = @_computeImageSpecs()
-      originals = @model.get 'images'
+      originals = @model.images
       for current, i in currents
         # something changed !
         if !originals or originals[i]?.file isnt current.file
@@ -142,12 +142,12 @@ define [
       # adds name and description
       comparable.push
         name: 'quantifiable'
-        original: @model.get 'quantifiable'
+        original: @model.quantifiable
         current: @_quantifiable.attr('checked') isnt undefined
       # adds images
       comparable.push
         name: 'images'
-        original: @model.get 'images'
+        original: @model.images
         current: @_computeImageSpecs()
       comparable
 
@@ -169,7 +169,7 @@ define [
     # @return an array containing image specifications
     _computeImageSpecs: =>
       images = []
-      length = @model.get('images')?.length
+      length = @model.images?.length
       for widget,i in @_imageWidgets 
         spec = 
           file: widget.options.source
@@ -179,7 +179,7 @@ define [
           spec.sprites = widget.options.sprites
         if widget.options.source is null
           if i < length
-            spec.oldName = @model.get('images')[i].file
+            spec.oldName = @model.images[i].file
           else 
             # do not save an empty spec that is beyond existing length
             continue
@@ -193,7 +193,7 @@ define [
       super()
       # instances images: use sprite widget instead of loadable images
       @_imageWidgets = []
-      originals = @model.get 'images'
+      originals = @model.images
       container = @$el.find('.images-container').empty()
       if originals?
         # creates images widgets
@@ -212,12 +212,13 @@ define [
     # Adds a special spriteImage widget to upload a new image
     _addNewImage: =>
       addImage = $('<div class="add-image"></div>').spriteImage(
-        change: (event, arg) =>
+      ).on('change', (event, arg) =>
           # is it an upload ?
-          if arg? and !arg.isSprite and addImage.options.source isnt null
+          if (!arg or !arg.isSprite) and addImage.options.source?
             # transforms it into a regular image widget
-            addImage.$el.removeClass 'add-image'
-            addImage.change = @_onImageChange
+            addImage.$el.removeClass('add-image').
+              off('change').
+              on 'change', @_onImageChange
             @_imageWidgets.push addImage
             @_addNewImage()
           @_onChange()

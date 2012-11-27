@@ -98,13 +98,13 @@ define [
       super id, 'map'
       # register on fields modification to update map displayal
       @bindTo Field.collection, 'add', (added) =>
-        return unless @_mapWidget? and added.get('mapId') is @model.id
+        return unless @_mapWidget? and added.mapId is @model.id
         added = [added] unless Array.isArray added
         added[i] = obj.toJSON() for obj, i in added
         @_mapWidget.addData added
 
       @bindTo Field.collection, 'remove', (removed) =>
-        return unless @_mapWidget? and removed.get('mapId') is @model.id
+        return unless @_mapWidget? and removed.mapId is @model.id
         removed = [removed] unless Array.isArray removed
         removed[i] = obj.toJSON() for obj, i in removed
         @_mapWidget.removeData removed
@@ -132,7 +132,7 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new Map()
-      @model.set 'name', i18n.labels.newName
+      @model.name = i18n.labels.newName
 
     # **private**
     # Prepare data to be rendered into the template
@@ -201,12 +201,12 @@ define [
       # superclass handles description image, name and description
       super()
       # update map kind
-      @model.set 'kind', @_kindWidget.find('option:selected').val()
+      @model.kind = @_kindWidget.find('option:selected').val()
 
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      kind = @model.get 'kind' 
+      kind = @model.kind
       # update kind rendering (before calling super)
       @_kindWidget.find('option:selected').removeAttr 'selected'
       @_kindWidget.find("option[value='#{kind}']").attr 'selected', 'selected'
@@ -232,7 +232,7 @@ define [
       # adds images
       comparable.push
         name: 'kind'
-        original: @model.get 'kind'
+        original: @model.kind
         current: @_kindWidget.find('option:selected').val()
       comparable
 
@@ -254,7 +254,7 @@ define [
         idx = if random then Math.floor(Math.random()*@_selectedImages.length) else i%@_selectedImages.length
         created.push new Field
           mapId: @model.id
-          typeId: type.get '_id'
+          typeId: type._id
           num: @_selectedImages[idx]
           x: coord.x
           y: coord.y
@@ -321,7 +321,7 @@ define [
         @_selectedImages = []
         # adds all possible field type images to the dialog
         container = $('<div class="images-container"></div>').appendTo dialog
-        for image, i in type.get 'images'
+        for image, i in type.images
           $('<span></span>').loadableImage(
             source: image
           ).attr('tabindex', 0).data('num', i).on('click keyup', (event) =>

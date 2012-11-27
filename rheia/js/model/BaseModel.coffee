@@ -102,7 +102,7 @@ define [
       # first, get the cached item type and quit if not found
       model = @get changes[@model.prototype.idAttribute]
       return unless model?
-      # then, update the local cache.
+      # then, update the local cache, using setter do defines dynamic properties if needed
       model.set key, value for key, value of changes unless key in @_notUpdated
 
       # emit a change.
@@ -127,7 +127,7 @@ define [
         @remove removed 
         removed.trigger 'destroy', removed, @, options
         # propagates changes on collection to global change event
-        app.router.trigger 'modelChanged'
+        rheia.router.trigger 'modelChanged'
 
   # BaseLinkedCollection provides common behaviour for model wih linked objects collections.
   #
@@ -146,6 +146,22 @@ define [
       require @model.linkedCandidateClassesScript
 
     # **private**
+    # Callback invoked when a database creation is received.
+    # Adds the model to the current collection if needed, and fire event 'add'.
+    #
+    # @param className [String] the modified object className
+    # @param model [Object] created model.
+    _onAdd: (className, model) =>
+      return unless className is @_className
+      # before adding the model, wait for its type to be fetched
+      model = @_prepareModel model
+      model.on 'typeFetched', =>
+        # add the created raw model. An event will be triggered
+        @add model
+        # propagates changes on collection to global change event
+        rheia.router.trigger 'modelChanged'
+
+    # **private**
     # Callback invoked when a database update is received.
     # Update the model from the current collection if needed, and fire event 'update'.
     # Extension to resolve type when needed
@@ -156,7 +172,7 @@ define [
       return unless className is @_className
       # always keep an up-to-date type
       model = @get changes[@model.prototype.idAttribute]
-      model?.set 'type', @constructor.typeClass.collection.get model.get('type')?.id
+      model?.type = @constructor.typeClass.collection.get model.type?.id
 
       # Call inherited merhod
       super className, changes
@@ -183,9 +199,32 @@ define [
     _className: null
 
     # **private**
+    # List of properties that must be defined in this instance.
+    # **May be defined by subclasses**
+    _fixedAttributes: []
+
+    # **private**
     # List of model attributes that are localized.
     # **May be defined by subclasses**
     _i18nAttributes: []
+
+    # Initialization logic: declare dynamic properties for each of model's attributes
+    initialize: =>    
+      names = _.keys @attributes
+      # define property on attributes that must be present
+      names = _.uniq names.concat @_fixedAttributes, @_i18nAttributes
+      for name in names
+        # take in account i18n properties
+        publicName = name.replace /^_/, ''
+        name = publicName if publicName in @_i18nAttributes
+        ((name) =>
+          unless Object.getOwnPropertyDescriptor(@, name)?
+            Object.defineProperty @, name,
+              enumerable: true
+              configurable: true
+              get: -> @get name
+              set: (v) -> @set name, v
+        )(name)
 
     # Overrides inherited getter to handle i18n fields.
     #
@@ -201,13 +240,35 @@ define [
     # @param attr [String] the modified attribute
     # @param value [Object] the new attribute value
     set: (attr, value) =>
-      if attr in @_i18nAttributes
-        attr = "_#{attr}"
-        val = @attributes[attr]
-        val ||= {}
-        val[@locale] = value
-        value = val
-      super attr, value
+      # treat single attribute
+      single = (name) =>
+        if name in @_i18nAttributes
+          # manage i18n property
+          _name = "_#{name}"
+          val = @attributes[_name]
+          val ||= {}
+          val[@locale] = attr[name]
+          delete attr[name]
+          attr[_name] = val
+        else
+          # define property if needed
+          unless Object.getOwnPropertyDescriptor(@, name)?
+            Object.defineProperty @, name,
+              enumerable: true
+              configurable: true
+              get: -> @get name
+              set: (v) -> @set name, v
+
+      # Always works in 'object mode'
+      unless 'object' is utils.type attr
+        obj = {}
+        obj[attr] = value
+        attr = obj
+    
+      single attrName for attrName of attr
+
+      # supperclass processing
+      super attr
 
     # Provide a custom sync method to wire Types to the server.
     # Only create and delete operations are supported.
@@ -283,27 +344,27 @@ define [
             # we have all informations: just adds it to collection
             type = new @constructor.typeClass attributes.type
             @constructor.typeClass.collection.add type
-            @set 'type', type
-            @trigger 'typFetched', @
+            @type = type
+            _.defer => @trigger 'typeFetched', @
           else
             # get it from server
             @constructor.typeClass.collection.on 'add', @_onTypeFetched
             @constructor.typeClass.collection.fetch attributes.type
         else 
-          @set 'type', type
-          @trigger 'typFetched', @
+          @type = type
+          _.defer => @trigger 'typeFetched', @
 
     # Handler of type retrieval. Updates the current type with last values
     #
     # @param type [Type] an added type.      
     _onTypeFetched: (type) =>
-      if type.id is @get 'type'
+      if type.id is @type
         console.log "type #{type.id} successfully fetched from server for #{@_className.toLowerCase()} #{@id}"
         # remove handler
         @constructor.typeClass.collection.off 'add', @_onTypeFetched
         # update the type object
-        @set 'type', type
-        @trigger 'typFetched', @
+        @type = type
+        @trigger 'typeFetched', @
 
     # This method retrieves linked Event in properties.
     # All `object` and `array` properties are resolved. 
@@ -317,9 +378,9 @@ define [
       # identify each linked properties 
       console.log "search linked ids in #{@_className.toLowerCase()} #{@id}"
       # gets the corresponding properties definitions
-      properties = @get('type').get 'properties'
+      properties = @type.properties
       for prop, def of properties
-        value = @get prop
+        value = @[prop]
         if def.type is 'object' and typeof value is 'string'
           # try to get it locally first in same class and in other candidate classes
           objValue = @constructor.collection.get value
@@ -328,7 +389,7 @@ define [
               objValue = require(candidateScript).collection.get value
               break if objValue?
           if objValue?
-            @set prop, objValue
+            @[prop] = objValue
           else
             # linked not found: ask to server
             needResolution = true
@@ -362,32 +423,32 @@ define [
         instance = instances[0]
 
         # update each properties
-        properties = @get('type').get 'properties'
+        properties = @type.properties
         for prop, def of properties
           value = instance[prop]
           if def.type is 'object'
             if value isnt null
               # construct a backbone model around linked object
               clazz = @constructor
-              for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{value.className}"
+              for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{value._className}"
                 clazz = require(candidateScript)
               obj = new clazz value
               clazz.collection.add obj
             else
               obj = null
             # update current object
-            @set prop, obj
+            @[prop] = obj
           else if def.type is 'array' 
             value = [] unless value?
             for val, i in value
               # construct a backbone model around linked object
               clazz = @constructor
-              for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val.className}"
+              for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"
                 clazz = require(candidateScript)
               obj = new clazz val
               clazz.collection.add obj
               # update current object
-              @get(prop)[i] = obj
+              @[prop][i] = obj
 
         # end of resolution.
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
@@ -401,7 +462,7 @@ define [
     #
     # @return a serialized version of this model
     _serialize: => 
-      properties = @get('type').get 'properties'
+      properties = @type.properties
       attrs = {}
       for name, value of @attributes
         if properties[name]?.type is 'object'

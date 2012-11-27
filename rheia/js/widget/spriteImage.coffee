@@ -154,29 +154,29 @@ define [
             <td><div class="duration"></div></td>
           </tr>""").appendTo table
         # creates widgets for edition
-        line.find('.rank').property
+        line.find('.rank').property(
           type: 'integer'
           value: spec.rank
           allowNull: false
-          change: onChangeFactory 'rank'
+        ).on 'change', onChangeFactory 'rank'
 
-        line.find('.name').property
+        line.find('.name').property(
           type: 'string'
           value: name
           allowNull: false
-          change: onChangeFactory()
+        ).on 'change', onChangeFactory()
 
-        line.find('.number').property
+        line.find('.number').property(
           type: 'integer'
           value: spec.number
           allowNull: false
-          change: onChangeFactory 'number'
+        ).on 'change', onChangeFactory 'number'
 
-        line.find('.duration').property
+        line.find('.duration').property(
           type: 'integer'
           value: spec.duration
           allowNull: false
-          change: onChangeFactory 'duration'
+        ).on 'change', onChangeFactory 'duration'
 
         line.find('td > a').button(
           icons:

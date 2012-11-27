@@ -62,11 +62,11 @@ define [
 
       if instance? and 'object' is utils.type instance
         # displays an image if a type is available
-        if instance.get('type')? 
-          # always use type image
-          img = instance.get('type').get 'descImage'
-
-          $('<div></div>').loadableImage(source: img, noButtons:true).appendTo @$el if img?
+        if instance.type? 
+          img = instance.type.descImage
+          $('<span></span>').mapItem(
+            model: instance
+          ).appendTo @$el
         else
           @$el.addClass 'no-image'
 

@@ -84,7 +84,7 @@ define [
         else if widget.options.type is 'array'
           value = (obj?.id for obj in value)
 
-        @model.set name, value
+        @model[name] = value
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -108,7 +108,7 @@ define [
       # linked properties
       for name, widget of @_propWidgets
         value = widget.options.value
-        original = @model.get name
+        original = @model[name]
 
         # compare only linked ids
         if widget.options.type is 'object'
@@ -162,9 +162,9 @@ define [
       container.find('tr.prop').remove()
 
       # creates a property widget for each type's properties
-      properties = utils.sortAttributes @model.get('type').get 'properties'
+      properties = utils.sortAttributes @model.type.properties
       for name, prop of properties
-        value = @model.get name
+        value = @model[name]
         if value is undefined
           if prop.type is 'object'
             value = null
@@ -175,7 +175,7 @@ define [
 
         # sort linked arrays by update date
         if prop.type is 'array'
-          value = _(value).sortBy((obj) -> obj?.get 'updated').reverse()
+          value = _(value).sortBy((obj) -> obj?.updated).reverse()
 
         accepted = []
         if (prop.type is 'object' or prop.type is 'array') and prop.def isnt 'Any'
@@ -192,3 +192,5 @@ define [
           # opens players, items, events
           rheia.router.trigger 'open', instance._className, instance.id
         ).appendTo(row).data 'property'
+
+      @_onChange()

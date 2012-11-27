@@ -165,9 +165,9 @@ define [
       parent = model.path.substring 0, model.path.lastIndexOf conf.separator
       if parent isnt ''
         parent = @where path: parent
-        if parent.length is 1 and parent[0].get('content')?
+        if parent.length is 1 and parent[0].content?
           # search within parent content, and remove at relevant index
-          for contained, i in parent[0].get('content') when contained.id is model.path
+          for contained, i in parent[0].content when contained.id is model.path
             parent[0].get('content').splice i, 1
             break
 
@@ -232,6 +232,10 @@ define [
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'FSItem'
+
+    # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['path', 'isFolder', 'content']
 
     # bind the Backbone attribute to the path name
     idAttribute: 'path'

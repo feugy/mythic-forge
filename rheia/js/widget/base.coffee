@@ -51,7 +51,7 @@ define [
         @each ->
           @$ = $(@)
           data = @$.data name
-          options = $.extend {}, $.fn[name].defaults, if 'object' is utils.type method then method
+          options = $.extend true, {}, $.fn[name].defaults, if 'object' is utils.type method then method
           
           unless data? 
             data = new Clazz @, options

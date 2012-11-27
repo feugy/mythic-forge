@@ -40,16 +40,16 @@ define [
   # @return the corresponding rendering
   renderItem = (item) ->
     html = ''
-    name = item.get('path').substring item.get('path').lastIndexOf(conf.separator)+1
-    if item.get 'isFolder'
+    name = item.path.substring item.path.lastIndexOf(conf.separator)+1
+    if item.isFolder
       html = """
-        <div class="folder" data-path="#{item.get 'path' }">
+        <div class="folder" data-path="#{item.path}">
           <h1><i></i>#{name}</h1>
           <div class="content"></div>
         </div>
       """
     else 
-      html = """<div data-path="#{item.get 'path'}" class="file #{item.extension}"><i></i>#{name}</div>"""
+      html = """<div data-path="#{item.path}" class="file #{item.extension}"><i></i>#{name}</div>"""
     $(html)
 
   # Comparator function, that allows to sort FSItems inside the collection.
@@ -60,15 +60,15 @@ define [
   # @return -1 if the first FSItem should come before the second, 0 if they 
   # are of the same rank and 1 if the first FSItem should come after. 
   comparator = (item1, item2) =>
-    if item1.get 'isFolder'
+    if item1.isFolder
       # item2 is file, item1 is folder
-      return -1 unless item2.get 'isFolder'
+      return -1 unless item2.isFolder
     else 
       # item1 is file, item2 is folder
-      return 1 if item2.get 'isFolder'
+      return 1 if item2.isFolder
     # same nature: compare path
-    path1 = item1.get('path').toLowerCase()
-    path2 = item2.get('path').toLowerCase()
+    path1 = item1.path.toLowerCase()
+    path2 = item2.path.toLowerCase()
     if path1 < path2 then -1 else if path1 > path2 then 1 else 0
 
   # The FileExplorer view allow to navigate within folders and files of the game client.
@@ -133,7 +133,7 @@ define [
       event?.stopImmediatePropagation()
       item = FSItem.collection.get $(event.target).closest('.file,.folder').data 'path'
       return unless item?
-      path = item.get 'path'
+      path = item.path
       name = path.substring path.lastIndexOf(conf.separator)+1
 
       # keep previous selected and remove class
@@ -142,7 +142,7 @@ define [
       @selected = path
       node = $(event.target).closest('div, ul').addClass 'selected'
 
-      folder = item.get 'isFolder'
+      folder = item.isFolder
       @_menu.$el.empty().data('folder', folder).data 'path', path
       if folder
         content = """
@@ -179,11 +179,11 @@ define [
       # ignore restored items
       return if @_loading or item.restored
       # do not add if already present (escape \. Leave / as existing)
-      existing = @$el.find "div[data-path='#{item.get('path').replace(/\\/g, '\\\\')}']"
+      existing = @$el.find "div[data-path='#{item.path.replace(/\\/g, '\\\\')}']"
       return unless existing.length is 0
 
       # evaluate the parent
-      parentPath = item.get('path').substring 0, item.get('path').lastIndexOf conf.separator
+      parentPath = item.path.substring 0, item.path.lastIndexOf conf.separator
       if parentPath is ''
         # under the root
         parentNode = @$el
@@ -192,10 +192,10 @@ define [
       else
         # under a folder
         parent = FSItem.collection.get parentPath
-        return unless parent? and parent.get('content')?
+        return unless parent? and parent.content?
         # escape \. Leave / as existing
         parentNode = @$el.find "div[data-path='#{parentPath.replace(/\\/g, '\\\\')}'] > .content"
-        content = parent.get('content').concat()
+        content = parent.content.concat()
 
       # evaluate insertion order
       content.push item
@@ -216,7 +216,7 @@ define [
     # @param item [FSItem] removed item
     _onRemove: (item) =>
       # escape \. Leave / as existing
-      removed = @$el.find "div[data-path='#{item.get('path').replace(/\\/g, '\\\\')}']"
+      removed = @$el.find "div[data-path='#{item.path.replace(/\\/g, '\\\\')}']"
       pos = removed.offset()
 
       # remove immediately from parent to allow renaming
@@ -244,14 +244,14 @@ define [
     # @param item [FSItem] the updated FSItem
     _onUpdate: (item) =>
       # for files, use _onAdd
-      return @_onAdd item unless item.get 'isFolder'
+      return @_onAdd item unless item.isFolder
       @_loading = false
       # Get the existing folder inside explorer
-      path = item.get 'path'
+      path = item.path
       # escape \. Leave / as existing
       parentNode = @$el.find "div[data-path='#{path.replace(/\\/g, '\\\\')}'] > .content"
 
-      content = item.get 'content'
+      content = item.content
       # sort content: first folder, then item
       content.sort comparator
 

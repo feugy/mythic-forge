@@ -126,6 +126,19 @@ define [
     # bind the Backbone attribute and the MongoDB attribute
     idAttribute: '_id'
 
+    # Initialization logic: declare dynamic properties for each of model's attributes
+    initialize: =>
+      names = _.keys @attributes
+      for name in names
+        ((name) =>
+          unless Object.getOwnPropertyDescriptor(@, name)?
+            Object.defineProperty @, name,
+              enumerable: true
+              configurable: true
+              get: -> @get name
+              set: (v) -> @set name, v
+        )(name)
+
     # Provide a custom sync method to wire Types to the server.
     # Only create and delete operations are supported.
     #
@@ -143,4 +156,4 @@ define [
     # @param other [Object] the object against which the current item is tested
     # @return true if both object have the samge ids, and false otherwise.
     equals: (other) =>
-      @.id is other?.id
+      @id is other?.id

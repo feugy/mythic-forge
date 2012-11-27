@@ -412,16 +412,17 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   size = 30px
   white-space nowrap
   
-  .loadable
+  .map-item
     display inline-block
-    height size
-    width size
     margin-right 5px
     vertical-align middle
+    position relative
+    height size !important
+    width size !important
 
-    img
-      height size
-      width size
+    div
+      transform-origin 0 0
+      transform scale(0.4, 0.4)
 
   span
     vertical-align middle

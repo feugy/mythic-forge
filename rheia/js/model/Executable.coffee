@@ -42,7 +42,7 @@ define [
 
     try 
       # then, modifies NodeJS's require into RequireJS dependencies
-      content = executable.get('content')
+      content = executable.content
 
       # Regular expression to extract dependencies from rules
       depReg = /(\S*)\s*=\s*require[\(\s](\S*)\)?\s*\n/
@@ -122,6 +122,10 @@ define [
     _i18nAttributes: []
 
     # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['content', 'path', 'category', 'rank', 'active', 'name']
+
+    # **private**
     # the old value of exported rule's category.
     _oldCategory: null
 
@@ -155,11 +159,11 @@ define [
     # Overload inherited setter to recompile when content changed.
     set: (key, value, options) =>
       # invoked superclass
-      super(key, value, options)
+      super key, value, options
 
       if key is 'content' or typeof key is 'object' and 'content' of key
-        @kind = 'Rule' if @get('content')?.indexOf 'extends Rule' isnt -1
-        @kind = 'TurnRule' if @get('content')?.indexOf 'extends TurnRule' isnt -1
+        @kind = 'Rule' if -1 isnt @content?.indexOf 'extends Rule'
+        @kind = 'TurnRule' if -1 isnt @content?.indexOf 'extends TurnRule'
         @error = null
         # recompiles content and store exported
         compile @, (err, exported) => 

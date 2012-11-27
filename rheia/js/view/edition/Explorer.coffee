@@ -71,7 +71,7 @@ define [
     switch kind
       when 'Rule'
         # group by category
-        grouped = _(collection.models).groupBy (model) -> model.get('category') || rootCategory
+        grouped = _(collection.models).groupBy (model) -> model.category || rootCategory
 
         # sort categories
         grouped = utils.sortAttributes grouped
@@ -83,7 +83,7 @@ define [
       else criteria = 'name'
         
     return _.chain(collection.models).map((model) -> 
-        {criteria:model.get(criteria), value:model}
+        {criteria:model[criteria], value:model}
       ).sortBy((model) ->
         model.criteria
       ).pluck('value').value()
@@ -121,6 +121,7 @@ define [
 
       # special case of executable categories that refresh the all tree item
       @bindTo Executable.collection, 'change:category', @_onCategoryChange
+      @bindTo Executable.collection, 'change:rank', @_onCategoryChange
       @bindTo Executable.collection, 'change:active', @_onActiveChange
 
     # The `render()` method is invoked by backbone to display view content at screen.
@@ -238,8 +239,8 @@ define [
 
         # compute the insertion index
         if collection is Executable.collection and element.kind is 'Rule'
-          category = element.get('category') || rootCategory
-          container = @$el.find "dt[data-subcategory=#{element.get('category')}] + dd" unless category is rootCategory
+          category = element.category || rootCategory
+          container = @$el.find "dt[data-subcategory=#{element.category}] + dd" unless category is rootCategory
           idx = models[category].indexOf element
         else
           idx = models.indexOf element
@@ -274,4 +275,4 @@ define [
     #
     # @param executable [Executable] the concerned executable
     _onActiveChange: (executable) =>  
-      @$el.find("[data-id=\"#{executable.id}\"]").toggleClass 'inactive', !executable.get 'active'
+      @$el.find(".#{executable.id}").toggleClass 'inactive', !executable.active

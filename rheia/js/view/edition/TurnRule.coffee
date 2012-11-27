@@ -23,9 +23,10 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/turnRule.html'
+  'text!tpl/turnRule.coffee'
   'view/edition/Rule'
   'model/Executable'
-], ($, i18n, i18nEdition, template, RuleView, Executable) ->
+], ($, i18n, i18nEdition, template, emptyRule, RuleView, Executable) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -43,13 +44,13 @@ define [
     constructor: (id) ->
       super id, 'turn-rule'
       # on content changes, displays rank.
-      @model.on 'change:rank', @_onRankChange
+      @bindTo @model, 'change:rank', @_onRankChange
       console.log "creates turn rule edition view for #{if id? then @model.id else 'a new turn rule'}"
 
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable _id: i18n.labels.newName, content:''
+      @model = new Executable _id: i18n.labels.newName, content: emptyRule
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -59,7 +60,21 @@ define [
       super()
 
     # **private**
+    # Invoked when a model is created on the server.
+    # Extends inherited method to bind event handler on new model.
+    #
+    # @param created [Object] the created model
+    _onCreated: (created) =>
+      return unless @_saveInProgress
+      # unbound from the old model updates
+      @unboundFrom @model, 'change:rank'
+      # now refresh rendering
+      super created
+      # bind to the new model
+      @bindTo @model, 'change:rank', @_onRankChange
+
+    # **private**
     # Refresh rank displayal when the model's content changed.
     _onRankChange: =>
-      rank = @model.get 'rank'
+      rank = @model.rank
       @$el.find('.rank').html if rank then rank else 0

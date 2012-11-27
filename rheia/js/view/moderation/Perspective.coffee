@@ -92,6 +92,10 @@ define [
     # type selected to create a new item or event
     _creationType: null
 
+    # **private**
+    # inhibit zoom handler to avoid looping when updating view rendering
+    _inhibitZoom: false
+    
     # The view constructor.
     constructor: ->
       super 'moderation'
@@ -144,12 +148,15 @@ define [
         displayMarkers: true
       ).on('affectInstance', @_onAffect
       ).on('coordChanged', =>
-          # reloads map content
-          return unless @_map
-          @_map.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
+        # reloads map content
+        return unless @_map
+        @_map.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
       ).on('itemClicked', (event, item) =>
-          # opens the clicked item
-          rheia.router.trigger 'open', 'Item', item.id
+        # opens the clicked item
+        rheia.router.trigger 'open', 'Item', item.id
+      ).on('zoomChanged', =>
+        @_inhibitZoom = true
+        @$el.find('.zoom').val @_mapWidget.options.zoom
       ).data 'moderationMap'
 
       # bind maps commands
@@ -226,8 +233,8 @@ define [
       id = $(event.target).val()
       @_map = Map.collection.get id
       # reload map
-      @_mapWidget.options[key] = val for key, val of renderDefaults[@_map.get 'kind']
-      @_mapWidget.setOption 'renderer', new Renderers[@_map.get 'kind']()
+      @_mapWidget.options[key] = val for key, val of renderDefaults[@_map.kind]
+      @_mapWidget.setOption 'renderer', new Renderers[@_map.kind]()
       @_mapWidget.setOption 'mapId', id
       @_mapWidget.setOption 'lowerCoord', @_mapWidget.options.lowerCoord
 
@@ -239,7 +246,7 @@ define [
       found = false
       for map in Map.collection.models
         found = true if map.equals @_map
-        maps += "<option value='#{map.id}' #{if map.equals @_map then 'selected="selected"' else ''}>#{map.get 'name'}</option>"
+        maps += "<option value='#{map.id}' #{if map.equals @_map then 'selected="selected"' else ''}>#{map.name}</option>"
      
       select.empty().append maps
 
@@ -260,7 +267,7 @@ define [
     # @param added [Array] array of added items or fields
     _onUpdateItem: (updated) =>
       # add item to map if map is is equal and map widget do not display yet the item
-      if updated?.get('map')?.id is @_mapWidget?.options.mapId and !@_mapWidget?.hasItem updated
+      if updated?.map?.id is @_mapWidget?.options.mapId and !@_mapWidget?.hasItem updated
         @_mapWidget.addData [updated]
 
     # **private**
@@ -307,7 +314,7 @@ define [
         # Display a loadable image by types
         for type in ItemType.collection.models
           $("<div data-id='#{type.id}'></div>").loadableImage(
-            source: type.get('descImage')
+            source: type.descImage
             noButtons:true
           ).appendTo popup
 
@@ -340,7 +347,7 @@ define [
         # Display a loadable image by types
         for type in EventType.collection.models
           $("<div data-id='#{type.id}'></div>").loadableImage(
-            source: type.get('descImage')
+            source: type.descImage
             noButtons:true
           ).appendTo popup
 
@@ -398,8 +405,8 @@ define [
       return unless details.instance?._className is 'Item'
       map = Map.collection.get details.mapId
       return unless map?
-      details.instance.set 'map', map
-      details.instance.set 'x', details.coord.x
-      details.instance.set 'y', details.coord.y
+      details.instance.map = map
+      details.instance.x = details.coord.x
+      details.instance.y = details.coord.y
       # finally, save the instance
       details.instance.save()

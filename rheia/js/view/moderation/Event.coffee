@@ -67,7 +67,7 @@ define [
     # This method is intended to by overloaded by subclass to provide template data for rendering
     #
     # @return an object used as template data (this by default)
-    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.event, @model.get('type').get('name'), @model.id or '~'
+    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.event, @model.type.name, @model.id or '~'
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -94,18 +94,18 @@ define [
     _fillModel: =>
       super()
       # set from item
-      @model.set 'from', @_fromWidget.options.value
+      @model.from = @_fromWidget.options.value
 
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
       # from item
-      @_fromWidget.setOption 'value', @model.get 'from'
+      @_fromWidget.setOption 'value', @model.from
 
       # display creation and update dates
-      @$el.find('.creation-date').html moment(@model.get 'created').format i18n.constants.dateTimeFormat
-      @$el.find('.update-date').html moment(@model.get 'updated').format i18n.constants.dateTimeFormat
+      @$el.find('.creation-date').html moment(@model.created).format i18n.constants.dateTimeFormat
+      @$el.find('.update-date').html moment(@model.updated).format i18n.constants.dateTimeFormat
 
       super()
 
@@ -122,7 +122,7 @@ define [
 
       comparable.push
         name: 'from'
-        original: @model.get('from') or null
+        original: @model.from or null
         current: @_fromWidget.options.value
       
       comparable

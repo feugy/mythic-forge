@@ -89,7 +89,7 @@ define [
       # bind to map collection events: update map list.
       @bindTo Map.collection, 'add', @_onMapListRetrieved
       @bindTo Map.collection, 'remove', (map) => 
-        if @model.get('map')?.equals map 
+        if @model.map?.equals map 
           # the item's map is removed: closes view
           @_removeInProgress = true
           @_onRemoved @model
@@ -110,7 +110,7 @@ define [
     # This method is intended to by overloaded by subclass to provide template data for rendering
     #
     # @return an object used as template data (this by default)
-    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @model.get('type').get('name'), @model.id or '~'
+    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @model.type.name, @model.id or '~'
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -120,7 +120,7 @@ define [
     _specificRender: =>
       # creates image carousel and map rendering
       @_imageWidget = @$el.find('.left .image').carousel(
-        images: _.pluck @model.get('type').get('images'), 'file'
+        images: _.pluck @model.type.images, 'file'
       ).on('change', =>
         # image changed: transition list also
         @_onTransitionListChanged() if @_transitionList?
@@ -135,8 +135,8 @@ define [
           @_xWidget?.setOption 'value', null
           @_yWidget?.setOption 'value', null
         else
-          @_xWidget?.setOption 'value', @model.get('x') or 0
-          @_yWidget?.setOption 'value', @model.get('y') or 0
+          @_xWidget?.setOption 'value', @model.x or 0
+          @_yWidget?.setOption 'value', @model.y or 0
         @_onChange()
 
       @_onMapListRetrieved()
@@ -172,36 +172,36 @@ define [
       super()
 
       # image number
-      @model.set 'imageNum', @_imageWidget.options.current
+      @model.imageNum = @_imageWidget.options.current
 
       # map ownership
-      @model.set 'map', Map.collection.get @_mapList.find('option').filter(':selected').val()
-      @model.set 'x', @_xWidget.options.value
-      @model.set 'y', @_yWidget.options.value
-      @model.set 'quantity', @_quantityWidget.options.value if @_hasQuantity
+      @model.map = Map.collection.get @_mapList.find('option').filter(':selected').val()
+      @model.x = @_xWidget.options.value
+      @model.y = @_yWidget.options.value
+      @model.quantity = @_quantityWidget.options.value if @_hasQuantity
 
       # transition
       transition = @_transitionList.find('option').filter(':selected').val()
       transition = null if transition is 'none'
-      @model.set 'transition', transition
+      @model.transition = transition
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      @_hasQuantity = @model.get('type')?.get 'quantifiable'
+      @_hasQuantity = @model.type?.quantifiable
       @$el.find('.quantity').toggle @_hasQuantity
       
       # image number
-      @_imageWidget.setOption 'current', @model.get 'imageNum'
+      @_imageWidget.setOption 'current', @model.imageNum
 
       # map ownership
       @_mapList.find("[value]").removeAttr 'selected'
-      @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected'
-      @_xWidget.setOption 'value', @model.get 'x'
-      @_yWidget.setOption 'value', @model.get 'y'
+      @_mapList.find("[value='#{@model.map?.id}']").attr 'selected', 'selected'
+      @_xWidget.setOption 'value', @model.x
+      @_yWidget.setOption 'value', @model.y
 
       # quantity
-      @_quantityWidget.setOption 'value', @model.get 'quantity' if @_hasQuantity
+      @_quantityWidget.setOption 'value', @model.quantity if @_hasQuantity
 
       # transition: never an option selected, because transition to not continue.
       @_transitionList.find("[value]").removeAttr 'selected'
@@ -229,20 +229,20 @@ define [
       comparable.push
         # image number
         name: 'imageNum'
-        original: @model.get 'imageNum'
+        original: @model.imageNum
         current: @_imageWidget.options.current
       ,
         # map ownership
         name: 'map'
-        original: @model.get('map')?.id
+        original: @model.map?.id
         current: mapValue
       ,
         name: 'x'
-        original: @model.get 'x'
+        original: @model.x
         current: @_xWidget.options.value
       ,
         name: 'y'
-        original: @model.get 'y'
+        original: @model.y
         current: @_yWidget.options.value
       ,
         name: 'transition'
@@ -253,7 +253,7 @@ define [
       if @_hasQuantity
         comparable.push 
           name: 'quantity'
-          original: @model.get 'quantity'
+          original: @model.quantity
           current: @_quantityWidget.options.value 
 
       comparable
@@ -262,10 +262,10 @@ define [
     # Empties and fills the map list.
     _onMapListRetrieved: =>
       maps = "<option value='none'>#{i18n.labels.noMap}</option>"
-      maps += "<option value='#{map.id}'>#{map.get 'name'}</option>" for map in Map.collection.models   
+      maps += "<option value='#{map.id}'>#{map.name}</option>" for map in Map.collection.models   
       @_mapList.empty().append maps      
 
-      @_mapList.find("[value='#{@model.get('map')?.id}']").attr 'selected', 'selected' if @model?.get('map')?
+      @_mapList.find("[value='#{@model.map?.id}']").attr 'selected', 'selected' if @model?.map?
 
 
     # **private**
@@ -273,8 +273,8 @@ define [
     _onTransitionListChanged: =>
       transitions = "<option value='none'>#{i18n.labels.noTransition}</option>"
       # use image widget value instead of model's image to reflext changes
-      for name of @model.get('type').get('images')?[@_imageWidget.options.current]?.sprites
+      for name of @model.type.images?[@_imageWidget.options.current]?.sprites
         transitions += "<option value='#{name}'>#{name}</option>" 
       @_transitionList.empty().append transitions      
 
-      @_transitionList.find("[value='#{@model.get 'transition'}']").attr 'selected', 'selected' if @model?.get('transition')?
+      @_transitionList.find("[value='#{@model.transition}']").attr 'selected', 'selected' if @model?.transition?

@@ -32,8 +32,8 @@ define [
     "#{parseInt(Math.random()*1000000000)}" 
 
   instanceName = (instance) ->
-    return instance.get 'email' if instance._className is 'Player'
-    instance?.get('name') or instance?.get('type')?.get 'name'
+    return instance.email if instance._className is 'Player'
+    instance?.name or instance?.type?.name
 
   {
 
@@ -171,16 +171,16 @@ define [
       switch model?.constructor.name
         when 'Item'
           content = _.sprintf i18n.tips.item, 
-            if model.get('quantity')? then model.get 'quantity' else i18n.labels.noQuantity,
-            if model.get('map')? then model.get('map').get 'name' else i18n.labels.noMap,
-            if model.get('x')? then model.get 'x' else i18n.labels.noX,
-            if model.get('y')? then model.get 'y' else i18n.labels.noY
+            if model.quantity? then model.quantity else i18n.labels.noQuantity,
+            if model.map? then model.map.name else i18n.labels.noMap,
+            if model.x? then model.x else i18n.labels.noX,
+            if model.y? then model.y else i18n.labels.noY
         when 'Event'
           content = _.sprintf i18n.tips.event, 
-            moment(model.get('updated')).format(i18n.constants.dateTimeFormat),
-            if model.get('from')? then instanceName(model.get 'from') else i18n.labels.noFrom
+            moment(model.updated).format(i18n.constants.dateTimeFormat),
+            if model.from? then instanceName(model.from) else i18n.labels.noFrom
         when 'Player'
-          content = _.sprintf i18n.tips.player, model.get('firstName'), model.get('lastName'),
-            (_.sprintf i18n.tips.playerCharacter, instanceName character for character in model.get 'characters')
+          content = _.sprintf i18n.tips.player, model.firstName, model.lastName,
+            (_.sprintf i18n.tips.playerCharacter, instanceName character for character in model.characters)
       content
   }

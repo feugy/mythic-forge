@@ -90,3 +90,7 @@ define [
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Event'
+
+    # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['created', 'updated', 'from', 'type']

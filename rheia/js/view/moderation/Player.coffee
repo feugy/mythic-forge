@@ -113,9 +113,9 @@ define [
       @bindTo Player.collection, 'connectedPlayersChanged', (connected, disconnected) =>
         return unless @_kickButton?
         # update kick button's state regarding the presence of model's email in a list
-        if @model.get('email') in disconnected
+        if @model.email in disconnected
           @_kickButton.button 'option', 'disabled', true
-        else if @model.get('email') in connected
+        else if @model.email in connected
           @_kickButton.button 'option', 'disabled', false
 
       console.log "creates player moderation view for #{if id? then @model.id else 'a new player'}"
@@ -125,16 +125,16 @@ define [
     # @param confirm [Boolean] true to get the version of the title for confirm popups. Default to false.
     # @return the edited object name.
     getTitle: (confirm = false) => 
-      return @_nameWidget?.options.value or @model.get @_nameAttribute if confirm
-      "#{_.truncate (@_nameWidget?.options.value or @model.get @_nameAttribute), 15}<div class='uid'>&nbsp;</div>"
+      return @_nameWidget?.options.value or @model[@_nameAttribute] if confirm
+      "#{_.truncate (@_nameWidget?.options.value or @model[@_nameAttribute]), 15}<div class='uid'>&nbsp;</div>"
 
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new Player()
-      @model.set 'provider', null # manual provider
-      @model.set 'email', i18n.labels.newEmail
-      @model.set 'isAdmin', false
+      @model.provider = null # manual provider
+      @model.email = i18n.labels.newEmail
+      @model.isAdmin = false
       
     # **private**
     # Prepare data to be rendered into the template
@@ -143,7 +143,7 @@ define [
     _getRenderData: =>
       # data needed by the template
       {
-        title: _.sprintf i18n.titles.player, @model.get('email'), if @_tempId? then i18n.labels.newType else @model.id
+        title: _.sprintf i18n.titles.player, @model.email, if @_tempId? then i18n.labels.newType else @model.id
         i18n: i18n
       }
 
@@ -154,11 +154,11 @@ define [
       # wired kick button
       @_kickButton = @$el.find('.kick').button(
         label: i18n.buttons.kick
-        disabled: !(@model.get('email') in Player.collection.connected)
+        disabled: !(@model.email in Player.collection.connected)
       ).on 'click', => 
         # do not kick unsaved users
         return if @_tempId?
-        Player.collection.kick @model.get 'email'
+        Player.collection.kick @model.email
 
       # create specific field widgets
       @_charactersWidget = @$el.find('.characters.field').property(
@@ -215,15 +215,15 @@ define [
       # superclass handles email
       super()
 
-      @model.set 'characters', @_charactersWidget.options.value.concat()
-      @model.set 'provider', @_providerWidget.val() or null
+      @model.characters = @_charactersWidget.options.value?.concat() or []
+      @model.provider = @_providerWidget.val() or null
       if @_passwordChanged
-        @model.set 'password', if @model.get('provider')? then undefined else @_passwordWidget.options.value
-      @model.set 'isAdmin', @_isAdminCheckbox.is ':checked'
-      @model.set 'firstName', @_firstNameWidget.options.value
-      @model.set 'lastName', @_lastNameWidget.options.value
-      @model.set 'lastConnection', @_lastConnectionWidget.options.value or null
-      @model.set 'prefs', JSON.parse @_prefsEditor.options.text
+        @model.password = if @model.provider? then undefined else @_passwordWidget.options.value
+      @model.isAdmin = @_isAdminCheckbox.is ':checked'
+      @model.firstName = @_firstNameWidget.options.value
+      @model.lastName = @_lastNameWidget.options.value
+      @model.lastConnection = @_lastConnectionWidget.options.value or null
+      @model.prefs = JSON.parse @_prefsEditor.options.text
 
     # **private**
     # Updates rendering with values from the edited object.
@@ -233,14 +233,14 @@ define [
       @$el.find('> h1').html @_getRenderData().title
 
       @_passwordChanged = @_tempId?
-      @_charactersWidget.setOption 'value', @model.get('characters').concat() or []
-      @_providerWidget.val @model.get 'provider'
-      @_passwordWidget.setOption 'value', unless @model.get('provider')? then '' else @model.get 'password'
-      @_isAdminCheckbox.attr 'checked', @model.get 'isAdmin'
-      @_firstNameWidget.setOption 'value', @model.get('firstName') or ''
-      @_lastNameWidget.setOption 'value', @model.get('lastName') or ''
-      @_lastConnectionWidget.setOption 'value', @model.get 'lastConnection'
-      @_prefsEditor.setOption 'text', JSON.stringify @model.get('prefs') or {}
+      @_charactersWidget.setOption 'value', @model.characters?.concat() or []
+      @_providerWidget.val @model.provider
+      @_passwordWidget.setOption 'value', unless @model.provider? then '' else @model.password
+      @_isAdminCheckbox.attr 'checked', @model.isAdmin
+      @_firstNameWidget.setOption 'value', @model.firstName or ''
+      @_lastNameWidget.setOption 'value', @model.lastName or ''
+      @_lastConnectionWidget.setOption 'value', @model.lastConnection
+      @_prefsEditor.setOption 'text', JSON.stringify @model.prefs or {}
 
       # superclass handles description email and trigger _onChange
       super()
@@ -263,31 +263,31 @@ define [
 
       comparable.push
         name: 'provider'
-        original: @model.get 'provider'
+        original: @model.provider
         current: @_providerWidget.val() or null
       ,
         name: 'isAdmin'
-        original: @model.get 'isAdmin'
+        original: @model.isAdmin
         current: @_isAdminCheckbox.is ':checked'
       ,
         name: 'lastName'
-        original: @model.get 'lastName'
+        original: @model.lastName
         current: @_lastNameWidget.options.value
       ,
         name: 'firstName'
-        original: @model.get 'firstName'
+        original: @model.firstName
         current: @_firstNameWidget.options.value
       ,
         name: 'lastConnection'
-        original: @model.get('lastConnection')
+        original: @model.lastConnection
         current: @_lastConnectionWidget.options.value or null
       ,
         name: 'characters'
-        original: @model.get 'characters'
+        original: @model.characters
         current: @_charactersWidget.options.value
       ,
         name: 'prefs'
-        original: @model.get 'prefs'
+        original: @model.prefs
         current: prefs
 
       if @_passwordChanged

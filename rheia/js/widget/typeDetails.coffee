@@ -54,16 +54,16 @@ define [
       categoryClass = utils.dashSeparated category
 
       # load descriptive image.
-      img = @options.model.get 'descImage'
+      img = @options.model.descImage
       if img? and category isnt 'FieldType'
         @_pendingImage = "/images/#{img}"
         @bindTo rheia.router, 'imageLoaded', => @_onImageLoaded.apply @, arguments
         rheia.imagesService.load @_pendingImage
 
       switch category
-        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.get 'name'
+        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.name
         when 'Executable' 
-          name = @options.model.get 'name'
+          name = @options.model.id
           # for opening behaviour, when need to distinguish Rules from TurnRules
           category = @options.model.kind
           categoryClass = utils.dashSeparated category
@@ -77,7 +77,7 @@ define [
       # field types uses a carousel instead of an image
       if category is 'FieldType'
         $('<div></div>').carousel(
-          images: @options.model.get 'images'
+          images: @options.model.images
         ).prependTo @$el
 
         @$el.draggable(
@@ -97,7 +97,7 @@ define [
         )
       else
         @$el.prepend "<img/>" if category in ['ItemType', 'EventType']
-        @$el.toggleClass 'inactive', !@options.model.get 'active' if category in ['TurnRule', 'Rule']
+        @$el.toggleClass 'inactive', !@options.model.active if category in ['TurnRule', 'Rule']
 
       # adds a contextual menu that opens on right click
       @_menu = $("""<ul class="menu">

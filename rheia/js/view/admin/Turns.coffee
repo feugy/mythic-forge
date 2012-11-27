@@ -58,10 +58,7 @@ define [
 
       @_turnInProgress = false
 
-      @bindTo Executable.collection, 'reset', @_onResetList
-      @bindTo Executable.collection, 'add', @_onResetList
-      @bindTo Executable.collection, 'remove', @_onResetList
-      @bindTo Executable.collection, 'update', @_onResetList
+      @bindTo Executable.collection, 'reset add remove update change:name change:ranke', @_onResetList
 
       utils.onRouterReady =>  
         # retrieve rules
@@ -98,7 +95,7 @@ define [
     # @param rule [Object] the displayed turn rule
     # @return a string containing the rendering for a given rule
     _renderRule: (rule) =>
-      "<li class='#{md5 rule.get 'name'}'><input type='checkbox' disabled/>#{rule.get 'name'}</li>"
+      "<li class='#{md5 rule.name}'><input type='checkbox' disabled/>#{rule.name}</li>"
 
     # **private**
     # Turn progression handler.
@@ -138,9 +135,9 @@ define [
     # **private**
     # Build turn ordered list when the Executable collection changed
     _onResetList: =>
-      @_rules = (rule for rule in Executable.collection.models when rule.kind is 'TurnRule')
+      @_rules = (rule for rule in Executable.collection.models when rule.kind is 'TurnRule' and rule.name? and rule.active)
       # turn rules are organized by their rank
-      @_rules = _.chain(@_rules).map((rule) -> rank:rule.get('rank'), value:rule).sortBy('rank').pluck('value').value()
+      @_rules = _.chain(@_rules).map((rule) -> rank:rule.rank, value:rule).sortBy('rank').pluck('value').value()
 
       list = ''
       list += @_renderRule rule for rule in @_rules

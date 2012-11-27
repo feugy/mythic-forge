@@ -88,8 +88,8 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new EventType()
-      @model.set 'name', i18n.labels.newName
-      @model.set 'descImage', null
+      @model.name = i18n.labels.newName
+      @model.descImage = null
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -100,7 +100,7 @@ define [
       # totally replace model's property with the view ones
       properties = {}
       $.extend true, properties, @_editedProperties
-      @model.set 'properties', properties
+      @model.properties = properties
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -110,7 +110,7 @@ define [
 
       # keep a copy of edited properties in the view
       @_editedProperties = {}
-      $.extend true, @_editedProperties, @model.get 'properties'
+      $.extend true, @_editedProperties, @model.properties
       @_editedProperties = utils.sortAttributes @_editedProperties
       # will trigger _onChange
       @_updateProperties()
@@ -190,7 +190,7 @@ define [
       # adds properties
       comparable.push
         name: 'properties'
-        original: @model.get 'properties'
+        original: @model.properties
         current: @_editedProperties
       return comparable
     

@@ -142,7 +142,7 @@ define [
         handler: => 
           selected = FSItem.collection.get @_explorer.selected
           return unless selected?
-          @_onChooseFileName @_explorer.selected, selected.get('isFolder'), @_explorer.selected
+          @_onChooseFileName @_explorer.selected, selected.isFolder, @_explorer.selected
         attribute: '_renameButton'
       ,
         icon: 'remove-folder'
@@ -238,14 +238,14 @@ define [
     _onItemCreated: (created) =>
       return unless @_createInProgress?.equals created
       @_createInProgress = null
-      @_onOpenElement null, created.id unless created.get 'isFolder'
+      @_onOpenElement null, created.id unless created.isFolder
 
     # **private**
     # Server error handler: display errors while creating new folder and files
     _onServerError: (err, details) =>
       return unless @_createInProgress?
       title = i18n.titles[if @_createInProgress.isFolder then 'newFolder' else 'newFile']
-      utils.popup title, _.sprintf(i18n.msgs.fsItemCreationFailed, @_createInProgress.get('path'), err), 'warning', [
+      utils.popup title, _.sprintf(i18n.msgs.fsItemCreationFailed, @_createInProgress.path, err), 'warning', [
         text: i18n.buttons.ok
         icon: 'valid'
       ]
@@ -336,7 +336,7 @@ define [
       return unless removed?
       #confirmation popup
       utils.popup i18n.titles.removeConfirm, 
-        _.sprintf(i18n.msgs[if isFolder then 'removeFolderConfirm' else 'removeFileConfirm'], removed.get 'path'), 
+        _.sprintf(i18n.msgs[if isFolder then 'removeFolderConfirm' else 'removeFileConfirm'], removed.path), 
         'question', [
           text: i18n.buttons.no
           icon: 'invalid'
@@ -385,7 +385,7 @@ define [
         selectedItem = FSItem.collection.get selected
         throw new Error "Unknown fsItem selected #{selected}" unless selectedItem?
         # Open the relevant file view
-        unless selectedItem.get 'isFolder'
+        unless selectedItem.isFolder
           @_onOpenElement null, selectedItem.id
           fileSelected = true
 
@@ -394,7 +394,7 @@ define [
       @_newFileButton._setOption 'disabled', fileSelected
       @_uploadButton._setOption 'disabled', fileSelected
       @_renameButton._setOption 'disabled', selected is null
-      @_removeFolderButton._setOption 'disabled', selectedItem is null or ! selectedItem.get 'isFolder'
+      @_removeFolderButton._setOption 'disabled', selectedItem is null or ! selectedItem.isFolder
       @_onUpdateFileBar()
 
     # **private**
@@ -459,7 +459,7 @@ define [
 
       if restorables.length
         html += '<ul>'
-        html += "<li>#{restorable.item.get 'path'}</li>" for restorable in restorables
+        html += "<li>#{restorable.item.path}</li>" for restorable in restorables
         html += '</ul>'
 
       html += '</div>'
@@ -487,9 +487,9 @@ define [
 
         # when version will be loaded, opens the file
         opening = (fetched, content) =>
-          item.set 'content', content
+          item.content = content
           item.off 'version', opening
-          @_onSelect item.get('path'), null
+          @_onSelect item.path, null
         item.on 'version', opening
 
         # load file content, with special git trick: we need to refer to the parent commit of the

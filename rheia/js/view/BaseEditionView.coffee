@@ -99,8 +99,8 @@ define [
     # @param confirm [Boolean] true to get the version of the title for confirm popups. Default to false.
     # @return the edited object name.
     getTitle: (confirm = false) => 
-      return @_nameWidget?.options.value or @model.get @_nameAttribute if confirm
-      _.truncate (@_nameWidget?.options.value or @model.get @_nameAttribute), 15
+      return @_nameWidget?.options.value or @model[@_nameAttribute] if confirm
+      _.truncate (@_nameWidget?.options.value or @model[@_nameAttribute]), 15
 
     # Returns the view's action bar, and creates it if needed.
     # may be overriden by subclasses to add buttons
@@ -176,27 +176,27 @@ define [
     # @return optionnal arguments for the `save` Backbone method.
     _specificSave: =>
       # manage uploads
-      if @_descImageWidget? and @model.get('descImage') isnt @_descImageWidget.options.source
+      if @_descImageWidget? and @model.descImage isnt @_descImageWidget.options.source
         spec = file: @_descImageWidget.options.source
         if @_descImageWidget.options.source is null
-          spec.oldName = @model.get 'descImage'
+          spec.oldName = @model.descImage
         @_pendingUploads.push spec
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
       if @_nameWidget?
-        @model.set @_nameAttribute, @_nameWidget.options.value unless @_nameAttribute is @model.idAttribute
-      @model.set 'desc', @_descWidget.options.value if @_descWidget?
+        @model[@_nameAttribute] = @_nameWidget.options.value unless @_nameAttribute is @model.idAttribute
+      @model.desc = @_descWidget.options.value if @_descWidget?
 
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
-      @model.set 'descImage', null if @_descImageWidget? and @_descImageWidget.options.source is null
+      @model.descImage = null if @_descImageWidget? and @_descImageWidget.options.source is null
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      @_nameWidget.setOption 'value', @model.get @_nameAttribute if @_nameWidget?
-      @_descWidget.setOption 'value', @model.get 'desc' if @_descWidget?
+      @_nameWidget.setOption 'value', @model[@_nameAttribute] if @_nameWidget?
+      @_descWidget.setOption 'value', @model.desc if @_descWidget?
       @_createImages()
       @_onChange()
 
@@ -213,17 +213,17 @@ define [
       if @_nameWidget?
         comparable.push
           name: @_nameAttribute
-          original: @model.get @_nameAttribute
+          original: @model[@_nameAttribute]
           current: @_nameWidget.options.value
       if @_descWidget?
         comparable.push
           name: 'description'
-          original: @model.get 'desc'
+          original: @model.desc
           current: @_descWidget.options.value
       if @_descImageWidget?
         comparable.push
           name: 'descImage'
-          original: @model.get 'descImage'
+          original: @model.descImage
           current: @_descImageWidget.options.source
       comparable
 
@@ -233,11 +233,11 @@ define [
       # the description image
       unless @_descImageWidget?
         @_descImageWidget = @$el.find('.desc.image').loadableImage(
-          source: @model.get 'descImage'
+          source: @model.descImage
         ).on('change', @_onChange
         ).data 'loadableImage'
       else 
-        @_descImageWidget.setOption 'source', @model.get 'descImage'
+        @_descImageWidget.setOption 'source', @model.descImage
 
     # **private**
     # Re-creates validators, when refreshing the properties.

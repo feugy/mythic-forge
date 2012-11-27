@@ -238,7 +238,7 @@ define [
     _notifyExternalRemove: () =>
       return if $("#externalRemove-#{md5 @getId()}").length > 0
       utils.popup i18n.titles.external, 
-        _.sprintf(i18n.msgs.externalRemove, @model.get(@_nameAttribute)), 
+        _.sprintf(i18n.msgs.externalRemove, @model[@_nameAttribute]), 
         'warning', 
         [text: i18n.buttons.ok],
         0,
@@ -249,7 +249,7 @@ define [
     _notifyExternalChange: () =>
       return if $("#externalChange-#{md5 @getId()}").length > 0
       utils.popup i18n.titles.external, 
-        _.sprintf(i18n.msgs.externalChange, @model.get(@_nameAttribute)), 
+        _.sprintf(i18n.msgs.externalChange, @model[@_nameAttribute]), 
         'warning',
         [text: i18n.buttons.ok], 
         0,
@@ -263,7 +263,7 @@ define [
       return if $("#serverError-#{@getId()}").length > 0
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
-      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model.get(@_nameAttribute), err), 'cancel', [text: i18n.buttons.ok]
+      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model[@_nameAttribute], err), 'cancel', [text: i18n.buttons.ok]
 
     # **private**
     # Change handler, wired to any changes from the rendering.
@@ -299,7 +299,7 @@ define [
       # just to allow `_onSaved` to perform
       @model.id = created.id
       # unbound from the old model updates
-      @unboundFrom @model, 'update', @_onSaved
+      @unboundFrom @model, 'update'
       # now refresh rendering
       @_onSaved created
       # bind to the new model

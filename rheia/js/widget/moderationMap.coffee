@@ -89,11 +89,17 @@ define [
           # zoom case: reinject existing fields
           fields.push obj
         else if !(obj._className?)
-          fields.push obj.toJSON() if o.mapId is obj.get 'mapId'
-        else if obj._className is 'Item' and o.mapId is obj.get('map')?.id
+          fields.push obj.toJSON() if o.mapId is obj.mapId
+        else if obj._className is 'Item' and o.mapId is obj.map?.id
           @_loading++
           id = obj.id
-          @_oldWidgets[id] = @_itemWidgets[id] if id of @_itemWidgets and !(id of @_oldWidgets)
+          # avoid updating widget while construction is not finished
+          continue if @_itemWidgets[id] is 'tmp'
+          # update case: remove the old widget for the existing element
+          if id of @_itemWidgets and !(id of @_oldWidgets)
+            @_oldWidgets[id] = @_itemWidgets[id]
+          # to avoid update the widget while it has not been constructed
+          @_itemWidgets[id] = 'tmp'
           _.defer =>
             # creates widget for this item
             @_itemWidgets[id] = $('<span></span>').mapItem(
@@ -134,7 +140,7 @@ define [
           # immediately removes corresponding widget
           @_itemWidgets[obj.id]?.$el.remove()
         else unless obj._className?
-          fields.push obj.toJSON() if @options.mapId is obj.get 'mapId'
+          fields.push obj.toJSON() if @options.mapId is obj.mapId
 
       # let superclass manage fields
       super fields if fields.length > 0

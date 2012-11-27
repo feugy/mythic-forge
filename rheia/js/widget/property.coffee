@@ -91,9 +91,9 @@ define [
           group = parseInt Math.random()*1000000000
           rendering = $("""
             <span class="boolean-value">
-              <input name="#{group}" value="true" type="radio" #{if @options.value is true then 'checked="checked"'}/>
+              <input name="#{group}" value="true" type="radio" #{if @options.value is true then 'checked="checked"' else ''}/>
               #{i18n.property.isTrue}
-              <input name="#{group}" value="false" type="radio" #{if @options.value is false then 'checked="checked"'}/>
+              <input name="#{group}" value="false" type="radio" #{if @options.value is false then 'checked="checked"' else ''}/>
               #{i18n.property.isFalse}
             </span>
             """).appendTo @$el

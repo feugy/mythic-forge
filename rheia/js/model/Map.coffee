@@ -48,6 +48,10 @@ define [
     _i18nAttributes: ['name']
 
     # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['kind']
+
+    # **private**
     # flag to avoid multiple concurrent server call.
     _consultRunning: false
 
