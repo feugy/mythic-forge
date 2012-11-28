@@ -62,12 +62,6 @@ mongoose.Document.prototype._registerHooks = ->
   ret = original_registerHooks.apply @, arguments
   @_defineProperties()
   ret
-# Extends init method to construct dynamic properties in init
-originalInit = mongoose.Document.prototype.init
-mongoose.Document.prototype.init = ->
-  ret = originalInit.apply @, arguments
-  @_defineProperties()
-  ret
 
 # Initialize dynamic properties from type when needed
 mongoose.Document.prototype._defineProperties = ->
@@ -293,6 +287,9 @@ module.exports = (typeName, spec, options = {}) ->
         instance.type = types[0]
         next()
 
+    # post-init middleware: define dynamic properties
+    AbstractType.post 'init', ->
+      @_defineProperties()
 
     # This method retrieves linked objects in properties.
     # All `object` and `array` properties are resolved. 

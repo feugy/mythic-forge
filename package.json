@@ -10,7 +10,7 @@
   "dependencies": {
     "coffee-script": "1.4.0",
     "underscore": "1.4.2",
-    "mongoose": "https://github.com/feugy/mongoose/archive/master.tar.gz",
+    "mongoose": "3.4.0",
     "mongodb": "1.1.11",
     "async": "0.1.22",
     "winston": "0.5.11",
