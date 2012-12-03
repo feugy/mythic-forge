@@ -427,7 +427,7 @@ define [
         for prop, def of properties
           value = instance[prop]
           if def.type is 'object'
-            if value isnt null
+            if value?
               # construct a backbone model around linked object
               clazz = @constructor
               for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{value._className}"
@@ -440,7 +440,8 @@ define [
             @[prop] = obj
           else if def.type is 'array' 
             value = [] unless value?
-            for val, i in value
+            @[prop] = []
+            for val, i in value when val?
               # construct a backbone model around linked object
               clazz = @constructor
               for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"
@@ -448,7 +449,7 @@ define [
               obj = new clazz val
               clazz.collection.add obj
               # update current object
-              @[prop][i] = obj
+              @[prop].push obj
 
         # end of resolution.
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
@@ -468,7 +469,6 @@ define [
         if properties[name]?.type is 'object'
           attrs[name] = if 'object' is utils.type value then value?.id else value
         else if properties[name]?.type is 'array'
-          linked = []
           attrs[name] = ((if 'object' is utils.type obj then obj?.id else obj) for obj in value)
         else
           attrs[name] = value

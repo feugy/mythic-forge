@@ -84,6 +84,8 @@ define [
       # configure it
       session.setUseSoftTabs true
 
+      @_editor.setScrollSpeed 5
+
       # special implementation of find command
       @_editor.commands.addCommand
         name: 'find'

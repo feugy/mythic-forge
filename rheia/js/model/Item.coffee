@@ -38,25 +38,23 @@ define [
     # List of not upadated attributes
     _notUpdated: ['_id', 'type', 'map']
 
-    # Enhance Backone method to allow existing models to be re-added.
-    # Needed because map will add retrieved items when content returned from server, and `add` event needs
-    # to be fired from collection
-    add: (added, options) =>
-      added = [added] unless Array.isArray added
-
-      previous = []
-      # silentely removes existing models to allow map to be updated
-      for obj in added
-        existing = @get obj._id
-        continue unless existing?
-        @remove existing, silent: true
-        previous.push existing
-        
-      super added, options
-
-      # trigger re-addition for Item views
-      for existing in previous
-        @trigger 'read', existing, @get existing.id
+    # enhanced inheritted method to trigger `add` event on existing models that
+    # are added a second time.
+    #
+    # @param models [Object/Array] added model(s)
+    # @param options [Object] addition options
+    add: (models, options) =>
+      existings = []
+      
+      models = if Array.isArray models then models else [models]
+      # keep existing models that will be merged
+      existings.push @_byId[model._id] for model in models when @_byId?[model._id]?
+      
+      # superclass behaviour
+      super models, options
+      
+      # trigger existing model re-addition
+      model.trigger 'add', model, @, options for model in existings
 
     # **private**
     # Callback invoked when a database update is received.
@@ -155,7 +153,7 @@ define [
     #
     # @return a serialized version of this model
     _serialize: => 
-      result = @toJSON()
+      result = super()
       delete result.transition unless @_transitionChanged
       result
 

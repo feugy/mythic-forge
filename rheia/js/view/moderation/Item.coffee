@@ -96,14 +96,6 @@ define [
         else 
           @_onMapListRetrieved()
 
-      # special case of items, that can be re-added when map is consulted
-      # we need to unbound from previous model, and bound for new one
-      @bindTo Item.collection, 'read', (previous, added) =>
-        return unless previous.id is @model.id
-        @unboundFrom previous, 'update', @_onSaved
-        @model = added
-        @bindTo added, 'update', @_onSaved
-
       console.log "creates item edition view for #{if id? then @model.id else 'a new object'}"
 
     # **protected**

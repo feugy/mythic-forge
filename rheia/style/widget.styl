@@ -242,8 +242,10 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   position absolute
   overflow hidden
   padding 0
-  -moz-transform-origin 0 0
-  -webkit-transform-origin 0 0
+  transform-origin 0 0
+
+  > div
+    transform-origin 0 0
   
 // Search
 .search
