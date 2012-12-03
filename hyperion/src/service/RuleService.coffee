@@ -444,38 +444,49 @@ class _RuleService
         return end() unless rule.active
         notifier.notify 'turns', 'rule', rule.name
 
-        rule.select (err, targets) =>
-          # Do not emit an error, but stops this rule a first selection error.
-          if err?
-            err = "failed to select targets for rule #{rule.name}: #{err}"
-            logger.warn err
-            notifier.notify 'turns', 'failure', rule.name, err
-            return end()
-          return end() unless Array.isArray(targets)
-          logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
-          # arrays of modified objects
-          saved = []
-          removed = []
-
-          # function that execute the current rule on a target
-          execute = (target, executeEnd) =>
-            rule.execute target, (err) =>
-              # stop a first execution error.
-              return executeEnd "failed to execute rule #{rule.name} on target #{target._id}: #{err}" if err?
-              # store modified object for later
-              saved.push obj for obj in rule.saved
-              filterModified target, saved
-              removed.push obj for obj in rule.removed
-              executeEnd()
-
-          # execute on each target and leave at the end.
-          async.forEach targets, execute, (err) =>
+        try
+          rule.select (err, targets) =>
+            # Do not emit an error, but stops this rule a first selection error.
             if err?
+              err = "failed to select targets for rule #{rule.name}: #{err}"
               logger.warn err
               notifier.notify 'turns', 'failure', rule.name, err
               return end()
-            # save all modified and removed object after the rule has executed
-            updateDb rule, saved, removed, end
+            return end() unless Array.isArray(targets)
+            logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
+            # arrays of modified objects
+            saved = []
+            removed = []
+
+            # function that execute the current rule on a target
+            execute = (target, executeEnd) =>
+              try
+                rule.execute target, (err) =>
+                  # stop a first execution error.
+                  return executeEnd "failed to execute rule #{rule.name} on target #{target._id}: #{err}" if err?
+                  # store modified object for later
+                  saved.push obj for obj in rule.saved
+                  filterModified target, saved
+                  removed.push obj for obj in rule.removed
+                  executeEnd()
+              catch err
+                # stop a first execution error.
+                return executeEnd "failed to execute rule #{rule.name} on target #{target._id}: #{err}"         
+
+            # execute on each target and leave at the end.
+            async.forEach targets, execute, (err) =>
+              if err?
+                logger.warn err
+                notifier.notify 'turns', 'failure', rule.name, err
+                return end()
+              # save all modified and removed object after the rule has executed
+              updateDb rule, saved, removed, end
+
+        catch err
+          err = "failed to select targets for rule #{rule.name}: #{err}"
+          logger.warn err
+          notifier.notify 'turns', 'failure', rule.name, err
+          return end()
 
       # select and execute each turn rule, NOT in parallel !
       async.forEachSeries rules, selectAndExecute, => 

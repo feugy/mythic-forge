@@ -9,8 +9,6 @@ class CustomRule extends TurnRule
   # This method select a set of element on which execute will be applied.
   # Objects can be read directly from database, but modification is not allowed.
   #
-  # @param actor [Item] the concerned actor
-  # @param target [Item] the concerned target
   # @param callback [Function] called when the rule is applied, with two arguments:
   #   @param err [String] error string. Null if no error occured
   #   @param targets [Array] list of targeted object, null or empty if the rule does not apply.

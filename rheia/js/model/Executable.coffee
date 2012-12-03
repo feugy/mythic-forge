@@ -45,16 +45,21 @@ define [
       content = executable.content
 
       # Regular expression to extract dependencies from rules
-      depReg = /(\S*)\s*=\s*require[\(\s](\S*)\)?\s*\n/
+      depReg = /^\s*([^#]\S*)\s*=\s*require[\(\s]([^\s\)]*)[\)\s]?(\S*)\s*$/m
 
       # gets the required dependencies
       deps = []
       vars = []
+      extras = []
+
       while -1 isnt content.search(depReg)
         # removes the require directive and extract relevant variable and path
-        content = content.replace depReg, (str, variable, dep)->
+        content = content.replace depReg, (str, variable, dep, extra)->
           deps.push dep.replace /^'\.\.\//, "'"
-          vars.push variable
+          extra = if extra?.trim().length > 0 then extra.trim() else null 
+          vars.push if extra? then "__#{variable}__" else variable
+          extras.push extra
+          console.log deps[deps.length-1], vars[vars.length-1], extras[extras.length-1]
           return ''
 
       # replace module.exports by return
@@ -63,8 +68,13 @@ define [
       content = content.split('\n').join '\n  '
       
       # adds the define part
-      content = "define '#{executable.id}', [#{deps.join ','}], (#{vars.join ','}) ->\n  #{content}"
+      extraStr = ""
+      for extra, i in extras when extra?
+        extraStr = "  #{vars[i].replace(/^__/, '').replace /__$/, ''} = #{vars[i]}#{extra}\n"
 
+      content = "define '#{executable.id}', [#{deps.join ','}], (#{vars.join ','}) ->\n#{extraStr}\n  #{content}"
+
+      console.log content
       # compiles and evaluates the resulting code
       eval coffee.compile content
 
