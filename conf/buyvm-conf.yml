@@ -6,9 +6,10 @@ logLevels:
 
 # Server's configuration
 server:
-  host: www.mythic-forge.com
+  host: mythic-forge.com
   staticPort: 80
-  apiPort: 443  
+#  apiPort: 443  
+  apiPort: 80
   cookieSecret: Hey monkey donkey !
 
 # Authentication details
@@ -23,10 +24,10 @@ authentication:
     secret: eYkJjLGwthMHybjauOaBcmDRYNKVUXeIRlhLD0kKFXg
 
 # SSL certificates. Do not specify them to use plain Http.
-ssl:
-  certificate: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.crt
-  key: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.key
-  ca: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.ca
+#ssl:
+#  certificate: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.crt
+#  key: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.key
+#  ca: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.ca
 
 # MongoDB connection
 mongo:

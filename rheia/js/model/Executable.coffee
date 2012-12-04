@@ -59,7 +59,6 @@ define [
           extra = if extra?.trim().length > 0 then extra.trim() else null 
           vars.push if extra? then "__#{variable}__" else variable
           extras.push extra
-          console.log deps[deps.length-1], vars[vars.length-1], extras[extras.length-1]
           return ''
 
       # replace module.exports by return
@@ -74,7 +73,6 @@ define [
 
       content = "define '#{executable.id}', [#{deps.join ','}], (#{vars.join ','}) ->\n#{extraStr}\n  #{content}"
 
-      console.log content
       # compiles and evaluates the resulting code
       eval coffee.compile content
 

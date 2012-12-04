@@ -23,7 +23,7 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/turnRule.html'
-  'text!tpl/turnRule.coffee'
+  'text!tpl/turnRule.tpl'
   'view/edition/Rule'
   'model/Executable'
 ], ($, i18n, i18nEdition, template, emptyRule, RuleView, Executable) ->

@@ -23,7 +23,7 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/rule.html'
-  'text!tpl/rule.coffee'
+  'text!tpl/rule.tpl'
   'utils/validators'
   'view/BaseEditionView'
   'model/Executable'
