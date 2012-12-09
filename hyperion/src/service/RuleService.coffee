@@ -353,6 +353,7 @@ class _RuleService
 
     if args.length is 1
       playerId = args[0]
+      return callback "Player id is null !" unless playerId?
       # only playerId specified. Retrieve corresponding account
       Player.findOne {_id: playerId}, (err, player) =>
         return callback "Cannot execute rule. Failed to retrieve player (#{playerId}): #{err}" if err?
@@ -364,6 +365,8 @@ class _RuleService
     else if args.length is 2
       actorId = args[0]
       targetId = args[1]
+      return callback "Target id is null !" unless targetId?
+      return callback "Actor id is null !" unless actorId?
       # actorId and targetId are specified. Retrieve corresponding items
       Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
         return callback "Cannot execute rule. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?

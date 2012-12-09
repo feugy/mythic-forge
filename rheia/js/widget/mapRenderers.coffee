@@ -25,22 +25,22 @@ define [
   # Compute the location of the point C regarding the straight between A and B
   #
   # @param c [Object] tested point
-  # @option c left [Number] C's abscissa
-  # @option c top [Number] C's ordinate
+  # @option c x [Number] C's abscissa
+  # @option c y [Number] C's ordinate
   # @param a [Object] first reference point
-  # @option a left [Number] A's abscissa
-  # @option a top [Number] A's ordinate
+  # @option a x [Number] A's abscissa
+  # @option a y [Number] A's ordinate
   # @param b [Object] second reference point
-  # @option b left [Number] B's abscissa
-  # @option b top [Number] B's ordinate
+  # @option b x [Number] B's abscissa
+  # @option b y [Number] B's ordinate
   # @return true if C is above the straight formed by A and B
   _isBelow= (c, a, b) ->
     # first the leading coefficient
-    coef = (b.top - a.top) / (b.left - a.left)
+    coef = (b.y - a.y) / (b.x - a.x)
     # second the straight equation: y = coeff*x + h
-    h = a.top - coef*a.left
+    h = a.y - coef*a.x
     # below if c.y is higher than the equation computation (because y is inverted)
-    c.top > coef*c.left + h
+    c.y > coef*c.x + h
 
   {
     hexagon: class HexagonRenderer extends Map.Renderer
@@ -81,10 +81,14 @@ define [
       # False to indicate its the bottom-left corner
       # @return map coordinates of the other corner
       nextCorner: (coord, upper=false) => 
+        # displayed view is a parallelepiped with a 60 degree angle
+        opposite = Math.tan(30*Math.PI/180)*@height
+        numInOpposite = Math.ceil opposite/@tileW
+
         row = Math.floor @height/(@tileH*0.75)
         col = Math.floor @width/@tileW
         {
-          x: coord.x + if upper then -col else col
+          x: coord.x + if upper then numInOpposite*3-col else col+numInOpposite*2
           y: coord.y + if upper then -row else row
         }
 
@@ -97,17 +101,21 @@ define [
       # @option return left [Number] the object's left offset, relative to the map origin
       # @option return top [Number] the object's top offset, relative to the map origin
       # @option return z-index [Number] the object's z-index
-      coordToPos: (obj) =>
+      coordToPos: (coord) =>
+        left = (coord.x - @origin.x) * @tileW
+        y = coord.y - @origin.y
         # invert y axis
-        top = @height*3 - ((obj.y - @origin.y + 1)*0.75 + 0.25) * @tileH
-        # shift to right on even rows
-        shift = if Math.floor((@height*3-top)/(@tileH*0.75))%2 then 0 else if Math.abs(@origin.y)%2  then -1 else 1
+        top = @height*3 - ((y + 1)*0.75 + 0.25) * @tileH
+        # shift left on even rows
+        left -= @tileW*0.5 if Math.floor (top/(@tileH*0.75))%2
+        # shift right the left coordinate for each rows
+        left += Math.ceil(y/2)*@tileW
         {
           # left may be shifted on even rows
-          left: (obj.x - @origin.x + 0.5*shift) * @tileW
+          left: left
           top: top
           # for z-index, row is more important than column
-          'z-index': (@_verticalTotalNum()-obj.y+@origin.y)*2 + obj.x 
+          'z-index': (@_verticalTotalNum()-y)*2 + coord.x 
         }
 
       # Translate css position (relative to the map origin) to map coordinates to css position
@@ -126,31 +134,34 @@ define [
           shift = @tileW*0.5
         col = Math.floor (pos.left+shift)/@tileW
         
+        pos.x = pos.left
+        pos.y = pos.top
         # bottom summit of the hexagon
         a = 
-          left: (col+0.5)*@tileW-shift
-          top: @height*3-row*(@tileH*0.75)-2
+          x: (col+0.5)*@tileW-shift
+          y: @height*3-row*(@tileH*0.75)-2
         # bottom-right summit of the hexagon
         b = 
-          left: (col+1)*@tileW-shift
-          top: @height*3-(row+0.25)*(@tileH*0.75)-2
+          x: (col+1)*@tileW-shift
+          y: @height*3-(row+0.25)*(@tileH*0.75)-2
         # bottom-left summit of the hexagon
         c = 
-          left: col*@tileW-shift
-          top: b.top
+          x: col*@tileW-shift
+          y: b.y
 
         if _isBelow pos, c, a
           # if the hit fell in the lower left triangle, it's in the hexagon below and left
-          col-- if row % 2 is 1
           row--
+          col-- unless row % 2
         else if _isBelow pos, a, b
           # or if the hit fell in the lower right triangle, it's in the hexagon below and right
-          col++ if row % 2 is 0
           row--
+          col++ if row % 2
+
         # or it's the good hexagon :)
         y = row+@origin.y
         {
-          x: col+@origin.x-Math.abs(y)%2*(Math.abs(@origin.y)+1)%2
+          x: col+@origin.x-Math.ceil row/2
           y: y
         }
 
@@ -184,11 +195,12 @@ define [
       drawMarkers: (ctx) =>
         # initialise a line number, starting from the bottom and going up
         step = -@tileH*1.5
-        line = originY = Math.floor (@height*3-@tileH)/step
+        gameY = @origin.y
+        originX = @origin.x
+        originX-- if @origin.y%2
         for y in [@height*3-0.5..0.5] by step
           for x in [0.5..@width*3] by @tileW    
-            gameX = @origin.x + Math.floor x/@tileW
-            gameY = @origin.y + line - originY
+            gameX = originX + Math.floor x/@tileW
 
             if gameX % 5 is 0
               if gameY % 5 is 0
@@ -196,7 +208,8 @@ define [
               else if gameY > 0 and gameY % 5 is 4 or gameY < 0 and gameY % 5 is -1
                 ctx.fillText "#{gameX}:#{gameY+1}", x+@tileW*((Math.abs(@origin.y)+1) % 2), y-@tileH*1.25
 
-          line += 2
+          gameY += 2
+          originX--
 
       # Draw a single selected tile in selection or to highlight hover
       #
@@ -222,12 +235,11 @@ define [
       # @param move [Object] map coordinates (x and y) of the movement
       # @return screen offset (left and top) of the movable layers
       replaceMovable: (move) =>
-        # place fields layer because it will be redrawn once all new content would have been retrieved 
-        # shift to right on even rows
-        shift = unless move.y%2 then 0 else if @origin.y%2 then -1 else 1
+        top = move.y*@tileH*0.75
+        row = Math.ceil(@height*3-top)/(0.75*@tileH)
         {
-          left: (0.5*shift-move.x)*@tileW
-          top: move.y*@tileH*0.75
+          left: (Math.floor(-move.y/2)-move.x+(if 0 is Math.floor row%2 then 0 else 0.5))*@tileW
+          top: top
         }
         
       # Place the container itself after a move.
@@ -347,18 +359,20 @@ define [
           xShift = -1
         col = Math.floor (pos.left+shift)/@tileW
         
+        pos.x = pos.left
+        pos.y = pos.top
         # bottom summit of the diamond
         a = 
-          left: (col+0.5)*@tileW-shift
-          top: @height*3-row*@tileH*0.5
+          x: (col+0.5)*@tileW-shift
+          y: @height*3-row*@tileH*0.5
         # right summit of the diamond
         b = 
-          left: (col+1)*@tileW-shift
-          top: @height*3-(row+1)*@tileH*0.5
+          x: (col+1)*@tileW-shift
+          y: @height*3-(row+1)*@tileH*0.5
         # left summit of the diamond
         c = 
-          left: col*@tileW-shift
-          top: b.top
+          x: col*@tileW-shift
+          y: b.y
 
         if _isBelow pos, c, a
           # if the hit fell in the lower left triangle, it's in the diamond below and left

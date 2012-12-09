@@ -1,5 +1,11 @@
 # TODO
 
+- Demo
+  - Enrollement
+  - Talk between players
+  - Bash opponents
+  - Move opponents
+
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
