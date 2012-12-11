@@ -300,6 +300,8 @@ define [
       @model.id = created.id
       # unbound from the old model updates
       @unboundFrom @model, 'update'
+      # update view title
+      @$el.find('> h1').html @_getRenderData()?.title
       # now refresh rendering
       @_onSaved created
       # bind to the new model

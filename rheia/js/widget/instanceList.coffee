@@ -89,6 +89,7 @@ define [
       return unless Array.isArray(linked) and linked.length > 0
       @$el.empty()
 
+
       # creates a widget for each linked object
       for link, i in linked
         continue unless link? and link isnt ''

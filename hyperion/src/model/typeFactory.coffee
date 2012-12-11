@@ -39,11 +39,14 @@ processLinks = (instance, properties) ->
   for name, property of properties
     value = instance[name]
     if property.type is 'object'
-      instance[name] = value._id.toString() if value isnt null and typeof value is 'object' and '_id' of value
+      if value isnt null and 'object' is utils.type(value) and value?._id?
+        instance[name] = value._id.toString() 
+        instance.markModified name
     else if property.type is 'array'
-      if value
-        for linked, i in value
-          value[i] = if typeof linked is 'object' and '_id' of linked then linked._id.toString() else linked
+      if 'array' is utils.type value
+        for linked, i in value when 'object' is utils.type(linked) and linked?._id?
+          value[i] = linked._id.toString() 
+          instance.markModified name
 
 # Extends original Mongoose toObject method to add className when requireing json.
 originalToObject = mongoose.Document.prototype.toObject
@@ -181,15 +184,10 @@ module.exports = (typeName, spec, options = {}) ->
     # store in cache
     cache[@_id] = @
   
-  # pre-save middleware: store modified path for changes propagation
-  AbstractType.pre 'save', (next) ->
-    # stores the isNew status and modified paths.
-    wasNew = @isNew
-    modifiedPaths = @modifiedPaths().concat()
-    next()
+  # post-save middleware: update cache
+  AbstractType.post 'save',  ->
     # now that the instance was properly saved, update the cache.
     cache[@_id] = @
-    modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
     
   # post-remove middleware: now that the type was properly removed, update the cache.
   AbstractType.pre 'remove', (next) ->
@@ -403,4 +401,17 @@ module.exports = (typeName, spec, options = {}) ->
       # restore save to allow reference reuse.
       @_doc.type = saveType
 
+  # pre-save middleware: trigger model watcher.
+  # Must be registered after pre-save middleware set for 'instanceProperties' classes
+  #
+  # @param next [Function] function that must be called to proceed with other middleware.
+  # Calling it with an argument indicates the the validation failed and cancel the instante save.
+  AbstractType.pre 'save', (next) ->
+    # stores the isNew status and modified paths.
+    wasNew = @isNew
+    modifiedPaths = @modifiedPaths().concat()
+    next()
+    # propagate modifications
+    modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
+    
   return AbstractType

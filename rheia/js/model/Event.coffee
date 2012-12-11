@@ -24,6 +24,16 @@ define [
   'model/EventType'
 ], (utils, Base, EventType) ->
 
+  enrichFrom = (model, callback) ->
+    raw = model.from
+    id = if 'object' is utils.type raw then raw._id else raw
+    require ['model/Item'], (Item) => 
+      model.from = Item.collection.get id
+      if !(model.from?) and 'object' is utils.type raw
+        model.from = new Item raw
+        Item.collection.add model.from
+      callback() if 'function' is utils.type callback
+
   # Client cache of events.
   class _Events extends Base.LinkedCollection
 
@@ -49,11 +59,11 @@ define [
       
       # resolves from object if possible
       if 'from' of model and model.from?
-        id = if 'object' is utils.type model.from then model.from._id else model.from
-        model.from = require('model/Item').collection.get id
-
-      # calls inherited merhod
-      super className, model
+        # calls inherited merhod
+        enrichFrom model, => super className, model
+      else
+        # calls inherited merhod
+        super className, model
 
     # **private**
     # Callback invoked when a database update is received.
@@ -67,11 +77,11 @@ define [
 
       # resolves from object if possible
       if 'from' of changes and changes.from?
-        id = if 'object' is utils.type changes.from then changes.from._id else changes.from
-        changes.from = require('model/Item').collection.get id
-      
-      # calls inherited merhod
-      super className, changes
+        # calls inherited merhod
+        enrichFrom changes, => super className, changes
+      else
+        # calls inherited merhod
+        super className, changes
 
   # Modelisation of a single Event.
   # Not wired to the server : use collections Events instead
@@ -94,3 +104,12 @@ define [
     # **private**
     # List of properties that must be defined in this instance.
     _fixedAttributes: ['created', 'updated', 'from', 'type']
+
+    # Event constructor.
+    # Enriched from object with Item model. 
+    #
+    # @param attributes [Object] raw attributes of the created instance.
+    constructor: (attributes) ->
+      super attributes
+      if @from?
+        enrichFrom @

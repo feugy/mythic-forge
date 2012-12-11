@@ -102,8 +102,12 @@ define [
       # first, get the cached item type and quit if not found
       model = @get changes[@model.prototype.idAttribute]
       return unless model?
+      console.log "process update for model #{model.id} (#{model._className})", changes
       # then, update the local cache, using setter do defines dynamic properties if needed
-      model.set key, value for key, value of changes unless key in @_notUpdated
+      for key, value of changes
+        unless key in @_notUpdated
+          model.set key, value 
+          console.log "update property #{key}"
 
       # emit a change.
       @trigger 'update', model, @, changes
@@ -333,14 +337,14 @@ define [
       # Construct an type around the raw type.
       if attributes?.type?
         typeId = attributes.type
-        if typeof attributes.type is 'object'
+        if 'object' is utils.type attributes.type
           typeId = attributes.type[@idAttribute]
 
         # resolve by id
         type = @constructor.typeClass.collection.get typeId
         # not found on client
         unless type?
-          if typeof attributes.type is 'object'
+          if 'object' is utils.type attributes.type
             # we have all informations: just adds it to collection
             type = new @constructor.typeClass attributes.type
             @constructor.typeClass.collection.add type
@@ -381,7 +385,7 @@ define [
       properties = @type.properties
       for prop, def of properties
         value = @[prop]
-        if def.type is 'object' and typeof value is 'string'
+        if def.type is 'object' and 'string' is utils.type value
           # try to get it locally first in same class and in other candidate classes
           objValue = @constructor.collection.get value
           unless objValue?
@@ -396,7 +400,7 @@ define [
             break
         else if def.type is 'array' 
           value = [] unless value?
-          for linked, i in value when typeof linked is 'string'
+          for linked, i in value when 'string' is utils.type linked
             # try to get it locally first in same class and in other candidate classes
             objLinked = @constructor.collection.get linked
             unless objLinked?
@@ -441,7 +445,7 @@ define [
           else if def.type is 'array' 
             value = [] unless value?
             @[prop] = []
-            for val, i in value when val?
+            for val in value when val?
               # construct a backbone model around linked object
               clazz = @constructor
               for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"

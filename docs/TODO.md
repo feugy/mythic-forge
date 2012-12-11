@@ -9,8 +9,10 @@
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
+  - do not send linked objects within modelWatcher, just ids
   - Rule engine
     - **[TODO]** check execute() parameters
+    - **[TODO]** detect changes on array linked properties
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
   - Security
@@ -18,10 +20,13 @@
 
 - Rheia
   - bugs
+    - **[TODO]** model/Event, model/BaseModel: report modification to atlas and demo
+  - moderation perspective
+    - contextual menu in search results
+    - sort events bu update date
+    - update 'array'/'object' properties when removing an item/event
   - edition perspective
-    - Maps
-      - diamond map widget
-      - square map widget
+    - contextual menu in search results
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -143,7 +148,7 @@
     - rule with category appears in turnRules in search results
     - browser do not retain passwords
     - model destruction, and remaining destroyed items on map
-  - **[TODO]** handle rule requires
+  - handle rule requires
   - perspective loader
   - login page
   - logout button

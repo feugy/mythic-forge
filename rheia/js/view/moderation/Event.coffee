@@ -82,7 +82,7 @@ define [
         accepted: ['Item']
         tooltipFct: utils.instanceTooltip
       ).on('change', @_onChange
-      ).on('open:', (event, instance) =>
+      ).on('open', (event, instance) =>
         # opens players, items, events
         rheia.router.trigger 'open', instance._className, instance.id
       ).data 'property'

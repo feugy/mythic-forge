@@ -52,6 +52,7 @@ define [
     constructor: (id, className, @_created) ->
       # superclass constructor
       super id, className
+
       @_propWidgets = {}
       # Closes external changes warning after 5 seconds
       @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
@@ -109,6 +110,7 @@ define [
       for name, widget of @_propWidgets
         value = widget.options.value
         original = @model[name]
+
 
         # compare only linked ids
         if widget.options.type is 'object'
@@ -172,10 +174,6 @@ define [
             value = []
           else
             value = prop.def
-
-        # sort linked arrays by update date
-        if prop.type is 'array'
-          value = _(value).sortBy((obj) -> obj?.updated).reverse()
 
         accepted = []
         if (prop.type is 'object' or prop.type is 'array') and prop.def isnt 'Any'
