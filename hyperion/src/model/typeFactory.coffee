@@ -47,6 +47,8 @@ processLinks = (instance, properties) ->
         for linked, i in value when 'object' is utils.type(linked) and linked?._id?
           value[i] = linked._id.toString() 
           instance.markModified name
+        # filter null values
+        instance[name] = _.filter value, (obj) -> obj?
 
 # Extends original Mongoose toObject method to add className when requireing json.
 originalToObject = mongoose.Document.prototype.toObject
@@ -316,11 +318,11 @@ module.exports = (typeName, spec, options = {}) ->
         properties = instance.type.properties
         for prop, def of properties
           value = instance[prop]
-          if def.type is 'object' and typeof value is 'string'
+          if def.type is 'object' and 'string' is utils.type value
             # Do not resolve objects that were previously resolved
             logger.debug "found #{value} in property #{prop}"
             ids.push value
-          else if def.type is 'array' and value?.length > 0 and typeof value[0] is 'string'
+          else if def.type is 'array' and value?.length > 0 and _.find(value, (val) -> 'string' is utils.type val)?
             # Do not resolve arrays that were previously resolved
             logger.debug "found #{value} in property #{prop}"
             ids = ids.concat value
@@ -343,7 +345,7 @@ module.exports = (typeName, spec, options = {}) ->
           logger.debug "replace linked ids in #{instance._id}"
           for prop, def of properties
             value = instance[prop]
-            if def.type is 'object' and typeof value is 'string'
+            if def.type is 'object' and 'string' is utils.type value
               link = null
               for l in linked
                 if l._id.equals value
@@ -352,8 +354,8 @@ module.exports = (typeName, spec, options = {}) ->
               logger.debug "replace with object #{link?._id} in property #{prop}"
               # do not use setter to avoid marking the instance as modified.
               instance._doc[prop] = link
-            else if def.type is 'array' and value?.length > 0 and typeof value[0] is 'string'
-              for id, i in value
+            else if def.type is 'array' and value?.length > 0
+              for id, i in value when 'string' is utils.type id
                 link = null
                 for l in linked
                   if l._id.equals id
@@ -362,6 +364,8 @@ module.exports = (typeName, spec, options = {}) ->
                 # do not use setter to avoid marking the instance as modified.
                 logger.debug "replace with object #{link?._id} position #{i} in property #{prop}"
                 value[i] = link
+              # filter null values
+              instance[prop] = _.filter value, (obj) -> obj?
         # done !
         callback null, instances
       

@@ -21,6 +21,7 @@ Event = require '../src/model/Event'
 EventType = require '../src/model/EventType'
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
+utils = require '../src/utils'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
@@ -213,7 +214,7 @@ describe 'Event tests', ->
             event2.save (err, saved) -> 
               return done err if err?
               event2 = saved
-              event.set 'children', [event2]
+              event.children = [event2]
               event.save (err) ->
                 return done err if err?
                 done()
@@ -285,3 +286,23 @@ describe 'Event tests', ->
           assert.equal linked.father, event2.father
           assert.equal linked.children.length, 0
           done()
+
+    it 'should getLinked removes null in arrays', (done) ->
+      # given nulls inside array
+      event.children = [null, event2, null]
+      event.save (err) ->
+        return done err if err?
+      
+        # given an unresolved events
+        Event.findById event._id, (err, doc) ->
+          return done "Can't find event: #{err}" if err?
+          assert.equal doc.children.length, 1
+          assert.equal utils.type(doc.children[0]), 'string'
+          # when resolving it
+          Event.getLinked [doc], (err, docs) ->
+            return done "Can't resolve links: #{err}" if err?
+            # then the property does not contains nulls anymore
+            assert.ok event.equals docs[0]
+            assert.equal docs[0].children.length, 1
+            assert.ok event2.equals docs[0].children[0]
+            done()

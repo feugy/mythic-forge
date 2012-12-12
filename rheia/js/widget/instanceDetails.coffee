@@ -60,6 +60,9 @@ define [
 
       @$el.addClass 'instance-details'
 
+      # destroy if needed
+      @bindTo instance, 'destroy', => @$el.remove() if instance?
+
       if instance? and 'object' is utils.type instance
         # displays an image if a type is available
         if instance.type? 

@@ -244,7 +244,7 @@ define [
       select = @$el.find '.maps select'
       maps = ''
       found = false
-      for map in Map.collection.models
+      for map in Map.collection.sortBy 'name'
         found = true if map.equals @_map
         maps += "<option value='#{map.id}' #{if map.equals @_map then 'selected="selected"' else ''}>#{map.name}</option>"
      

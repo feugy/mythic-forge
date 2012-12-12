@@ -20,6 +20,7 @@
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
 Map = require '../src/model/Map'
+utils = require '../src/utils'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
@@ -311,3 +312,23 @@ describe 'Item tests', ->
           assert.equal linked.end, item2.end
           assert.equal linked.affluents.length, 0
           done()
+
+    it 'should getLinked removes null in arrays', (done) ->
+      # given nulls inside array
+      item.affluents = [null, item2, null]
+      item.save (err) ->
+        return done err if err?
+      
+        # given an unresolved item
+        Item.findById item._id, (err, doc) ->
+          return done "Can't find item: #{err}" if err?
+          assert.equal doc.affluents.length, 1
+          assert.equal utils.type(doc.affluents[0]), 'string'
+          # when resolving it
+          Item.getLinked [doc], (err, docs) ->
+            return done "Can't resolve links: #{err}" if err?
+            # then the property does not contains nulls anymore
+            assert.ok item.equals docs[0]
+            assert.equal docs[0].affluents.length, 1
+            assert.ok item2.equals docs[0].affluents[0]
+            done()

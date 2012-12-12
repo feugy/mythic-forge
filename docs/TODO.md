@@ -24,7 +24,6 @@
   - moderation perspective
     - contextual menu in search results
     - sort events bu update date
-    - update 'array'/'object' properties when removing an item/event
   - edition perspective
     - contextual menu in search results
   - authoring perspective
@@ -242,6 +241,7 @@
       - displays, edits and navigates to linked
       - restrict drop operations on object/array properties
       - display tooltip on object/array properties
+      - update 'array'/'object' properties when removing an item/event
     - Events 
       - CRUD
       - sort event by update date in properties

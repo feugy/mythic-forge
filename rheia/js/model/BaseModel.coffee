@@ -89,7 +89,7 @@ define [
       # add the created raw model. An event will be triggered
       @add model
       # propagates changes on collection to global change event
-      rheia.router.trigger 'modelChanged'
+      rheia.router.trigger 'modelChanged', 'add',  @get model[@model.prototype.idAttribute]
 
     # **private**
     # Callback invoked when a database update is received.
@@ -102,18 +102,18 @@ define [
       # first, get the cached item type and quit if not found
       model = @get changes[@model.prototype.idAttribute]
       return unless model?
-      console.log "process update for model #{model.id} (#{model._className})", changes
+      # console.log "process update for model #{model.id} (#{model._className})", changes
       # then, update the local cache, using setter do defines dynamic properties if needed
       for key, value of changes
         unless key in @_notUpdated
           model.set key, value 
-          console.log "update property #{key}"
+          # console.log "update property #{key}"
 
       # emit a change.
       @trigger 'update', model, @, changes
       model.trigger 'update', model, changes
       # propagates changes on collection to global change event
-      rheia.router.trigger 'modelChanged'
+      rheia.router.trigger 'modelChanged', 'update', model
 
     # **private**
     # Callback invoked when a database deletion is received.
@@ -131,7 +131,7 @@ define [
         @remove removed 
         removed.trigger 'destroy', removed, @, options
         # propagates changes on collection to global change event
-        rheia.router.trigger 'modelChanged'
+        rheia.router.trigger 'modelChanged', 'remove', removed
 
   # BaseLinkedCollection provides common behaviour for model wih linked objects collections.
   #
@@ -163,7 +163,7 @@ define [
         # add the created raw model. An event will be triggered
         @add model
         # propagates changes on collection to global change event
-        rheia.router.trigger 'modelChanged'
+        rheia.router.trigger 'modelChanged', 'add', model
 
     # **private**
     # Callback invoked when a database update is received.
@@ -357,6 +357,36 @@ define [
         else 
           @type = type
           _.defer => @trigger 'typeFetched', @
+      
+      # update if one of linked model is removed
+      rheia.router.on 'modelChanged', (kind, model) => 
+        return unless kind is 'remove' and !@equals model
+
+        properties = @type.properties
+        changes = {}
+        # process each properties
+        for prop, def of properties
+          value = @[prop]
+          if def.type is 'object' and model.equals value
+            @[prop] = null
+            changes[prop] = null
+          else if def.type is 'array' 
+            value = [] unless value?
+            modified = false
+            value = _.filter value, (linked) -> 
+              if model.equals linked
+                modified = true
+                false
+              else
+                true
+            if modified
+              @[prop] = value
+              changes[prop] = value
+
+        # indicate that model changed
+        unless 0 is _.keys(changes).length
+          console.log "update model #{@id} after removing a linked object #{model.id}"
+          @trigger 'update', @, changes
 
     # Handler of type retrieval. Updates the current type with last values
     #
