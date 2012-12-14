@@ -1,6 +1,0 @@
-define
-  root: 
-    constants:
-      fieldAffectation: 'affectField'
-    titles:
-      editionPerspective: 'Edition du monde 3'
