@@ -243,7 +243,8 @@ define [
     #
     # @param attr [String] the modified attribute
     # @param value [Object] the new attribute value
-    set: (attr, value) =>
+    # @param options [Object] optionnal set options
+    set: (attr, value, options) =>
       # treat single attribute
       single = (name) =>
         if name in @_i18nAttributes
@@ -268,11 +269,13 @@ define [
         obj = {}
         obj[attr] = value
         attr = obj
+      else
+        options = value
     
       single attrName for attrName of attr
 
       # supperclass processing
-      super attr
+      super attr, options
 
     # Provide a custom sync method to wire Types to the server.
     # Only create and delete operations are supported.

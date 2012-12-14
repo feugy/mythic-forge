@@ -143,8 +143,9 @@ define [
     #
     # @param attr [String] the modified attribute
     # @param value [Object] the new attribute value
-    set: (attr, value) =>
-      super attr, value
+    # @param options [Object] optionnal set options
+    set: (attr, value, options) =>
+      super attr, value, options
       @_transitionChanged = true if attr is 'transition'
 
     # **private** 
