@@ -20,7 +20,6 @@
 
 - Rheia
   - bugs
-    - **[TODO]** model/Event, model/BaseModel: report modification to atlas and demo
   - moderation perspective
     - contextual menu in search results
     - sort events bu update date
@@ -135,6 +134,7 @@
     - handle require error cases on executables
     - rule may require parameters
   - Web layer
+    - retrieve item, event and field types 
     - map items CRUD invokation
     - rule engine invokation
     - rules retrieval

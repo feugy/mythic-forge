@@ -17,6 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+_ = require 'underscore'
 async = require 'async'
 testUtils = require './utils/testUtils'
 Executable = require '../src/model/Executable'
@@ -105,10 +106,10 @@ describe 'RuleService tests', ->
               # given the rules that are applicable for a target 
               service.resolve item1._id, item2._id, (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
-                return done 'the rule 3 was not resolved' if results[item2._id].length isnt 1
+                return done 'the rule 3 was not resolved' if results['rule 3'].length isnt 1
 
                 # when executing this rule on that target
-                service.execute results[item2._id][0].name, item1._id, item2._id, [], (err, result)->
+                service.execute 'rule 3', item1._id, item2._id, [], (err, result)->
                   return done "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
@@ -153,10 +154,10 @@ describe 'RuleService tests', ->
           # given the rules that are applicable for himself
           service.resolve item1._id, item1._id, (err, results)->
             return done "Unable to resolve rules: #{err}" if err?
-            return done 'the rule 4 was not resolved' if results[item1._id].length isnt 1
+            return done 'the rule 4 was not resolved' if results['rule 4'].length isnt 1
 
             # when executing this rule on that target
-            service.execute results[item1._id][0].name, item1._id, item1._id, [], (err, result)->
+            service.execute 'rule 4', item1._id, item1._id, [], (err, result)->
               return done "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
@@ -203,10 +204,10 @@ describe 'RuleService tests', ->
             # given the rules that are applicable for the both items
             service.resolve item1._id, item2._id, (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
-              return done 'the rule 5 was not resolved' if results[item2._id].length isnt 1
+              return done 'the rule 5 was not resolved' if results['rule 5'].length isnt 1
 
               # when executing this rule on that target
-              service.execute results[item2._id][0].name, item1._id, item2._id, [], (err, result)->
+              service.execute 'rule 5', item1._id, item2._id, [], (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
@@ -221,8 +222,7 @@ describe 'RuleService tests', ->
                     return done "Item not created" if err?
 
                     existing.getLinked ->
-                      assert.equal 1, existing.stock.length
-                      assert.equal null, existing.stock[0]
+                      assert.equal 0, existing.stock.length
                       done()
 
   describe 'given a player and a dumb rule', ->
@@ -261,9 +261,9 @@ describe 'RuleService tests', ->
 
         assert.ok results isnt null and results isnt undefined
         # then the rule must have matched
-        assert.ok player._id of results
-        assert.equal 1, results[player._id].length
-        assert.equal 'rule 0', results[player._id][0].name 
+        assert.property results, 'rule 0'
+        assert.equal 1, results['rule 0'].length
+        assert.ok player.equals results['rule 0'][0].target
         done()
 
     it 'should rule be executed for player', (done) ->
@@ -272,7 +272,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute results[player._id][0].name, player._id, [], (err, result)->
+        service.execute 'rule 0', player._id, [], (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -284,7 +284,7 @@ describe 'RuleService tests', ->
       service.export (err, rules) ->
         return done "Unable to export rules: #{err}" if err?
 
-        assert.ok 'rule0' of rules
+        assert.property rules, 'rule0'
         rule = rules.rule0
 
         # then requires have been replaced by a single define
@@ -319,7 +319,7 @@ describe 'RuleService tests', ->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
-          service.execute results[player._id][0].name, player._id, [], (err, result)->
+          service.execute 'rule 0', player._id, [], (err, result)->
             return done "Unable to execute rules: #{err}" if err?
 
             # then the modficiation was taken in account
@@ -386,20 +386,15 @@ describe 'RuleService tests', ->
 
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        assert.ok item2._id of results, 'The item2\'s id is not in results'
-        match = results[item2._id]
-        assert.equal 1, match.length
-        assert.equal 'rule 1', match[0]?.name
+        assert.property results, 'rule 1'
+        match = _.find results['rule 1'], (res) -> item2.equals res.target
+        assert.isNotNull match, 'The item2\'s id is not in results'
         # then the dumb rule has matched the third item
-        assert.ok item3._id of results, 'The item3\'s id is not in results'
-        match = results[item3._id]
-        assert.equal 1, match.length
-        assert.equal 'rule 1', match[0]?.name
+        match = _.find results['rule 1'], (res) -> item3.equals res.target
+        assert.isNotNull match, 'The item3\'s id is not in results'
         # then the dumb rule has matched the field
-        assert.ok field1._id of results, 'The field1\'s id is not in results'
-        match = results[field1._id]
-        assert.equal 1, match.length
-        assert.equal 'rule 1', match[0]?.name
+        match = _.find results['rule 1'], (res) -> field1.equals res.target
+        assert.isNotNull match, 'The field1\'s id is not in results'
         done()
         
     it 'should rule be applicable on target', (done) ->
@@ -409,10 +404,9 @@ describe 'RuleService tests', ->
          
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        assert.ok item2._id of results, 'The item2\'s id is not in results'
-        match = results[item2._id]
-        assert.equal 1, match.length
-        assert.equal 'rule 1', match[0]?.name
+        assert.property results, 'rule 1'
+        match = _.find results['rule 1'], (res) -> item2.equals res.target
+        assert.isNotNull match, 'The item2\'s id is not in results'
         done()
 
     it 'should rule be executed for target', (done) ->
@@ -421,7 +415,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute results[item2._id][0].name, item1._id, item2._id, [], (err, result)->
+        service.execute 'rule 1', item1._id, item2._id, [], (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -450,12 +444,11 @@ describe 'RuleService tests', ->
         service.resolve item1._id, item2._id, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
-          assert.equal 2, results[item2._id].length
-          rule = rule for rule in results[item2._id] when rule.name is 'rule 2'
-          assert.ok rule isnt null
+          assert.property results, 'rule 2'
+          assert.equal 1, results['rule 2'].length
 
           # when executing this rule on that target
-          service.execute rule.name, item1._id, item2._id, [], (err, result)->
+          service.execute 'rule 2', item1._id, item2._id, [], (err, result)->
             if err?
               assert.fail "Unable to execute rules: #{err}"
               return done();
@@ -855,7 +848,7 @@ describe 'RuleService tests', ->
         service.resolve item1._id, item1._id, (err, results) ->
           return done "Unable to resolve rules: #{err}" if err?
           # then the rule was not resolved
-          assert.ok results[item1._id].length isnt 1, 'Disabled rule was resolved'
+          assert.notProperty results, 'rule 6', 'Disabled rule was resolved'
           done()
 
     it 'should disabled rule not be executed', (done) ->

@@ -1,5 +1,9 @@
 'use strict'
 
+requirejs.onError = (err) ->
+  $('body').empty "requireJS error #{err}"
+  throw err
+
 requirejs.config  
   config:
     i18n:
@@ -10,7 +14,6 @@ requirejs.config
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
     'jquery': 'lib/jquery-1.7.2-min'
-    'jquery-ui': 'lib/jquery-ui-1.8.21-min'
     'hogan': 'lib/hogan-2.0.0-min'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
@@ -23,8 +26,6 @@ requirejs.config
       exports: 'Backbone'
     'underscore': 
       exports: '_'
-    'jquery-ui':
-      deps: ['jquery']
     'hogan':
       exports: 'Hogan'
     'jquery': 
@@ -40,9 +41,8 @@ define [
   'utils/utilities'
   'text!tpl/login.html'
   'utils/extensions'
-  'jquery-ui'
 ], (_, $, Backbone, i18n, utils, template) ->
-    
+
   class Router extends Backbone.Router
 
     constructor: ->

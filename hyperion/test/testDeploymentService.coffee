@@ -17,6 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+_ = require 'underscore'
 async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
@@ -82,7 +83,7 @@ describe 'Deployement tests', ->
         service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
-          assert.include err, "Parse error on line 50: Unexpected 'STRING'", "Unexpected error: #{err}"
+          assert.include err, "Parse error on line 46: Unexpected 'STRING'", "Unexpected error: #{err}"
           # then notifications were properly received
           assert.deepEqual notifications, [
             'DEPLOY_START'

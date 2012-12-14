@@ -18,10 +18,13 @@
 ###
 'use strict'
 
+async = require 'async'
 Item = require '../model/Item'
 Event = require '../model/Event'
 Field = require '../model/Field'
 ItemType = require '../model/ItemType'
+EventType = require '../model/EventType'
+FieldType = require '../model/FieldType'
 Executable = require '../model/Executable'
 ruleService = require('./RuleService').get()
 ObjectId = require('mongodb').BSONPure.ObjectID
@@ -32,15 +35,23 @@ logger = require('../logger').getLogger 'service'
 #
 class _GameService
 
-  # Retrieve Item types by their ids
+  # Retrieve Item/Event/Field types by their ids
   #
   # @param ids [Array<String>] array of ids
   # @param callback [Function] callback executed when types where retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
-  # @option callback types [Array<ItemType>] list of retrieved types. May be empty.
+  # @option callback types [Array<ItemType/EventType/FieldType>] list of retrieved types. May be empty.
   getTypes: (ids, callback) =>
     logger.debug "Consult types with ids: #{ids}"
-    ItemType.find {_id: {$in: ids}}, callback
+    types = []
+    # search in each possible type category
+    async.forEach [ItemType, EventType, FieldType], (clazz, next) =>
+      clazz.find {_id: {$in: ids}}, (err, docs) =>
+        # quit at first error
+        return callback err, null if err?
+        types = types.concat docs
+        next()
+    , -> callback null, types
 
   # Retrieve Items by their ids. Each linked objects are resolved.
   #

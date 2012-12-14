@@ -18,6 +18,7 @@
 ###
 'use strict'
 
+_ = require 'underscore'
 Rule = require '../model/Rule'
 TurnRule = require '../model/TurnRule'
 Executable = require '../model/Executable'
@@ -74,9 +75,11 @@ filterModified = (item, modified) ->
 # @param wholeRule [Boolean] true to returns the whole rule and not just name/category
 # @param callback [Function] callback executed when rules where determined. Called with parameters:
 # @option callback err [String] an error string, or null if no error occured
-# @option callback rules [Object] applicable rules: an associated array with target id as key, and
-# as value an array containing for each applicable rule the awaited parameters (params) and the rule name/category
-#
+# @option callback rules [Object] applicable rules: an associated array with rule names id as key, and
+# as value an array containing for each concerned target:
+# - target [Object] the target
+# - params [Object] the awaited parameters specification
+# - category/rule [String/Object] the rule category, or the whole role (wholeRule is true)
 resolve = (actor, targets, wholeRule, callback) ->
   results = {} 
   remainingTargets = 0
@@ -119,10 +122,9 @@ resolve = (actor, targets, wholeRule, callback) ->
         # third part of the resolution, after target have been resolved
         process2 = (err) ->
           return callback "Cannot resolve rule because target's (#{target._id}) linked item cannot be resolve: #{err}" if err?
-          results[target._id] = []
 
           # function applied to filter rules that apply to the current target.
-          filterRule = (rule, end) ->
+          filterRule = (rule, end) -> 
             try
               rule.canExecute actor, target, (err, parameters) ->
                 # exit at the first resolution error
@@ -130,10 +132,13 @@ resolve = (actor, targets, wholeRule, callback) ->
                 if Array.isArray parameters
                   logger.debug "rule #{rule.name} applies"
                   if wholeRule
-                    result = rule: rule, params: parameters
+                    result = rule: rule
                   else
-                    result = name: rule.name, category: rule.category, params: parameters
-                  results[target._id].push result 
+                    result = category: rule.category
+                  result.target = target
+                  result.params = parameters
+                  results[rule.name] = [] unless rule.name of results
+                  results[rule.name].push result 
                 end() 
             catch err
               # exit at the first resolution error
@@ -237,9 +242,11 @@ class _RuleService
   #
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
-  # @option callback rules [Object] applicable rules: an associated array with target id as key, and
-  # as value an array containing for each applicable rule the awaited parameters (params) and the rule name and category
-  #
+  # @option callback rules [Object] applicable rules: an associated array with rule names id as key, and
+  # as value an array containing for each concerned target:
+  # - target [Object] the target
+  # - params [Object] the awaited parameters specification
+  # - category [String] the rule category
   resolve: (args..., callback) =>
     if args.length is 1
       # only playerId specified. Retrieve corresponding account
@@ -317,13 +324,14 @@ class _RuleService
       resolve actor, [target], true, (err, rules) =>
         # if the rule does not apply, leave right now
         return callback "Cannot resolve rule #{ruleName}: #{err}" if err?
-        for applicable in rules[target._id] when applicable.rule.name is ruleName
-          rule = applicable.rule
-          err = utils.checkParameters parameters, applicable.params
-          return callback "Invalid parameters for #{ruleName}: #{err}" if err?
-          break
-        return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}" unless rule?
-        
+        applicable = null
+        applicable = _.find rules[ruleName], (obj) -> target.equals obj.target if ruleName of rules
+        unless applicable? 
+          return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}"
+        rule = applicable.rule
+        err = utils.checkParameters parameters, applicable.params
+        return callback "Invalid parameters for #{ruleName}: #{err}" if err?
+
         # reinitialize creation and removal arrays.
         rule.saved = []
         rule.removed = []

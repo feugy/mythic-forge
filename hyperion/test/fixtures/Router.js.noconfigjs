@@ -10,8 +10,7 @@ define [
   'utils/utilities'
   'text!tpl/login.html'
   'utils/extensions'
-  'jquery-ui' 
-  ], (_, $, Backbone, i18n, utils, template) ->
+], (_, $, Backbone, i18n, utils, template) ->
 
   class Router extends Backbone.Router
 

@@ -56,6 +56,7 @@ describe 'server tests', ->
     done()
 
   describe 'given a started server', ->
+    @bail true
 
     it 'should the server be responding', (done) ->
       request "#{rootUrl}/konami", (err, res, body) ->
@@ -133,6 +134,7 @@ describe 'server tests', ->
             socket.emit 'save', 'FSItem', file
 
     describe 'given a map, an item type, two characters, an event type and two events', ->
+      @bail true
 
       beforeEach (done) ->
         # given a clean ItemTypes and Items collections
@@ -191,15 +193,24 @@ describe 'server tests', ->
         # then the character type is retrieved
         socket.once 'getTypes-resp', (err, types) ->
           return done err if err?
-          assert.equal types.length, 1
-          assert.ok character._id.equals types[0]._id
-          assert.equal types[0]._name.default, character.name
-          assert.ok 'name' of types[0].properties
-          assert.equal types[0].properties.name.type, character.properties.name.type
+          assert.equal types.length, 2
+          for type in types
+            awaited = null
+            if character.equals type 
+              awaited = character
+              assert.ok 'name' of type.properties
+              assert.equal type.properties.name.type, awaited.properties.name.type
+            else if life.equals type
+              awaited = life
+              assert.ok 'step' of type.properties
+              assert.equal type.properties.step.type, awaited.properties.step.type
+            else 
+              assert.fail "Unknown returned type, #{type}"
+            assert.equal type._name.default, awaited.name
           done()
 
         # when retrieving types by ids
-        socket.emit 'getTypes', [character._id]
+        socket.emit 'getTypes', [character._id, life._id]
 
       it 'should items be retrieved', (done) ->
         # given a connected socket.io client
@@ -262,6 +273,7 @@ describe 'server tests', ->
         socket.emit 'getEvents', [birth._id, death._id]
 
       describe 'given a rule', ->
+        @bail true
 
         beforeEach (done) ->
           # Empties the compilation and source folders content
@@ -328,8 +340,9 @@ describe 'server tests', ->
           # then the rename rule is returned
           socket.once 'resolveRules-resp', (err, results) ->
             return done err if err?
-            assert.ok jack._id of results
-            assert.equal results[jack._id][0].name, 'rename'
+            assert.property results, 'rename'
+            match = (res for res in results when jack.equals res.target)?[0]
+            assert.isNotNull match, 'rename does not apply to Jack'
 
             deleted = false
             created = false
@@ -365,12 +378,13 @@ describe 'server tests', ->
               updated = true
 
             # when executing the rename rule for john on jack
-            socket.emit 'executeRule', results[jack._id][0].name, john._id, jack._id, []
+            socket.emit 'executeRule', 'rename', john._id, jack._id, []
 
           # when resolving rules for john on jack
           socket.emit 'resolveRules', john._id, jack._id
 
     describe 'given a type', ->
+      @bail true
 
       before (done) ->
         ItemType.collection.drop -> testUtils.cleanFolder utils.confKey('images.store'), ->
