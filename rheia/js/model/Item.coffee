@@ -72,7 +72,7 @@ define [
       # manages transition changes
       if 'transition' of changes
         model = @get changes._id
-        model._transition = changes.transition if model?
+        model?._transition = changes.transition
 
       # Call inherited merhod
       super className, changes
@@ -80,7 +80,7 @@ define [
       # reset transition change detection when updated
       if 'transition' of changes
         model = @get changes._id
-        model._transitionChanged = false
+        model?._transitionChanged = false
 
   # Modelisation of a single Item.
   # Not wired to the server : use collections Items instead

@@ -76,7 +76,7 @@ class _ModelWatcher extends EventEmitter
     if className is 'Player'
       require('../model/Player').purge parameter
       return if Object.keys(parameter).length is 0
-      
+
     logger.debug "change propagation: #{operation} of instance #{parameter._id or parameter.path} (#{className})"
     @emit 'change', operation, className, parameter
 

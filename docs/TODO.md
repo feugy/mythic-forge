@@ -3,6 +3,8 @@
 - Demo
   - Enrollement
   - Talk between players
+    - answer within event
+    - delete event
   - Bash opponents
   - Move opponents
 
@@ -10,6 +12,8 @@
   - cache evinction on inutility and size
   - test images for field types and event types
   - do not send linked objects within modelWatcher, just ids
+  - EventType
+    - **[TODO]** add rendering template
   - Rule engine
     - **[TODO]** resolve only on actor's map
     - **[TODO]** check execute() parameters

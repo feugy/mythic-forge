@@ -371,6 +371,9 @@ module.exports = (typeName, spec, options = {}) ->
         if value.type is 'date' and 'string' is utils.type @[prop]
           @[prop] = new Date @[prop]
 
+      # stores the isNew status and modified paths now, to avoid registering modification on wrong attributes.
+      wasNew = @isNew
+      modifiedPaths = @modifiedPaths().concat()
       # replace links by them _ids
       utils.processLinks this, properties
       # replace type with its id, for storing in Mongo, without using setters.
@@ -379,18 +382,22 @@ module.exports = (typeName, spec, options = {}) ->
       next()
       # restore save to allow reference reuse.
       @_doc.type = saveType
+      # propagate modifications
+      modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
 
-  # pre-save middleware: trigger model watcher.
-  # Must be registered after pre-save middleware set for 'instanceProperties' classes
-  #
-  # @param next [Function] function that must be called to proceed with other middleware.
-  # Calling it with an argument indicates the the validation failed and cancel the instante save.
-  AbstractType.pre 'save', (next) ->
-    # stores the isNew status and modified paths.
-    wasNew = @isNew
-    modifiedPaths = @modifiedPaths().concat()
-    next()
-    # propagate modifications
-    modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
+  else
+
+    # pre-save middleware: trigger model watcher.
+    # Not used for schemas with instanceProperties, because they handled themselves their modifications
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    # Calling it with an argument indicates the the validation failed and cancel the instante save.
+    AbstractType.pre 'save', (next) ->
+      # stores the isNew status and modified paths.
+      wasNew = @isNew
+      modifiedPaths = @modifiedPaths().concat()
+      next()
+      # propagate modifications
+      modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
     
   return AbstractType
