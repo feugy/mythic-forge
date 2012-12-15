@@ -449,6 +449,28 @@ initGameRepo = (logger, callback) ->
     logger.debug "using existing git repository..."
     finished()
 
+# Walk through properties and replace linked object with their ids if necessary
+#
+# @param instance [Object] the processed instance
+# @param properties [Object] the propertes definition, a map index with property names and that contains for each property:
+# @option properties type [String] the awaited type. Could be: string, text, boolean, integer, float, date, array or object
+# @option properties def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
+# @param markModified [Boolean] true if the replacement need to be tracked as item modification. default to true
+processLinks = (instance, properties, markModified = true) ->
+  for name, property of properties
+    value = instance[name]
+    if property.type is 'object'
+      if value isnt null and 'object' is type(value) and value?._id?
+        instance[name] = value._id.toString() 
+        instance.markModified name
+    else if property.type is 'array'
+      if 'array' is type value
+        for linked, i in value when 'object' is type(linked) and linked?._id?
+          value[i] = linked._id.toString() 
+          instance.markModified name
+        # filter null values
+        instance[name] = _.filter value, (obj) -> obj?
+
 module.exports =
 
   isA: isA
@@ -466,3 +488,4 @@ module.exports =
   quickHistory: quickHistory
   listRestorables: listRestorables
   initGameRepo: initGameRepo
+  processLinks: processLinks

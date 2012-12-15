@@ -21,6 +21,7 @@
 typeFactory = require './typeFactory'
 Item = require './Item'
 conn = require './connection'
+utils = require '../utils'
 
 # Define the schema for map event: no name or desc, and properties
 Event = typeFactory 'Event', 
@@ -53,12 +54,15 @@ Event = typeFactory 'Event',
     # @param next [Function] function that must be called to proceed with other middleware.
     init: (next, event) ->
       return next() unless event.from?
-      # loads the type from local cache
-      Item.findCached [event.from], (err, items) ->
+      # loads the type, but not from local cache to be able to modify it without side effects
+      Item.findById event.from, (err, item) ->
         return next(new Error "Unable to init event #{event._id}. Error while resolving its from: #{err}") if err?
-        return next(new Error "Unable to init event #{event._id} because there is no from with id #{event.from}") unless items.length is 1    
-        # Do the replacement.
-        event.from = items[0]
+        return next(new Error "Unable to init event #{event._id} because there is no from with id #{event.from}") unless item?  
+        # Do the replacement
+        event.from = item
+        # Never use resolved item, or it may lead to circular references. 
+        # Use unresolved linked properties instead, not marking it as modified 
+        utils.processLinks event.from, event?.type?.properties, false
         next()
 
     # pre-save middleware: only save the from reference, not the whole object

@@ -306,3 +306,91 @@ describe 'Event tests', ->
             assert.equal docs[0].children.length, 1
             assert.ok event2.equals docs[0].children[0]
             done()
+
+    it 'should getLinked handle circular references in properties', (done) ->
+      # given circular reference in dynamic properties
+      event.children = [event2]
+      event.save (err, event) ->
+        return done err if err?
+        event2.father = event
+        event2.save (err, event2) ->
+          return done err if err?
+
+          # given an unresolved events
+          Event.find _id:$in:[event._id, event2._id], (err, docs) ->
+            return done "Can't find event: #{err}" if err?
+            assert.equal docs.length, 2
+            # when resolving then
+            Event.getLinked docs, (err, docs) ->
+              return done "Can't resolve links: #{err}" if err?
+              
+              assert.equal docs.length, 2
+              for doc in docs
+                if event.equals doc
+                  # then the dynamic properties where resolves
+                  assert.isNull doc.father
+                  assert.equal doc.children.length, 1
+                  assert.ok event2.equals doc.children[0]
+                  # then the circular dependency was broken
+                  assert.equal utils.type(doc.children[0].father), 'string'
+                else if event2.equals doc
+                  # then the dynamic properties where resolves
+                  assert.ok event.equals doc.father
+                  assert.equal doc.children.length, 0
+                  # then the circular dependency was broken
+                  assert.equal doc.father.children.length, 1
+                  assert.equal utils.type(doc.father.children[0]), 'string'
+                else
+                  assert.fail "unkown event: #{doc}"
+
+              # then events can be serialized
+              try 
+                JSON.stringify docs
+              catch err
+                assert.fail "Fail to serialize item: #{err}"
+              done()
+
+    it 'should getLinked handle circular references in from', (done) ->
+      # given circular reference in dynamic properties
+      event.from = item
+      event.save (err, event) ->
+        return done err if err?
+        item.chat.push event
+        item.save (err, item) ->
+          return done err if err?
+
+           # given an unresolved events
+          Event.findById event._id, (err, doc) ->
+            return done "Can't find event: #{err}" if err?
+            assert.ok item.equals doc.from
+            assert.equal doc.from.chat.length, 1
+            assert.equal utils.type(doc.from.chat[0]), 'string'
+            # when resolving it
+            Event.getLinked [doc], (err, docs) ->
+              return done "Can't resolve links: #{err}" if err?
+              # then the proeprty were resolved
+              assert.ok item.equals docs[0].from
+              assert.equal docs[0].from.chat.length, 1
+              assert.equal utils.type(docs[0].from.chat[0]), 'string'
+
+              # given an unresolved item
+              Item.findById item._id, (err, doc) ->
+                return done "Can't find item: #{err}" if err?
+                assert.ok item.equals doc
+                assert.equal doc.chat.length, 1
+                assert.equal utils.type(doc.chat[0]), 'string'
+                # when resolving it
+                Item.getLinked [doc], (err, docs) ->
+                  return done "Can't resolve links: #{err}" if err?
+                  # then the property were resolved
+                  assert.ok item.equals docs[0]
+                  assert.equal docs[0].chat.length, 1
+                  assert.ok event.equals docs[0].chat[0]
+                  assert.ok item.equals docs[0].chat[0].from
+                  assert.equal utils.type(docs[0].chat[0].from.chat[0]), 'string'
+                  # then item can be serialized
+                  try 
+                    JSON.stringify docs
+                  catch err
+                    assert.fail "Fail to serialize item: #{err}"
+                  done()

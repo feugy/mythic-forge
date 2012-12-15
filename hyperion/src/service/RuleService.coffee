@@ -281,7 +281,8 @@ class _RuleService
         for result,i in results 
           if result._id.equals actorId
             actor = result
-            results.splice i, 1
+            # remove actor from target unless he's on the map
+            results.splice i, 1 unless actor.x is x and actor.y is y
             break
         return callback "No actor with id #{actorId}" unless actor?
         return callback "Cannot resolve rules for actor #{actorId} on map if it does not have a map !" unless actor.map?

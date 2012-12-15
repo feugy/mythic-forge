@@ -29,27 +29,6 @@ modelWatcher = require('./ModelWatcher').get()
 imageStore = require('../utils').confKey('images.store')
 logger = require('../logger').getLogger 'model'
 
-# Walk through properties and replace linked object with their ids if necessary
-#
-# @param instance [Object] the processed instance
-# @param properties [Object] the propertes definition, a map index with property names and that contains for each property:
-# @option properties type [String] the awaited type. Could be: string, text, boolean, integer, float, date, array or object
-# @option properties def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
-processLinks = (instance, properties) ->
-  for name, property of properties
-    value = instance[name]
-    if property.type is 'object'
-      if value isnt null and 'object' is utils.type(value) and value?._id?
-        instance[name] = value._id.toString() 
-        instance.markModified name
-    else if property.type is 'array'
-      if 'array' is utils.type value
-        for linked, i in value when 'object' is utils.type(linked) and linked?._id?
-          value[i] = linked._id.toString() 
-          instance.markModified name
-        # filter null values
-        instance[name] = _.filter value, (obj) -> obj?
-
 # Extends original Mongoose toObject method to add className when requireing json.
 originalToObject = mongoose.Document.prototype.toObject
 mongoose.Document.prototype.toObject = (options) ->
@@ -175,7 +154,7 @@ module.exports = (typeName, spec, options = {}) ->
         cached.push cache[id]
       else
         notCached.push id
-    return setTimeout (-> callback null, cached), 0 if notCached.length is 0
+    return _.defer(-> callback null, cached) if notCached.length is 0
     # then into the database
     @find {_id: $in: notCached}, (err, results) =>
       return callback err if err?
@@ -355,17 +334,13 @@ module.exports = (typeName, spec, options = {}) ->
               # do not use setter to avoid marking the instance as modified.
               instance._doc[prop] = link
             else if def.type is 'array' and value?.length > 0
+              result = []
               for id, i in value when 'string' is utils.type id
-                link = null
-                for l in linked
-                  if l._id.equals id
-                    link = l
-                    break
-                # do not use setter to avoid marking the instance as modified.
-                logger.debug "replace with object #{link?._id} position #{i} in property #{prop}"
-                value[i] = link
+                result[i] = _.find linked, (link) -> link._id.equals id
+                logger.debug "replace with object #{result[i]?._id} position #{i} in property #{prop}"
               # filter null values
-              instance[prop] = _.filter value, (obj) -> obj?
+              # do not use setter to avoid marking the instance as modified.
+              instance._doc[prop] = _.filter result, (obj) -> obj?
         # done !
         callback null, instances
       
@@ -397,7 +372,7 @@ module.exports = (typeName, spec, options = {}) ->
           @[prop] = new Date @[prop]
 
       # replace links by them _ids
-      processLinks this, properties
+      utils.processLinks this, properties
       # replace type with its id, for storing in Mongo, without using setters.
       saveType = @type
       @_doc.type = saveType?._id
