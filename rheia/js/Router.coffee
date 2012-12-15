@@ -21,67 +21,67 @@
 # configure requireJs
 requirejs.config  
   paths:
+    'ace': 'lib/ace-1.0-min'
+    'async': 'lib/async-0.1.22-min'
     'backbone': 'lib/backbone-0.9.2-min'
-    'underscore': 'lib/underscore-1.3.3-min'
-    'underscore.string': 'lib/underscore.string-2.2.0rc-min'
+    'coffeescript': 'lib/coffee-script-1.4.0-min'
+    'hogan': 'lib/hogan-2.0.0-min'
+    'hotkeys': 'lib/jquery-hotkeys-min'
+    'html5slider': 'lib/html5slider-min'
     'jquery': 'lib/jquery-1.7.2-min'
     'jquery-ui': 'lib/jquery-ui-1.8.21-min'
     'jquery-punch': 'lib/jquery-punch-0.2.2-min'
-    'transit': 'lib/jquery-transit-0.1.4-min'
-    'hotkeys': 'lib/jquery-hotkeys-min'
-    'numeric': 'lib/jquery-ui-numeric-1.2-min'
-    'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
-    'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
-    'socket.io': 'lib/socket.io-0.9.11-min'
-    'async': 'lib/async-0.1.22-min'
-    'coffeescript': 'lib/coffee-script-1.4.0-min'
+    'i18n': 'lib/i18n-2.0.1-min'
     'queryparser': 'lib/queryparser-1.2.0-min'
     'md5': 'lib/md5-2.2-min'
-    'html5slider': 'lib/html5slider-min'
-    'hogan': 'lib/hogan-2.0.0-min'
     'moment': 'lib/moment-1.7.0-min'
-    'ace': 'lib/ace-1.0-min'
-    'i18n': 'lib/i18n-2.0.1-min'
-    'text': 'lib/text-2.0.0-min'
+    'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
     'nls': '../nls'
+    'numeric': 'lib/jquery-ui-numeric-1.2-min'
+    'socket.io': 'lib/socket.io-0.9.11-min'
+    'text': 'lib/text-2.0.0-min'
+    'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'tpl': '../template'
+    'transit': 'lib/jquery-transit-0.1.4-min'
+    'underscore': 'lib/underscore-1.3.3-min'
+    'underscore.string': 'lib/underscore.string-2.2.0rc-min'
     # shim for rules
     'mongodb': 'lib/shim/mongodb'
     
   shim:
+    'ace/ace':
+      exports: 'ace'
+    'async': 
+      exports: 'async'
     'backbone': 
       deps: ['underscore', 'jquery']
       exports: 'Backbone'
-    'underscore': 
-      exports: '_'
-    'numeric':
-      deps: ['jquery-ui']
-    'timepicker':
-      deps: ['jquery-ui']
-    'mousewheel':
-      deps: ['jquery']
-    'jquery-ui':
-      deps: ['jquery']
-    'jquery-punch':
-      deps: ['jquery']
-    'transit':
-      deps: ['jquery']
+    'hogan': 
+      exports: 'Hogan'
     'hotkeys':
       deps: ['jquery']
     'jquery': 
       exports: '$'
-    'socket.io': 
-      exports: 'io'
-    'async': 
-      exports: 'async'
-    'hogan': 
-      exports: 'Hogan'
+    'jquery-ui':
+      deps: ['jquery']
+    'jquery-punch':
+      deps: ['jquery']
     'queryparser':
       exports: 'QueryParser'
+    'numeric':
+      deps: ['jquery-ui']
     'moment':
       exports: 'moment'
-    'ace/ace':
-      exports: 'ace'
+    'mousewheel':
+      deps: ['jquery']
+    'socket.io': 
+      exports: 'io'
+    'timepicker':
+      deps: ['jquery-ui']
+    'transit':
+      deps: ['jquery']
+    'underscore': 
+      exports: '_'
 
 # initialize rheia global namespace
 window.rheia = {}

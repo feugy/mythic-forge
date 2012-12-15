@@ -113,3 +113,13 @@ define [
       super attributes
       if @from?
         enrichFrom @
+
+    # **private** 
+    # Method used to serialize a model when saving and removing it
+    # Extend inherited method to avoid sending from item, to avoid recursion, before returning JSON representation 
+    #
+    # @return a serialized version of this model
+    _serialize: => 
+      attrs = super()
+      attrs.from = attrs.from?.id
+      attrs

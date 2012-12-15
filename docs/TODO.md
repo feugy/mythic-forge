@@ -11,6 +11,7 @@
   - test images for field types and event types
   - do not send linked objects within modelWatcher, just ids
   - Rule engine
+    - **[TODO]** resolve only on actor's map
     - **[TODO]** check execute() parameters
     - **[TODO]** detect changes on array linked properties
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes

@@ -135,8 +135,8 @@ define [
       transition = null unless @_imageSpec.sprites? and transition of @_imageSpec.sprites
 
       # gets the item sprite's details.
-      if 'object' is utils.type @_imageSpec.sprites
-        @_sprite = @_imageSpec.sprites[transition or Object.keys(@_imageSpec.sprites)[0]]
+      if transition? and 'object' is utils.type @_imageSpec.sprites
+        @_sprite = @_imageSpec.sprites[transition]
       else
         @_sprite = null
 
@@ -154,8 +154,8 @@ define [
 
       # if we moved, compute the steps
       if @_newPos?
-        @_newPos.stepL = (@_newPos.left-parseInt @$el.css 'left')/@_sprite.number
-        @_newPos.stepT = (@_newPos.top-parseInt @$el.css 'top')/@_sprite.number
+        @_newPos.stepL = (@_newPos.left-parseInt @$el.css 'left')/@_sprite?.number
+        @_newPos.stepT = (@_newPos.top-parseInt @$el.css 'top')/@_sprite?.number
 
       if document.hidden
         # document not visible: drop directly to last frame.
