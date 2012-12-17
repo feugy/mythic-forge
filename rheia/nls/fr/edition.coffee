@@ -56,6 +56,7 @@ define
     desc: 'Description'
     newName: 'A remplir'
     quantifiable: 'Quantifiable'
+    template: 'Template'
     noRuleCategory: 'aucune'
     propertyUidField: 'Uid'
     properties: 'Propriétés'
@@ -85,6 +86,7 @@ define
     addProperty: 'Ajoute une nouvelle propriété'
     removeSelection: 'Supprime la séléction courante de la carte éditée'
     description: 'TODO description'
+    template: "Template HTML d'affichage des évènements. Utilisez \#{X} pour inclure la properiété X de l'évènement affiché"
     searchTypes: """Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateur (or, and) et groupé avec des parenthèses.
 
         Les champs suivants de recherche suivants sont disponibles :

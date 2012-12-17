@@ -154,7 +154,6 @@ define [
       @_descWidget = @$el.find('.desc.field').property(
         type: 'text'
         allowNull: false
-        tooltipFct: i18n.tips.desc
       ).on('change', @_onChange
       ).data 'property'
 

@@ -93,8 +93,7 @@ Player = typeFactory 'Player',
       # loads the character from database
       Item.find {_id: {$in: player.characters}}, (err, characters) ->
         return next(new Error "Unable to init item #{player._id}. Error while resolving its character: #{err}") if err?
-        return next(new Error "Unable to init item #{player._id} because there is no item with id #{player.character}") unless characters.length is player.characters.length
-        # Do the replacement.
+        # Do the replacement, whatever we really found. Unexisting characters will be erased
         player.characters = characters
         next()
 

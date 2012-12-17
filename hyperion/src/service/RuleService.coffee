@@ -24,6 +24,7 @@ TurnRule = require '../model/TurnRule'
 Executable = require '../model/Executable'
 async = require 'async'
 Item = require '../model/Item'
+Event = require '../model/Event'
 Field = require '../model/Field'
 Player = require '../model/Player'
 utils = require '../utils'
@@ -43,26 +44,26 @@ nextTurn= () ->
 
 
 # Populate the `modified` parameter array with models that have been modified.
-# For items, recursively check linked items.
+# For items and events, recursively check linked objects.
 # Can also handle Fields and Players
 #
-# @param item [Object] root model that begins the analysis
+# @param obj [Object] root model that begins the analysis
 # @param modified [Array] array of already modified object, concatenated with found modified objects
-filterModified = (item, modified) ->
+filterModified = (obj, modified) ->
   # do not process if already known
-  return if item in modified 
+  return if obj in modified 
   # will be save if at least one path is modified
-  modified.push(item) if item?.isModified()
-  # do not go further if not an item
-  return unless item instanceof Item
-  properties = item.type.properties
+  modified.push(obj) if obj?.isModified()
+  # do not go further if not an obj
+  return unless obj instanceof Item or obj instanceof Event
+  properties = obj.type.properties
   for prop, def of properties
     if def.type is 'object'
-      value = item[prop]
+      value = obj[prop]
       # recurse if needed on linked object that are resolved
       filterModified(value, modified) if value? and (typeof value) isnt 'string'
     else if def.type is 'array'
-      values = item[prop]
+      values = obj[prop]
       if values
         for value, i in values
           # recurse if needed on linked object that are resolved
@@ -71,7 +72,7 @@ filterModified = (item, modified) ->
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #
 # @param actor [Object] the concerned actor or Player
-# @param targets [Array<Item>] array of targets the targeted item
+# @param targets [Array<Item/Event>] array of targets the targeted item and event
 # @param wholeRule [Boolean] true to returns the whole rule and not just name/category
 # @param callback [Function] callback executed when rules where determined. Called with parameters:
 # @option callback err [String] an error string, or null if no error occured
@@ -115,13 +116,13 @@ resolve = (actor, targets, wholeRule, callback) ->
 
     # second part of the resolution, after the actor was resolved
     process = (err) ->
-      return callback "Cannot resolve rule because actor's (#{actor._id}) linked item cannot be resolve: #{err}" if err?
+      return callback "Cannot resolve rule because actor's (#{actor._id}) linked item/event cannot be resolve: #{err}" if err?
 
       # process all targets in parallel.
       for target in targets
         # third part of the resolution, after target have been resolved
         process2 = (err) ->
-          return callback "Cannot resolve rule because target's (#{target._id}) linked item cannot be resolve: #{err}" if err?
+          return callback "Cannot resolve rule because target's (#{target._id}) linked item/event cannot be resolve: #{err}" if err?
 
           # function applied to filter rules that apply to the current target.
           filterRule = (rule, end) -> 
@@ -147,8 +148,8 @@ resolve = (actor, targets, wholeRule, callback) ->
           # resolve all rules for this target.
           async.forEach rules, filterRule, resolutionEnd
                   
-        # resolve items, but not fields
-        if target instanceof Item
+        # resolve items and events, but not fields
+        if target instanceof Item or target instanceof Event
           target.getLinked process2
         else 
           process2 null
@@ -238,7 +239,7 @@ class _RuleService
   #
   # @overload resolve(actorId, targetId, callback)
   #   Resolves applicable rules at for a specific target
-  #   @param targetId [ObjectId] the targeted item's id
+  #   @param targetId [ObjectId] the targeted item/event's id
   #
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
@@ -258,7 +259,7 @@ class _RuleService
         logger.debug "resolve rules for player #{playerId}"
         resolve player, [player], false, callback
     else if args.length is 2
-      # actorId and targetId are specified. Retrieve corresponding items
+      # actorId and targetId are specified. Retrieve corresponding items and events
       actorId = args[0]
       targetId = args[1]
       Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
@@ -266,15 +267,34 @@ class _RuleService
         actor = result for result in results when result._id.equals actorId
         target = result for result in results when result._id.equals targetId
         return callback "No actor with id #{actorId}" unless actor?
-        return callback "No target with id #{targetId}" unless target?
-        # at last, resolve rules.
-        logger.debug "resolve rules for actor #{actorId} and #{targetId}"
-        resolve actor, [target], false, callback
+
+        process = =>
+          # at last, resolve rules.
+          logger.debug "resolve rules for actor #{actorId} and #{targetId}"
+          resolve actor, [target], false, callback
+
+        if target?
+          process()
+        else 
+          # target could be also an event
+          Event.findOne {_id: targetId}, (err, result) =>
+            return callback "Cannot resolve rule. Failed to retrieve event target (#{targetId}): #{err}" if err?
+            target = result
+            if target?
+              process()
+            else
+              # target could be also a field
+              Field.findOne {_id: targetId}, (err, result) =>
+                return callback "Cannot resolve rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
+                return callback "No target with id #{targetId}" unless result?
+                target = result
+                process()
+
     else if args.length is 3 
       actorId = args[0]
       x = args[1]
       y = args[2]
-      # targets must be resolved with a query.
+      # targets must be resolved with a query. (necessary items, because we are on map)
       Item.find {$or:[{_id: actorId},{x: x, y:y}]}, (err, results) =>
         return callback "Cannot resolve rules. Failed to retrieve actor (#{actorId}) or items at position x:#{x} y:#{y}: #{err}" if err?
         actor = null
@@ -308,7 +328,7 @@ class _RuleService
   # @overload resolve(ruleName, actorId, targetId, callback)
   #   Executes a specific rule for an actor and a given target
   #   @param actorId [ObjectId] the concerned actor's id
-  #   @param targetId [ObjetId] the targeted item
+  #   @param targetId [ObjetId] the targeted item or event
   #
   # @param parameters [Array] array of awaited rule parameters
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
@@ -343,8 +363,8 @@ class _RuleService
 
             saved = []
             # removes objects from mongo
-            logger.debug "remove model #{item._id}" for item in rule.removed
-            async.forEach rule.removed, ((item, end) -> item.remove (err)-> end err), (err) => 
+            logger.debug "remove model #{obj._id}" for obj in rule.removed
+            async.forEach rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
               return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
               # adds new objects to be saved
               saved = saved.concat rule.saved
@@ -352,8 +372,8 @@ class _RuleService
               filterModified actor, saved
               filterModified target, saved
               # saves the whole in MongoDB
-              logger.debug "save modified model #{item._id}" for item in saved
-              async.forEach saved, ((item, end) -> item.save (err)-> end err), (err) => 
+              logger.debug "save modified model #{obj._id}" for obj in saved
+              async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
                 return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
                 # everything was fine
                 callback(null, result)
@@ -376,22 +396,28 @@ class _RuleService
       targetId = args[1]
       return callback "Target id is null !" unless targetId?
       return callback "Actor id is null !" unless actorId?
-      # actorId and targetId are specified. Retrieve corresponding items
+      # actorId and targetId are specified. Retrieve corresponding items and events
       Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
         return callback "Cannot execute rule. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?
         actor = result for result in results when result._id.equals actorId
         target = result for result in results when result._id.equals targetId
         return callback "No actor with id #{actorId}" unless actor?
-
         if target?
           process()
         else 
-          # target could be also a field
-          Field.findOne {_id: targetId}, (err, result) =>
-            return callback "Cannot execute rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
-            return callback "No target with id #{targetId}" unless result?
+          # target could be also an event
+          Event.findOne {_id: targetId}, (err, result) =>
+            return callback "Cannot execute rule. Failed to retrieve event target (#{targetId}): #{err}" if err?
             target = result
-            process()
+            if target?
+              process()
+            else
+              # target could be also a field
+              Field.findOne {_id: targetId}, (err, result) =>
+                return callback "Cannot execute rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
+                return callback "No target with id #{targetId}" unless result?
+                target = result
+                process()
 
     else 
       throw new Error 'execute() must be call with player id or actor and target ids'
@@ -428,7 +454,7 @@ class _RuleService
 
       # function that updates dbs with rule's modifications
       updateDb = (rule, saved, removed, end) =>
-        # at the end, save and remove modified items
+        # at the end, save and remove modified objects
         removeModel = (target, removeEnd) =>
           logger.debug "remove model #{target._id}"
           target.remove (err) =>

@@ -60,6 +60,10 @@ define [
     # avoid to trigger property change handler while rendering, because it empties `_editedProperties`
     _inhibitPropertyChange: false
 
+    # **private**
+    # widget to edit event type template
+    _templateWidget: null
+
     # The view constructor.
     #
     # @param id [String] the edited object's id, of null for a creation.
@@ -92,10 +96,29 @@ define [
       @model.descImage = null
 
     # **private**
+    # Allows subclass to add specific widgets right after the template was rendered and before first 
+    # call to `fillRendering`. 
+    #
+    # Creates validator and instanciate widgets
+    _specificRender: =>
+      # inherited behaviour
+      super()
+
+      # creates property template
+      @_templateWidget = @$el.find(".template.field").property(
+        type: 'text'
+        allowNull: false
+      ).on('change', @_onChange
+      ).data 'property'
+
+    # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
       # superclass handles description image, name and description
       super()
+
+      # update template
+      @model.template = @_templateWidget.options.value if @_templateWidget?
 
       # totally replace model's property with the view ones
       properties = {}
@@ -107,6 +130,9 @@ define [
     _fillRendering: =>
       # superclass handles description image, name and description
       super()
+
+      # update template
+      @_templateWidget.setOption 'value', @model.template if @_templateWidget?
 
       # keep a copy of edited properties in the view
       @_editedProperties = {}
@@ -192,6 +218,13 @@ define [
         name: 'properties'
         original: @model.properties
         current: @_editedProperties
+      
+      if @_templateWidget?
+        comparable.push
+          name: 'template'
+          original: @model.template
+          current: @_templateWidget.options.value
+
       return comparable
     
     # **private**

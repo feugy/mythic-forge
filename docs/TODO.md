@@ -2,9 +2,6 @@
 
 - Demo
   - Enrollement
-  - Talk between players
-    - answer within event
-    - delete event
   - Bash opponents
   - Move opponents
 
@@ -12,19 +9,20 @@
   - cache evinction on inutility and size
   - test images for field types and event types
   - do not send linked objects within modelWatcher, just ids
-  - EventType
-    - **[TODO]** add rendering template
   - Rule engine
+    - **[TODO]** test rule resolution and execution on event 
     - **[TODO]** resolve only on actor's map
     - **[TODO]** check execute() parameters
     - **[TODO]** detect changes on array linked properties
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
+  - Player: **[TODO]** test that unknown characters are erased
   - Security
     - register users from Facebook
 
 - Rheia
   - bugs
+    - **[TODO]** manage type retrival
   - moderation perspective
     - contextual menu in search results
     - sort events bu update date
@@ -276,13 +274,14 @@
   - no more distinction between Items and Actors
   - no more event on actors
   - no more link between rules and actors
-  - hexagonal maps
+  - hexagonal and 3D iso maps
   - event-kind properties
   - date-kind properties
   - connect with Google, Twitter
   - FSItem history management, with revert to previous and restore
-  - Drop from Item/Event/Player tabs
-  - Sprite management for animations and transition
-  - Rules in CoffeeScript
-  - Isomorphic rules: can partially be executed on client to increase reactivity
+  - drop from Item/Event/Player tabs
+  - sprite management for animations and transition
+  - rules in CoffeeScript
+  - isomorphic rules: can partially be executed on client to increase reactivity
   - WebSocket everywhere: increase speed
+  - rendering template for events

@@ -246,14 +246,14 @@ define [
     _onUpdate: (model, changes) =>
       @options.model = model
       # removes if map has changed
-      return @$el.remove() if @options.model?.map?.id isnt @options.map?.options.mapId
+      return @$el.remove() if @options.map? and @options.model?.map?.id isnt @options.map.options.mapId
 
-      if 'x' of changes or 'y' of changes
+      if ('x' of changes or 'y' of changes) and @options.map?
         # positionnate with animation if transition changed
         @_positionnate 'transition' of changes and changes.transition?
 
       # render new animation if needed
-      if 'transition' of changes and changes.transition?
+      if 'transition' of changes and changes.transition? and @options.map?
         @_renderSprite()
 
       if 'imageNum' of changes
