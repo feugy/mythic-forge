@@ -24,6 +24,50 @@ define [
   'utils/utilities'
 ], (Base, Item, utils) ->
 
+  # Enrich player characters from with Backbone Model. 
+  # May ask to server the missing characters item.
+  # Use a callback or trigger update on enriched model.
+  #
+  # @param model [Event] enriched model
+  # @param callback [Function] end enrichment callback. Default to null.
+  enrichCharacters = (model, callback) ->
+    require ['model/Item'], (Item) => 
+      raws = model.characters.concat()
+      loaded = []
+      doLoad = false
+      model.characters = []
+      # try to replace all characters by their respective Backbone Model
+      for raw in raws
+        id = if 'object' is utils.type raw then raw._id else raw
+        loaded.push id
+        character = Item.collection.get id
+        if !(character?) and 'object' is utils.type raw
+          character = new Item raw
+          Item.collection.add character
+        else 
+          doLoad = true
+          character = id
+        model.characters.push character
+      
+      if doLoad
+        # load missing characters
+        processItems = (err, items) =>
+          unless err? or null is _.find(items, (item) -> item._id is loaded[0])
+            rheia.sockets.game.removeListener 'getItems-resp', processItems
+            model.characters = []
+            # immediately add enriched characters
+            for raw in items
+              character = new Item raw
+              Item.collection.add character
+              model.characters.push character
+
+            callback() if 'function' is utils.type callback
+
+        rheia.sockets.game.on 'getItems-resp', processItems
+        rheia.sockets.game.emit 'getItems', loaded
+      else
+        callback() if 'function' is utils.type callback
+
   # Client cache of players.
   # Wired to the server through socket.io
   class _Players extends Base.Collection
@@ -63,22 +107,39 @@ define [
       rheia.sockets.admin.emit 'kick', email
 
     # **private**
+    # Callback invoked when a database creation is received.
+    # Adds the model to the current collection if needed, and fire event 'add'.
+    # Extension to resolve characters when needed
+    #
+    # @param className [String] the modified object className
+    # @param model [Object] created model.
+    _onAdd: (className, model) =>
+      return unless className is @_className
+      
+      # resolves characters object if possible
+      if 'characters' of model and Array.isArray changes.characters
+        # calls inherited merhod
+        enrichCharacters model, => super className, model
+      else
+        # calls inherited merhod
+        super className, model
+
+    # **private**
     # Callback invoked when a database update is received.
     # Update the model from the current collection if needed, and fire event 'update'.
-    # Extension to resolve type when needed
+    # Extension to resolve characters when needed
     #
     # @param className [String] the modified object className
     # @param changes [Object] new changes for a given model.
     _onUpdate: (className, changes) =>
       return unless className is @_className
 
-      # enhance characters to only keep Backbone models
-      if changes?.characters?
-        for character, i in changes.characters
-          changes.characters[i] = Item.collection.get if 'object' is utils.type character then character._id else character
-
-      # Call inherited merhod
-      super className, changes
+      # resolves characters object if possible
+      if 'characters' of changes and Array.isArray changes.characters
+        enrichCharacters changes, => super className, changes
+      else
+        # Call inherited merhod
+        super className, changes
 
     # **private**
     # Handler of (dis)connected player account
@@ -117,11 +178,34 @@ define [
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
-      # constructs Items for the corresponding characters
-      if attributes?.characters?
-        for character, i in attributes.characters
-          # we got an object: adds it
-          Item.collection.add character
-          attributes.characters[i] = Item.collection.get character._id
       # and now initialize the Player
       super attributes
+      if Array.isArray @characters
+        # constructs Items for the corresponding characters
+        enrichCharacters @
+
+      # update if one of characters item was removed
+      rheia.router.on 'modelChanged', (kind, model) => 
+        return unless kind is 'remove' and !@equals model
+        modified = false
+        @characters = _.filter @characters, (character) -> 
+          if model.equals character
+            modified = true
+            false
+          else
+            true
+        # indicate that model changed
+        if modified
+          console.log "update player #{@id} after removing a linked characters #{model.id}"
+          @trigger 'update', @, characters: @characters
+
+    # **private** 
+    # Method used to serialize a model when saving and removing it
+    # Extend inherited method to avoid sending from item, to avoid recursion, before returning JSON representation 
+    #
+    # @return a serialized version of this model
+    _serialize: => 
+      attrs = super()
+      if Array.isArray attrs.characters
+        attrs.characters = _.map attrs.characters, (character) -> character?.id
+      attrs

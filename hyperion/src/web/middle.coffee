@@ -340,7 +340,7 @@ unless noSecurity
     socket.set 'email', email
 
     # set socket id to player
-    playerService.getByEmail email, (err, player) ->
+    playerService.getByEmail email, false, (err, player) ->
       return logger.warn "Failed to retrieve player #{email} to set its socket id: #{err or 'no player found'}" if err? or player is null
       player.socketId = socket.id
       player.save (err) ->

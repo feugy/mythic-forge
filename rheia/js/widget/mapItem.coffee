@@ -79,6 +79,12 @@ define [
     # Builds rendering. Image is computed from the model type image and instance number
     constructor: (element, options) ->
       # compute item image
+      @_sprite = null
+      @_step = 0
+      @_offset = x:0, y:0
+      @_start = null
+      @_newCoordinates = null
+      @_newPos = null
       @_imageSpec = options.model.type.images?[options.model.imageNum] 
       options.source = @_imageSpec?.file or options.model.type.descImage
 

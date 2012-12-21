@@ -24,6 +24,12 @@ define [
   'model/EventType'
 ], (utils, Base, EventType) ->
 
+  # Enrich event from with Backbone Model. 
+  # May ask to server the missing from item.
+  # Use a callback or trigger update on enriched model.
+  #
+  # @param model [Event] enriched model
+  # @param callback [Function] end enrichment callback. Default to null.
   enrichFrom = (model, callback) ->
     raw = model.from
     id = if 'object' is utils.type raw then raw._id else raw
@@ -32,6 +38,19 @@ define [
       if !(model.from?) and 'object' is utils.type raw
         model.from = new Item raw
         Item.collection.add model.from
+      else
+        # load missing from
+        processFrom = (err, froms) =>
+          unless err? or null is _.find(froms, (from) -> from._id is id)
+            rheia.sockets.game.removeListener 'getItems-resp', processFrom
+            # immediately add enriched from
+            model.from = new Item raw
+            Item.collection.add model.from
+            callback() if 'function' is utils.type callback
+
+        rheia.sockets.game.on 'getItems-resp', processFrom
+        rheia.sockets.game.emit 'getItems', [id]
+
       callback() if 'function' is utils.type callback
 
   # Client cache of events.
@@ -113,6 +132,13 @@ define [
       super attributes
       if @from?
         enrichFrom @
+
+      # update if from item was removed
+      rheia.router.on 'modelChanged', (kind, model) => 
+        if kind is 'remove' and @from?.equals model
+          console.log "update event #{@id} after removing its from #{model.id}"
+          @from = null
+          @trigger 'update', @, from: null
 
     # **private** 
     # Method used to serialize a model when saving and removing it

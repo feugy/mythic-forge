@@ -84,7 +84,7 @@ class _AuthoringService
   save: (item, email, callback) =>
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
-    playerService.getByEmail email, false, (err, author) =>
+    playerService.getByEmail email, (err, author) =>
       return callback "Failed to get author: #{err}" if err?
       return callback "No author with email #{email}" unless author?
       try 
@@ -146,7 +146,7 @@ class _AuthoringService
   remove: (item, email, callback) =>
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
-    playerService.getByEmail email, false, (err, author) =>
+    playerService.getByEmail email, (err, author) =>
       return callback "Failed to get author: #{err}" if err? 
       return callback "No author with email #{email}" unless author?
       try 
@@ -184,7 +184,7 @@ class _AuthoringService
   move: (item, newPath, email, callback) =>
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
-    playerService.getByEmail email, false, (err, author) =>
+    playerService.getByEmail email, (err, author) =>
       return callback "Failed to get author: #{err}" if err
       return callback "No author with email #{email}" unless author?
       try 

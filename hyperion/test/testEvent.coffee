@@ -86,7 +86,7 @@ describe 'Event tests', ->
         assert.equal docs[0].content, 'hello !'
         assert.ok item.equals docs[0].from
         assert.closeTo docs[0].created.getTime(), new Date().getTime(), 500
-        assert.equal docs[0].created.getTime(), docs[0].updated.getTime()
+        assert.closeTo docs[0].created.getTime(), docs[0].updated.getTime(), 50
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 

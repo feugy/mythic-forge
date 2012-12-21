@@ -121,7 +121,7 @@ describe 'PlayerService tests', ->
          
     it 'should getByEmail returned player without character resolved', (done) ->
       # when retrieving the player by email
-      service.getByEmail player.email, false, (err, account) ->
+      service.getByEmail player.email, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account
@@ -135,7 +135,7 @@ describe 'PlayerService tests', ->
        
     it 'should getByEmail returned player with character resolved', (done) ->
       # when retrieving the player by email
-      service.getByEmail player.email, (err, account) ->
+      service.getByEmail player.email, true, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         assert.isNotNull account

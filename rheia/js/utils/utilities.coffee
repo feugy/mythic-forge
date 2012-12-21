@@ -69,6 +69,7 @@ define [
     # @return the main object with its attributes sorted.
     sortAttributes: (object) ->
       result= {}
+      return result unless _.isObject object
       names= _.keys(object).sort()
       result[name] = object[name] for name in names
       return result

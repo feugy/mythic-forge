@@ -45,40 +45,41 @@ class _ModelWatcher extends EventEmitter
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, className, instance, modified) =>
-    parameter = {}
+    changes = {}
     if '_doc' of instance
-      parameter[key] = value for own key,value of instance._doc
+      changes[key] = value for own key,value of instance._doc
     else 
-      parameter = _.clone instance
+      changes = _.clone instance
 
-    delete parameter.__v # added by mongoose to store version
+    delete changes.__v # added by mongoose to store version
 
     # do not embed the linked map and type for items, events and fields
-    parameter.type = parameter.type?._id if className is 'Item' or className is 'Event'
+    changes.type = changes.type?._id if className is 'Item' or className is 'Event'
 
     if modified and 'map' in modified and (className is 'Item' or className is 'Field')
       # but send the map if it changed
-      parameter.map = parameter.map?._id if 'object' is utils.type parameter.map and parameter.map._id
+      changes.map = changes.map?._id if 'object' is utils.type changes.map and changes.map._id
 
     if operation is 'update'
       if className isnt 'Executable' and className isnt 'FSItem'
         # for update, only emit modified datas
-        parameter = 
+        changes = 
           _id: instance._id
-        parameter[path] = instance.get path for path in modified
+        changes[path] = instance.get path for path in modified
+
     else if operation isnt 'creation' and operation isnt 'deletion'
-      throw new Error "Unknown operation #{operation} on instance #{parameter._id or parameter.path}}"
+      throw new Error "Unknown operation #{operation} on instance #{changes._id or changes.path}}"
 
     # Specific case of FSItem that must be relative to gameClient root
-    parameter.path = pathUtils.relative gameClientRoot, parameter.path if className is 'FSItem'
+    changes.path = pathUtils.relative gameClientRoot, changes.path if className is 'FSItem'
 
     # Do not propagate password nor tokens of Players
     if className is 'Player'
-      require('../model/Player').purge parameter
-      return if Object.keys(parameter).length is 0
+      require('../model/Player').purge changes
+      return if Object.keys(changes).length is 0
 
-    logger.debug "change propagation: #{operation} of instance #{parameter._id or parameter.path} (#{className})"
-    @emit 'change', operation, className, parameter
+    logger.debug "change propagation: #{operation} of instance #{changes._id or changes.path} (#{className})"
+    @emit 'change', operation, className, changes
 
 class ModelWatcher
   _instance = undefined

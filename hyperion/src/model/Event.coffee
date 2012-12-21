@@ -71,7 +71,7 @@ Event = typeFactory 'Event',
     save: (next) ->
       # check that creation date has not been modified, and update update date.
       return next new Error 'creation date cannot be modified for an Event' if @isModified 'created'
-      @set 'updated', new Date()
+      @updated = new Date()
 
       # replace from with its id, for storing in Mongo, without using setters.
       saveFrom = @from

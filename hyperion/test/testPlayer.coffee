@@ -21,6 +21,7 @@ Player = require '../src/model/Player'
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
 watcher = require('../src/model/ModelWatcher').get()
+ObjectId = require('mongodb').BSONPure.ObjectID
 assert = require('chai').assert
 
 player = null
@@ -34,11 +35,11 @@ describe 'Player tests', ->
     # given an Item type, an item, and an empty Player collection.
     ItemType.collection.drop -> 
       new ItemType({name: 'character'}).save (err, saved) ->
-        throw new Error err if err?
+        return done err if err?
         type = saved
         Item.collection.drop -> 
           new Item({type: type}).save (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             item = saved
             Player.collection.drop -> done()
       
@@ -66,11 +67,11 @@ describe 'Player tests', ->
     # when saving it
     awaited = false
     player.save (err) ->
-      throw new Error "Can't save player: #{err}" if err?
+      return done "Can't save player: #{err}" if err?
 
       # then it is in mongo
       Player.find {}, (err, docs) ->
-        throw new Error "Can't find player: #{err}" if err?
+        return done "Can't find player: #{err}" if err?
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
@@ -109,7 +110,7 @@ describe 'Player tests', ->
 
         # then it's not in mongo anymore
         Player.find {}, (err, docs) ->
-          throw new Error "Can't find player: #{err}" if err?
+          return done "Can't find player: #{err}" if err?
           assert.equal 0, docs.length
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
@@ -126,7 +127,7 @@ describe 'Player tests', ->
       player.password= 'titi'
       awaited = false
       player.save (err, saved) ->
-        throw new Error "Can't update player password: #{err}" if err?
+        return done "Can't update player password: #{err}" if err?
         # then password was modified
         assert.ok player.equals saved
         assert.isTrue player.checkPassword 'titi'
@@ -145,14 +146,69 @@ describe 'Player tests', ->
       # when modifying and saving a player
       player.characters= []
       awaited = false
-      player.save ->
-
+      player.save  (err) ->
+        return done err if err?
         Player.find {}, (err, docs) ->
-          throw new Error "Can't find player: #{err}" if err?
+          return done "Can't find player: #{err}" if err?
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
           assert.equal 'Jack', docs[0].email
           assert.equal 0, docs[0].characters.length
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
+
+    it 'should unknown players be erased when loading', (done) ->
+      # given a unknown character added to player in db
+      Player.collection.update {_id:player._id}, {$push: characters:new ObjectId().toString()}, (err) ->
+        return done err if err?
+        Player.collection.findOne _id: player._id, (err, doc) ->
+          return done err if err?
+          assert.equal doc.characters.length, 2
+
+          # when loading character
+          Player.findById player._id, (err, doc) ->
+            return done "Can't find player: #{err}" if err?
+
+            # then only the relevant values were modified
+            assert.equal 'Jack', doc.email
+            # then the added unknown character was removed
+            assert.equal 1, doc.characters.length
+            assert.ok item.equals, doc.characters[0]
+            done()
+
+    it 'should unknown players be erased when saving', (done) ->
+      # given a unknown character added to player
+      unknown = new ObjectId()
+      player.characters.push unknown, item
+      player.markModified 'characters'
+
+      # then a modification event was issued
+      watcher.once 'change', (operation, className, instance)->
+        assert.equal className, 'Player'
+        assert.equal operation, 'update'
+        assert.ok player.equals instance
+        assert.equal 3, instance.characters.length
+        assert.ok item._id.equals instance.characters[0]
+        assert.ok unknown.equals instance.characters[1]
+        assert.ok item._id.equals instance.characters[2]
+        awaited = true
+
+      # when saving it and retrieving it
+      awaited = false
+      player.save (err, saved) ->
+        return done err if err?
+        # then the added unknown character is still here
+        assert.equal 3, saved.characters.length
+        assert.ok item.equals saved.characters[0]
+        assert.ok unknown.equals saved.characters[1]
+        assert.ok item.equals saved.characters[2]
+
+        Player.findById player._id, (err, doc) ->
+          return done "Can't find player: #{err}" if err?
+          # then the added unknown character was removed
+          assert.equal 2, doc.characters.length
+          assert.ok item.equals doc.characters[0]
+          assert.ok item.equals doc.characters[1]
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()

@@ -73,7 +73,7 @@ class _PlayerService
     return callback 'Password is mandatory' unless password
     logger.info "Register new player with email: #{email}"
     # check email unicity
-    @getByEmail email, (err, player) ->
+    @getByEmail email, false, (err, player) ->
       return callback "Can't check email unicity: #{err}", null if err?
       return callback "Email #{email} is already used", null if player?
       new Player({email: email, password:password}).save (err, newPlayer) ->
@@ -92,7 +92,7 @@ class _PlayerService
   authenticate: (email, password, callback) =>
     logger.debug "Authenticate player with email: #{email}"
     # check user existence
-    @getByEmail email, (err, player) =>
+    @getByEmail email, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
       # check player existence and password correctness
       return callback null, false, {type:'error', message:'Wrong credentials'} if player is null or !player.checkPassword password
@@ -116,7 +116,7 @@ class _PlayerService
     logger.debug "Authenticate Google player with email: #{email}"
     
     # check user existence
-    @getByEmail email, (err, player) =>
+    @getByEmail email, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
       # Create or update account
       unless player?
@@ -147,7 +147,7 @@ class _PlayerService
     logger.debug "Authenticate Twitter player with email: #{email}"
     
     # check user existence
-    @getByEmail email, (err, player) =>
+    @getByEmail email, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
       # Create or update account
       unless player?
@@ -164,14 +164,14 @@ class _PlayerService
   # Retrieve a player by its email, with its characters resolved.
   #
   # @param email [String] the player email
-  # @param withLinked [Boolean] true to resolve characters links, false otherwise. True by default
+  # @param withLinked [Boolean] true to resolve characters links, false otherwise. False by default
   # @param callback [Function] callback executed when player was retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
   getByEmail: (email, withLinked, callback) =>
     if 'function' is utils.type withLinked
       callback = withLinked
-      withLinked = true
+      withLinked = false
     logger.debug "consult player by email: #{email}"
     Player.findOne {email: email}, (err, player) =>
       return callback err, null if err?

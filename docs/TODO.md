@@ -1,10 +1,5 @@
 # TODO
 
-- Demo
-  - Enrollement
-  - Bash opponents
-  - Move opponents
-
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
@@ -14,9 +9,9 @@
     - **[TODO]** resolve only on actor's map
     - **[TODO]** check execute() parameters
     - **[TODO]** detect changes on array linked properties
+    - provide rule triggering inside rules, with reloading when imported ruless changed
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
-  - Player: **[TODO]** test that unknown characters are erased
   - Security
     - register users from Facebook
 
@@ -24,9 +19,11 @@
   - bugs
     - **[TODO]** manage type retrival
   - moderation perspective
+    - do not reload search results when instance changed
     - contextual menu in search results
     - sort events bu update date
   - edition perspective
+    - check that search is reloaded only on types changed
     - contextual menu in search results
   - authoring perspective
     - multiple file search & replace

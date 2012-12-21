@@ -94,7 +94,8 @@ Player = typeFactory 'Player',
       Item.find {_id: {$in: player.characters}}, (err, characters) ->
         return next(new Error "Unable to init item #{player._id}. Error while resolving its character: #{err}") if err?
         # Do the replacement, whatever we really found. Unexisting characters will be erased
-        player.characters = characters
+        player.characters = _.map player.characters, (id) -> _.find characters, (character) -> character._id.equals id
+        player.characters = _.without player.characters, null, undefined
         next()
 
     # For manually provided accounts, check password existence.
@@ -109,7 +110,8 @@ Player = typeFactory 'Player',
 
         # replace characters with their id, for storing in Mongo, without using setters.
         saveCharacters = @characters.concat()
-        @_doc.characters[i] = character._id for character, i in saveCharacters
+        # Do not store string version of id.
+        @_doc.characters[i] = character._id for character, i in saveCharacters when character?._id?
         next()
         # restore save to allow reference reuse.
         @_doc.characters = saveCharacters

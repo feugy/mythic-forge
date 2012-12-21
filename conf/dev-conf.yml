@@ -47,7 +47,7 @@ game:
 
 # Turns execution settings. Frequency in seconds
 turn:
-  frequency: 60
+  frequency: 1
 
 # Images file storage
 images:

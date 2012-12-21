@@ -111,14 +111,12 @@ define [
     _onTurnsEvent: (state, name, err) =>
       switch state
         when 'begin'
-          console.info 'turn begins'
           @_turnInProgress = true
           @_triggerButton._setOption 'disabled', true
           @$el.find(".list > *").removeClass 'failure success'
           @$el.find('.errors').empty()
           @$el.find(".list input").removeAttr 'checked'
         when 'end'
-          console.info 'turn end'
           @_triggerButton._setOption 'disabled', false
           @_turnInProgress = false
         when 'rule'

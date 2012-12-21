@@ -104,10 +104,13 @@ define [
       return unless model?
       # console.log "process update for model #{model.id} (#{model._className})", changes
       # then, update the local cache, using setter do defines dynamic properties if needed
+      modified = false
       for key, value of changes
         unless key in @_notUpdated
+          modified = true
           model.set key, value 
           # console.log "update property #{key}"
+      return unless modified
 
       # emit a change.
       @trigger 'update', model, @, changes
@@ -366,6 +369,7 @@ define [
         return unless kind is 'remove' and !@equals model
 
         properties = @type.properties
+        return unless properties?
         changes = {}
         # process each properties
         for prop, def of properties
@@ -416,6 +420,7 @@ define [
       console.log "search linked ids in #{@_className.toLowerCase()} #{@id}"
       # gets the corresponding properties definitions
       properties = @type.properties
+      return callback null, @ unless properties?
       for prop, def of properties
         value = @[prop]
         if def.type is 'object' and 'string' is utils.type value
@@ -503,9 +508,9 @@ define [
       properties = @type.properties
       attrs = {}
       for name, value of @attributes
-        if properties[name]?.type is 'object'
+        if properties?[name]?.type is 'object'
           attrs[name] = if 'object' is utils.type value then value?.id else value
-        else if properties[name]?.type is 'array'
+        else if properties?[name]?.type is 'array'
           attrs[name] = ((if 'object' is utils.type obj then obj?.id else obj) for obj in value)
         else
           attrs[name] = value

@@ -120,6 +120,7 @@ define [
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes
+      @_transition = null
       @_transitionChanged = false
       # Construct a Map around the raw map.
       if attributes?.map?
