@@ -175,7 +175,7 @@ describe 'Authentication tests', ->
                     assert.isNotNull saved.lastConnection
                     assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
                     done()
-    describe.skip 'given a Google account', ->
+    describe 'given a Google account', ->
 
       googleUser = "mythic.forge.test@gmail.com"
       googlePassword = "toto1818"

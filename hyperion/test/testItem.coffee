@@ -332,3 +332,33 @@ describe 'Item tests', ->
             assert.equal docs[0].affluents.length, 1
             assert.ok item2.equals docs[0].affluents[0]
             done()
+
+    it 'should modelWatcher send linked objects ids and not full objects', (done) ->
+      # given a modification on linked properties
+      item2.affluents.push item
+      item2.markModified 'affluents'
+      item2.end = item2
+
+      # then a modification was detected on modified properties
+      watcher.once 'change', (operation, className, instance)->
+        assert.equal className, 'Item'
+        assert.equal operation, 'update'
+        assert.ok item2.equals instance
+        # then modified object ids are shipped
+        assert.ok item2._id.equals instance.end
+        assert.equal instance.affluents?.length, 1
+        assert.ok item._id.equals instance.affluents[0]
+        awaited = true
+
+      # when saving it
+      awaited = false
+      item2.save (err, saved) ->
+        return done err if err?
+
+        # then the saved object has object ids instead of full objects
+        assert.ok item2.equals saved
+        assert.ok item2._id.equals saved.end
+        assert.equal saved.affluents?.length, 1
+        assert.ok item._id.equals saved.affluents[0]
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()

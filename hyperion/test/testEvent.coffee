@@ -394,3 +394,33 @@ describe 'Event tests', ->
                   catch err
                     assert.fail "Fail to serialize item: #{err}"
                   done()
+
+    it 'should modelWatcher send linked objects ids and not full objects', (done) ->
+      # given a modification on linked properties
+      event2.children.push event
+      event2.markModified 'children'
+      event2.father = event2
+
+      # then a modification was detected on modified properties
+      watcher.once 'change', (operation, className, instance)->
+        assert.equal className, 'Event'
+        assert.equal operation, 'update'
+        assert.ok event2.equals instance
+        # then modified object ids are shipped
+        assert.ok event2._id.equals instance.father
+        assert.equal instance.children?.length, 1
+        assert.ok event._id.equals instance.children[0]
+        awaited = true
+
+      # when saving it
+      awaited = false
+      event2.save (err, saved) ->
+        return done err if err?
+
+        # then the saved object has object ids instead of full objects
+        assert.ok event2.equals saved
+        assert.ok event2._id.equals saved.father
+        assert.equal saved.children?.length, 1
+        assert.ok event._id.equals saved.children[0]
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()

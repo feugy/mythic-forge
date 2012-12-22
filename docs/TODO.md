@@ -3,12 +3,13 @@
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
-  - do not send linked objects within modelWatcher, just ids
+  - provide Scripts for rules
   - Rule engine
     - **[TODO]** test rule resolution and execution on event 
     - **[TODO]** resolve only on actor's map
     - **[TODO]** check execute() parameters
     - **[TODO]** detect changes on array linked properties
+    - reference dependencies as 'hyperion' instead of '../'
     - provide rule triggering inside rules, with reloading when imported ruless changed
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
     - transactional behaviour
@@ -31,6 +32,7 @@
 
 - Atlas
   - created and automate tests
+  - Package as library
 
 # Done
 
@@ -42,10 +44,11 @@
   - remove all images when removing a type
   - Field type CRUD
   - Map CRUD
-  - Destroys map items and fields when destroying map
+  - destroys map items and fields when destroying map
   - Field CRUD
   - Item CRUD for administrators
   - disabled turn-rules/rules
+  - do not send linked objects within modelWatcher, just ids
   - turn-rules ordering rank
   - Event type CRUD
   - Event CRUD with link to from, creation and update dates
