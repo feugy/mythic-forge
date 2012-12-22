@@ -96,6 +96,8 @@ Player = typeFactory 'Player',
         # Do the replacement, whatever we really found. Unexisting characters will be erased
         player.characters = _.map player.characters, (id) -> _.find characters, (character) -> character._id.equals id
         player.characters = _.without player.characters, null, undefined
+        # store original value
+        player.__origcharacters = player.characters.concat() or []
         next()
 
     # For manually provided accounts, check password existence.
@@ -113,6 +115,8 @@ Player = typeFactory 'Player',
         # Do not store string version of id.
         @_doc.characters[i] = character._id for character, i in saveCharacters when character?._id?
         next()
+        # store new original value
+        @__origcharacters = @_doc.characters.concat() or []
         # restore save to allow reference reuse.
         @_doc.characters = saveCharacters
 

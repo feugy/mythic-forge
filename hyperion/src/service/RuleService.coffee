@@ -61,13 +61,13 @@ filterModified = (obj, modified) ->
     if def.type is 'object'
       value = obj[prop]
       # recurse if needed on linked object that are resolved
-      filterModified(value, modified) if value? and (typeof value) isnt 'string'
+      filterModified(value, modified) if value? and 'string' isnt utils.type value
     else if def.type is 'array'
       values = obj[prop]
       if values
         for value, i in values
           # recurse if needed on linked object that are resolved
-          filterModified(value, modified) if value? and (typeof value) isnt 'string'
+          filterModified(value, modified) if value? and 'string' isnt utils.type value
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #
@@ -306,7 +306,9 @@ class _RuleService
             break
         return callback "No actor with id #{actorId}" unless actor?
         return callback "Cannot resolve rules for actor #{actorId} on map if it does not have a map !" unless actor.map?
-        # Gets also field at the coordinate
+        # filters item with actor map
+        results = _.filter results, (item) -> actor.map.equals item?.map
+        # gets also field at the coordinate
         Field.findOne {mapId: actor.map._id, x:x, y:y}, (err, field) =>
           return callback "Cannot resolve rules. Failed to retrieve field at position x:#{x} y:#{y}: #{err}" if err?
           results.splice 0, 0, field if field?

@@ -5,10 +5,8 @@
   - test images for field types and event types
   - provide Scripts for rules
   - Rule engine
-    - **[TODO]** test rule resolution and execution on event 
-    - **[TODO]** resolve only on actor's map
     - **[TODO]** check execute() parameters
-    - **[TODO]** detect changes on array linked properties
+    - do not exports inactive or turn rules to client
     - reference dependencies as 'hyperion' instead of '../'
     - provide rule triggering inside rules, with reloading when imported ruless changed
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
@@ -47,6 +45,7 @@
   - destroys map items and fields when destroying map
   - Field CRUD
   - Item CRUD for administrators
+  - Detect changes on dynamic array linked properties
   - disabled turn-rules/rules
   - do not send linked objects within modelWatcher, just ids
   - turn-rules ordering rank
@@ -56,6 +55,7 @@
     - CRUD with AdminService
     - password management and protection for manually provided accounts
     - kick player: disconnect socket when disconnecting
+    - detect changes on characters
   - Map items and their types
     - CRUD in database (Items, Fields, Maps)
     - Dynamic properties
@@ -136,6 +136,8 @@
     - turns notifications on success and error cases
     - handle require error cases on executables
     - rule may require parameters
+    - rule resolution and execution on players, fields, items and events
+    - when resolving with coordinates, resolves only on actor's map 
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

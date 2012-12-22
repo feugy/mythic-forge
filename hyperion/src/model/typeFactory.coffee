@@ -38,6 +38,8 @@ mongoose.Document.prototype.toObject = (options) ->
     # special case of plain json property that is ignored by mongoose.utils.clone()
     if @_className is 'Player'
       obj.prefs = @prefs
+    # removes orignal saves for array properties
+    delete obj[prop] for prop of obj when 0 is prop.indexOf '__orig'
   obj
 
 # Extends _registerHook to construct dynamic properties in Document constructor
@@ -46,6 +48,31 @@ mongoose.Document.prototype._registerHooks = ->
   ret = original_registerHooks.apply @, arguments
   @_defineProperties()
   ret
+
+# Compares an array property with its original value.
+# The original value is searched inside the __origXXX attribute when XXX is the property name
+# Only ids (String version) are compared
+#
+# @param instance [Object] Mongoose instance which is analyzed and may be mark as modified
+# @param prop [String] name of the compared properties
+compareArrayProperty = (instance, prop) ->
+  original = instance["__orig#{prop}"] or []
+  # original contains, ids, current may also contain Mongoose objects
+  current = _.map instance[prop] or [], (linked) -> if 'object' is utils.type(linked) and linked?._id? then linked._id.toString() else linked
+  # compare original value and current dynamic value and mark modified if necessary
+  instance.markModified prop unless _.isEqual original, current
+    
+originalIsModified = mongoose.Document.prototype.isModified
+mongoose.Document.prototype.isModified = (path) ->
+  # detect modification on dynamic arrays
+  if @type?.properties?
+    compareArrayProperty @, prop for prop, value of @type.properties when value.type is 'array'
+
+  # detect modification on characters array
+  if Array.isArray @characters
+    compareArrayProperty @, 'characters'
+
+  originalIsModified.apply @, arguments
 
 # Initialize dynamic properties from type when needed
 mongoose.Document.prototype._defineProperties = ->
@@ -60,6 +87,7 @@ mongoose.Document.prototype._defineProperties = ->
             get: -> @get name
             set: (v) -> @set name, v
       )(name)
+
 
 # Factory that creates an abstract type.
 # Provides:
@@ -264,6 +292,9 @@ module.exports = (typeName, spec, options = {}) ->
         return next(new Error "Unable to init instance #{instance._id} because there is no type with id #{instance.type}") unless types.length is 1    
         # do the replacement
         instance.type = types[0]
+        # for each array property, add a save with linked ids to allow further comparisons
+        for name, spec of types[0].properties when spec.type is 'array'
+          instance["__orig#{name}"] = instance[name]?.concat() or []
         next()
 
     # post-init middleware: define dynamic properties
@@ -341,9 +372,12 @@ module.exports = (typeName, spec, options = {}) ->
               # filter null values
               # do not use setter to avoid marking the instance as modified.
               instance._doc[prop] = _.filter result, (obj) -> obj?
+              # add a save with linked ids to allow further comparisons
+              instance["__orig#{prop}"] = _.map instance._doc[prop], (obj) -> obj._id?.toString()
+
         # done !
         callback null, instances
-      
+          
     # pre-save middleware: enforce the existence of each property. 
     # Could be declared in the schema, or in the type's properties
     # Inside the middleware, `this` aims at the saved instance.
@@ -355,6 +389,10 @@ module.exports = (typeName, spec, options = {}) ->
       # get through all existing attributes
       attrs = Object.keys @_doc;
       for attr in attrs when attr isnt '__v' # ignore versionning attribute
+        # remove original saved of dynamic arrays
+        if 0 is attr.indexOf '__orig'
+          delete @_doc[attr]
+          continue
         # not in schema, nor in type
         if attr of properties
           # use not property cause it's not always defined at this moment
@@ -365,8 +403,10 @@ module.exports = (typeName, spec, options = {}) ->
 
       # set the default values
       for prop, value of properties
+
         if undefined is @[prop]
           @[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
+
         # Do not store strings, store dates instead
         if value.type is 'date' and 'string' is utils.type @[prop]
           @[prop] = new Date @[prop]
@@ -380,6 +420,9 @@ module.exports = (typeName, spec, options = {}) ->
       saveType = @type
       @_doc.type = saveType?._id
       next()
+      # for each array property, add a save with linked ids to allow further comparisons
+      for name, spec of saveType.properties when spec.type is 'array'
+        @["__orig#{name}"] = @_doc[name]?.concat() or []
       # restore save to allow reference reuse.
       @_doc.type = saveType
       # propagate modifications

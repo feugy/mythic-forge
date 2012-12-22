@@ -186,6 +186,7 @@ describe 'Authentication tests', ->
         # when requesting the google authentication page
         request "#{rootUrl}/auth/google", (err, res, body) ->
           return done err if err?
+
           # then the google authentication page is displayed
           assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
           assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
@@ -211,7 +212,10 @@ describe 'Authentication tests', ->
             return done err if err?
 
             # manually follw redirection
+            return done "Failed to login with google account because Google want your phone !" if -1 is body.indexOf 'window.__CONTINUE_URL'
             redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
+            #redirect = body.match(/<a\s+href\s*=\s*"([^"]*)"/i)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
+
             request redirect, (err, res, body) ->
               return done err if err?
 

@@ -31,27 +31,30 @@ define [
   # @param model [Event] enriched model
   # @param callback [Function] end enrichment callback. Default to null.
   enrichFrom = (model, callback) ->
+    callback = if 'function' is utils.type callback then callback else () -> true
     raw = model.from
     id = if 'object' is utils.type raw then raw._id else raw
     require ['model/Item'], (Item) => 
       model.from = Item.collection.get id
-      if !(model.from?) and 'object' is utils.type raw
+      return callback() if model.from?
+      if 'object' is utils.type raw
         model.from = new Item raw
         Item.collection.add model.from
+        callback()
       else
         # load missing from
         processFrom = (err, froms) =>
-          unless err? or null is _.find(froms, (from) -> from._id is id)
-            rheia.sockets.game.removeListener 'getItems-resp', processFrom
-            # immediately add enriched from
-            model.from = new Item raw
-            Item.collection.add model.from
-            callback() if 'function' is utils.type callback
+          return callback() if err?
+          raw = _.find(froms, (from) -> from._id is id)
+          return callback() unless raw?
+          rheia.sockets.game.removeListener 'getItems-resp', processFrom
+          # immediately add enriched from
+          model.from = new Item raw
+          Item.collection.add model.from
+          callback()
 
         rheia.sockets.game.on 'getItems-resp', processFrom
         rheia.sockets.game.emit 'getItems', [id]
-
-      callback() if 'function' is utils.type callback
 
   # Client cache of events.
   class _Events extends Base.LinkedCollection
@@ -65,7 +68,7 @@ define [
 
     # **private**
     # List of not upadated attributes
-    _notUpdated: ['_id', 'type', 'from']
+    _notUpdated: ['_id', 'type']
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -131,7 +134,7 @@ define [
     constructor: (attributes) ->
       super attributes
       if @from?
-        enrichFrom @
+        enrichFrom @, => @trigger 'update', @, from: @from
 
       # update if from item was removed
       rheia.router.on 'modelChanged', (kind, model) => 

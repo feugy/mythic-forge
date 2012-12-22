@@ -52,6 +52,8 @@ class _ModelWatcher extends EventEmitter
       changes = _.clone instance
 
     delete changes.__v # added by mongoose to store version
+    # removes orignal saves for array properties
+    delete changes[prop] for prop of changes when 0 is prop.indexOf '__orig'
 
     # do not embed the linked map and type for items, events and fields
     changes.type = changes.type?._id if className is 'Item' or className is 'Event'
@@ -78,7 +80,7 @@ class _ModelWatcher extends EventEmitter
       require('../model/Player').purge changes
       return if Object.keys(changes).length is 0
 
-    logger.debug "change propagation: #{operation} of instance #{changes._id or changes.path} (#{className})"
+    logger.debug "change propagation: #{operation} of instance #{changes._id or changes.path} (#{className}): #{_.keys changes or {}}"
     @emit 'change', operation, className, changes
 
 class ModelWatcher

@@ -50,6 +50,11 @@ define [
       utils.onRouterReady =>
         # bind _onGetList response
         rheia.sockets.admin.on 'list-resp', @_onGetList
+        rheia.sockets.game.on 'getTypes-resp', (err, types) =>
+          # ignore errors
+          unless err?
+            # add returned models of the current class
+            @_onAdd type._className, type for type in types 
 
         # bind updates
         rheia.sockets.updates.on 'creation', @_onAdd
@@ -281,7 +286,6 @@ define [
       super attr, options
 
     # Provide a custom sync method to wire Types to the server.
-    # Only create and delete operations are supported.
     #
     # @param method [String] the CRUD method ("create", "read", "update", or "delete")
     # @param collection [Items] the current collection
@@ -296,7 +300,8 @@ define [
           rheia.sockets.admin.once 'remove-resp', (err) =>
             rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
           rheia.sockets.admin.emit 'remove', @_className, @_serialize()
-        else throw new Error "Unsupported #{method} operation on #{@_className}"
+        when 'read'
+          rheia.sockets.game.emit 'getTypes', [@[@idAttribute]]
 
     # Enhance destroy method to force server response before triggering `destroy` event
     destroy: (options) =>
@@ -359,7 +364,9 @@ define [
           else
             # get it from server
             @constructor.typeClass.collection.on 'add', @_onTypeFetched
-            @constructor.typeClass.collection.fetch attributes.type
+            type = {}
+            type[@idAttribute] = typeId
+            new @constructor.typeClass(type).fetch()
         else 
           @type = type
           _.defer => @trigger 'typeFetched', @
@@ -459,10 +466,13 @@ define [
           console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved from cache"
           callback null, @ 
 
-      # now that we have the linked ids, get the corresponding instances.
-      rheia.sockets.game.once "get#{@_className}s-resp", (err, instances) =>
+      # process response
+      process = (err, instances) =>
         return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
         instance = instances[0]
+        # only for our own request
+        return unless instances.length is 1 and instances[0][@idAttribute] is @[@idAttribute]
+        rheia.sockets.game.removeListener "get#{@_className}s-resp", process
 
         # update each properties
         properties = @type.properties
@@ -497,6 +507,8 @@ define [
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
         callback null, @
 
+      # now that we have the linked ids, get the corresponding instances.
+      rheia.sockets.game.on "get#{@_className}s-resp", process
       rheia.sockets.game.emit "get#{@_className}s", [@id]
 
     # **private** 

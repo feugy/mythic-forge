@@ -31,42 +31,41 @@ define [
   # @param model [Event] enriched model
   # @param callback [Function] end enrichment callback. Default to null.
   enrichCharacters = (model, callback) ->
-    require ['model/Item'], (Item) => 
-      raws = model.characters.concat()
-      loaded = []
-      doLoad = false
-      model.characters = []
-      # try to replace all characters by their respective Backbone Model
-      for raw in raws
-        id = if 'object' is utils.type raw then raw._id else raw
-        loaded.push id
-        character = Item.collection.get id
-        if !(character?) and 'object' is utils.type raw
-          character = new Item raw
-          Item.collection.add character
-        else 
-          doLoad = true
-          character = id
-        model.characters.push character
-      
-      if doLoad
-        # load missing characters
-        processItems = (err, items) =>
-          unless err? or null is _.find(items, (item) -> item._id is loaded[0])
-            rheia.sockets.game.removeListener 'getItems-resp', processItems
-            model.characters = []
-            # immediately add enriched characters
-            for raw in items
-              character = new Item raw
-              Item.collection.add character
-              model.characters.push character
+    raws = model.characters.concat()
+    loaded = []
+    doLoad = false
+    model.characters = []
+    # try to replace all characters by their respective Backbone Model
+    for raw in raws
+      id = if 'object' is utils.type raw then raw._id else raw
+      loaded.push id
+      character = Item.collection.get id
+      if !(character?) and 'object' is utils.type raw
+        character = new Item raw
+        Item.collection.add character
+      else if !(character?)
+        doLoad = true
+        character = id
+      model.characters.push character
+    
+    if doLoad
+      # load missing characters
+      processItems = (err, items) =>
+        unless err? or null is _.find(items, (item) -> item._id is loaded[0])
+          rheia.sockets.game.removeListener 'getItems-resp', processItems
+          model.characters = []
+          # immediately add enriched characters
+          for raw in items
+            character = new Item raw
+            Item.collection.add character
+            model.characters.push character
 
-            callback() if 'function' is utils.type callback
+          callback() if 'function' is utils.type callback
 
-        rheia.sockets.game.on 'getItems-resp', processItems
-        rheia.sockets.game.emit 'getItems', loaded
-      else
-        callback() if 'function' is utils.type callback
+      rheia.sockets.game.on 'getItems-resp', processItems
+      rheia.sockets.game.emit 'getItems', loaded
+    else
+      callback() if 'function' is utils.type callback
 
   # Client cache of players.
   # Wired to the server through socket.io

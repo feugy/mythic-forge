@@ -22,10 +22,12 @@ async = require 'async'
 testUtils = require './utils/testUtils'
 Executable = require '../src/model/Executable'
 Item = require '../src/model/Item'
+Event = require '../src/model/Event'
 Map = require '../src/model/Map'
 Field = require '../src/model/Field'
 Player = require '../src/model/Player'
 ItemType = require '../src/model/ItemType'
+EventType = require '../src/model/EventType'
 FieldType = require '../src/model/FieldType'
 service = require('../src/service/RuleService').get()
 notifier = require('../src/service/Notifier').get()
@@ -33,13 +35,17 @@ utils = require '../src/utils'
 assert = require('chai').assert
  
 map= null
+map2= null
 player= null
 type1= null
 type2= null
 item1= null
 item2= null
 item3= null
+item4= null
+event1 = null
 field1= null
+field2= null
 script= null
 notifications = []
 
@@ -58,7 +64,10 @@ describe 'RuleService tests', ->
           Field.collection.drop ->
             Map.collection.drop ->
               map = new Map {name: 'map-Test'}
-              map.save -> done()
+              map.save (err) ->
+                return done err if err?
+                map2 = new Map {name: 'map-Test-2'}
+                map2.save -> done()
 
   afterEach (done) ->
     # remove notifier listeners
@@ -189,15 +198,26 @@ describe 'RuleService tests', ->
     script.save (err) ->
       # given a type
       return done err if err?
-      type1 = new ItemType({name: 'container'})
-      type1.setProperty 'name', 'string', ''
-      type1.setProperty 'stock', 'array', 'Item'
-      type1.save (err, saved) ->
+      new ItemType(
+        name: 'container'
+        properties: 
+          name: 
+            type: 'string'
+            def: ''
+          stock: 
+            type: 'array'
+            def: 'Item'
+          compose:
+            type: 'object'
+            def: 'Item'
+      ).save (err, saved) ->
+        return done err if err?
+        type1 = saved
         # given two items, the second linked to the first
-        new Item({type: type1, name:'part'}).save (err, saved) ->
+        new Item(type: type1, name:'part').save (err, saved) ->
           return done err if err?
           item2 = saved
-          new Item({type: type1, name:'base', stock:[item2]}).save (err, saved) ->
+          new Item(type: type1, name:'base', stock:[item2]).save (err, saved) ->
             return done err if err?
             item1 = saved  
 
@@ -326,7 +346,7 @@ describe 'RuleService tests', ->
             assert.equal result, 'hello modified !'
             done()
 
-  describe 'given 3 items and a dumb rule', ->
+  describe 'given items, events, fields and a dumb rule', ->
 
     beforeEach (done) ->
       # Creates a dumb rule that always match
@@ -344,29 +364,55 @@ describe 'RuleService tests', ->
       script.save (err) ->
         # Creates a type
         return done err if err?
-        new ItemType({name: 'character'}).save (err, saved) ->
+        new ItemType(
+          name: 'spare'
+          properties: 
+            name: 
+              type: 'string'
+              def: ''
+            parts: 
+              type: 'array'
+              def: 'Item'
+            compose:
+              type: 'object'
+              def: 'Item'
+        ).save (err, saved) ->
           return done err if err?
           type1 = saved
-          new FieldType({name: 'plain'}).save (err, saved) ->
+          new FieldType(name: 'plain').save (err, saved) ->
             return done err if err?
             fieldType = saved
-            # Drops existing items
-            Item.collection.drop -> Field.collection.drop ->
-              # Creates 3 items
-              new Item({map: map, x:0, y:0, type: type1}).save (err, saved) ->
-                return done err if err?
-                item1 = saved
-                new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
+            new EventType(name: 'communication').save (err, saved) ->
+              return done err if err?
+              eventType = saved
+              # Drop existing events
+              Event.collection.drop ->
+                new Event(type: eventType).save (err, saved) ->
                   return done err if err?
-                  item2 = saved
-                  new Item({map: map, x:1, y:2, type: type1}).save (err, saved) ->
-                    return done err if err?
-                    item3 = saved
-                    # Creates a field
-                    new Field({mapId: map._id, typeId: fieldType._id, x:1, y:2}).save (err, saved) ->
+                  event1 = saved
+                  # Drops existing items
+                  Item.collection.drop -> Field.collection.drop ->
+                    # Creates some items
+                    new Item(map: map, x:0, y:0, type: type1).save (err, saved) ->
                       return done err if err?
-                      field1 = saved
-                      done()
+                      item1 = saved
+                      new Item(map: map, x:1, y:2, type: type1).save (err, saved) ->
+                        return done err if err?
+                        item2 = saved
+                        new Item(map: map, x:1, y:2, type: type1).save (err, saved) ->
+                          return done err if err?
+                          item3 = saved
+                          new Item(map: map2, x:1, y:2, type: type1).save (err, saved) ->
+                            return done err if err?
+                            item4 = saved
+                            # Creates field
+                            new Field(mapId: map._id, typeId: fieldType._id, x:1, y:2).save (err, saved) ->
+                              return done err if err?
+                              field1 = saved
+                              new Field(mapId: map2._id, typeId: fieldType._id, x:1, y:2).save (err, saved) ->
+                                return done err if err?
+                                field2 = saved
+                                done()
 
     it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items
@@ -385,19 +431,40 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
-        # then the dumb rule has matched the second item
+        # then the dumb rule has only matched objects from the first map
         assert.property results, 'rule 1'
-        match = _.find results['rule 1'], (res) -> item2.equals res.target
+        results = results['rule 1']
+        assert.equal results.length, 3
+        # then the dumb rule has matched the second item
+        match = _.find results, (res) -> item2.equals res.target
         assert.isNotNull match, 'The item2\'s id is not in results'
         # then the dumb rule has matched the third item
-        match = _.find results['rule 1'], (res) -> item3.equals res.target
+        match = _.find results, (res) -> item3.equals res.target
         assert.isNotNull match, 'The item3\'s id is not in results'
-        # then the dumb rule has matched the field
-        match = _.find results['rule 1'], (res) -> field1.equals res.target
+        # then the dumb rule has matched the first field
+        match = _.find results, (res) -> field1.equals res.target
         assert.isNotNull match, 'The field1\'s id is not in results'
         done()
         
-    it 'should rule be applicable on target', (done) ->
+    it 'should rule be applicable on coordinates with map isolation', (done) ->
+      # when resolving applicable rules at a coordinate of the second map
+      service.resolve item4._id, 1, 2, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+
+        assert.ok results isnt null and results isnt undefined
+        # then the dumb rule has only matched objects from the first map
+        assert.property results, 'rule 1'
+        results = results['rule 1']
+        assert.equal results.length, 2
+        # then the dumb rule has matched the fourth item
+        match = _.find results, (res) -> item4.equals res.target
+        assert.isNotNull match, 'The item4\'s id is not in results'
+        # then the dumb rule has matched the second field
+        match = _.find results, (res) -> field2.equals res.target
+        assert.isNotNull match, 'The field2\'s id is not in results'
+        done()
+
+    it 'should rule be applicable on item target', (done) ->
       # when resolving applicable rules for a target
       service.resolve item1._id, item2._id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
@@ -409,13 +476,63 @@ describe 'RuleService tests', ->
         assert.isNotNull match, 'The item2\'s id is not in results'
         done()
 
-    it 'should rule be executed for target', (done) ->
+    it 'should rule be executed for item target', (done) ->
       # given an applicable rule for a target 
       service.resolve item1._id, item2._id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
         service.execute 'rule 1', item1._id, item2._id, [], (err, result)->
+          return done "Unable to execute rules: #{err}" if err?
+
+          # then the rule is executed.
+          assert.equal result, 'hello !'
+          done()
+        
+    it 'should rule be applicable on event target', (done) ->
+      # when resolving applicable rules for a target
+      service.resolve item1._id, event1._id, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+         
+        assert.ok results isnt null and results isnt undefined
+        # then the dumb rule has matched the second item
+        assert.property results, 'rule 1'
+        match = _.find results['rule 1'], (res) -> event1.equals res.target
+        assert.isNotNull match, 'The event1\'s id is not in results'
+        done()
+
+    it 'should rule be executed for event target', (done) ->
+      # given an applicable rule for a target 
+      service.resolve item1._id, event1._id, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+
+        # when executing this rule on that target
+        service.execute 'rule 1', item1._id, event1._id, [], (err, result)->
+          return done "Unable to execute rules: #{err}" if err?
+
+          # then the rule is executed.
+          assert.equal result, 'hello !'
+          done()
+        
+    it 'should rule be applicable on field target', (done) ->
+      # when resolving applicable rules for a target
+      service.resolve item1._id, field1._id, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+         
+        assert.ok results isnt null and results isnt undefined
+        # then the dumb rule has matched the second item
+        assert.property results, 'rule 1'
+        match = _.find results['rule 1'], (res) -> field1.equals res.target
+        assert.isNotNull match, 'The field1\'s id is not in results'
+        done()
+
+    it 'should rule be executed for field target', (done) ->
+      # given an applicable rule for a target 
+      service.resolve item1._id, field1._id, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+
+        # when executing this rule on that target
+        service.execute 'rule 1', item1._id, field1._id, [], (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -460,6 +577,43 @@ describe 'RuleService tests', ->
               return done "failed to retrieve items: #{err}" if err?
               assert.equal 1, items.length
               assert.equal 2, items[0].x
+              done()
+
+    it 'should modification be detected on dynamic attributes', (done) ->
+      # given a rule that modified dynamic attributes
+      new Executable(
+        _id:'rule22'
+        content: """Rule = require '../model/Rule'
+          class AssembleRule extends Rule
+            constructor: ->
+              @name= 'rule 22'
+            canExecute: (actor, target, callback) =>
+              callback null, if target.type is actor.type and target isnt actor then [] else null
+            execute: (actor, target, params, callback) =>
+              target.compose = actor
+              actor.parts.push target
+              callback null, 'target assembled'
+          module.exports = new AssembleRule()"""
+      ).save (err) ->
+        return done err if err?
+        # when executing this rule on that target
+        service.execute 'rule 22', item1._id, item2._id, [], (err, result)->
+          return done "Unable to execute rules: #{err}" if err?
+          # then the rule is executed.
+          assert.equal result, 'target assembled'
+
+          # then the first item was modified on database
+          Item.findById item1._id, (err, item) =>
+            return done "failed to retrieve item: #{err}" if err?
+            assert.ok item1.equals item
+            assert.equal item.parts.length, 1
+            assert.ok item2._id.equals(item.parts[0]), 'item1 do not have item2 in its parts'
+
+            # then the second item was modified on database
+            Item.findById item2._id, (err, item) =>
+              return done "failed to retrieve item: #{err}" if err?
+              assert.ok item2.equals item
+              assert.ok item1._id.equals(item.compose), 'item2 do not compose item1'
               done()
 
   describe 'given an item type and an item', ->
