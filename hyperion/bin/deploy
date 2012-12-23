@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 var fs = require('fs-extra');
-var utils = require('../lib/utils');
+var utils = require('../lib/util/common');
 var moment = require('moment');
 
 // Specific configuration for deployement

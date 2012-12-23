@@ -20,7 +20,7 @@
 
 _ = require 'underscore'
 pathUtils = require 'path'
-utils = require '../utils'
+utils = require '../util/common'
 logger = require('../logger').getLogger 'model'
 EventEmitter = require('events').EventEmitter
 

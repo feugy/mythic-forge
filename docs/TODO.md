@@ -3,34 +3,31 @@
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
-  - provide Scripts for rules
+  - *[2]* provide Scripts for rules
   - Rule engine
-    - **[TODO]** check execute() parameters
+    - **[1]** check execute() parameters
+    - *[2]* reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
-    - reference dependencies as 'hyperion' instead of '../'
     - provide rule triggering inside rules, with reloading when imported ruless changed
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
-    - transactional behaviour
   - Security
     - register users from Facebook
 
 - Rheia
   - bugs
-    - **[TODO]** manage type retrival
   - moderation perspective
-    - do not reload search results when instance changed
-    - contextual menu in search results
-    - sort events bu update date
+    - **[1]** do not reload search results when instance changed
+    - *[2]* contextual menu in search results
   - edition perspective
-    - check that search is reloaded only on types changed
-    - contextual menu in search results
+    - **[1]** check that search is reloaded only on types changed
+    - *[2]* contextual menu in search results
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
 
 - Atlas
   - created and automate tests
-  - Package as library
+  - [3] package as library
 
 # Done
 
@@ -152,6 +149,7 @@
     - rule with category appears in turnRules in search results
     - browser do not retain passwords
     - model destruction, and remaining destroyed items on map
+    - manage type retrival
   - handle rule requires
   - perspective loader
   - login page

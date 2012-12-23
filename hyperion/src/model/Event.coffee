@@ -21,7 +21,7 @@
 typeFactory = require './typeFactory'
 Item = require './Item'
 conn = require './connection'
-utils = require '../utils'
+modelUtils = require '../util/model'
 
 # Define the schema for map event: no name or desc, and properties
 Event = typeFactory 'Event', 
@@ -62,7 +62,7 @@ Event = typeFactory 'Event',
         event.from = item
         # Never use resolved item, or it may lead to circular references. 
         # Use unresolved linked properties instead, not marking it as modified 
-        utils.processLinks event.from, event?.type?.properties, false
+        modelUtils.processLinks event.from, event?.type?.properties, false
         next()
 
     # pre-save middleware: only save the from reference, not the whole object

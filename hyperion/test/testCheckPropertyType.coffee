@@ -19,7 +19,7 @@
 
 Item = require '../src/model/Item'
 assert = require('chai').assert
-utils = require '../src/utils'
+modelUtils = require '../src/util/model'
 
 property = {}
 
@@ -32,7 +32,7 @@ generateTest = (type, def, specs) ->
   
     specs.forEach (spec) ->
       it "should #{spec.name} be #{spec.status}", ->
-        err = utils.checkPropertyType spec.value, property
+        err = modelUtils.checkPropertyType spec.value, property
         if 'accepted' is spec.status
           assert.ok err is null or err is undefined
         else 

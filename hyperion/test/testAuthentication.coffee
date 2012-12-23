@@ -20,7 +20,7 @@
 middle = require '../src/web/middle'
 front = require '../src/web/front'
 Player = require '../src/model/Player'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 request = require 'request'
 parseUrl = require('url').parse
 assert = require('chai').assert

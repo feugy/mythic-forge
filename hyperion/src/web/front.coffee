@@ -25,7 +25,7 @@ url = require 'url'
 fs = require 'fs'
 http = require 'http'
 coffee = require 'coffee-script'
-utils = require '../utils'
+utils = require '../util/common'
 stylus = require 'stylus'
 notifier = require('../service/Notifier').get()
 

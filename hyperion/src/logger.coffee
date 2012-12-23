@@ -19,7 +19,7 @@
 'use strict'
 
 winston = require 'winston'
-util = require './utils'
+util = require './util/common'
 
 levels = 
   debug: 0

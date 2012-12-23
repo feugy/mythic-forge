@@ -20,14 +20,16 @@
 
 mongoose = require 'mongoose'
 _ = require 'underscore'
-utils = require '../utils'
 fs = require 'fs'
 path = require 'path'
 async = require 'async'
 ObjectId = require('mongodb').BSONPure.ObjectID
 modelWatcher = require('./ModelWatcher').get()
-imageStore = require('../utils').confKey('images.store')
 logger = require('../logger').getLogger 'model'
+utils = require '../util/common'
+modelUtils = require '../util/model'
+
+imageStore = utils.confKey 'images.store'
 
 # Extends original Mongoose toObject method to add className when requireing json.
 originalToObject = mongoose.Document.prototype.toObject
@@ -138,15 +140,15 @@ module.exports = (typeName, spec, options = {}) ->
   # Abstract schema, that can contains i18n attributes
   AbstractType = new mongoose.Schema spec, options
 
-  utils.enhanceI18n AbstractType
+  modelUtils.enhanceI18n AbstractType
 
   unless options?.noName
     # Adds an i18n `name` field which is required
-    utils.addI18n AbstractType, 'name', {required: true}
+    modelUtils.addI18n AbstractType, 'name', {required: true}
 
   unless options?.noDesc
     # Adds an i18n `desc` field
-    utils.addI18n AbstractType, 'desc'
+    modelUtils.addI18n AbstractType, 'desc'
 
   # Define a virtual getter on model's class name.
   # Handy when models have been serialized to distinguish them
@@ -396,7 +398,7 @@ module.exports = (typeName, spec, options = {}) ->
         # not in schema, nor in type
         if attr of properties
           # use not property cause it's not always defined at this moment
-          err = utils.checkPropertyType @_doc[attr], properties[attr] 
+          err = modelUtils.checkPropertyType @_doc[attr], properties[attr] 
           next(new Error "Unable to save instance #{@_id}. Property #{attr}: #{err}") if err?
         else unless attr of AbstractType.paths
           next new Error "Unable to save instance #{@_id}: unknown property #{attr}"
@@ -415,7 +417,7 @@ module.exports = (typeName, spec, options = {}) ->
       wasNew = @isNew
       modifiedPaths = @modifiedPaths().concat()
       # replace links by them _ids
-      utils.processLinks this, properties
+      modelUtils.processLinks this, properties
       # replace type with its id, for storing in Mongo, without using setters.
       saveType = @type
       @_doc.type = saveType?._id

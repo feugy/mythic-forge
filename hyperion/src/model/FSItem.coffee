@@ -22,7 +22,7 @@ _ = require 'underscore'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
-utils = require '../utils'
+utils = require '../util/common'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 

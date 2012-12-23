@@ -18,7 +18,7 @@
 ###
 
 testUtils = require './utils/testUtils'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 ItemType = require '../src/model/ItemType'
 FieldType = require '../src/model/FieldType'
 EventType = require '../src/model/EventType'

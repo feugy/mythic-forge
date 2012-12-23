@@ -19,7 +19,7 @@
 'use strict'
 
 mongoose = require 'mongoose'
-utils = require '../utils'
+utils = require '../util/common'
 logger = require('../logger').getLogger 'model'
 
 host = utils.confKey 'mongo.host', 'localhost'

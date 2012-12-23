@@ -24,7 +24,7 @@ async = require 'async'
 coffee = require 'coffee-script'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
-utils = require '../utils'
+utils = require '../util/common'
 
 root = path.resolve path.normalize utils.confKey 'executable.source'
 compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'

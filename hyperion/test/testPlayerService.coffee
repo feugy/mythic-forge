@@ -20,7 +20,7 @@
 Player = require '../src/model/Player'
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 service = require('../src/service/PlayerService').get()
 notifier = require('../src/service/Notifier').get()
 assert = require('chai').assert

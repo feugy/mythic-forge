@@ -20,7 +20,7 @@
 
 typeFactory = require './typeFactory'
 conn = require './connection'
-utils = require '../utils'
+modelUtils = require '../util/model'
 logger = require('../logger').getLogger 'model'
 
 # Define the schema for event types
@@ -35,7 +35,7 @@ EventType = typeFactory 'EventType',
 
 
 # Adds an i18n `template` field
-utils.addI18n EventType, 'template'
+modelUtils.addI18n EventType, 'template'
 
 # Export the Class.
 module.exports = conn.model 'eventType', EventType

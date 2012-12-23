@@ -22,7 +22,8 @@ fs = require 'fs-extra'
 async = require 'async'
 pathUtils = require 'path'
 git = require 'gift'
-utils = require '../src/utils'
+utils = require '../src/util/common'
+versionUtils = require '../src/util/versionning'
 assert = require('chai').assert
 
 # The commit utility change file content, adds it and commit it
@@ -93,7 +94,7 @@ describe 'Utilities tests', ->
         return done err if err?
 
         # when collapsing history from begining
-        utils.collapseHistory repo, tag1, (err) ->
+        versionUtils.collapseHistory repo, tag1, (err) ->
           return done "Failed to collapse history: #{err}" if err?
           repo.commits (err, history) ->
             return done "Failed to consult commits: #{err}" if err?
@@ -125,7 +126,7 @@ describe 'Utilities tests', ->
         return done err if err?
 
         # when collapsing history from tag1
-        utils.collapseHistory repo, tag2, (err) ->
+        versionUtils.collapseHistory repo, tag2, (err) ->
           return done "Failed to collapse history: #{err}" if err?
           repo.commits (err, history) ->
             return done "Failed to consult commits: #{err}" if err?
@@ -151,7 +152,7 @@ describe 'Utilities tests', ->
 
     it 'should collapse failed on existing tag', (done) ->
       # when collapsing history to unknown tag
-      utils.collapseHistory repo, tag2, (err) ->
+      versionUtils.collapseHistory repo, tag2, (err) ->
         assert.isDefined err
         assert.equal err, "cannot reuse existing tag #{tag2}"
         done()
@@ -171,7 +172,7 @@ describe 'Utilities tests', ->
             done()
 
     it 'should quickTags returns nothing', (done) ->
-      utils.quickTags repo, (err, tags) ->
+      versionUtils.quickTags repo, (err, tags) ->
         return done err if err?
         assert.equal 0, tags?.length
         done()
@@ -191,7 +192,7 @@ describe 'Utilities tests', ->
               return done err if err?
 
               # when getting tags
-              utils.quickTags repo, (err, tags) ->
+              versionUtils.quickTags repo, (err, tags) ->
                 return done err if err?
                 # then two tags where retrieved
                 assert.equal 2, tags?.length
@@ -212,7 +213,7 @@ describe 'Utilities tests', ->
           return done err if err?
 
           # when getting history
-          utils.quickHistory repo, (err, history) ->
+          versionUtils.quickHistory repo, (err, history) ->
             return done err if err?
             # then two commits were retrieved
             assert.equal 2, history?.length
@@ -226,7 +227,7 @@ describe 'Utilities tests', ->
               assert.deepEqual _.pluck(commits, 'committed_date'), _.pluck history, 'date'
 
               # when getting file history
-              utils.quickHistory repo, file1.replace(repository, '.'), (err, fileHistory) ->
+              versionUtils.quickHistory repo, file1.replace(repository, '.'), (err, fileHistory) ->
                 return done err if err?
                 # then only one commit was retrieved
                 assert.equal 1, fileHistory?.length
@@ -247,7 +248,7 @@ describe 'Utilities tests', ->
               return done err if err?
 
               # when listing restorables
-              utils.listRestorables repo, (err, restorables) ->
+              versionUtils.listRestorables repo, (err, restorables) ->
                 return done err if err?
                 # then both files are presents
                 assert.equal 2, restorables?.length
@@ -264,7 +265,7 @@ describe 'Utilities tests', ->
         return done err if err?
 
         # when listing restorable whithout deletion
-        utils.listRestorables repo, (err, restorables) ->
+        versionUtils.listRestorables repo, (err, restorables) ->
           return done err if err?
 
           # then no results returned

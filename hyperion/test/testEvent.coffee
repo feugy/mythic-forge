@@ -21,7 +21,7 @@ Event = require '../src/model/Event'
 EventType = require '../src/model/EventType'
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 

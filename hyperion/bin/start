@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-var utils = require('../lib/utils');
+var utils = require('../lib/util/common');
 var http = require('http');
 var apiPort = utils.confKey('server.apiPort');
 var staticPort = utils.confKey('server.staticPort');

@@ -21,7 +21,7 @@ pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
 FSItem = require '../src/model/FSItem'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 

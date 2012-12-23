@@ -26,7 +26,7 @@ assert = require('chai').assert
 service = require('../src/service/ImagesService').get()
 testUtils = require './utils/testUtils'
 
-imagesPath = require('../src/utils').confKey 'images.store'
+imagesPath = require('../src/util/common').confKey 'images.store'
 
 iType = null
 fType = null

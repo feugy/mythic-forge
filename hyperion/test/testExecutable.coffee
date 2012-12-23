@@ -19,7 +19,7 @@
 
 Executable = require '../src/model/Executable'
 testUtils = require './utils/testUtils'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 path = require 'path'
 fs = require 'fs'
 assert = require('chai').assert

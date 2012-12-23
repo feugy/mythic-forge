@@ -27,7 +27,8 @@ Item = require '../model/Item'
 Event = require '../model/Event'
 Field = require '../model/Field'
 Player = require '../model/Player'
-utils = require '../utils'
+utils = require '../util/common'
+modelUtils = require '../util/model'
 path = require 'path'
 fs = require 'fs'
 notifier = require('../service/Notifier').get()
@@ -352,7 +353,7 @@ class _RuleService
         unless applicable? 
           return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}"
         rule = applicable.rule
-        err = utils.checkParameters parameters, applicable.params
+        err = modelUtils.checkParameters parameters, applicable.params
         return callback "Invalid parameters for #{ruleName}: #{err}" if err?
 
         # reinitialize creation and removal arrays.

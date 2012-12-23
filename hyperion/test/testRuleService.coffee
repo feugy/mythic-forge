@@ -31,7 +31,7 @@ EventType = require '../src/model/EventType'
 FieldType = require '../src/model/FieldType'
 service = require('../src/service/RuleService').get()
 notifier = require('../src/service/Notifier').get()
-utils = require '../src/utils'
+utils = require '../src/util/common'
 assert = require('chai').assert
  
 map= null

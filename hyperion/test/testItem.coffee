@@ -20,7 +20,7 @@
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
 Map = require '../src/model/Map'
-utils = require '../src/utils'
+utils = require '../src/util/common'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 

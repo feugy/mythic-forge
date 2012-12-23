@@ -22,7 +22,8 @@ FSItem = require '../model/FSItem'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 git = require 'gift'
-utils = require '../utils'
+utils = require '../util/common'
+versionUtils = require '../util/versionning'
 logger = require('../logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 deployementService = require('./DeployementService').get()
@@ -53,7 +54,7 @@ class _AuthoringService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    utils.initGameRepo logger, (err, _root, _repo) =>
+    versionUtils.initGameRepo logger, (err, _root, _repo) =>
       return callback err if err?
       root = _root
       repo = _repo
@@ -270,7 +271,7 @@ class _AuthoringService
     return callback 'History not supported on folders' if file.isFolder
 
     # consult file history
-    utils.quickHistory repo, pathUtils.join(root, file.path), (err, history) =>
+    versionUtils.quickHistory repo, pathUtils.join(root, file.path), (err, history) =>
       return callback "Failed to get history on  FSItem are supported: #{err}" if err?
       callback null, file, history
 
@@ -280,7 +281,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback restorables [Array] array of restorable FSItems. (may be empty). For each item contains an object with `id`and `item` attributes
   restorables: (callback) =>
-    utils.listRestorables repo, (err, restorables) =>
+    versionUtils.listRestorables repo, (err, restorables) =>
       return callback "Failed to get restorable list: #{err}" if err?
       results = []
 

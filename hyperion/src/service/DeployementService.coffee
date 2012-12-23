@@ -26,7 +26,8 @@ fs = require 'fs-extra'
 git = require 'gift'
 async = require 'async'
 requirejs = require 'requirejs'
-utils = require '../utils'
+utils = require '../util/common'
+versionUtils = require '../util/versionning'
 logger = require('../logger').getLogger 'service'
 notifier = require('../service/Notifier').get()
 
@@ -70,7 +71,7 @@ class _DeployementService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    utils.initGameRepo logger, (err, _root, _repo) =>
+    versionUtils.initGameRepo logger, (err, _root, _repo) =>
       return callback err if err?
       root = _root
       repo = _repo
@@ -212,7 +213,7 @@ class _DeployementService
     notifier.notify 'deployement', 'COMMIT_START', 1
     
     # first compact git history and create tag
-    utils.collapseHistory repo, @_deployed, (err) =>
+    versionUtils.collapseHistory repo, @_deployed, (err) =>
       return error "Failed to collapse history: #{err}" if err?
       logger.debug "git history compacted"
 
@@ -281,13 +282,13 @@ class _DeployementService
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
     # get known tags
-    utils.quickTags repo, (err, tags) =>
+    versionUtils.quickTags repo, (err, tags) =>
       return callback "Failed to consult versions: #{err}" if err?
       tags.reverse() # make the last tag comming first
       tagIds = _.pluck tags, 'id'
      
       # get history
-      utils.quickHistory repo, (err, history) =>
+      versionUtils.quickHistory repo, (err, history) =>
         return callback "Failed to consult history: #{err}" if err?
 
         result = 
@@ -356,7 +357,7 @@ class _DeployementService
 # @option callback err [String] an error string, or null if no error occured
 # @option callback versions [Array<String>] an array of versions names (may be empty)
 listVersions = (callback) ->
-  utils.quickTags repo, (err, tags) ->
+  versionUtils.quickTags repo, (err, tags) ->
     return callback "Failed to list existing versions: #{err}" if err?
     callback null, _.pluck tags, 'name'
 

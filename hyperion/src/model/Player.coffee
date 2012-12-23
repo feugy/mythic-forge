@@ -23,7 +23,7 @@ encryptor = require 'password-hash'
 conn = require './connection'
 Item = require './Item'
 typeFactory = require './typeFactory'
-utils = require '../utils'
+utils = require '../util/common'
 logger = require('../logger').getLogger 'model'
 
 # Define the schema for players
