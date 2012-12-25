@@ -18,8 +18,107 @@
 ###
 'use strict'
 
-utils = require '../util/common'
 _ = require 'underscore'
+async = require 'async'
+Model = require('mongoose').Model
+utils = require '../util/common'
+
+# string and text: null or type is string
+checkString = (val, property) ->
+  unless val is null or 'string' is utils.type val
+    "'#{val}' isn't a valid #{property.type}" 
+  else 
+    null
+
+# object: null or string (id) or object with a collection that have the good name.    
+checkObject = (val, property) ->
+  if val is null or 'string' is utils.type(val)
+    null
+  else if 'object' is utils.type(val)
+    unless val?.collection?.name is property.def.toLowerCase()+'s' or property.def.toLowerCase() is 'any' and utils.isA val, Model
+      "#{val} isn't a valid #{property.def}" 
+    else
+      null
+  else
+    "#{val} isn't a valid #{property.def}" 
+
+checkPropertyType = (value,  property) ->
+  err = null
+  switch property.type 
+    # integer: null or float = int value of a number/object
+    when 'integer' then err = "#{value} isn't a valid integer" unless value is null or 
+      ('number' is utils.type(value) and parseFloat(value, 10) is parseInt(value, 10))
+    # foat: null or float value of a number/object
+    when 'float' then err = "#{value} isn't a valid float" unless value is null or 
+      ('number' is utils.type(value) and not isNaN parseFloat(value, 10))
+    # boolean: null or value is false or true and not a string nor array
+    when 'boolean' 
+      strVal = "#{value}".toLowerCase()
+      err = "#{value} isn't a valid boolean" if value isnt null and
+        ('array' is utils.type(value) or 'string' is utils.type(value) or (strVal isnt 'true' and strVal isnt 'false'))
+    # date : null or type is date
+    when 'date', 'time', 'datetime' 
+      if value isnt null
+        if 'string' is utils.type value 
+          err = "#{value} isn't a valid date" if isNaN new Date(value).getTime()
+        else if 'date' isnt utils.type value
+          err = "#{value} isn't a valid date" 
+    when 'object' then err = checkObject value, property
+    # array: array that contains object at each index.
+    when 'array'
+      if Array.isArray value
+        err = checkObject obj, property for obj in value
+      else 
+        err = "#{value} isn't a valid array of #{property.def}"
+    when 'string' then err = checkString value, property
+    when 'text' then err = checkString value, property
+    else err = "#{property.type} isn't a valid type"
+  err
+
+getProp = (obj, path, callback) ->
+  return callback "invalid path '#{path}'" unless 'string' is utils.type path
+  steps = path.split '.'
+  
+  processStep = (obj) ->
+    step = steps.splice(0, 1)[0]
+    
+    # first check sub-array
+    bracket = step.indexOf '['
+    index = -1
+    if bracket isnt -1
+      # sub-array awaited
+      bracketEnd = step.indexOf ']', bracket
+      if bracketEnd > bracket
+        index = parseInt step.substring bracket+1, bracketEnd
+        step = step.substring 0, bracket
+        
+    # check the property existence
+    return callback null, undefined unless 'object' is utils.type(obj) and step of obj
+    
+    # store obj inside the list of updatable objects
+    subObj = if index isnt -1 then obj[step][index] else obj[step]
+    
+    endStep = ->
+      # iterate on sub object or returns value
+      if steps.length is 0
+        return callback null, subObj
+      else
+        processStep subObj
+        
+    # if the object has a type and the path is along an object/array property
+    if obj.type?.properties?[step]?.type is 'object' or obj.type?.properties?[step]?.type is 'array'
+      # we may need to load object.
+      if ('array' is utils.type(subObj) and 'string' is utils.type subObj?[0]) or 'string' is utils.type subObj
+        obj.getLinked (err, obj) ->
+          return callback "error on loading step #{step} along path #{path}: #{err}" if err?
+          subObj = if index isnt -1 then obj[step][index] else obj[step]
+          endStep()
+      else
+        endStep()
+    else
+      endStep()
+  
+  processStep obj
 
 module.exports =
 
@@ -63,61 +162,144 @@ module.exports =
   #
   # @param value [Object] the checked value.
   # @param property [Object] the property definition
-  # @option property type [String] the awaited type. Could be: string, text, boolean, integer, float, date, array or object
+  # @option property type [String] the awaited type. Could be: string, text, boolean, integer, float, date, time, datetime, array or object
   # @option property def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
-    # @return null if value is correct, an error string otherwise
-  checkPropertyType: (value,  property) ->
-    err = null
+  # @return null if value is correct, an error string otherwise
+  checkPropertyType: checkPropertyType
 
-    # string and text: null or type is string
-    checkString = (val) ->
-      err = "'#{val}' isn't a valid string" unless val is null or 'string' is utils.type val
-
-    # object: null or string (id) or object with a collection that have the good name.    
-    checkObject = (val) ->
-      err = "#{value} isn't a valid #{property.def}" unless val is null or 'string' is utils.type(val)  or
-        ('object' is utils.type(val) and val?.collection?.name is property.def.toLowerCase()+'s')
-
-    switch property.type 
-      # integer: null or float = int value of a number/object
-      when 'integer' then err = "#{value} isn't a valid integer" unless value is null or 
-        ('number' is utils.type(value) and parseFloat(value, 10) is parseInt(value, 10))
-      # foat: null or float value of a number/object
-      when 'float' then err = "#{value} isn't a valid float" unless value is null or 
-        ('number' is utils.type(value) and not isNaN parseFloat(value, 10))
-      # boolean: null or value is false or true and not a string
-      when 'boolean' 
-        strVal = "#{value}".toLowerCase()
-        err = "#{value} isn't a valid boolean" if value isnt null and
-          ('string' is utils.type(value) or (strVal isnt 'true' and strVal isnt 'false'))
-      # date : null or type is date
-      when 'date' 
-        if value isnt null
-          if 'string' is utils.type value 
-            err = "#{value} isn't a valid date" if isNaN new Date(value).getTime()
-          else if 'date' isnt utils.type value
-            err = "#{value} isn't a valid date" 
-      when 'object' then checkObject value
-      # array: array that contains object at each index.
-      when 'array'
-        if Array.isArray value
-          checkObject obj for obj in value
-        else 
-          err = "#{value} isn't a valid array of #{property.def}"
-      when 'string' then checkString value
-      when 'text' then checkString value
-      else err = "#{property.type} isn't a valid type"
-    err
-
-  # Check that passed parameters do not violate constraints of awaited parameters
+  # Within a rule execution, checks that passed parameters do not violate constraints of awaited parameters.
+  # Expected parameters must at least contain:
+  # - name: [String] the parameter name (a valid Javascript identifier)
+  # - type: [String] the value expected type, that can be: string, text, boolean, integer, float, date, time, datetime, object
+  #
+  # Optionnal constraints may include:
+  # - min: [Number/Date] minimum accepted value (excluded) for integer, float, date, time and datetime
+  # - max: [Number/Date] maximum accepted value (excluded) for integer, float, date, time and datetime
+  # - within: [Array<String>] list of acceptable values for string, acceptable ids for objects.
+  # - property: [Object] path to a given property, specified by 'path' attribute (a string) and from 
+  # (a string that may be 'actor' or 'target'), for object
+  # - match: [String] string representation of a regular expression that will contraint string
+  # - numMin: [Number] indicate the minium number of awaited value occurence. For all types, default to 1
+  # - numMax: [Number] indicate the maximum number of awaited value occurence. For all types, default to 1
+  #
+  # The 'object' parameters have particular behaviour. 
+  # Their values are always constrained within a list of choices ('within' constraint, or content of the 
+  # property aimed by 'path' constraint) 
+  # The awaited values are object ids for events and unquantifiable items or JSON object with object id ('id' attribute)
+  # and quantity ('qty' attribute) for quantifiable items
   #
   # @param actual [Array] Array of execution parameter values
   # @param expected [Array] Array of parameter constraints
-  # @return null if value is correct, an error string otherwise
-  checkParameters: (actual, expected) ->
-    err = null
-    # TODO
-    err
+  # @param actor [Object] the actor on which the current rule is executed. Default to null
+  # @param target [Object] the target on which the current rule is executed. Default to null
+  # @param callback [Function] executed function when parameter were checked. Invoked with one argument:
+  # @option callback err [String] null if value is correct, an error string otherwise
+  checkParameters: (actual, expected, actor, target, callback) ->
+    return callback null unless Array.isArray(expected) and expected.length > 0
+
+    async.forEach expected
+    , (param, next) ->
+      # validate expected parameter
+      unless 'object' is utils.type param
+        return next "invalid expected parameter #{param}"
+      unless 'string' is utils.type(param.name) and 'string' is utils.type param.type
+        return next "invalid name or type within expected parameter #{JSON.stringify param}"
+
+      # look for parameter value
+      return next "missing parameter #{param.name}" unless actual?[param.name]?
+      values =  if Array.isArray actual[param.name] then actual[param.name] else [actual[param.name]]
+
+      # number of awaited occurences
+      min = if param.numMin? then param.numMin else 1
+      max = if param.numMax? then param.numMax else 1
+      return next "#{param.name}: expected at least #{min} value(s)" if values.length < min
+      return next "#{param.name}: expected at most #{max} value(s)" if values.length > max
+
+      # value checking, that may be delayed if we need to resolve property possible values
+      process = (possibles) ->
+        for value in values
+          # check value's type, except for 'object'
+          unless param.type is 'object'
+            err = checkPropertyType value, param 
+            return next "#{param.name}: #{err}" if err?
+
+          # specific types checks:
+          switch param.type
+            when 'integer', 'float'
+              if 'number' is utils.type param.min
+                return next "#{param.name}: #{value} is lower than #{param.min}" if value < param.min
+              if 'number' is utils.type param.max
+                return next "#{param.name}: #{value} is higher than #{param.max}" if value > param.max
+            when 'date', 'time', 'datetime'
+              if 'date' is utils.type param.min
+                return next "#{param.name}: #{value} is lower than #{param.min}" if value.getTime() < param.min.getTime()
+              if 'date' is utils.type param.max
+                return next "#{param.name}: #{value} is higher than #{param.max}" if value.getTime() > param.max.getTime()
+            when 'string'
+              if Array.isArray param.within
+                return next "#{param.name}: #{value} is not a valid option" unless value in param.within
+              if 'string' is utils.type param.match
+                return next "#{param.name}: #{value} does not match conditions" unless new RegExp(param.match).test value
+            when 'object'
+              # may be only strings (ids) or object with 'id' and 'qty' attribute
+              id = null
+              qty = null
+              if 'string' is utils.type value
+                id = value
+              else if 'object' is utils.type(value) and 'string' is utils.type(value.id) and 'number' is utils.type(value.qty)
+                id = value.id
+                qty = value.qty
+                return next "#{param.name}: quantity must be a positive number" if qty <= 0
+              else
+                return next "#{param.name}: #{JSON.stringify value} isn't a valid object id or id+qty"
+
+              # check id is in possible values
+              objValue = _.find possibles, (obj) -> id is obj?._id?.toString()
+              return next "#{param.name}: #{id} is not a valid option" unless objValue?
+
+              # check quantity 
+              return next "#{param.name}: #{id} is missing quantity" if objValue.type.quantifiable and qty is null
+              return next "#{param.name}: not enought #{id} to honor quantity #{qty}" if qty > objValue.quantity
+
+        # everything was fine.
+        next null
+
+      return process() unless param.type is 'object'
+
+      # for object, we need to check possible values
+      if Array.isArray param.within
+        possibles = []
+        ids = []
+        for obj in param.within 
+          if utils.isA obj, Model
+            possibles.push obj 
+          else
+            ids.push obj if 'string' is utils.type obj
+        return process possibles if ids.length is 0
+
+        # first look for items
+        return require('../model/Item').findCached ids, (err, objs) ->
+          return next "#{param.name}: failed to resolve possible items: #{err}" if err?
+          ids = _.difference ids, _.pluck objs, '_id'
+          possibles = possibles.concat objs
+          return process possibles if ids.length is 0
+          # then look for events
+          require('../model/Event').findCached ids, (err, objs) ->
+            return next "#{param.name}: failed to resolve possible events: #{err}" if err?
+            ids = _.difference ids, _.pluck objs, '_id'
+            possibles = possibles.concat objs
+            process possibles 
+      
+      if 'object' is utils.type(param.property) and param.property.path? and param.property.from?
+        return getProp (if param.property.from is 'target' then target else actor), param.property.path, (err, objs) ->
+          return next "#{param.name}: failed to resolve possible values: #{err}" if err?
+          process objs
+
+      return next "missing 'within' constraint or invalid 'property' constraint (#{JSON.stringify param}) for parameter #{param.name}"
+
+    , (err) -> 
+      # end callback
+      callback err or null
 
   # Walk through properties and replace linked object with their ids if necessary
   #
@@ -140,3 +322,15 @@ module.exports =
             instance.markModified name
           # filter null values
           instance[name] = _.filter value, (obj) -> obj?
+
+  # Returns the value of a given object's property, along the specified path.
+  # Path may contains '.' to dive inside sub-objects, and '[]' to dive inside
+  # arrays.
+  # Unloaded sub-object will be loaded in waterfall.
+  #
+  # @param object [Object] root object on which property is read
+  # @param path [String] path of the read property
+  # @param callback [Function] extraction end function, invoked with 3 arguments
+  # @option callback err [String] an error string, null if no error occured
+  # @option callback value [Object] the property value.
+  getProp: getProp

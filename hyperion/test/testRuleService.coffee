@@ -118,7 +118,7 @@ describe 'RuleService tests', ->
                 return done 'the rule 3 was not resolved' if results['rule 3'].length isnt 1
 
                 # when executing this rule on that target
-                service.execute 'rule 3', item1._id, item2._id, [], (err, result)->
+                service.execute 'rule 3', item1._id, item2._id, {}, (err, result)->
                   return done "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
@@ -166,7 +166,7 @@ describe 'RuleService tests', ->
             return done 'the rule 4 was not resolved' if results['rule 4'].length isnt 1
 
             # when executing this rule on that target
-            service.execute 'rule 4', item1._id, item1._id, [], (err, result)->
+            service.execute 'rule 4', item1._id, item1._id, {}, (err, result)->
               return done "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
@@ -190,7 +190,7 @@ describe 'RuleService tests', ->
           constructor: ->
             @name= 'rule 5'
           canExecute: (actor, target, callback) =>
-            callback null, (part for part in actor.stock when target.equals(part))
+            callback null, []
           execute: (actor, target, params, callback) =>
             @removed.push target
             callback null, 'part removed'
@@ -227,7 +227,7 @@ describe 'RuleService tests', ->
               return done 'the rule 5 was not resolved' if results['rule 5'].length isnt 1
 
               # when executing this rule on that target
-              service.execute 'rule 5', item1._id, item2._id, [], (err, result)->
+              service.execute 'rule 5', item1._id, item2._id, {}, (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
@@ -292,7 +292,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 0', player._id, [], (err, result)->
+        service.execute 'rule 0', player._id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -339,7 +339,7 @@ describe 'RuleService tests', ->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
-          service.execute 'rule 0', player._id, [], (err, result)->
+          service.execute 'rule 0', player._id, {}, (err, result)->
             return done "Unable to execute rules: #{err}" if err?
 
             # then the modficiation was taken in account
@@ -482,7 +482,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 1', item1._id, item2._id, [], (err, result)->
+        service.execute 'rule 1', item1._id, item2._id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -507,7 +507,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 1', item1._id, event1._id, [], (err, result)->
+        service.execute 'rule 1', item1._id, event1._id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -532,7 +532,7 @@ describe 'RuleService tests', ->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 1', item1._id, field1._id, [], (err, result)->
+        service.execute 'rule 1', item1._id, field1._id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -565,7 +565,7 @@ describe 'RuleService tests', ->
           assert.equal 1, results['rule 2'].length
 
           # when executing this rule on that target
-          service.execute 'rule 2', item1._id, item2._id, [], (err, result)->
+          service.execute 'rule 2', item1._id, item2._id, {}, (err, result)->
             if err?
               assert.fail "Unable to execute rules: #{err}"
               return done();
@@ -597,7 +597,7 @@ describe 'RuleService tests', ->
       ).save (err) ->
         return done err if err?
         # when executing this rule on that target
-        service.execute 'rule 22', item1._id, item2._id, [], (err, result)->
+        service.execute 'rule 22', item1._id, item2._id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
           # then the rule is executed.
           assert.equal result, 'target assembled'
@@ -777,6 +777,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[1][1], 'rule 12'
           assert.equal notifications[2][0], 'failure'
           assert.equal notifications[2][1], 'rule 12'
+          assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'selection failure'
           assert.equal notifications[3][0], 'rule'
           assert.equal notifications[3][1], 'rule 13'
@@ -832,6 +833,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[1][1], 'rule 14'
           assert.equal notifications[2][0], 'failure'
           assert.equal notifications[2][1], 'rule 14'
+          assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'execution failure'
           assert.equal notifications[3][0], 'rule'
           assert.equal notifications[3][1], 'rule 15'
@@ -889,6 +891,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[1][1], 'rule 16'
           assert.equal notifications[2][0], 'failure'
           assert.equal notifications[2][1], 'rule 16'
+          assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'update failure'
           assert.equal notifications[3][0], 'rule'
           assert.equal notifications[3][1], 'rule 17'
@@ -942,6 +945,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'error'
           assert.equal notifications[1][1], 'rule18'
+          assert.isNotNull notifications[1][2]
           assert.include notifications[1][2], 'failed to require'
           assert.equal notifications[2][0], 'rule'
           assert.equal notifications[2][1], 'rule 19'
@@ -1025,7 +1029,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 11', item1._id, item1._id, [], (err, results) ->
+        service.execute 'rule 11', item1._id, item1._id, {}, (err, results) ->
           # then the rule was not resolved
           assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
           done()
@@ -1059,6 +1063,7 @@ describe 'RuleService tests', ->
         # when resolving rule
         service.resolve item1._id, item1._id, (err) ->
           # then the error is reported
+          assert.isNotNull err
           assert.include err, 'failed to require'
           done()
 
@@ -1081,7 +1086,60 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 21', item1._id, item1._id, [], (err, results) ->
+        service.execute 'rule 21', item1._id, item1._id, {}, (err, results) ->
           # then the error is reported
+          assert.isNotNull err
           assert.include err, 'failed to require'
+          done()
+
+    it 'should incorrect parameter rule not be executed', (done) ->
+      # Creates a rule with invalid parameter
+      script = new Executable 
+        _id:'rule23', 
+        content: """Rule = require '../model/Rule'
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 23'
+            canExecute: (actor, target, callback) =>
+              callback null, [
+                name: 'p1'
+                type: 'object'
+              ]
+            execute: (actor, target, params, callback) =>
+              callback null
+          )()"""
+      script.save (err) ->
+        # Creates a type
+        return done err if err?
+        # when executing rule
+        service.execute 'rule 23', item1._id, item1._id, {p1: item1}, (err, results) ->
+          # then the error is reported
+          assert.isNotNull err
+          assert.include err, 'Invalid parameter for rule 23'
+          done()
+
+    it 'should parameterized rule be executed', (done) ->
+      # Creates a rule with valid parameter
+      script = new Executable 
+        _id:'rule24', 
+        content: """Rule = require '../model/Rule'
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 24'
+            canExecute: (actor, target, callback) =>
+              callback null, [
+                name: 'p1'
+                type: 'object'
+                within: [actor, target]
+              ]
+            execute: (actor, target, params, callback) =>
+              callback null, params.p1
+          )()"""
+      script.save (err) ->
+        return done err if err?
+        # when executing rule
+        service.execute 'rule 24', item1._id, item1._id, {p1: item1._id.toString()}, (err, results) ->
+          # then no error reported, and parameter was properly used
+          return done err if err?
+          assert.ok item1._id.equals results
           done()

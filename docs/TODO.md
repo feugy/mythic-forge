@@ -5,7 +5,6 @@
   - test images for field types and event types
   - *[2]* provide Scripts for rules
   - Rule engine
-    - **[1]** check execute() parameters
     - *[2]* reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
     - provide rule triggering inside rules, with reloading when imported ruless changed
@@ -135,6 +134,7 @@
     - rule may require parameters
     - rule resolution and execution on players, fields, items and events
     - when resolving with coordinates, resolves only on actor's map 
+    - check execute() parameters validity (missing, value's type, string/object within, min-max, number of occurences)
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

@@ -353,33 +353,39 @@ class _RuleService
         unless applicable? 
           return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}"
         rule = applicable.rule
-        err = modelUtils.checkParameters parameters, applicable.params
-        return callback "Invalid parameters for #{ruleName}: #{err}" if err?
 
         # reinitialize creation and removal arrays.
         rule.saved = []
         rule.removed = []
-        # otherwise, execute the rule
-        try 
-          rule.execute actor, target, parameters, (err, result) => 
-            return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
 
-            saved = []
-            # removes objects from mongo
-            logger.debug "remove model #{obj._id}" for obj in rule.removed
-            async.forEach rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
-              return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
-              # adds new objects to be saved
-              saved = saved.concat rule.saved
-              # looks for modified linked objects
-              filterModified actor, saved
-              filterModified target, saved
-              # saves the whole in MongoDB
-              logger.debug "save modified model #{obj._id}" for obj in saved
-              async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
+        try 
+          # check parameters
+          modelUtils.checkParameters parameters, applicable.params, actor, target, (err) =>
+            return callback "Invalid parameters for #{ruleName}: #{err}" if err?
+
+            try 
+              # otherwise, execute the rule
+              rule.execute actor, target, parameters, (err, result) => 
                 return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
-                # everything was fine
-                callback(null, result)
+
+                saved = []
+                # removes objects from mongo
+                logger.debug "remove model #{obj._id}" for obj in rule.removed
+                async.forEach rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
+                  return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+                  # adds new objects to be saved
+                  saved = saved.concat rule.saved
+                  # looks for modified linked objects
+                  filterModified actor, saved
+                  filterModified target, saved
+                  # saves the whole in MongoDB
+                  logger.debug "save modified model #{obj._id}" for obj in saved
+                  async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
+                    return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+                    # everything was fine
+                    callback(null, result)
+            catch exc
+              callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{exc}"
         catch exc
           callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{exc}"
 
