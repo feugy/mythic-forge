@@ -357,12 +357,12 @@ define [
       EventType.collection.fetch()
       popup = utils.popup i18n.titles.chooseType, i18n.msgs.chooseEventType, null, [
         text: i18n.buttons.ok
-        click: => popup.off 'click .loadable'
+        click: => popup.off 'click', '.loadable'
       ]
       popup.addClass("choose-type").append "<div class='loader'></div>"
 
       # Type select handler
-      popup.on 'click .loadable', (event) =>
+      popup.on 'click', '.loadable', (event) =>
         @_creationType = EventType.collection.get $(event.target).closest('.loadable').data 'id'
         console.log "type #{@_creationType?.id} selected for new event"
         popup.dialog 'close'
