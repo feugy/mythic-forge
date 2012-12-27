@@ -24,6 +24,7 @@ define
     event: '%1$s (%2$s)'
     player: '%1$s (%2$s)'
     chooseType: 'Choix du type'
+    shadowObj: 'Operation impossible'
 
   labels: 
     maps: 'Cartes'
@@ -103,3 +104,4 @@ define
     chooseItemType: "<p>Choisissez un type d'objet pour le nouvel objet :</p>"
     chooseEventType: "<p>Choisissez un type d'objet pour le nouvel évènement :</p>"
     invalidPrefs: 'Préférences : erreur de syntaxe JSON'
+    shadowObj: "<p>L'objet en question n'existe plus: il a dû être supprimé depuis votre dernière recherche.</p><p>Votre recherche a été mise à jour.<p/>"

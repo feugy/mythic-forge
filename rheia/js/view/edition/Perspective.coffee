@@ -82,7 +82,7 @@ define [
 
       # new button and its dropdown menu
       @$el.find('> .right .new-button').button(icons: secondary: 'ui-icon-triangle-1-s').on 'click', (event) => 
-          event.preventDefault(); @$el.find('.new-button-menu').addClass 'open'
+        event.preventDefault(); @$el.find('.new-button-menu').addClass 'open'
       @$el.find('.new-button-menu').on 'mouseleave click', -> $(this).removeClass 'open'
 
       # creates a search widget
@@ -92,6 +92,17 @@ define [
       ).on('openElement', (event, details) -> rheia.router.trigger 'open', details.category, details.id
       ).on('removeElement', (event, details) -> rheia.router.trigger 'remove', details.category, details.id
       ).data 'search'
+
+
+      # general change handler: trigger again search
+      @bindTo rheia.router, 'modelChanged', (kind, model) => 
+        @_searchWidget?.triggerSearch true if model?._className in ['ItemType', 'EventType', 'FieldType', 'Map', 'Executable']
+      
+      # Executable kind changed: refresh search results
+      @bindTo rheia.router, 'kindChanged', => 
+        prev = @_searchWidget?.options.results
+        return unless Array.isArray(prev) and prev.length
+        @_searchWidget.setOption 'results', prev
 
       # for chaining purposes
       @

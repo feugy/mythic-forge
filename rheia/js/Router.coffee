@@ -28,8 +28,8 @@ requirejs.config
     'hogan': 'lib/hogan-2.0.0-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
     'html5slider': 'lib/html5slider-min'
-    'jquery': 'lib/jquery-1.7.2-min'
-    'jquery-ui': 'lib/jquery-ui-1.8.21-min'
+    'jquery': 'lib/jquery-1.8.3-min'
+    'jquery-ui': 'lib/jquery-ui-1.9.2-min'
     'jquery-punch': 'lib/jquery-punch-0.2.2-min'
     'i18n': 'lib/i18n-2.0.1-min'
     'queryparser': 'lib/queryparser-1.2.0-min'
@@ -42,7 +42,7 @@ requirejs.config
     'text': 'lib/text-2.0.0-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'tpl': '../template'
-    'transit': 'lib/jquery-transit-0.1.4-min'
+    'transit': 'lib/jquery-transit-0.9.9-min'
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/underscore.string-2.2.0rc-min'
     # shim for rules
@@ -130,7 +130,9 @@ define [
   AdminPerspective, EditionPerspective, AuthoringPerspective, ModerationPerspective, LayoutView) ->
 
   version = parseInt $.browser.version
-  return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or ($.browser.webkit and version >= 500)
+  return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or 
+    ($.browser.webkit and version >= 530) or
+    ($.browser.chrome and version >= 20)
   
   # simple flag to avoid loading multiple perspective at the same time
   perspectiveLoading = false

@@ -17,9 +17,6 @@
   - moderation perspective
     - **[1]** do not reload search results when instance changed
     - *[2]* contextual menu in search results
-  - edition perspective
-    - **[1]** check that search is reloaded only on types changed
-    - *[2]* contextual menu in search results
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -181,6 +178,7 @@
       - display file's history
       - revert to file version
   - edition perspective
+    - check that search is reloaded only on types changed
     - contextual menus in search and explorer
     - Maps
       - map name and validation

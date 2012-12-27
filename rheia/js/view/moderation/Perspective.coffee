@@ -136,8 +136,9 @@ define [
         dndType: i18n.constants.instanceAffectation
         tooltipFct: utils.instanceTooltip
       ).on('search', (event, query) -> rheia.searchService.searchInstances query
-      ).on('openElement', (event, details) -> rheia.router.trigger 'open', details.category, details.id
-      ).on('removeElement', (event, details) -> rheia.router.trigger 'remove', details.category, details.id
+      ).on('openElement', @_onOpenSearchResult
+      ).on('removeElement', (event, details) => 
+        rheia.router.trigger 'remove', details.category, details.id
       ).data 'search'
 
       # instanciate map widget
@@ -323,12 +324,12 @@ define [
       ItemType.collection.fetch()
       popup = utils.popup i18n.titles.chooseType, i18n.msgs.chooseItemType, null, [
         text: i18n.buttons.ok
-        click: => popup.off 'click .loadable'
+        click: => popup.off 'click', '.loadable'
       ]
       popup.addClass("choose-type").append "<div class='loader'></div>"
 
       # Type select handler
-      popup.on 'click .loadable', (event) =>
+      popup.on 'click', '.loadable', (event) =>
         @_creationType = ItemType.collection.get $(event.target).closest('.loadable').data 'id'
         console.log "type #{@_creationType?.id} selected for new item"
         popup.dialog 'close'
@@ -410,3 +411,20 @@ define [
       details.instance.y = details.coord.y
       # finally, save the instance
       details.instance.save()
+
+    # **private**
+    # Opens an event, player or item from the search results
+    # First checks that object still exists.
+    #
+    # @param event [Event] the open event inside search results
+    # @param details [Object] opening details:
+    # @option details instance [Object] the opened instance class name
+    # @option details id [String] the opened instance id
+    _onOpenSearchResult: (event, details) => 
+      # check object existence first
+      obj = require("model/#{details.category}").collection.get details.id
+      return rheia.router.trigger 'open', details.category, details.id if obj?
+      # object does not exists anymore
+      utils.popup i18n.titles.shadowObj, i18n.msgs.shadowObj, 'warning', [text: i18n.buttons.ok]
+      # relaunches search
+      @_searchWidget?.triggerSearch true

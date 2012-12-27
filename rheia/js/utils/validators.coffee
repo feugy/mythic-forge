@@ -65,7 +65,6 @@ define [
       for name, value of attributes
         @[name] = value
       @errors = []
-
       @_node.on @eventName, @validate if @eventName?
     
     # Triggers validation. Could be invoked manually or on node change.
@@ -81,7 +80,7 @@ define [
 
     # Do not forget to invoke the dispose method to remove binding !
     dispose: =>
-      @_node.unbind @eventName if @eventName?
+      @_node.off @eventName, @validate if @eventName?
 
     # **private**
     # the validation method that must be overriden by subclasses

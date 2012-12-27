@@ -225,7 +225,7 @@ define [
           original: @model.template
           current: @_templateWidget.options.value
 
-      return comparable
+      comparable
     
     # **private**
     # Re-creates validators, when refreshing the properties.

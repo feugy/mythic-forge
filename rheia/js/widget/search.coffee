@@ -69,17 +69,6 @@ define [
 
       @_treeWidget = if @options.isType then 'typeTree' else 'instanceTree'
 
-      # general change handler: refresh search
-      @bindTo rheia.router, 'modelChanged', => 
-        @_refresh = true
-        @triggerSearch()
-      
-      # Executable kind changed: refresh results
-      @_kindChanged = => 
-        return unless Array.isArray(@options.results) and @options.results.length
-        @_results[@_treeWidget] 'setOption', 'content', @options.results
-      @bindTo rheia.router, 'kindChanged', @_kindChanged
-
       @$el.addClass('search').append """<input type="text"/>
         <div class="ui-icon ui-icon-search"></div>
         <div class="ui-icon small help"></div>
@@ -116,8 +105,9 @@ define [
 
     # Parse the input query, and if correct, trigger the server call.
     #
+    # @param refresh [Boolean] indicate that the search is a refreshal: results will not be hidding/shown automatically
     # @param force [Boolean] force the request sending, even if request is empty. But invalid request cannot be forced.
-    triggerSearch: (force = false) =>
+    triggerSearch: (refresh = false, force = false) =>
       # do NOT send multiple search in the same time
       return if @_searchPending
       @$el.removeClass('invalid').find('.error').hide()
@@ -134,7 +124,8 @@ define [
       clearTimeout @_searchTimout if @_searchTimout?
 
       # hide results
-      @_onHideResults()
+      @_refresh = refresh
+      @_onHideResults() unless @_refresh
       # no query: just empties results
       return @setOption 'results', [] if query is ''
       # or trigger search
@@ -175,7 +166,7 @@ define [
     # **private**
     # Displays the result popup, with a slight delay to avoir openin if mouse leave the widget.
     _onShowResults: =>
-      if @options.results?.length > 0 and @_showTimeout is null
+      if @options.results?.length > 0 and @_showTimeout is null and @_results.is ':hidden'
         # show results with slight delay
         @_showTimeout = setTimeout =>
           @_results.show().transition {opacity:1}, @options.animDuration, =>
@@ -202,7 +193,7 @@ define [
     _onChange: (event) =>
       clearTimeout @_searchTimout if @_searchTimout?
       # manually triggers research
-      return @triggerSearch true if event.keyCode is $.ui.keyCode.ENTER
+      return @triggerSearch false, true if event.keyCode is $.ui.keyCode.ENTER
       # defer search
       @_searchTimout = setTimeout (=> @triggerSearch()), 1000
 
@@ -226,5 +217,5 @@ define [
     # Used scope for instance drag'n drop operations. Null to disable drop outside widget
     dndType: null
 
-    # duration of result toggle animations
+    # Duration of result toggle animations
     animDuration: 250
