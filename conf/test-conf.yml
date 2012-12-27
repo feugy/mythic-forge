@@ -1,8 +1,9 @@
 # Logger's levels.
-logLevels:
-  service: error
-  model: error
-  web: error
+logger:
+  path: console
+  defaultLevel: off
+  dateFormat: YYYY-MM-DDTHH:mm:ss
+  nameMaxLength: 10
 
 # Server's configuration
 server:

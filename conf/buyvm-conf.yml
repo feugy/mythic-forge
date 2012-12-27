@@ -1,8 +1,14 @@
 # Logger's levels.
-logLevels:
-  service: warn
-  model: warn
-  web: warn
+logger:
+  path: console
+  defaultLevel: warn
+  dateFormat: YYYY-MM-DDTHH:mm:ss
+  nameMaxLength: 10
+  levels: 
+    service: warn
+    model: warn
+    web: warn
+    console: all
 
 # Server's configuration
 server:

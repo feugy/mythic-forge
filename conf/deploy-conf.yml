@@ -1,6 +1,11 @@
 # Logger's levels.
-logLevels:
-  service: info
+logger:
+  path: console
+  defaultLevel: off
+  dateFormat: HH:mm:ss
+  nameMaxLength: 10
+  levels: 
+    service: info
 
 # Path used by deployement service to optimise Rheia
 game:

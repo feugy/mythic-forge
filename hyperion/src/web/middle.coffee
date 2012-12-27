@@ -18,7 +18,6 @@
 ###
 'use strict'
 
-logger = require('../logger').getLogger 'web'
 express = require 'express'
 _ = require 'underscore'
 utils = require '../util/common'
@@ -41,6 +40,10 @@ deployementService = require('../service/DeployementService').get()
 ruleService = require('../service/RuleService').get()
 watcher = require('../model/ModelWatcher').get()
 notifier = require('../service/Notifier').get()
+LoggerFactory = require '../logger'
+
+logger = LoggerFactory.getLogger 'web'
+
 
 connectedList = []
 
@@ -73,7 +76,7 @@ else
   server = http.createServer app
 
 # Configure socket.io with it
-io = require('socket.io').listen server, {logger: logger}
+io = require('socket.io').listen server, logger: LoggerFactory.getLogger 'webSocket'
 io.set 'log level', 0 # only errors
 
 # Returns redirection url after authentication
@@ -268,6 +271,10 @@ notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
     closeSocket details[0].socketId, details[0].email, details[1] 
   logger.debug "broadcast of #{scope}:#{event}"
   adminNS.emit.apply adminNS, [scope, event].concat details
+
+# send all log within admin namespace
+LoggerFactory.on 'log', (details) ->
+  adminNS.emit 'log', details
 
 # socket.io `updates` namespace 
 #

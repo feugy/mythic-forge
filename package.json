@@ -27,7 +27,7 @@
     "socket.io": "https://github.com/feugy/socket.io/tarball/master",
     "stylus": "0.30.1",
     "underscore": "1.4.2",
-    "winston": "0.5.11"
+    "underscore.string": "2.3.1"
   },
   "devDependencies": {
     "chai": "1.4.0",

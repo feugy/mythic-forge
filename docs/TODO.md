@@ -15,7 +15,6 @@
 - Rheia
   - bugs
   - moderation perspective
-    - **[1]** do not reload search results when instance changed
     - *[2]* contextual menu in search results
   - authoring perspective
     - multiple file search & replace
@@ -255,6 +254,7 @@
       - input query with help and validation (use : for regexp and = for string)
       - display result and navigates
       - display tooltip and affect by drag'n drop
+      - do not reload search results when instance changed
 
 - Atlas
   - map displayal

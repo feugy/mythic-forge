@@ -43,6 +43,7 @@ define [
     # @param className [String] css ClassName, set by subclasses
     constructor: (className) ->
       super tagName: 'div', className:'admin perspective'
+      @bindTo rheia.sockets.admin, 'log', (details) -> console.log details
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # Instanciate views and add them to rendering
