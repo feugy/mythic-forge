@@ -141,7 +141,7 @@ define [
       event?.stopImmediatePropagation()
       element = $(event.target).closest 'dd > *'
       return unless element?
-      $(event.target).closest('.menu').remove()
+      $(event.target).closest('.menu').toggleable 'close'
       @$el.trigger 'removeElement',
         category: element.data 'category'
         id: element.data 'id'

@@ -26,7 +26,8 @@ define [
   'text!tpl/administrationPerspective.html'
   'view/admin/Deploy'
   'view/admin/Turns'
-], ($, Backbone, i18n, i18nAdmin, template, DeployView, TurnsView) ->
+  'view/admin/Log'
+], ($, Backbone, i18n, i18nAdmin, template, DeployView, TurnsView, LogView) ->
 
   i18n = $.extend true, i18n, i18nAdmin
 
@@ -43,15 +44,15 @@ define [
     # @param className [String] css ClassName, set by subclasses
     constructor: (className) ->
       super tagName: 'div', className:'admin perspective'
-      @bindTo rheia.sockets.admin, 'log', (details) -> console.log details
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # Instanciate views and add them to rendering
     render: =>
       super()
       # creates the views
-      @$el.find('.right').append new DeployView().render().$el
-      @$el.find('.left').append new TurnsView().render().$el
+      @$('.right').append(new DeployView().$el)
+        .append new LogView().$el
+      @$('.left').append new TurnsView().$el
 
       # for chaining purposes
       @

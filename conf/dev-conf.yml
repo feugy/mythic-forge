@@ -9,7 +9,7 @@ logger:
     model: warn
     web: warn
     webSocket: warn
-    console: debug
+    console: all
 
 # Server's configuration
 server:  

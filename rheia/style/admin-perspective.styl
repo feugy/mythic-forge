@@ -36,16 +36,19 @@
 .admin.perspective
 
   > .left
-    box-flex inherit
+    box-flex 0
+    width 350px
 
   > .right
-    min-width 600px
+    box-flex 1
 
   .view
     border 1px solid borderColor
     border-radius 5px
     box-shadow 0 5px 10px shadowColor
     padding 15px
+    box-flex 1
+    height 1px
 
     > h1
       box-sizing border-box
@@ -105,10 +108,52 @@
       padding-left 0.5em
 
     .failure
-      color: errorColor
+      color errorColor
     .failure:after
       content '- ko'
       padding-left 0.5em
 
     .fatal
       background-color red
+
+
+  .logs.view
+    display box
+    box-orient vertical
+    box-flex 2
+    margin-top 1em
+
+    .logs-panel
+      margin-top 0
+      background-color black
+      display block
+      box-flex 1
+      height 1px
+      overflow auto
+      padding 0.5em
+
+      .log
+        font-family 'Courrier Sans'
+        font-size 10px
+        line-height 15px
+
+        .date, .level, .name
+          padding-right 0.5em
+
+        .level::after
+          content ":"
+
+        .message
+          color white
+
+        .name
+          color lighten(fontColor, 30%)
+
+      .debug .level, .trace .level
+        color lighten(fontColor, 15%)
+      .info .level
+        color focusColor
+      .warn .level
+        color errorColor
+      .error .level
+        color red

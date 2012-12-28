@@ -34,6 +34,9 @@ define [
   # The deploy view shows game client known versions, and commands to deploy/commit/rollback a new version in production
   class Deploy extends Backbone.View
     
+    # used by template
+    i18n: i18n
+
     # **private**
     # mustache template rendered
     _template: template
@@ -60,6 +63,8 @@ define [
         for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
           @bindTo @_service, method, @_onError
         @render()
+
+      @render()
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
@@ -142,14 +147,6 @@ define [
 
       # for chaining purposes
       @
-
-    # **private**
-    # Provides template data for rendering
-    #
-    # @return an object used as template data 
-    _getRenderData: => {
-        i18n: i18n
-      }
 
     # **private**
     # Hide buttons and render a progress bar

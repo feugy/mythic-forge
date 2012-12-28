@@ -33,7 +33,7 @@ define [
   # This widget renders a type model to be displayed in explorer.
   # Draws the type image for EventType and ItemType, use a carousel for FieldType, and displays 
   # just name for others
-  # Displays a contextual menu, but handlers are difined by typeTree widget.
+  # Displays a contextual menu, but handlers are defined by typeTree widget.
   class TypeDetails extends Base
 
     # **private**

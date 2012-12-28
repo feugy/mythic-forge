@@ -13,9 +13,6 @@
     - register users from Facebook
 
 - Rheia
-  - bugs
-  - moderation perspective
-    - *[2]* contextual menu in search results
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -43,6 +40,7 @@
   - turn-rules ordering rank
   - Event type CRUD
   - Event CRUD with link to from, creation and update dates
+  - Logger refactoring, override console standard functions and send logs to admin clients 
   - Players 
     - CRUD with AdminService
     - password management and protection for manually provided accounts
@@ -255,6 +253,7 @@
       - display result and navigates
       - display tooltip and affect by drag'n drop
       - do not reload search results when instance changed
+      - contextual menu in search results
 
 - Atlas
   - map displayal
@@ -283,3 +282,6 @@
   - isomorphic rules: can partially be executed on client to increase reactivity
   - WebSocket everywhere: increase speed
   - rendering template for events
+  - live log displayal on Rheia
+  - faster game client optimization process
+  - game client files history, with possible rollback (even for removed/renamed files)

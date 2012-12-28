@@ -33,7 +33,10 @@ define [
 
   # The turns view displays the ordered list of turn rules, and allow to trigger turns
   class Turns extends Backbone.View
-    
+        
+    # used by template
+    i18n: i18n
+
     # **private**
     # mustache template rendered
     _template: template
@@ -64,6 +67,7 @@ define [
         # retrieve rules
         Executable.collection.fetch()  
         rheia.sockets.admin.on 'turns', @_onTurnsEvent
+      @render()
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: =>
@@ -82,12 +86,6 @@ define [
 
       # for chaining purposes
       @
-
-    # **private**
-    # Provides template data for rendering
-    #
-    # @return an object used as template data 
-    _getRenderData: => {i18n: i18n}
 
     # **private**
     # Creates rule rendering inside the list. Make an li with a checkbox and a status label inside it.

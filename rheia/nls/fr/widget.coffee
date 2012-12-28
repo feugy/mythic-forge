@@ -21,10 +21,6 @@ define
   loadableImage:
     noImage: 'Aucune image'
 
-  typeDetails:
-    open: 'Ouvrir "%s"'
-    remove: 'Supprimer "%s"'
-
   search:
     noResults: 'Aucun résultat'
     oneResult: '1 résultat'
@@ -58,7 +54,13 @@ define
 
   instanceDetails:
     name: '%1$s <i>(%2$s)</i>'
+    open: 'Ouvrir "%s"'
+    remove: 'Supprimer "%s"'
 
+  typeDetails:
+    open: 'Ouvrir "%s"'
+    remove: 'Supprimer "%s"'
+    
   instanceList: 
     empty: "affectez un objet par drag'n drop"
     unbind: "délier de l'objet"

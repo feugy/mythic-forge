@@ -33,6 +33,7 @@ define [
 
   # This widget displays a list of linked instances, using instanceDetails for rendergin.
   # The size list could be limited to 1, and any modification will remplace the previous value.
+  # Displays a contextual menu, but handlers are defined by instanceTree widget.
   class InstanceDetails extends Base
 
     # **private**
@@ -43,6 +44,10 @@ define [
     # simple timeout to delay tooltip opening
     _tooltipTimeout: null
       
+    # **private**
+    # contextual menu
+    _menu: null
+
     # initialize widget
     constructor: (element, options) ->
       super element, options
@@ -51,18 +56,15 @@ define [
     # destructor: free DOM nodes and handles
     dispose: =>
       @_tooltip?.$el.remove()
-      @$el.find('*').unbind()
+      @$el.find('*').off()
       super()
 
     # build rendering
     _create: =>
       instance = @options.value
-
       @$el.addClass 'instance-details'
 
-      # destroy if needed
-      @bindTo instance, 'destroy', => @$el.remove() if instance?
-
+      name = null
       if instance? and 'object' is utils.type instance
         # displays an image if a type is available
         if instance.type? 
@@ -73,8 +75,10 @@ define [
         else
           @$el.addClass 'no-image'
 
+        name = utils.instanceName instance
+
         # displays label with name
-        @$el.append "<span>#{_.sprintf i18n.instanceDetails.name, utils.instanceName(instance), instance.id}</span>"
+        @$el.append "<span>#{_.sprintf i18n.instanceDetails.name, name, instance.id}</span>"
       
       if @options.dndType?
         @$el.draggable
@@ -88,6 +92,9 @@ define [
       if 'function' is utils.type @options.tooltipFct
         @$el.on 'mouseenter', (event) =>
           clearTimeout @_tooltipTimeout
+          # hides tooltip if over menu
+          return @_tooltip?.close() unless $(event.target).closest('.menu').length is 0
+          # otherwise, opens it with a slight delay
           @_tooltipTimeout = setTimeout =>
             if @_tooltip
               return if @_tooltip.options.open
@@ -101,6 +108,18 @@ define [
           , 500
         @$el.on 'mouseleave', => clearTimeout @_tooltipTimeout
 
+      if @_menu?
+        @el.off 'contextmenu', @_onShowMenu 
+        @_menu.remove()
+
+      # adds a contextual menu that opens on right click
+      @_menu = $("""<ul class="menu">
+          <li class="open"><i class="x-small ui-icon open"></i>#{_.sprintf i18n.instanceDetails.open, name}</li>
+          <li class="remove"><i class="x-small ui-icon remove"></i>#{_.sprintf i18n.instanceDetails.remove, name}</li>
+        </ul>""").toggleable().appendTo(@$el).data 'toggleable'
+
+      @$el.on 'contextmenu', @_onShowMenu
+
     # Method invoked when the widget options are set. Update rendering if value change.
     #
     # @param key [String] the set option's key
@@ -113,6 +132,16 @@ define [
       @$el.find('*').unbind()
       @$el.empty()
       @_create()
+
+    # **private**
+    # Contextual menu handler, to show existing menu
+    #
+    # @param event [Event] cancelled right click event
+    _onShowMenu: (event) =>
+      event?.preventDefault()
+      event?.stopImmediatePropagation()
+      @_tooltip?.close()
+      @_menu.open event?.pageX, event?.pageY
 
   # widget declaration
   InstanceDetails._declareWidget 'instanceDetails', 

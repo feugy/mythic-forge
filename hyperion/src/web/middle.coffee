@@ -274,7 +274,10 @@ notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
 
 # send all log within admin namespace
 LoggerFactory.on 'log', (details) ->
-  adminNS.emit 'log', details
+  try
+    adminNS.emit 'log', details
+  catch e
+    # avoid crashing server if a log message cannot be sent
 
 # socket.io `updates` namespace 
 #

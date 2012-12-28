@@ -18,6 +18,11 @@
 ###
 
 define
+  logs:
+    dateFormat: 'YY-MM-DD HH:mm:ss'
+    nameMaxLength: 15
+    levelMaxLength: 5
+
   titles:
     deployView: 'Client de jeu'
     turnView: 'Passage de tour'
@@ -25,6 +30,7 @@ define
     confirmDeploy: 'Déploiement en production'
     deployed: 'Déploiement terminé'
     confirmRestore: 'Confirmation du changement'
+    logView: 'Logs serveur'
 
   labels:
     gameVersions: 'Version en développement'

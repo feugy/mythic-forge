@@ -87,8 +87,6 @@ define [
         hideEmpty: true
         tooltipFct: @options.tooltipFct
         dndType: @options.dndType
-        openElement: (event, category, id) => @$el.trigger 'openElement', [category, id]
-        removeElement: (event, category, id) => @$el.trigger 'removeElement', [category, id]
       
       # toggle results visibility
       @$el.hover (event) =>
@@ -146,14 +144,7 @@ define [
           @options.results = value
 
           # displays results number
-          html = ''
-          if @options.results.length is 0
-            html = i18n.search.noResults
-          else if @options.results.length is 1
-            html = i18n.search.oneResult
-          else
-            html = _.sprintf i18n.search.nbResults, @options.results.length
-          @$el.find('.nb-results').html html
+          @_displayResultNumber()
 
           # set max height because results are absolutely positionned
           @_results.css 'max-height', @$el.offsetParent().height()*0.75
@@ -162,6 +153,17 @@ define [
 
           @_onShowResults() unless @_refresh
           @_refresh = false
+
+    # display result number
+    _displayResultNumber: =>
+      html = ''
+      if @options.results.length is 0
+        html = i18n.search.noResults
+      else if @options.results.length is 1
+        html = i18n.search.oneResult
+      else
+        html = _.sprintf i18n.search.nbResults, @options.results.length
+      @$el.find('.nb-results').html html
 
     # **private**
     # Displays the result popup, with a slight delay to avoir openin if mouse leave the widget.
