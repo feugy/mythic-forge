@@ -31,6 +31,7 @@ define [
   # @param model [Event] enriched model
   # @param callback [Function] end enrichment callback. Default to null.
   enrichCharacters = (model, callback) ->
+    callback = if 'function' is utils.type callback then callback else () -> true
     raws = model.characters.concat()
     loaded = []
     doLoad = false
@@ -56,16 +57,23 @@ define [
           model.characters = []
           # immediately add enriched characters
           for raw in items
-            character = new Item raw
-            Item.collection.add character
-            model.characters.push character
+            existing = Item.collection.get raw._id
+            if existing?
+              model.characters.push existing
+              # reuse existing but merge its values
+              Item.collection.add raw
+            else
+              # add new character
+              character = new Item raw
+              Item.collection.add character
+              model.characters.push character
 
-          callback() if 'function' is utils.type callback
+          callback()
 
       rheia.sockets.game.on 'getItems-resp', processItems
       rheia.sockets.game.emit 'getItems', loaded
     else
-      callback() if 'function' is utils.type callback
+      callback()
 
   # Client cache of players.
   # Wired to the server through socket.io

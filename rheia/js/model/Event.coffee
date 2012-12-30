@@ -48,9 +48,16 @@ define [
           raw = _.find(froms, (from) -> from._id is id)
           return callback() unless raw?
           rheia.sockets.game.removeListener 'getItems-resp', processFrom
-          # immediately add enriched from
-          model.from = new Item raw
-          Item.collection.add model.from
+
+          existing = Item.collection.get raw._id
+          if existing?
+            model.from = existing
+            # reuse existing but merge its values
+            Item.collection.add raw
+          else
+            # immediately add enriched from
+            model.from = new Item raw
+            Item.collection.add model.from
           callback()
 
         rheia.sockets.game.on 'getItems-resp', processFrom

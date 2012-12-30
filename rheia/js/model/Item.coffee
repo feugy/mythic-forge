@@ -49,6 +49,9 @@ define [
       models = if Array.isArray models then models else [models]
       # keep existing models that will be merged
       existings.push @_byId[model._id] for model in models when @_byId?[model._id]?
+            
+      options = {} unless options?
+      options.merge = true
       
       # superclass behaviour
       super models, options
@@ -126,18 +129,18 @@ define [
       if attributes?.map?
         # to avoid circular dependencies
         Map = require 'model/Map'
-        if typeof attributes.map is 'string'
-          # gets by id
-          map = Map.collection.get attributes.map
-          unless map
-            # trick: do not retrieve map, and just construct with empty name.
-            @map = new Map _id: attributes.map
-          else 
-            @map = map
-        else
-          # or construct directly
-          map = new Map attributes.map
-          Map.collection.add map
+        id = if 'string' is utils.type attributes.map then attributes.map else attributes.map._id
+        # gets by id
+        map = Map.collection.get id
+        unless map?
+          # construct it directly because it does not exist
+          if 'string' is utils.type attributes.map
+            # do not add it: just temporary
+            @map = new Map _id: id 
+          else
+            @map = new Map attributes.map
+            Map.collection.add @map
+        else 
           @map = map
 
     # Overrides inherited setter to handle i18n fields.
