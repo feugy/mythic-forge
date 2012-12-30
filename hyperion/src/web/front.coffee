@@ -133,7 +133,9 @@ module.exports = (app = null) ->
             return next if 'ENOENT' is err.code then null else err 
           # try to compile it
           stylus(content.toString(), {compress:true}).set('paths', [parent]).render (err, css) ->
-            return res.send err, 500 if err?
+            if err?
+              logger.error "Failed to compile #{file}: #{err}"
+              return res.send err, 500
             res.header 'Content-Type', 'text/css'
             res.send css
            

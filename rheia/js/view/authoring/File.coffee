@@ -21,12 +21,13 @@
 define [
   'jquery'
   'underscore'
+  'utf8'
   'view/BaseView'
   'i18n!nls/common'
   'i18n!nls/authoring'
   'model/FSItem'
   'widget/advEditor'
-], ($, _, BaseView, i18n, i18nAuthoring, FSItem) ->
+], ($, _, utf8, BaseView, i18n, i18nAuthoring, FSItem) ->
 
   i18n = $.extend(true, i18n, i18nAuthoring)
 
@@ -136,7 +137,7 @@ define [
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: => 
-      @model.content = @_editorWidget.options.text unless @_mode is 'img'
+      @model.content = utf8.encode @_editorWidget.options.text or '' unless @_mode is 'img'
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -151,7 +152,7 @@ define [
       else
         @_editorWidget.$el.show()
         @_editorWidget.setOption 'mode', @_mode
-        @_editorWidget.setOption 'text', @model.content
+        @_editorWidget.setOption 'text', utf8.decode @model.content or ''
 
       # to update displayed icon
       @_onChange()
@@ -163,7 +164,7 @@ define [
       if @_mode is 'img'
         @_canSave = false
       else
-        @_canSave = @model.content isnt @_editorWidget.options.text 
+        @_canSave = @model.content isnt utf8.encode @_editorWidget.options.text or ''
       super()
 
     # **private**

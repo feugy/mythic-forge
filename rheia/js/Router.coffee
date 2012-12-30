@@ -45,6 +45,7 @@ requirejs.config
     'transit': 'lib/jquery-transit-0.9.9-min'
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/underscore.string-2.2.0rc-min'
+    'utf8': 'lib/utf8'
     # shim for rules
     'mongodb': 'lib/shim/mongodb'
     
@@ -82,6 +83,8 @@ requirejs.config
       deps: ['jquery']
     'underscore': 
       exports: '_'
+    'utf8':
+      exports: 'UTF8'
 
 # initialize rheia global namespace
 window.rheia = {}

@@ -159,8 +159,9 @@ emitter.getLogger = (name) ->
   loggers[name]
 
 # Erase standard console methods
-shim = emitter.getLogger 'console'
-console[op] = method for op, method of shim
-console.dir = console.log
+unless process.env?.NODE_ENV is 'test'
+  shim = emitter.getLogger 'console'
+  console[op] = method for op, method of shim
+  console.dir = console.log
 
 module.exports = emitter
