@@ -45,7 +45,6 @@ class Rule
   constructor: (@name, @category = '') ->
     @removed= []
     @saved= []
-    @active= true
  
   # This method indicates wheter or not the rule apply to a given situation.
   # Beware: `canExecute`  is intended to be invoked on server and client side, thus, database access are not allowed.

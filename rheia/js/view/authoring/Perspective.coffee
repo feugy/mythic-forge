@@ -115,7 +115,7 @@ define [
       super()
       # update button bar on tab change, but after a slight delay to allow internal update when 
       # tab is removed
-      @_tabs.element.on 'tabsselect', => setTimeout (=> @_onUpdateFileBar(true)), 0
+      @_tabs.element.on 'tabsselect tabsadd tabsremove', => _.defer => @_onUpdateFileBar true
 
       # render the explorer on the left
       @$el.find('> .left').append @_explorer.render().$el
@@ -267,7 +267,6 @@ define [
       view.on 'change', @_onUpdateFileBar
       view.model.on 'history', @_onUpdateHistory
       view.model.on 'version', @_onChangeVersion
-      @_onUpdateFileBar true
 
     # **private**
     # Item creation/move handler: prompt for name, creates the FSItem and opens it if it's a file, or moves the FSItem
@@ -355,20 +354,25 @@ define [
        
       @_saveButton._setOption 'disabled', true
       @_removeButton._setOption 'disabled', true
-      if @_tabs.options.selected isnt -1
-        view = @_views[@_tabs.options.selected]
-        @_saveButton._setOption 'disabled', !view.canSave()
-        @_removeButton._setOption 'disabled', !view.canRemove()
+      @_historyList.attr 'disabled', 'disabled'
+      @_historyList.empty()
 
-        # disable history if modification pending, and get history if needed
-        if view.canSave()
-          @_historyList.attr 'disabled', 'disabled'
-        else
-          @_historyList.removeAttr 'disabled'
+      view= @_views?[@_tabs.options.selected]
+      # no view selected (after a deletion for example)
+      return unless view?
 
-        if withHistory is true
-          @_historyList.empty()
-          @_historyTimeout = setTimeout (-> view.model.fetchHistory()), 1000
+      @_saveButton._setOption 'disabled', !view.canSave()
+      @_removeButton._setOption 'disabled', !view.canRemove()
+
+      # disable history if modification pending, and get history if needed
+      if view.canSave()
+        @_historyList.attr 'disabled', 'disabled'
+      else
+        @_historyList.removeAttr 'disabled'
+
+      if withHistory is true
+        @_historyList.empty()
+        @_historyTimeout = setTimeout (-> view.model.fetchHistory()), 1000
 
     # **private**
     # Selection handler inside the file explorer.
@@ -395,7 +399,6 @@ define [
       @_uploadButton._setOption 'disabled', fileSelected
       @_renameButton._setOption 'disabled', selected is null
       @_removeFolderButton._setOption 'disabled', selectedItem is null or ! selectedItem.isFolder
-      @_onUpdateFileBar()
 
     # **private**
     # Upload handler: once a file have been selected, upload it to server
@@ -427,9 +430,9 @@ define [
     _onUpdateHistory: (file) =>
       # no view displayed
       return if @_tabs.options.selected is -1
-      displayed = @_views[@_tabs.options.selected].model
+      displayed = @_views[@_tabs.options.selected]?.model
       # not the current file
-      return unless displayed.equals file
+      return unless displayed?.equals file
       # cleans an redraw history selector content
       @_historyList.empty()
       html = ""

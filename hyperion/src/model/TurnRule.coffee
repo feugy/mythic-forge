@@ -42,7 +42,6 @@ class TurnRule
   constructor: (@name, @rank = 0) ->
     @removed= []
     @saved= []
-    @active= true
  
   # This method select a set of element on which execute will be applied.
   # Objects can be read directly from database, but modification is not allowed.

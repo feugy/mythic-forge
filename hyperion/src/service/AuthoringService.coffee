@@ -115,6 +115,8 @@ class _AuthoringService
             all: true
             author: getAuthor author
           , (err, stdout) =>
+            # ignore commit warning, for example about line endings
+            err = null if err?.code is 1 and -1 isnt "#{err}".indexOf 'warning:'
             return callback "Failed to commit: #{purge err} #{purge stdout}" if err?
             logger.debug "#{saved.path} commited"
             # get the last commit, ignore errors

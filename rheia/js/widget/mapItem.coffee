@@ -28,7 +28,7 @@ define [
   defaultWidth = 100;
 
   # List of executing animations
-  _anims = []
+  _anims = {}
 
   # The unic animation loop
   _loop = (time) ->
@@ -38,7 +38,7 @@ define [
       # if document is in background, animations will stop, so stop animations.
       time = null
     # trigger onFrame for each executing animations
-    for anim in _anims
+    for id, anim of _anims
       anim._onFrame.call anim, time if anim isnt undefined
 
   # starts the loop at begining of the game
@@ -165,10 +165,10 @@ define [
 
       if document.hidden
         # document not visible: drop directly to last frame.
-        @_onFrame @_start+@_sprite.duration
+        @_onFrame @_start+@_sprite?.duration
       else 
         # adds it to current animations
-        _anims.push @
+        _anims[@options.model.id] = @
 
     # **private**
     # frame animator: invokated by the animation loop. If it's time to draw another frame, to it.
@@ -176,11 +176,11 @@ define [
     #
     # @param current [Number] the current timestamp. Null to stop current animation.
     _onFrame: (current) =>
-      return unless @_imageSpec?
+      return unless @_imageSpec? and @_sprite?
       # loop until the end of the animation
       if current? and current-@_start < @_sprite.duration
         # only animate at needed frames
-        if current-@_start >= (@_step+1)*@_sprite.duration/@_sprite.number
+        if current-@_start >= (@_step+1)*@_sprite.duration/(@_sprite.number+1)
           # changes frame 
           if @_offset.x <= -(@_sprite.number*@_imageSpec.width) 
             @_offset.x = 0 
@@ -197,7 +197,7 @@ define [
               top: @_newPos.top-@_newPos.stepT*(@_sprite.number-@_step)
       else 
         # removes from executing animations first.
-        _anims.splice _anims.indexOf(@), 1
+        delete _anims[@options.model.id]
         # end of the animation: displays first sprite
         @_offset.x = 0
         @_image.css 'background-position': "#{@_offset.x}px #{@_offset.y}px"
@@ -211,7 +211,6 @@ define [
           delete @_newPos.stepT
           @$el.css @_newPos
           @_newPos = null
-
 
     # **private**
     # Image loading handler: positionnates the widget inside map
