@@ -58,7 +58,8 @@ mongoose.Document.prototype._registerHooks = ->
 # @param instance [Object] Mongoose instance which is analyzed and may be mark as modified
 # @param prop [String] name of the compared properties
 compareArrayProperty = (instance, prop) ->
-  original = instance["__orig#{prop}"] or []
+  original = instance["__orig#{prop}"]
+  return if original is undefined
   # original contains, ids, current may also contain Mongoose objects
   current = _.map instance[prop] or [], (linked) -> if 'object' is utils.type(linked) and linked?._id? then linked._id.toString() else linked
   # compare original value and current dynamic value and mark modified if necessary

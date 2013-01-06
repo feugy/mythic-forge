@@ -133,8 +133,7 @@ define [
       @unboundFrom rheia.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
-        @_image.replaceWith $(img).clone()
-        @_image = @$el.find 'img'
+        @_image.attr 'src', img
         @$el.find('.alt').remove()
       else 
         # displays the alternative text

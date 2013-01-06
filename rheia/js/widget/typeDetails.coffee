@@ -131,7 +131,7 @@ define [
     _onImageLoaded: (success, src, img) =>
       return unless @_pendingImage is src
       @unboundFrom rheia.router, 'imageLoaded'
-      @$el.find("img").replaceWith $(img).clone() if success
+      @$el.find("img").attr 'src', img if success
 
   # widget declaration
   TypeDetails._declareWidget 'typeDetails', 

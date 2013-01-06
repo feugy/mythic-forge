@@ -223,8 +223,9 @@ define [
       @unboundFrom rheia.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
+        # As it was already loaded, browser cache will be involved
         @_image.css 
-          background: "url(#{utils.getImageString img})"
+          background: "url(#{img})"
           width: @_imageSpec?.width or defaultWidth
           height: @_imageSpec?.height or defaultHeight
 

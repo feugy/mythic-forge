@@ -34,6 +34,10 @@ define [
     # Image local cache, that store Image objects
     _cache: {}
     
+    # **private**
+    # Timestamps added to image request to server, avoiding cache
+    _timestamps: {}
+
     # Constructor. 
     constructor: ->
       rheia.router.on 'loadImage', @load
@@ -49,7 +53,7 @@ define [
       # Use cache if available, with a timeout to simulate asynchronous behaviour
       if image of @_cache
         _.defer =>
-          rheia.router.trigger 'imageLoaded', true, image, @_cache[image]
+          rheia.router.trigger 'imageLoaded', true, image, "#{image}?#{@_timestamps[image]}"
       else unless image in @_pendingImages
         @_pendingImages.push image
         # creates an image facility
@@ -57,10 +61,16 @@ define [
         # bind loading handlers
         $(imgData).load @_onImageLoaded
         $(imgData).error @_onImageFailed
+        @_timestamps[image] = new Date().getTime()
         # adds a timestamped value to avoid browser cache
-        imgData.src = "#{image}?#{new Date().getTime()}"
+        imgData.src = "#{image}?#{@_timestamps[image]}"
         isLoading = true
       isLoading
+
+    # Returns the image content from the cache, or null if the image was not requested yet
+    getImage: (image) =>
+      return null unless image of @_cache
+      @_cache[image]
 
     # Uploads a type or instance image for a given model.
     # Triggers the `imageUploaded` event at the end, with the image name and model id in parameter.
@@ -83,6 +93,7 @@ define [
         
         # update cache content
         delete @_cache[src]
+        delete @_timestamps[src]
 
         # wait for server response
         rheia.sockets.admin.once 'uploadImage-resp', (err, saved) =>
@@ -141,13 +152,10 @@ define [
       return unless src?
       # Remove event from pending array
       @_pendingImages.splice @_pendingImages.indexOf(src), 1
-      # Gets the image data with a canvas temporary element
-      canvas = $("<canvas></canvas>")[0]
-      canvas.width = event.target.width
-      canvas.height = event.target.height
       # Store Image object and emit on the event bus
+      console.log 'store in cache src', src
       @_cache[src] = event.target
-      rheia.router.trigger 'imageLoaded', true, src, event.target
+      rheia.router.trigger 'imageLoaded', true, src, "#{src}?#{@_timestamps[src]}"
   
     # **private**
     # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.

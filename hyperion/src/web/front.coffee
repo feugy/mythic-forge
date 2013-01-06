@@ -157,11 +157,11 @@ module.exports = (app = null) ->
 
   # serve commun static assets
   app.use express.cookieParser utils.confKey 'server.cookieSecret'
-  app.use express.compress level:9
-  app.use '/images', express.static utils.confKey 'images.store'
+  app.use '/images', express.static utils.confKey('images.store'), maxAge: 1814400000
   # serve static pages from the docs folder
   app.use express.static 'docs'
-
+  app.use express.compress level:9
+  
   # configure a game RIA and the administration RIA 
   configureRIA '/game', utils.confKey('game.production'), true
   configureRIA '/dev', utils.confKey('game.dev'), false, '/rheia/login'

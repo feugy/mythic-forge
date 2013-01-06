@@ -13,10 +13,6 @@
     - register users from Facebook
 
 - Rheia
-  - bugs
-    - **[1]** duplicate objects on map
-    - **[1]** event reloading
-    - **[1]** buggy animations
   - authoring perspective
     - multiple file search & replace
     - single file search & replace

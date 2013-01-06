@@ -387,11 +387,13 @@ define [
     #
     # @param success [Boolean] true if image was successfully loaded
     # @param src [String] the loaded image url
-    # @param img [Image] an Image object, null in case of failure
-    _onImageLoaded: (success, src, img) => 
+    _onImageLoaded: (success, src) => 
       o = @options
       # do nothing if loading failed.
       return unless src in @_loadedImages
+      # looks for data corresponding to this image
+      img = rheia.imagesService.getImage src
+
       @_loadedImages.splice @_loadedImages.indexOf(src), 1
       src = src.slice src.lastIndexOf('/')+1
       @_pendingImages--
@@ -402,7 +404,6 @@ define [
       # write on field layer, unless a clone layer exists
       ctx = @_cloneLayer[0].getContext '2d' if @_cloneLayer?
 
-      # looks for data corresponding to this image
       for data in @_data
         if "#{data.typeId}-#{data.num}.png" is src
           {left, top} = o.renderer.coordToPos data

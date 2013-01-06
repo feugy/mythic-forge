@@ -60,10 +60,6 @@ define [
     # menu that displays multiple items on the same tile.
     _popupMenu: null
 
-    # **private**
-    # stores widget to be destroy when refreshing displayed items
-    _oldWidgets: {}
-
     # Adds field or items to map. Will be effective only if the objects is inside displayed bounds.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
     #
@@ -74,9 +70,6 @@ define [
       # end of item loading: removes old items and reset layer position
       checkLoadingEnd = =>
         return unless @_loading is 0
-        # removes previous widgets
-        widget.$el.remove() for id, widget of @_oldWidgets
-        @_oldWidgets = {}
         # all widget are loaded: reset position
         @_itemLayer.css 
           top: 0
@@ -95,9 +88,6 @@ define [
           id = obj.id
           # avoid updating widget while construction is not finished
           continue if @_itemWidgets[id] is 'tmp'
-          # update case: remove the old widget for the existing element
-          if id of @_itemWidgets and !(id of @_oldWidgets)
-            @_oldWidgets[id] = @_itemWidgets[id]
           # to avoid update the widget while it has not been constructed
           @_itemWidgets[id] = 'tmp'
           _.defer =>
@@ -107,14 +97,16 @@ define [
               map: @
             ).on('loaded', =>
               @_loading--
+              # remove previous widget
+              @_itemLayer.find("[data-id='#{id}']").remove()
+              @_itemWidgets[id].$el.attr 'data-id', id
               checkLoadingEnd()
             ).on('dispose', (event, widget) =>
               # when reloading, it's possible that widget have already be replaced
               return unless @_itemWidgets[id] is widget
               delete @_itemWidgets[id]
+            ).appendTo(@_itemLayer
             ).data 'mapItem'
-            # and adds it to item layer
-            @_itemLayer.append @_itemWidgets[id].$el
 
       checkLoadingEnd()
       
@@ -151,8 +143,6 @@ define [
     # @param value [Object] new value for this option    
     setOption: (key, value) =>
       switch key
-        when 'lowerCoord'
-          @_oldWidgets = _.clone @_itemWidgets
         when 'mapId'
           if @options.mapId isnt value
             # reset all items rendering.

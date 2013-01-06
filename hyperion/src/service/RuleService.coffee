@@ -54,7 +54,7 @@ filterModified = (obj, modified) ->
   # do not process if already known
   return if obj in modified 
   # will be save if at least one path is modified
-  modified.push(obj) if obj?.isModified()
+  modified.push obj if obj?.isModified()
   # do not go further if not an obj
   return unless obj instanceof Item or obj instanceof Event
   properties = obj.type.properties

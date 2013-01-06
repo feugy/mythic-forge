@@ -60,8 +60,7 @@ define [
       @bindTo rheia.router, 'imageLoaded', (success, src, image) => 
         img = _(@options.images).find (source) -> _(src).endsWith source
         return unless img?
-        @$el.find("img[data-src='#{img}']").replaceWith $(image).clone()
-        @$el.find('img').addClass @options.imageClass
+        @$el.find("img[data-src='#{img}']").attr('src', image).removeData('src').addClass @options.imageClass
 
       # first displayal, when dom is attached
       _.defer => @_displayImages @options.images
