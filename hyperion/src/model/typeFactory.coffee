@@ -295,14 +295,13 @@ module.exports = (typeName, spec, options = {}) ->
         return next(new Error "Unable to init instance #{instance._id} because there is no type with id #{instance.type}") unless types.length is 1    
         # do the replacement
         instance.type = types[0]
-        # for each array property, add a save with linked ids to allow further comparisons
-        for name, spec of types[0].properties when spec.type is 'array'
-          instance["__orig#{name}"] = instance[name]?.concat() or []
         next()
 
     # post-init middleware: define dynamic properties
     AbstractType.post 'init', ->
       @_defineProperties()
+      # for each array property, add a save with linked ids to allow further comparisons
+      @["__orig#{name}"] = @[name]?.concat() or [] for name, spec of @type.properties when spec.type is 'array'
 
     # This method retrieves linked objects in properties.
     # All `object` and `array` properties are resolved. 
