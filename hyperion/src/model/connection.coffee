@@ -28,7 +28,11 @@ db = utils.confKey 'mongo.db'
 
 # Connect to the 'mythic-forge' database. Will be created if necessary.
 # The connection is exported.
-url = "mongodb://#{host}:#{port}/#{db}"
-module.exports = mongoose.createConnection url, (err) ->
+url = "mongodb://#{host}:#{port}"
+options = 
+  db: db
+  user: utils.confKey('mongo.user', null) or undefined
+  pass: utils.confKey('mongo.password', null) or undefined
+module.exports = mongoose.createConnection url, options, (err) ->
   throw new Error "Unable to connect to MongoDB: #{err}" if err?
   logger.info "Connection established with MongoDB on database #{db}"

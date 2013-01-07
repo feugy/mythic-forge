@@ -12,9 +12,8 @@ logger:
 
 # Server's configuration
 server:
-  host: mythic-forge.com
+  host: mythic.slopez.org
   staticPort: 80
-#  apiPort: 443  
   apiPort: 80
   cookieSecret: Hey monkey donkey !
 
@@ -29,29 +28,25 @@ authentication:
     id: ZgC2E9e623mkj8W0auA
     secret: eYkJjLGwthMHybjauOaBcmDRYNKVUXeIRlhLD0kKFXg
 
-# SSL certificates. Do not specify them to use plain Http.
-#ssl:
-#  certificate: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.crt
-#  key: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.key
-#  ca: /home/damien/workspace/mythic-forge/conf/ssl/www.mythic-forge.com.ca
-
 # MongoDB connection
 mongo:
   host: localhost
-  db: proto-game
+  db: mythic
+  user: mythic
+  password: !!!!!  
 
 # Executable scripts
 executable:
-  source: /home/damien/workspace/mythic-forge/game/rules
-  target: /home/damien/workspace/mythic-forge/hyperion/lib/compiled
+  source: /home/feugy/demo/rules
+  target: /home/feugy/mythic-forge/hyperion/lib/compiled
 
 # Game client
 game:
   # Must not contains or be a sibling of other paths.
-  dev: /home/damien/workspace/mythic-forge/game/source/client
-  optimized: /home/damien/workspace/mythic-forge/game/optimized
-  production: /home/damien/workspace/mythic-forge/game/final  
-  save: /home/damien/workspace/mythic-forge/game/previous  
+  dev: /home/feugy/demo/source/client
+  optimized: /home/feugy/demo/optimized
+  production: /home/feugy/demo/final  
+  save: /home/feugy/demo/previous  
 
 # Turns execution settings. Frequency in seconds
 turn:
@@ -59,4 +54,4 @@ turn:
 
 # Images file storage
 images:
-  store: /home/damien/workspace/mythic-forge/game/images
+  store: /home/feugy/demo/images

@@ -1,6 +1,8 @@
 # TODO
 
 - Hyperion
+  - bugs
+    - script not available after rheia optimization
   - cache evinction on inutility and size
   - test images for field types and event types
   - *[2]* provide Scripts for rules
@@ -13,6 +15,8 @@
     - register users from Facebook
 
 - Rheia
+  - bugs
+    - contextual menu and tooltip in search results
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
