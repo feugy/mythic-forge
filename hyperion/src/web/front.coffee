@@ -62,12 +62,12 @@ module.exports = (app = null) ->
   # @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
   registerConf = (base) ->
     app.get "#{base}/conf.js", (req, res, next) ->
-      staticPort = utils.confKey 'server.staticPort'
+      port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'
       host = utils.confKey 'server.host'
       baseUrl = "http://#{host}"
       # port 80 must be omitted, to allow images resolution on client side.
-      if staticPort isnt 80
-        baseUrl += ":#{staticPort}"
+      if port isnt 80
+        baseUrl += ":#{port}"
       # compute the client configuration
       conf = 
         separator: path.sep
@@ -166,7 +166,7 @@ module.exports = (app = null) ->
   configureRIA '/game', utils.confKey('game.production'), true
   configureRIA '/dev', utils.confKey('game.dev'), false, '/rheia/login'
 
-  if process.env.NODE_ENV is 'buyvm'
+  if process.env.NODE_ENV in ['buyvm', 'simons']
     configureRIA '/rheia', './rheia-min', true
   else
     configureRIA '/rheia', './rheia'

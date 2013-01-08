@@ -13,8 +13,9 @@ logger:
 # Server's configuration
 server:
   host: mythic.slopez.org
-  staticPort: 80
-  apiPort: 80
+  staticPort: 8080
+  apiPort: 8080
+  bindingPort: 80
   cookieSecret: Hey monkey donkey !
 
 # Authentication details
@@ -30,7 +31,7 @@ authentication:
 
 # MongoDB connection
 mongo:
-  host: localhost
+  host: 10.0.0.1
   db: mythic
   user: mythic
   password: !!!!!  
