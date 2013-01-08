@@ -71,6 +71,7 @@ define [
           img = instance.type.descImage
           $('<span></span>').mapItem(
             model: instance
+            noUpdate: @options.noUpdate
           ).appendTo @$el
         else
           @$el.addClass 'no-image'
@@ -109,7 +110,7 @@ define [
         @$el.on 'mouseleave', => clearTimeout @_tooltipTimeout
 
       if @_menu?
-        @el.off 'contextmenu', @_onShowMenu 
+        @$el.off 'contextmenu', @_onShowMenu 
         @_menu.remove()
 
       # adds a contextual menu that opens on right click
@@ -140,7 +141,10 @@ define [
     _onShowMenu: (event) =>
       event?.preventDefault()
       event?.stopImmediatePropagation()
+      # remove tooltip if visible or pending
+      clearTimeout @_tooltipTimeout
       @_tooltip?.close()
+      # opens menu
       @_menu.open event?.pageX, event?.pageY
 
   # widget declaration
@@ -159,3 +163,6 @@ define [
     
     # Tooltip animations length
     tooltipFade: 250
+
+    # Indicate whether or not this widget should update himself when the underluying model is updated
+    noUpdate: false

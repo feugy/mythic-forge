@@ -133,6 +133,19 @@ class _AdminService
             model.type = types[0]
             _save model
 
+        resolveFrom = (model) ->
+          if model.from?
+            id = if 'object' is utils.type model.from then model.from?._id else model.from
+            # resolve from item
+            return Item.findCached [id], (err, froms) ->
+              return callback "Failed to save event #{values._id}. Error while resolving its from: #{err}" if err?
+              return callbacl "Failed to save event #{values._id} because there is no from with id #{id}" unless froms.length is 1  
+              model.from = froms[0]
+              populateTypeAndSave model
+          else
+            model.from = null
+            populateTypeAndSave model
+
         if '_id' of values
           # resolve type
           return Event.findCached [values._id], (err, models) ->
@@ -144,22 +157,10 @@ class _AdminService
               model[key] = value unless key in ['_id', 'type']
 
             # update from value
-            if model.from?._id isnt values.from?._id
-              if values.from?._id
-                # resolve map
-                return Item.findCached [values.from._id], (err, froms) ->
-                  return callback "Failed to save event #{values._id}. Error while resolving its from: #{err}" if err?
-                  return callbacl "Failed to save event #{values._id} because there is no from with id #{item.from}" unless froms.length is 1  
-                  model.from = froms[0]
-                  populateTypeAndSave model
-              else
-                model.from = null
-                populateTypeAndSave model
-            else
-              populateTypeAndSave model
+            resolveFrom model
         else
           model = new Event values
-          return populateTypeAndSave model
+          return resolveFrom model
 
       when 'Field'
         return callback 'Fields must be saved within an array', modelName unless Array.isArray values

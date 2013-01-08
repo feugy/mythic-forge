@@ -96,7 +96,6 @@ define [
       # set from item
       @model.from = @_fromWidget.options.value
 
-      
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
@@ -124,5 +123,5 @@ define [
         name: 'from'
         original: @model.from or null
         current: @_fromWidget.options.value
-      
+
       comparable

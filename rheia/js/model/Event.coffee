@@ -157,5 +157,5 @@ define [
     # @return a serialized version of this model
     _serialize: => 
       attrs = super()
-      attrs.from = attrs.from?.id
+      attrs.from = attrs.from?.id or null
       attrs

@@ -96,8 +96,9 @@ define [
       @_image = @$el.find '.image'
 
       # bind to model events
-      @bindTo @options.model, 'update',  @_onUpdate
-      @bindTo @options.model, 'destroy', => @$el.remove()
+      unless options.noUpdate
+        @bindTo @options.model, 'update',  @_onUpdate
+        @bindTo @options.model, 'destroy', => @$el.remove()
 
     # **private**
     # Compute and apply the position of the current widget inside its map widget.
@@ -282,3 +283,6 @@ define [
 
     # Current position of the widget in map. Read-only: do not change externally
     coordinates: x:null, y:null
+
+    # Indicate whether or not this widget should update himself when the underluying model is updated
+    noUpdate: false

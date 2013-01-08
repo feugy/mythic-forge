@@ -153,7 +153,7 @@ define [
               accepted: @options.accepted
             ).on('change', @_onChange
             ).on('click', (event, instance) =>
-              @$el.trigger 'open', instance
+              @$el.trigger 'open', instance if instance?
             ).appendTo @$el
 
             @options.value = rendering.data('instanceList')?.options.value

@@ -62,6 +62,7 @@ define [
           value: model
           dndType: @options.dndType
           tooltipFct: @options.tooltipFct
+          noUpdate: true
         ).appendTo(container)
         .data('id', model.id)
         .data 'category', category

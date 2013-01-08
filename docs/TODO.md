@@ -15,8 +15,6 @@
     - register users from Facebook
 
 - Rheia
-  - bugs
-    - contextual menu and tooltip in search results
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -31,6 +29,7 @@
   - bugs
     - remove item type property does not update existing items
     - bug with map value when retrieving items with search
+    - fix from handling at event creation
   - ImageService to upload and associate images to types
   - remove all images when removing a type
   - Field type CRUD
@@ -148,6 +147,8 @@
     - browser do not retain passwords
     - model destruction, and remaining destroyed items on map
     - manage type retrival
+    - fix dynamic properties handling at event/item creation
+    - fix contextual menu and tooltip overlap in search results, and instance image updates
   - handle rule requires
   - perspective loader
   - login page
