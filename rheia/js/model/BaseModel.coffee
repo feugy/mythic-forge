@@ -441,6 +441,26 @@ define [
         attr = obj
       else
         options = value
+
+      # enhance raw linked objects with their backbone models
+      for name, def of @type?.properties when def.type in ['object', 'array'] and attr[name]?
+        processed = attr[name]
+        processed = [attr[name]] if 'object' is def.type
+        modified = false
+        for val, i in processed when val?._className? and !(val?.attributes?)
+          modified = true
+          # construct a backbone model around linked object
+          clazz = @constructor
+          for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"
+            clazz = require(candidateScript)
+          obj = clazz.collection.get val?._id
+          unless obj?
+            obj = new clazz val
+            clazz.collection.add obj
+          processed[i] = obj
+            
+        attr[name] = processed[0] if modified and 'object' is def.type
+      
       # supperclass processing
       super attr, options
 

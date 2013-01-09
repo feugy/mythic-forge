@@ -162,7 +162,6 @@ define [
       # fill the model and save it
       @_saveInProgress = true
       @_fillModel()
-
       # allows subclass to perform specific save operations
       args = @_specificSave()
       # and at last, saves model

@@ -17,7 +17,6 @@
 - Rheia
   - bugs
     - **[1]** remainant change detection after saving a rule
-    - **[1]** shadows in animations
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
