@@ -169,7 +169,7 @@ define [
     # @return the HTML content of a tooltip
     instanceTooltip: (model) ->
       content = ''
-      switch model?.constructor.name
+      switch model?._className
         when 'Item'
           content = _.sprintf i18n.tips.item, 
             if model.quantity? then model.quantity else i18n.labels.noQuantity,

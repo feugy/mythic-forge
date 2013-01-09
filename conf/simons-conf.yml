@@ -1,6 +1,6 @@
 # Logger's levels.
 logger:
-  path: console
+  path: /var/log/mythic-forge.log
   defaultLevel: warn
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
+// Specific configuration for deployement
+process.env.NODE_ENV = 'deploy';
+
 var fs = require('fs-extra');
 var utils = require('../lib/util/common');
 var moment = require('moment');
-
-// Specific configuration for deployement
-process.env.NODE_ENV = 'deploy';
 
 // Get the deployement service instance
 var service = require('../lib/service/DeployementService').get();

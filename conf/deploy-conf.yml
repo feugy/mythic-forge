@@ -6,6 +6,7 @@ logger:
   nameMaxLength: 10
   levels: 
     service: info
+    console: all
 
 # Path used by deployement service to optimise Rheia
 game:

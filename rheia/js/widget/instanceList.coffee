@@ -116,8 +116,8 @@ define [
     # @return true if operation is possible, false otherwise
     _onAccept: (draggable) =>
       data = draggable.data('draggable')?.helper?.data 'instance'
-      return false unless data? and data.constructor.name?
-      @options.accepted.length is 0 or data.constructor.name in @options.accepted
+      return false unless data? and data._className?
+      @options.accepted.length is 0 or data._className in @options.accepted
   
     # **private**
     # Drop handler. Adds or replace the dropped object inside linked objects
