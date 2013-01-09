@@ -86,7 +86,7 @@ io.set 'log level', 0 # only errors
 # @return string to redirect on
 getRedirect = (req) ->
   url = urlParse if req.headers.referer? then req.headers.referer else "http://#{req.headers.host}"
-  "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.staticPort'}#{url.pathname}"
+  "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'}#{url.pathname}"
 
 # Kick a user
 # 
