@@ -176,6 +176,7 @@ define [
 
     socket.on 'disconnect', (reason) ->
       connected = false 
+      rheia.sockets[name].removeAllListeners() for name of rheia.sockets
       return if isLoggingOut
       errorCallback if reason is 'booted' then 'kicked' else 'disconnected'
 

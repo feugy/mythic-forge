@@ -12,7 +12,7 @@ logger:
 
 # Server's configuration
 server:
-  host: mythic.slopez.org
+  host: mythic-forge.com
   staticPort: 8080
   apiPort: 8080
   bindingPort: 80

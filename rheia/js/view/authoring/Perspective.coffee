@@ -446,8 +446,8 @@ define [
     _onRequireVersion: =>
       return if @_tabs.options.selected is -1
       version = @_historyList.find(':selected').val()
-      item = @_views[@_tabs.options.selected].model
-      item.fetchVersion version
+      item = @_views[@_tabs.options.selected]?.model
+      item?.fetchVersion version
 
     # **private**
     # Display list of restorable files inside a popup

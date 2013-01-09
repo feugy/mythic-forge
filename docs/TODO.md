@@ -15,6 +15,9 @@
     - register users from Facebook
 
 - Rheia
+  - bugs
+    - **[1]** remainant change detection after saving a rule
+    - **[1]** shadows in animations
   - authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -149,6 +152,9 @@
     - manage type retrival
     - fix dynamic properties handling at event/item creation
     - fix contextual menu and tooltip overlap in search results, and instance image updates
+    - no map update when adding new content
+    - fix shortcut handling when mulitple perspecitve are loaded
+    - fix multiple events received after reloading
   - handle rule requires
   - perspective loader
   - login page

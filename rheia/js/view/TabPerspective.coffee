@@ -66,9 +66,9 @@ define [
       @bindTo rheia.router, 'remove', @_onRemoveElement
 
       # bind shortcuts
-      $(document).bind("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
-        .bind("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
-        .bind "keydown.#{@cid}", {keys:'ctrl+q', includeInputs:true}, @_onCloseHotKey
+      $(document).on("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)
+        .on("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
+        .on "keydown.#{@cid}", {keys:'ctrl+q', includeInputs:true}, @_onCloseHotKey
 
 
     # The view destroyer: unbinds shortcuts
@@ -232,11 +232,13 @@ define [
     #
     # @param event [Event] keyboard event
     _onSaveHotKey: (event) =>
+      return unless @$el.is ':visible'
       event?.preventDefault()
+      event?.stopImmediatePropagation()
       # tries to save current
       return false unless @_tabs?.options.selected isnt -1
       console.log "save current tab ##{@_tabs.options.selected} by hotkey"
-      @_views[@_tabs.options.selected].saveModel()
+      @_views[@_tabs.options.selected]?.saveModel()
       false
 
     # **private**
@@ -244,11 +246,13 @@ define [
     #
     # @param event [Event] keyboard event
     _onRemoveHotKey: (event) =>
+      return unless @$el.is ':visible'
       event?.preventDefault()
+      event?.stopImmediatePropagation()
       # tries to save current
       return false unless @_tabs?.options.selected isnt -1
       console.log "remove current tab ##{@_tabs.options.selected} by hotkey"
-      @_views[@_tabs.options.selected].removeModel()
+      @_views[@_tabs.options.selected]?.removeModel()
       false
 
     # **private**
@@ -256,11 +260,13 @@ define [
     #
     # @param event [Event] keyboard event
     _onCloseHotKey: (event) =>
+      return unless @$el.is ':visible'
       event?.preventDefault()
+      event?.stopImmediatePropagation()
       # tries to save current
       return false unless @_tabs?.options.selected isnt -1
       console.log "close current tab ##{@_tabs.options.selected} by hotkey"
-      @tryCloseTab @_views[@_tabs.options.selected]
+      @tryCloseTab @_views[@_tabs.options.selected] if @_views[@_tabs.options.selected]?
       false
 
     # **private**
