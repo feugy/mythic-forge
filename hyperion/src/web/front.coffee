@@ -73,7 +73,7 @@ module.exports = (app = null) ->
         separator: path.sep
         basePath: "#{base}/"
         baseUrl: "#{baseUrl}#{base}"
-        apiBaseUrl: "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{utils.confKey 'server.apiPort'}"
+        apiBaseUrl: "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}"
         imagesUrl: "#{baseUrl}/images/"
 
       res.header 'Content-Type', 'application/javascript; charset=UTF-8'
