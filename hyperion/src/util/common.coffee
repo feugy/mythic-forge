@@ -85,7 +85,7 @@ emitter.confKey = (key, def) ->
   for step, i in path
     unless step of obj
       # missing key or step
-      throw new Error "The #{key} key is not defined in the configuration file" if def is undefined
+      throw new Error "The #{key} key is not defined in the configuration file #{confPath}" if def is undefined
       return def
     unless i is last
       # goes deeper

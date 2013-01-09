@@ -189,7 +189,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     passport.use  new strategy
       clientID: utils.confKey "authentication.#{provider}.id"
       clientSecret: utils.confKey "authentication.#{provider}.secret"
-      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
     , verify
 
     args = session: false, scope: scopes
@@ -199,7 +199,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     passport.use new TwitterStrategy
       consumerKey: utils.confKey "authentication.#{provider}.id"
       consumerSecret: utils.confKey "authentication.#{provider}.secret"
-      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
     , verify
 
     args = {}
