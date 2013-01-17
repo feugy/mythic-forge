@@ -17,7 +17,7 @@
     "moment": "1.7.2",
     "mongoose": "3.4.0",
     "mongodb": "1.1.11",
-    "passport": "0.1.12",
+    "passport": "0.1.15",
     "passport-facebook": "0.1.4",
     "passport-google-oauth": "0.1.4",
     "password-hash": "1.2.1",
@@ -27,7 +27,8 @@
     "socket.io": "https://github.com/feugy/socket.io/tarball/master",
     "stylus": "0.30.1",
     "underscore": "1.4.2",
-    "underscore.string": "2.3.1"
+    "underscore.string": "2.3.1",
+    "ws": "0.4.25"
   },
   "devDependencies": {
     "chai": "1.4.0",

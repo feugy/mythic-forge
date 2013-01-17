@@ -1,29 +1,34 @@
 # TODO
 
+
 - Hyperion
-  - bugs
-    - script not available after rheia optimization
   - cache evinction on inutility and size
   - test images for field types and event types
-  - *[2]* provide Scripts for rules
+  - [!] provide scripts for rules
+  - [!] documentation
   - Rule engine
-    - *[2]* reference dependencies as 'hyperion' instead of '../'
+    - [!] asynchronous error handling
+    - [!] i18n utilities for rules and parameters
+    - [!] modifiable unic system date
+    - [!] reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
-    - provide rule triggering inside rules, with reloading when imported ruless changed
+    - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
 
 - Rheia
-  - bugs
-    - **[1]** remainant change detection after saving a rule
-  - authoring perspective
+  - Bugs
+    - [!] persistent change detection after saving a rule
+  - [!] documentation
+  - Authoring perspective
     - multiple file search & replace
     - single file search & replace
 
 - Atlas
   - created and automate tests
-  - [3] package as library
+  - [!] package as library
+  - [!] documentation
 
 # Done
 

@@ -22,6 +22,7 @@ fs = require 'fs'
 path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
+cluster = require 'cluster'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 utils = require '../util/common'
@@ -66,6 +67,23 @@ compileFile = (executable, silent, callback) ->
       delete wasNew[executable._id]
     # and invoke final callback
     callback null, executable
+
+# when receiving a change from another worker, update the executable cache
+modelWatcher.on 'change', (operation, className, changes, wId) ->
+  return unless wId? and className is 'Executable'
+  # update the executable cache
+  switch operation
+    when 'creation' then executables[changes._id] = changes
+    when 'update'
+      # partial update
+      executables[changes._id][attr] = value for attr, value of changes
+      # clean require cache.
+      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
+    when 'deletion' 
+      return unless changes._id of executables
+      # clean require cache.
+      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
+      delete executables[changes._id]
 
 # Search inside existing executables. The following searches are supported:
 # - {id,_id,name: String,RegExp]}: search by ids
@@ -175,6 +193,9 @@ class Executable
       # each individual file must be read
       async.forEach files, readFile, (err) -> 
         logger.debug 'Local executables cached successfully reseted' unless err?
+        # ask to all worker to reload also
+        if cluster.isMaster
+          worker.send event: 'executableReset' for id, worker of cluster.workers
         callback err
 
   # Find existing executables.

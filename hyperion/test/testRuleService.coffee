@@ -277,6 +277,7 @@ describe 'RuleService tests', ->
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
       service.resolve player._id, (err, results)->
+        console.dir err
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -638,7 +639,7 @@ describe 'RuleService tests', ->
                 item2 = saved
                 done()  
 
-    it 'should turn rule be executed', (done) ->
+    it.skip 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
       script = new Executable _id:'rule6', content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
@@ -669,7 +670,7 @@ describe 'RuleService tests', ->
               assert.equal 1, existing.fed, 'medor wasn\'t fed'
               done()
 
-    it 'should turn rule be executed in right order', (done) ->
+    it.skip 'should turn rule be executed in right order', (done) ->
       async.forEach [
         # given a first turn rule on lassie with rank 10
         new Executable _id:'rule7', content: """TurnRule = require '../model/TurnRule'
@@ -730,7 +731,7 @@ describe 'RuleService tests', ->
             assert.equal 1, existing.fed, 'lassie was fed'
             done()
 
-    it 'should turn selection failure be reported', (done) ->
+    it.skip 'should turn selection failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken select 
         new Executable
@@ -786,7 +787,41 @@ describe 'RuleService tests', ->
           assert.equal notifications[5][0], 'end'
           done()
 
-    it 'should turn execution failure be reported', (done) ->
+    it.skip 'should turn asynchronous selection failure be reported', (done) ->
+      # Creates a rule with an asynchronous error in execute
+      script = new Executable 
+        _id:'rule27', 
+        content: """TurnRule = require '../model/TurnRule'
+          Item = require '../model/Item'
+          _ = require 'underscore'
+
+          module.exports = new (class Dumb extends TurnRule
+            constructor: ->
+              @name= 'rule 27'
+            select: (callback) =>
+              _.defer => throw new Error @name+' throw error'
+            execute: (target, callback) =>
+              callback null
+          )()"""
+      script.save (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
+
+          # then notifications where received in right order
+          assert.equal 4, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'rule'
+          assert.equal notifications[1][1], 'rule 27'
+          assert.equal notifications[2][0], 'failure'
+          assert.equal notifications[2][1], 'rule 27'
+          assert.isNotNull notifications[2][2]
+          assert.include notifications[2][2], 'failed to select'
+          assert.equal notifications[3][0], 'end'
+          done()
+
+    it.skip 'should turn execution failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken execute 
         new Executable
@@ -841,8 +876,42 @@ describe 'RuleService tests', ->
           assert.equal notifications[4][1], 'rule 15'
           assert.equal notifications[5][0], 'end'
           done()
-          
-    it 'should turn update failure be reported', (done) ->
+        
+    it.skip 'should turn asynchronous execution failure be reported', (done) ->
+      # Creates a rule with an asynchronous error in execute
+      script = new Executable 
+        _id:'rule28', 
+        content: """TurnRule = require '../model/TurnRule'
+          Item = require '../model/Item'
+          _ = require 'underscore'
+
+          module.exports = new (class Dumb extends TurnRule
+            constructor: ->
+              @name= 'rule 28'
+            select: (callback) =>
+              Item.find {name: 'lassie'}, callback
+            execute: (target, callback) =>
+              _.defer => throw new Error @name+' throw error'
+          )()"""
+      script.save (err) ->
+        return done err if err?
+        # when executing a trurn
+        service.triggerTurn (err)->
+          return done "Unable to trigger turn: #{err}" if err?
+
+          # then notifications where received in right order
+          assert.equal 4, notifications.length
+          assert.equal notifications[0][0], 'begin'
+          assert.equal notifications[1][0], 'rule'
+          assert.equal notifications[1][1], 'rule 28'
+          assert.equal notifications[2][0], 'failure'
+          assert.equal notifications[2][1], 'rule 28'
+          assert.isNotNull notifications[2][2]
+          assert.include notifications[2][2], 'failed to select or execute'
+          assert.equal notifications[3][0], 'end'
+          done()
+
+    it.skip 'should turn update failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken update 
         new Executable
@@ -900,7 +969,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[5][0], 'end'
           done()
 
-    it 'should turn compilation failure be reported', (done) ->
+    it.skip 'should turn compilation failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken require
         new Executable
@@ -954,7 +1023,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[4][0], 'end'
           done()
 
-    it 'should disabled turn rule not be executed', (done) ->
+    it.skip 'should disabled turn rule not be executed', (done) ->
       # given a disabled turn rule on lassie
       script = new Executable
         _id:'rule9', 
@@ -1034,7 +1103,7 @@ describe 'RuleService tests', ->
           assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
           done()
 
-    it 'should not turn rule be exportable to client', (done) ->
+    it.skip 'should not turn rule be exportable to client', (done) ->
       # when exporting rules to client
       service.export (err, rules) ->
         return done "Unable to export rules: #{err}" if err?
@@ -1067,6 +1136,29 @@ describe 'RuleService tests', ->
           assert.include err, 'failed to require'
           done()
 
+    it 'should asynchronous failling rule not be resolved', (done) ->
+      # Creates a rule with an asynchronous error in canExecute
+      script = new Executable 
+        _id:'rule25', 
+        content: """Rule = require '../model/Rule'
+          _ = require 'underscore'
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 25'
+            canExecute: (actor, target, callback) =>
+              _.defer => throw new Error @name+' throw error'
+            execute: (actor, target, params, callback) =>
+              callback null, null
+          )()"""
+      script.save (err) ->
+        return done err if err?
+        # when executing rule
+        service.resolve item1._id, item1._id, (err) ->
+          # then the error is reported
+          assert.isNotNull err
+          assert.include err, 'rule 25 throw error'
+          done()
+
     it 'should failling rule not be executed', (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
@@ -1090,6 +1182,29 @@ describe 'RuleService tests', ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'failed to require'
+          done()
+
+    it 'should asynchronous failling rule not be executed', (done) ->
+      # Creates a rule with an asynchronous error in execute
+      script = new Executable 
+        _id:'rule26', 
+        content: """Rule = require '../model/Rule'
+          _ = require 'underscore'
+          module.exports = new (class Dumb extends Rule
+            constructor: ->
+              @name= 'rule 26'
+            canExecute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
+              _.defer => throw new Error @name+' throw error'
+          )()"""
+      script.save (err) ->
+        return done err if err?
+        # when executing rule
+        service.execute 'rule 26', item1._id, item1._id, {}, (err, results) ->
+          # then the error is reported
+          assert.isNotNull err
+          assert.include err, 'rule 26 throw error'
           done()
 
     it 'should incorrect parameter rule not be executed', (done) ->

@@ -4,6 +4,12 @@ logger:
   defaultLevel: off
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10
+  levels: 
+    service: off
+    model: off
+    web: off
+    console: off
+    worker: off
 
 # Server's configuration
 server:

@@ -68,7 +68,7 @@ init = ->
     output = process.stdout;
     isConsole = true
 
-  process.stdout.write ">>> configure log to output #{conf.path}\n"
+  # process.stdout.write ">>> configure log to output #{conf.path}\n"
     
 # on configuration change, reinit
 utils.on 'confChanged', ->

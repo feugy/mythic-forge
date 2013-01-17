@@ -230,9 +230,8 @@ describe 'Authentication tests', ->
                   submit_access: true
 
               , (err, res, body) ->
-                # TODO problem with request >= 2.9.203
-                # redirected to localhost, localhost server never hit
-
+                # TODO problem with node 0.9.6
+                # when passport ask token from google, google never respond.
                 return done err if err?
 
                 # then the success page is displayed
@@ -241,7 +240,7 @@ describe 'Authentication tests', ->
                 assert.isNotNull token
                 # then account has been created and populated
                 Player.findOne {email:googleUser}, (err, saved) ->
-                  return done "Failed to find created account in db: #{err}" if err?
+                  return done "Failed to find created account in db: #{err}" if err? or saved is null
                   assert.equal saved.firstName, 'John'
                   assert.equal saved.lastName, 'Doe'
                   assert.equal saved.token, token
