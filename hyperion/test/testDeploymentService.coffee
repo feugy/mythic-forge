@@ -39,6 +39,7 @@ root = utils.confKey 'game.dev'
 repository = pathUtils.resolve pathUtils.dirname root
 repo = null
 notifications = []
+listener = null
 
 describe 'Deployement tests', -> 
 
@@ -51,7 +52,7 @@ describe 'Deployement tests', ->
   beforeEach (done) ->
     # given a registered notification listener
     notifications = []
-    notifier.on notifier.NOTIFICATION, (event, type, number) ->
+    notifier.on notifier.NOTIFICATION, listener = (event, type, number) ->
       return unless event is 'deployement'
       notifications.push type
       # then notifications are received in the right order
@@ -59,7 +60,7 @@ describe 'Deployement tests', ->
     done()
 
   afterEach (done) ->
-    notifier.removeAllListeners notifier.NOTIFICATION
+    notifier.removeListener notifier.NOTIFICATION, listener
     done()
 
   version = '1.0.0'

@@ -28,14 +28,17 @@ item3 = null
 type = null
 
 describe 'ItemType tests', -> 
+  
+  listener = null
 
   beforeEach (done) ->
+    listener = null
     # empty items and types.
     Item.collection.drop -> ItemType.collection.drop -> done()
 
   afterEach (done) ->
     # remove all listeners
-    watcher.removeAllListeners 'change'
+    watcher.removeListener 'change', listener if listener?
     done()
 
   it 'should type\'s properties be distinct', (done) ->
@@ -282,7 +285,7 @@ describe 'ItemType tests', ->
     it 'should existing items be updated when setting a type property', (done) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
         updates.push instance._id.toString()
         assert.equal operation, 'update'
@@ -305,7 +308,7 @@ describe 'ItemType tests', ->
     it 'should existing items be updated when removing a type property', (done) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
         assert.equal operation, 'update'
         updates.push instance._id.toString()
@@ -328,7 +331,7 @@ describe 'ItemType tests', ->
     it 'should items be updated when modifying quantifiable state', (done) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
         assert.equal operation, 'update'
         updates.push instance._id.toString()

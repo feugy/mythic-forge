@@ -91,7 +91,6 @@ mongoose.Document.prototype._defineProperties = ->
             set: (v) -> @set name, v
       )(name)
 
-
 # Factory that creates an abstract type.
 # Provides:
 # - `name` and `desc` i18n attributes
@@ -117,6 +116,19 @@ module.exports = (typeName, spec, options = {}) ->
 
   # Local cache
   cache = {}
+
+  # when receiving a change from another worker, update the instance cache
+  modelWatcher.on 'change', (operation, className, changes, wId) ->
+    wId = wId or process.id
+    return if wId is process.id or className isnt typeName or !(cache[changes?._id]?)
+    # update the cache
+    switch operation
+      when 'update'
+        # partial update
+        # do not use setter to avoid marking the instance as modified.
+        cache[changes._id]._doc[attr] = value for attr, value of changes when !(attr in ['_id'])
+      when 'deletion' 
+        delete cache[changes._id]
 
   spec.versionKey = false
   

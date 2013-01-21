@@ -118,6 +118,33 @@ emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
       console.trace();
       throw "Unable to create the folder '#{folderPath}': #{err}"
 
+# Enforce the folder existence.
+# Allows to remove existing folder if necessary.
+#
+# @param folderPath [String] path to the checked folder
+# @param forceRemove [boolean] if specifed and true, first erase the folder.
+# @param logger [Object] logger (may be null)
+# @param callback [Function] end callback invoked with an error string as first argument if something
+# goes wrong, and null if the folder was properly created
+emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
+  fs.exists folderPath, (exists) ->
+    create = (err) ->
+      return callback "Failed to remove #{folderPath}: #{err}" if err?
+      # creates only if needed  
+      return callback null if exists
+    
+      fs.mkdirs folderPath, (err) ->
+        return callback "Failed to create #{folderPath}: #{err}" if err
+        logger?.info "Folder '#{folderPath}' successfully created"
+        callback null
+
+    # force Removal if specified
+    if forceRemove and exists
+      exists = false
+      return fs.remove folderPath, create 
+
+    create()
+
 # Recursively find files that match a given pattern, in name, content or both.
 #
 # @param path [String] the path under wich files are searched

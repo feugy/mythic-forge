@@ -30,6 +30,7 @@ type = null
 item1 = null
 item2 = null
 notifications = []
+listener = null
 
 describe 'PlayerService tests', ->
 
@@ -51,14 +52,14 @@ describe 'PlayerService tests', ->
             return done err if err?
             item2 = saved
             # given a registered notification listener
-            notifier.on notifier.NOTIFICATION, (event, args...) ->
+            notifier.on notifier.NOTIFICATION, listener = (event, args...) ->
               return unless event is 'players'
               notifications.push args
             done()
 
   afterEach (done) ->
     # remove notifier listeners
-    notifier.removeAllListeners notifier.NOTIFICATION
+    notifier.removeListener notifier.NOTIFICATION, listener
     done()
 
   after (done) ->

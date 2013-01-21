@@ -162,7 +162,7 @@ describe 'Map and Field tests', ->
 
             changes = []
             # then only a removal event was issued
-            watcher.on 'change', (operation, className, instance)->
+            watcher.on 'change', listener = (operation, className, instance)->
               changes.push arguments
 
             # when removing the map
@@ -176,5 +176,5 @@ describe 'Map and Field tests', ->
                 assert.equal 1, changes.length, 'watcher wasn\'t invoked'
                 assert.equal changes[0][1], 'Map'
                 assert.equal changes[0][0], 'deletion'
-                watcher.removeAllListeners 'change'
+                watcher.removeListener 'change', listener
                 done()

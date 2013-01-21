@@ -1,15 +1,15 @@
 # Logger's levels.
 logger:
   path: console
-  defaultLevel: off
+  defaultLevel: error
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10
   levels: 
-    service: off
-    model: off
-    web: off
-    console: off
-    worker: off
+    service: error
+    model: error
+    web: error
+    console: error
+    worker: error
 
 # Server's configuration
 server:

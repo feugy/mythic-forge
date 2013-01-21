@@ -7,7 +7,6 @@
   - [!] provide scripts for rules
   - [!] documentation
   - Rule engine
-    - [!] asynchronous error handling
     - [!] i18n utilities for rules and parameters
     - [!] modifiable unic system date
     - [!] reference dependencies as 'hyperion' instead of '../'
@@ -139,6 +138,9 @@
     - rule resolution and execution on players, fields, items and events
     - when resolving with coordinates, resolves only on actor's map 
     - check execute() parameters validity (missing, value's type, string/object within, min-max, number of occurences)
+    - asynchronous error handling
+    - separated thread for turn rules and execution rules
+    - update thread model caches on other thread updates
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

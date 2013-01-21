@@ -98,7 +98,7 @@ computeLevel = (name) ->
 format = (args, level, name) ->
   # date name level parameter : message
   vals = (if _.isObject arg then JSON.stringify arg else arg?.toString() for arg in args)
-  "#{moment().format conf.dateFormat or defaultDateFormat} #{_s.pad name, nameMaxLength} #{_s.pad level, levelMaxLength} : #{vals.join ' '}"
+  "#{moment().format conf.dateFormat or defaultDateFormat} #{process.pid} #{_s.pad name, nameMaxLength} #{_s.pad level, levelMaxLength} : #{vals.join ' '}"
 
 # Logger Factory: creates new (or retrieve existing) logger with the following methods (ordered):
 #  trace, log, debug, info, warn, error
@@ -109,7 +109,7 @@ format = (args, level, name) ->
 #   date + ' ' + name + ' ' + level + ' : ' + message
 #
 # - date: formated date (YYYYMMDD_HHmmss)
-# - hostname: host machine name
+# - pid: process id
 # - name: logger's name (right-padded to 15 characters)
 # - level: method's level (right-padded to 5 characters)
 # - message: method's arguments, joined with white space

@@ -48,30 +48,33 @@ field1= null
 field2= null
 script= null
 notifications = []
+listener = null
 
 describe 'RuleService tests', ->
   
   beforeEach (done) ->
     notifications = []           
     # given a registered notification listener
-    notifier.on notifier.NOTIFICATION, (event, args...) ->
+    notifier.on notifier.NOTIFICATION, listener = (event, args...) ->
       return unless event is 'turns'
       notifications.push args
     ItemType.collection.drop -> Item.collection.drop ->
       # Empties the compilation and source folders content
       testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
-        Executable.resetAll -> 
-          Field.collection.drop ->
+        FieldType.collection.drop -> Field.collection.drop ->
+          EventType.collection.drop -> Event.collection.drop ->
             Map.collection.drop ->
               map = new Map {name: 'map-Test'}
               map.save (err) ->
                 return done err if err?
                 map2 = new Map {name: 'map-Test-2'}
-                map2.save -> done()
+                map2.save (err) ->
+                  return done err if err?
+                  Executable.resetAll true, done
 
   afterEach (done) ->
     # remove notifier listeners
-    notifier.removeAllListeners notifier.NOTIFICATION
+    notifier.removeListener notifier.NOTIFICATION, listener
     done()
 
   it 'should linked object be modified and saved by a rule', (done) ->
@@ -115,7 +118,7 @@ describe 'RuleService tests', ->
               # given the rules that are applicable for a target 
               service.resolve item1._id, item2._id, (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
-                return done 'the rule 3 was not resolved' if results['rule 3'].length isnt 1
+                return done 'the rule 3 was not resolved' unless 'rule 3' of results
 
                 # when executing this rule on that target
                 service.execute 'rule 3', item1._id, item2._id, {}, (err, result)->
@@ -277,7 +280,6 @@ describe 'RuleService tests', ->
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
       service.resolve player._id, (err, results)->
-        console.dir err
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -589,7 +591,7 @@ describe 'RuleService tests', ->
             constructor: ->
               @name= 'rule 22'
             canExecute: (actor, target, callback) =>
-              callback null, if target.type is actor.type and target isnt actor then [] else null
+              callback null, if target.type.equals(actor.type) and !target.equals actor then [] else null
             execute: (actor, target, params, callback) =>
               target.compose = actor
               actor.parts.push target
@@ -639,7 +641,7 @@ describe 'RuleService tests', ->
                 item2 = saved
                 done()  
 
-    it.skip 'should turn rule be executed', (done) ->
+    it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
       script = new Executable _id:'rule6', content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
@@ -670,7 +672,7 @@ describe 'RuleService tests', ->
               assert.equal 1, existing.fed, 'medor wasn\'t fed'
               done()
 
-    it.skip 'should turn rule be executed in right order', (done) ->
+    it 'should turn rule be executed in right order', (done) ->
       async.forEach [
         # given a first turn rule on lassie with rank 10
         new Executable _id:'rule7', content: """TurnRule = require '../model/TurnRule'
@@ -731,7 +733,7 @@ describe 'RuleService tests', ->
             assert.equal 1, existing.fed, 'lassie was fed'
             done()
 
-    it.skip 'should turn selection failure be reported', (done) ->
+    it 'should turn selection failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken select 
         new Executable
@@ -787,7 +789,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[5][0], 'end'
           done()
 
-    it.skip 'should turn asynchronous selection failure be reported', (done) ->
+    it 'should turn asynchronous selection failure be reported', (done) ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
         _id:'rule27', 
@@ -821,7 +823,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[3][0], 'end'
           done()
 
-    it.skip 'should turn execution failure be reported', (done) ->
+    it 'should turn execution failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken execute 
         new Executable
@@ -877,7 +879,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[5][0], 'end'
           done()
         
-    it.skip 'should turn asynchronous execution failure be reported', (done) ->
+    it 'should turn asynchronous execution failure be reported', (done) ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
         _id:'rule28', 
@@ -911,7 +913,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[3][0], 'end'
           done()
 
-    it.skip 'should turn update failure be reported', (done) ->
+    it 'should turn update failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken update 
         new Executable
@@ -969,7 +971,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[5][0], 'end'
           done()
 
-    it.skip 'should turn compilation failure be reported', (done) ->
+    it 'should turn compilation failure be reported', (done) ->
       async.forEach [
         # given a turn rule with broken require
         new Executable
@@ -1023,7 +1025,7 @@ describe 'RuleService tests', ->
           assert.equal notifications[4][0], 'end'
           done()
 
-    it.skip 'should disabled turn rule not be executed', (done) ->
+    it 'should disabled turn rule not be executed', (done) ->
       # given a disabled turn rule on lassie
       script = new Executable
         _id:'rule9', 
@@ -1103,7 +1105,7 @@ describe 'RuleService tests', ->
           assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
           done()
 
-    it.skip 'should not turn rule be exportable to client', (done) ->
+    it 'should not turn rule be exportable to client', (done) ->
       # when exporting rules to client
       service.export (err, rules) ->
         return done "Unable to export rules: #{err}" if err?

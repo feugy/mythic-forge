@@ -90,23 +90,25 @@ module.exports =
     root = pathUtil.resolve pathUtil.normalize utils.confKey 'game.dev'
 
     # enforce folders existence at startup.
-    utils.enforceFolderSync root, false, logger
-    repository = pathUtil.dirname root
-
-    finished = (err) =>
+    utils.enforceFolder root, false, logger, (err) ->
       return callback err if err?
-        # creates also the git repository
-      logger.debug "git repository initialized !"
-      repo = git repository
-      callback null, root, repo
+      
+      repository = pathUtil.dirname root
 
-    # Performs a 'git init' if git repository do not exists
-    unless fs.existsSync pathUtil.join repository, '.git'
-      logger.debug "initialize git repository at #{repository}..."
-      git.init repository, finished
-    else
-      logger.debug "using existing git repository..."
-      finished()
+      finished = (err) =>
+        return callback err if err?
+          # creates also the git repository
+        logger.debug "git repository initialized !"
+        repo = git repository
+        callback null, root, repo
+
+      # Performs a 'git init' if git repository do not exists
+      unless fs.existsSync pathUtil.join repository, '.git'
+        logger.debug "initialize git repository at #{repository}..."
+        git.init repository, finished
+      else
+        logger.debug "using existing git repository..."
+        finished()
 
   # Collapse history, from a given version to previous tag (or begining)
   # Will create a tag to aim at the new collasped commit.

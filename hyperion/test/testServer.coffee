@@ -278,7 +278,8 @@ describe 'server tests', ->
         beforeEach (done) ->
           # Empties the compilation and source folders content
           testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
-            Executable.resetAll -> 
+            Executable.resetAll true, (err) -> 
+              return done err if err?
               script = new Executable 
                 _id:'rename', 
                 content: """Rule = require '../model/Rule'
@@ -356,7 +357,7 @@ describe 'server tests', ->
                 assert.ok created, 'watcher wasn\'t invoked for creation'
                 assert.ok updated, 'watcher wasn\'t invoked for update'
                 done()
-              , 500
+              , 1000
 
             # then an deletion is received for jack
             socket2.once 'deletion', (className, item) ->

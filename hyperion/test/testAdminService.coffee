@@ -74,7 +74,8 @@ describe 'AdminService tests', ->
     maps = []
     event = []
     testUtils.cleanFolder utils.confKey('executable.source'), ->
-      Executable.resetAll -> 
+      Executable.resetAll true, (err) -> 
+        return done err if err?
         ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop -> Field.collection.drop ->
             EventType.collection.drop -> Event.collection.drop ->
@@ -406,11 +407,12 @@ describe 'AdminService tests', ->
 
       awaited = false
       # then a creation event was issued
-      watcher.on 'change', (operation, className, instance) ->
+      listener = (operation, className, instance) ->
         return unless className is 'ItemType'
         assert.equal operation, 'update'
         assert.ok itemTypes[1].equals instance, 'In watcher, changed instance doesn`t mathc parameters'
         awaited = true
+      watcher.on 'change', listener
 
       # when saving existing item type
       service.save 'ItemType', values, 'admin', (err, modelName, model) ->
@@ -433,13 +435,13 @@ describe 'AdminService tests', ->
             return done "Can't find itemTypes in db #{err}" if err?
             assert.equal list.length, 2
             assert.ok awaited, 'watcher wasn\'t invoked'
+            watcher.removeListener 'change', listener
 
             # then the instance has has only property property desc
             Item.findById item._id, (err, item) ->
               return done "Can't get item from db #{err}" if err?
               assert.equal 'to be defined', item.desc
               assert.isUndefined item.strength, 'Item still has strength property'
-              watcher.removeAllListeners 'change'
               done()
 
   it 'should save update existing event type', (done) ->
@@ -457,11 +459,12 @@ describe 'AdminService tests', ->
 
       awaited = false
       # then a creation event was issued
-      watcher.on 'change', (operation, className, instance) ->
+      listener = (operation, className, instance) ->
         return unless className is 'EventType'
         assert.equal operation, 'update'
         assert.ok eventTypes[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
         awaited = true
+      watcher.on 'change', listener
 
       # when saving existing event type
       service.save 'EventType', values, 'admin', (err, modelName, model) ->
@@ -483,13 +486,13 @@ describe 'AdminService tests', ->
             return done "Can't find eventTypes in db #{err}" if err?
             assert.equal list.length, 2
             assert.ok awaited, 'watcher wasn\'t invoked'
+            watcher.removeListener 'change', listener
 
             # then the instance has has only property property desc
             Event.findById event._id, (err, event) ->
               return done "Can't get event from db #{err}" if err?
               assert.equal 'to be defined', event.desc
               assert.isUndefined event.content, 'Event still has content property'
-              watcher.removeAllListeners 'change'
               done()
 
   it 'should save update existing field type', (done) ->
@@ -608,10 +611,11 @@ describe 'AdminService tests', ->
     ]
 
     # then a creation event was issued
-    watcher.on 'change', (operation, className, instance)->
+    listener = (operation, className, instance)->
       assert.equal className, 'Field'
       assert.equal operation, 'creation'
       saved.push instance
+    watcher.on 'change', listener
 
     # when saving two new fields
     service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
@@ -636,7 +640,7 @@ describe 'AdminService tests', ->
           assert.equal obj.x, toBeSaved[0].x
           assert.equal obj.y, toBeSaved[0].y
           assert.ok returned[1].equals obj
-          watcher.removeAllListeners 'change'
+          watcher.removeListener 'change', listener
           done()
 
   it 'should save fails on non fields array parameter', (done) ->
@@ -662,10 +666,11 @@ describe 'AdminService tests', ->
       ]
 
       # then a creation event was issued
-      watcher.on 'change', (operation, className, instance)->
+      listener = (operation, className, instance)->
         assert.equal className, 'Field'
         assert.equal operation, 'creation'
         saved.push instance
+      watcher.on 'change', listener
 
       # when saving two new fields
       service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
@@ -683,7 +688,7 @@ describe 'AdminService tests', ->
           assert.equal obj.x, toBeSaved[1].x
           assert.equal obj.y, toBeSaved[1].y
           assert.ok returned[0].equals obj
-          watcher.removeAllListeners 'change'
+          watcher.removeListener 'change', listener
           done()
 
   it 'should save do nothing on empty fields array', (done) ->
@@ -701,7 +706,7 @@ describe 'AdminService tests', ->
     toBeSaved = type: itemTypes[1].toObject(), map: maps[0].toObject(), x:0, y:0, strength:20
 
     # then a creation event was issued
-    watcher.on 'change', (operation, className, instance)->
+    watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'Item'
       assert.equal operation, 'creation'
       saved = instance
@@ -723,7 +728,6 @@ describe 'AdminService tests', ->
         assert.equal obj.y, toBeSaved.y
         assert.equal obj.strength, toBeSaved.strength
         assert.ok obj.equals returned
-        watcher.removeAllListeners 'change'
         done()
 
   it 'should save saved existing item', (done) ->
@@ -736,7 +740,7 @@ describe 'AdminService tests', ->
       toBeSaved.strength = 50
 
       # then a update event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.once 'change', (operation, className, instance)->
         assert.equal className, 'Item'
         assert.equal operation, 'update'
         assert.ok item.equals instance
@@ -758,7 +762,6 @@ describe 'AdminService tests', ->
           assert.equal obj.y, toBeSaved.y
           assert.equal obj.strength, toBeSaved.strength
           assert.ok obj.equals returned
-          watcher.removeAllListeners 'change'
           done()
 
   it 'should save creates new event', (done) ->
@@ -767,7 +770,7 @@ describe 'AdminService tests', ->
     toBeSaved = type: eventTypes[1].toObject(), content:'yaha'
 
     # then a creation event was issued
-    watcher.on 'change', (operation, className, instance)->
+    watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'Event'
       assert.equal operation, 'creation'
       saved = instance
@@ -786,7 +789,6 @@ describe 'AdminService tests', ->
         assert.ok eventTypes[1]._id.equals(obj.type._id), "unexpected type id #{obj.type._id}"
         assert.equal obj.content, toBeSaved.content
         assert.ok obj.equals returned
-        watcher.removeAllListeners 'change'
         done()
 
   it 'should save saved existing event', (done) ->
@@ -799,7 +801,7 @@ describe 'AdminService tests', ->
       toBeSaved.content = 'hohoho'
 
       # then a update event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.once 'change', (operation, className, instance)->
         assert.equal className, 'Event'
         assert.equal operation, 'update'
         assert.ok event.equals instance
@@ -818,7 +820,6 @@ describe 'AdminService tests', ->
           assert.ok eventTypes[1]._id.equals(obj.type._id), "unexpected type id #{obj.type._id}"
           assert.equal obj.content, toBeSaved.content
           assert.ok obj.equals returned
-          watcher.removeAllListeners 'change'
           done()
 
   it 'should save creates new player', (done) ->
@@ -827,7 +828,7 @@ describe 'AdminService tests', ->
     toBeSaved = email: 'caracol', provider:'Google', isAdmin: true
 
     # then a creation event was issued
-    watcher.on 'change', (operation, className, instance)->
+    watcher.once 'change', (operation, className, instance)->
       assert.equal className, 'Player'
       assert.equal operation, 'creation'
       saved = instance
@@ -847,7 +848,6 @@ describe 'AdminService tests', ->
         assert.equal obj.provider, toBeSaved.provider
         assert.equal obj.isAdmin, toBeSaved.isAdmin
         assert.ok obj.equals returned
-        watcher.removeAllListeners 'change'
         done()
 
   it 'should save saved existing player', (done) ->
@@ -861,7 +861,7 @@ describe 'AdminService tests', ->
       toBeSaved.password = 'toto'
 
       # then a update event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.once 'change', (operation, className, instance)->
         assert.equal className, 'Player'
         assert.equal operation, 'update'
         assert.ok player.equals instance
@@ -881,7 +881,6 @@ describe 'AdminService tests', ->
           assert.equal obj.provider, toBeSaved.provider
           assert.equal obj.isAdmin, toBeSaved.isAdmin
           assert.ok obj.equals returned
-          watcher.removeAllListeners 'change'
           done()
 
   it 'should remove fails on unallowed model', (done) ->
@@ -1045,10 +1044,11 @@ describe 'AdminService tests', ->
         removed = []
 
         # then a deletion event was issued
-        watcher.on 'change', (operation, className, instance)->
+        listener = (operation, className, instance)->
           assert.equal className, 'Field'
           assert.equal operation, 'deletion'
           removed.push instance
+        watcher.on 'change', listener
 
         # when removing two existing fields
         service.remove 'Field', [field1, field2], 'admin', (err, modelName, returned) ->
@@ -1069,7 +1069,7 @@ describe 'AdminService tests', ->
               assert.equal removed.length, 2, 'watcher was not as many times invoked as awaited'
               assert.ok returned[0].equals removed[0]
               assert.ok returned[1].equals removed[1]
-              watcher.removeAllListeners 'change'
+              watcher.removeListener 'change', listener
               done()
 
   it 'should remove delete existing item', (done) ->
@@ -1079,7 +1079,7 @@ describe 'AdminService tests', ->
       awaited = false
     
       # then a deletion event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.once 'change', (operation, className, instance)->
         assert.equal className, 'Item'
         assert.equal operation, 'deletion'
         assert.ok item.equals instance
@@ -1097,7 +1097,6 @@ describe 'AdminService tests', ->
         Item.findById returned._id, (err, obj) ->
           return done "Can't find item in db #{err}" if err?
           assert.isNull obj
-          watcher.removeAllListeners 'change'
           done()
 
   it 'should remove delete existing event', (done) ->
@@ -1107,7 +1106,7 @@ describe 'AdminService tests', ->
       awaited = false
     
       # then a deletion event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.once 'change', (operation, className, instance)->
         assert.equal className, 'Event'
         assert.equal operation, 'deletion'
         assert.ok event.equals instance
@@ -1125,7 +1124,6 @@ describe 'AdminService tests', ->
         Event.findById returned._id, (err, obj) ->
           return done "Can't find event in db #{err}" if err?
           assert.isNull obj
-          watcher.removeAllListeners 'change'
           done()
 
   it 'should remove delete existing player', (done) ->
@@ -1135,11 +1133,12 @@ describe 'AdminService tests', ->
       awaited = false
     
       # then a deletion event was issued
-      watcher.on 'change', (operation, className, instance)->
+      listener = (operation, className, instance)->
         return unless operation is 'deletion'
         assert.equal className, 'Player'
         assert.ok player.equals instance
         awaited = true
+      watcher.on 'change', listener
 
       # when removing an existing player
       service.remove 'Player', player.toObject(), 'admin', (err, modelName, returned) ->
@@ -1147,13 +1146,13 @@ describe 'AdminService tests', ->
         # then the created values are returned
         assert.isNotNull returned, 'unexpected returned player'
         assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        watcher.removeListener 'change', listener
         assert.ok returned.equals player
 
         # then the model exists in DB
         Player.findById returned._id, (err, obj) ->
           return done "Can't find player in db #{err}" if err?
           assert.isNull obj
-          watcher.removeAllListeners 'change'
           done()
 
   it 'should remove delete existing fsItem', (done) ->
@@ -1197,10 +1196,11 @@ describe 'AdminService tests', ->
       removed = []
 
       # then a deletion event was issued
-      watcher.on 'change', (operation, className, instance)->
+      listener = (operation, className, instance)->
         assert.equal className, 'Field'
         assert.equal operation, 'deletion'
         removed.push instance
+      watcher.on 'change', listener
 
       # when removing an existing and a new fields
       unexisting = {_id: fieldTypes[0]._id, mapId: maps[0]._id, typeId: fieldTypes[1]._id, x:0, y:1}
@@ -1219,7 +1219,7 @@ describe 'AdminService tests', ->
           # then the watcher was properly invoked
           assert.equal removed.length, 1, 'watcher was not as many times invoked as awaited'
           assert.ok returned[0].equals removed[0]
-          watcher.removeAllListeners 'change'
+          watcher.removeListener 'change', listener
           done()
 
   it 'should remove do nothing on empty array', (done) ->
@@ -1236,16 +1236,18 @@ describe 'AdminService tests', ->
     creationReceived = false
 
     # then a deletion event was issued for old executable
-    watcher.on 'change', (operation, className, instance)->
+    deletionListener = (operation, className, instance)->
       return unless operation is 'deletion' and className is 'Executable'
       assert.equal instance._id, executables[0]._id
       deletionReceived = true
+    watcher.on 'change', deletionListener
 
     # then a creation event was issued for new executable
-    watcher.on 'change', (operation, className, instance)->
+    creationListener = (operation, className, instance)->
       return unless operation is 'creation' and className is 'Executable'
       assert.equal instance._id, newId
       creationReceived = true
+    watcher.on 'change', creationListener
 
     # when renaming existing rule with new name
     newId = 'rule 4'
@@ -1263,7 +1265,8 @@ describe 'AdminService tests', ->
         assert.equal objs.length, 0
         assert.ok deletionReceived, 'watcher wasn\'t invoked for deletion'
         assert.ok creationReceived, 'watcher wasn\'t invoked for creation'
-        watcher.removeAllListeners 'change'
+        watcher.removeListener 'change', deletionListener
+        watcher.removeListener 'change', creationListener
         done()
 
   it 'should saveAndRename update existing executable', (done) ->

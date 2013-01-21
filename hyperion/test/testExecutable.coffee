@@ -34,7 +34,7 @@ describe 'Executable tests', ->
     # Empty the source and compilation folders content
     testUtils.cleanFolder root, (err) -> 
       return done err if err?
-      Executable.resetAll (err) -> 
+      Executable.resetAll true, (err) -> 
         return done err if err?
         done()
       

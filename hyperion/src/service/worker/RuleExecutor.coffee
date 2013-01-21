@@ -19,16 +19,16 @@
 'use strict'
 
 _ = require 'underscore'
+async = require 'async'
+pathUtils = require 'path'
 Rule = require '../../model/Rule'
 Executable = require '../../model/Executable'
-async = require 'async'
 Item = require '../../model/Item'
 Event = require '../../model/Event'
 Field = require '../../model/Field'
 Player = require '../../model/Player'
 utils = require '../../util/common'
 modelUtils = require '../../util/model'
-pathUtils = require 'path'
 logger = require('../../logger').getLogger 'worker'
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
@@ -119,36 +119,9 @@ internalResolve = (actor, targets, wholeRule, worker, callback) ->
     else 
       process null
 
-# Populate the `modified` parameter array with models that have been modified.
-# For items and events, recursively check linked objects.
-# Can also handle Fields and Players
-#
-# @param obj [Object] root model that begins the analysis
-# @param modified [Array] array of already modified object, concatenated with found modified objects
-filterModified = (obj, modified) ->
-  # do not process if already known
-  return if obj in modified 
-  # will be save if at least one path is modified
-  modified.push obj if obj?.isModified()
-  # do not go further if not an obj
-  return unless obj instanceof Item or obj instanceof Event
-  properties = obj.type.properties
-  for prop, def of properties
-    if def.type is 'object'
-      value = obj[prop]
-      # recurse if needed on linked object that are resolved
-      filterModified(value, modified) if value? and 'string' isnt utils.type value
-    else if def.type is 'array'
-      values = obj[prop]
-      if values
-        for value, i in values
-          # recurse if needed on linked object that are resolved
-          filterModified(value, modified) if value? and 'string' isnt utils.type value
-
 module.exports = 
 
   # Resolves the applicable rules for a given situation.
-  # Arguments are specified inside an array, and may be interpreted as: 
   #
   # @overload resolve(playerId)
   #   Resolves applicable rules at for a player
@@ -297,8 +270,8 @@ module.exports =
               # adds new objects to be saved
               saved = saved.concat rule.saved
               # looks for modified linked objects
-              filterModified actor, saved
-              filterModified target, saved
+              modelUtils.filterModified actor, saved
+              modelUtils.filterModified target, saved
               # saves the whole in MongoDB
               logger.debug "save modified model #{obj._id}" for obj in saved
               async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 

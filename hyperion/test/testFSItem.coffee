@@ -114,7 +114,7 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
   oldPath = "#{item.path}"
 
   # then a creation and a delection event were issued
-  watcher.on 'change', (operation, className, instance)->
+  watcher.on 'change', listener = (operation, className, instance)->
     assert.equal className, 'FSItem'
     if operation is 'creation'
       assert.isNotNull newPath.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
@@ -146,7 +146,7 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
         assert.equal stats.isDirectory(), isFolder
         assert.ok deletionAwaited, 'deletion event not received'
         assert.ok creationAwaited, 'creation event not received'
-        watcher.removeAllListeners 'change'
+        watcher.removeListener 'change', listener
         done()
 
 # Empties the root folder and re-creates it.

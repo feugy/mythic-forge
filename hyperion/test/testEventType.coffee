@@ -218,7 +218,7 @@ describe 'EventType tests', ->
       defaultLength = 30
       
       # then a modification event was issued
-      watcher.on 'change', (operation, className, instance)->
+      watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Event'
         updates.push instance._id+''
         assert.equal operation, 'update'
@@ -232,14 +232,14 @@ describe 'EventType tests', ->
             for event in events
               assert.equal event.length, defaultLength
               assert.ok event._id+'' in updates
-            watcher.removeAllListeners 'change'
+            watcher.removeListener 'change', listener
             done()
         setTimeout block, 50
 
     it 'should existing events be updated when removing a type property', (done) ->
       updates = []
       # then a modification event was issued
-      watcher.on 'change', (operation,className, instance)->
+      watcher.on 'change', listener = (operation,className, instance)->
         return if className isnt 'Event'
         assert.equal operation, 'update'
         updates.push instance._id+''
@@ -253,6 +253,6 @@ describe 'EventType tests', ->
             for event in events
               assert.ok undefined is event.content, 'content still present'
               assert.ok event._id+'' in updates
-            watcher.removeAllListeners 'change'
+            watcher.removeListener 'change', listener
             done()
         setTimeout block, 50

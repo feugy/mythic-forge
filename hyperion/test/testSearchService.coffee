@@ -431,7 +431,8 @@ describe 'SearchService tests', ->
     before (done) ->
       # Empties the compilation and source folders content
       testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
-        Executable.resetAll -> 
+        Executable.resetAll true, (err) -> 
+          return done err if err?
           Map.collection.drop -> 
             FieldType.collection.drop -> 
               EventType.collection.drop -> 

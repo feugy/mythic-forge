@@ -120,6 +120,26 @@ getProp = (obj, path, callback) ->
   
   processStep obj
 
+filterModified = (obj, modified) ->
+  # do not process if already known
+  return if obj in modified 
+  # will be save if at least one path is modified
+  modified.push obj if obj?.isModified()
+  # do not go further if not an obj
+  return unless obj?._className is 'Item' or obj?._className is 'Event'
+  properties = obj.type.properties
+  for prop, def of properties
+    if def.type is 'object'
+      value = obj[prop]
+      # recurse if needed on linked object that are resolved
+      filterModified(value, modified) if value? and 'string' isnt utils.type value
+    else if def.type is 'array'
+      values = obj[prop]
+      if values
+        for value, i in values
+          # recurse if needed on linked object that are resolved
+          filterModified(value, modified) if value? and 'string' isnt utils.type value
+
 module.exports =
 
   # Allows to add i18n fields on a Mongoose schema.
@@ -334,3 +354,11 @@ module.exports =
   # @option callback err [String] an error string, null if no error occured
   # @option callback value [Object] the property value.
   getProp: getProp
+
+  # Populate the `modified` parameter array with models that have been modified.
+  # For items and events, recursively check linked objects.
+  # Can also handle Fields and Players
+  #
+  # @param obj [Object] root model that begins the analysis
+  # @param modified [Array] array of already modified object, concatenated with found modified objects
+  filterModified: filterModified

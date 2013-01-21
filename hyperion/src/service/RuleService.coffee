@@ -19,74 +19,77 @@
 'use strict'
 
 _ = require 'underscore'
-cluster = require 'cluster'
 async = require 'async'
+cluster = require 'cluster'
 pathUtils = require 'path'
 fs = require 'fs'
-Rule = require '../model/Rule'
-TurnRule = require '../model/TurnRule'
-Executable = require '../model/Executable'
 utils = require '../util/common'
+Rule = require '../model/Rule'
+Executable = require '../model/Executable'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
 logger = require('../logger').getLogger 'service'
-
-# frequency, in seconds.
-frequency = utils.confKey 'turn.frequency'
-
-# Compute the remaining time in milliseconds before the next turn execution
-#
-# @return number of milliseconds before the next turn.
-nextTurn= () ->
-  # (frequency-new Date().getSeconds()%frequency)*1000-(new Date().getMilliseconds())
-
-executor = null
-
-if cluster.isMaster
-  cluster.setupMaster 
-    exec: pathUtils.join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
-
-  spawn = (module) ->
-    worker = cluster.fork module: module
-
-    # relaunch immediately dead worker
-    worker.on 'exit', (code, signal) ->
-      return if worker.suicide
-      # TODO find a better way to populate executor variable. 
-      executor = spawn module
-      logger.info "respawn worker #{module} with pid #{executor.process.pid}"
-
-    worker.on 'message', (data) ->
-      return unless data?.event is 'change'
-      # trigger the change as if it comes from the master modelWatcher
-      modelWatcher.emit.apply modelWatcher, data.args
-    worker
-
-  executor = spawn 'RuleExecutor'
-  logger.info "#{process.pid} spawn worker RuleExecutor with pid #{executor.process.pid}"
-
-  # when a change is detected in master, send it to workers
-  modelWatcher.on 'change', (operation, className, changes, wId) ->
-    # use master pid if it comes from the master
-    wId = if wId? then wId else process.pid
-    for id, worker of cluster.workers when worker.process.pid isnt wId
-      worker.send event: 'change', args:[operation, className, changes, wId]
   
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
+
+# Pool of workers.
+pool = []
+
+# Spawn a worker with respawn facilities and changes propagations
+# 
+# @param poolIdx [Number] index under which the spawned worker is store
+# @param options [Object] worker creation options. All of them are passed as environement variables to
+# the spawned worker. Only one is mandatory:
+# @option options module [String] path (relative to the launcher) of the spawned script
+spawn = (poolIdx, options) ->
+  worker = cluster.fork options
+  pool[poolIdx] = worker
+
+  # relaunch immediately dead worker
+  worker.on 'exit', (code, signal) ->
+    return if worker.suicide
+    spawn poolIdx, options
+    logger.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
+
+  worker.on 'message', (data) ->
+    if data?.event is 'change'
+      # trigger the change as if it comes from the master modelWatcher
+      modelWatcher.emit.apply modelWatcher, ['change'].concat data.args
+    else if data?.event is notifier.NOTIFICATION
+      # trigger the notification as if it comes from the master notifier
+      notifier.notify.apply notifier, data.args
 
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
 #
 # @Todo: refresh cache when executable changes... 
 class _RuleService
 
-  # RuleService constructor.
-  # Gets the existing executables, and store their rules.
   constructor: ->
-    # Reset the local cache
-    Executable.resetAll =>
-      # Trigger first turn execution
-      setTimeout @triggerTurn, nextTurn(), (->), true
+    if cluster.isMaster
+      Executable.resetAll true, (err) ->
+        throw new Error "Failed to initialize RuleService: #{err}" if err?
+        cluster.setupMaster 
+          exec: pathUtils.join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
+
+        options = 
+          module: 'RuleExecutor'
+        spawn 0, options
+        logger.info "#{process.pid} spawn worker #{options.module} with pid #{pool[0].process.pid}"
+        
+        options = 
+          module: 'RuleScheduler'
+          # frequency, in seconds.
+          frequency: utils.confKey 'turn.frequency'
+        spawn 1, options
+        logger.info "#{process.pid} spawn worker #{options.module} with pid #{pool[1].process.pid}"
+
+        # when a change is detected in master, send it to workers
+        modelWatcher.on 'change', (operation, className, changes, wId) ->
+          # use master pid if it comes from the master
+          wId = if wId? then wId else process.pid
+          for id, worker of cluster.workers when worker.process.pid isnt wId
+            worker.send event: 'change', args:[operation, className, changes, wId]
         
   # Exports existing rules to clients: turn rules are ignored and execute() function is not exposed.
   #
@@ -163,16 +166,21 @@ class _RuleService
   # - category [String] the rule category
   resolve: (args..., callback) ->
     # end callback used to process executor results
-    end = (data) ->
+    end = (data) =>
       return unless data?.method is 'resolve'
-      executor.removeListener 'message', end
+      pool[0].removeListener 'message', end
+      # special case: worker not ready yet. Try later.
+      if data.results[0] is 'worker not ready'
+        return _.delay => 
+          @resolve.apply @, args.concat callback
+        , 10
       return callback null, data.results[1] unless data.results[0]?
       # in case of error, wait for the executor to be respawned
       _.defer -> callback data.results[0]
 
-    executor.on 'message', end
+    pool[0].on 'message', end
     # delegate to executor
-    executor.send method: 'resolve', args:args
+    pool[0].send method: 'resolve', args:args
    
   # Execute a particular rule for a given situation.
   # As a first validation, the rule is resolved for the target.
@@ -195,132 +203,43 @@ class _RuleService
   # @option callback result [Object] object send back by the executed rule
   execute: (args..., callback) ->
     # end callback used to process executor results
-    end = (data) ->
+    end = (data) =>
       return unless data?.method is 'execute'
-      executor.removeListener 'message', end
+      pool[0].removeListener 'message', end
+      # special case: worker not ready yet. Try later.
+      if data.results[0] is 'worker not ready'
+        return _.delay => 
+          @execute.apply @, args.concat callback
+        , 10
       return callback null, data.results[1] unless data.results[0]?
       # in case of error, wait for the executor to be respawned
       _.defer -> callback data.results[0]
 
-    executor.on 'message', end
+    pool[0].on 'message', end
     # delegate to executor
-    executor.send method: 'execute', args: args
+    pool[0].send method: 'execute', args: args
      
   # Trigger a turn by executing turn rules
   #
   # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
   # @option callback err [String] an error string. Null if no error occured.
-  # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
-  triggerTurn: (callback, _auto = false) =>
-    return #TODO for now
-    logger.debug 'triggers turn rules...'
-    notifier.notify 'turns', 'begin'
-    sbxs = []
+  triggerTurn: (callback) =>
+    # end callback used to process scheduler results
+    end = (data) =>
+      return unless data?.method is 'trigger'
+      pool[1].removeListener 'message', end
+      # special case: worker not ready yet. Try later.
+      if data.results[0] is 'worker not ready'
+        return _.delay => 
+          @triggerTurn.apply @, [callback]
+        , 10
+      return callback null unless data.results[0]?
+      # in case of error, wait for the executor to be respawned
+      _.defer -> callback data.results[0]
 
-    # read all existing executables. @todo: use cached rules.
-    Executable.find (err, executables) =>
-      throw new Error "Cannot collect rules: #{err}" if err?
-
-      rules = []
-      # and for each of them, extract their turn rule.
-      for executable in executables
-        try
-          # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
-          # and singleton (like ModuleWatcher) will be broken.
-          obj = require pathUtils.relative __dirname, executable.compiledPath
-          rules.push obj if obj? and utils.isA(obj, TurnRule)
-        catch err
-          # report require errors
-          err = "failed to require executable #{executable._id}: #{err}"
-          logger.warn err
-          notifier.notify 'turns', 'error', executable._id, err
-
-      # sort rules by rank
-      rules.sort (a, b) -> a.rank - b.rank
-
-      # function that updates dbs with rule's modifications
-      updateDb = (rule, saved, removed, end) =>
-        # at the end, save and remove modified objects
-        removeModel = (target, removeEnd) =>
-          logger.debug "remove model #{target._id}"
-          target.remove (err) =>
-            # stop a first execution error.
-            removeEnd if err? then "Failed to remove model #{target._id} at the end of the turn: #{err}" else undefined
-        # first removals
-        async.forEach removed, removeModel, => 
-          saveModel = (target, saveEnd) =>
-            logger.debug "save model #{target._id}"
-            target.save (err) =>
-              # stop a first execution error.
-              saveEnd if err? then "Failed to save model #{target._id} at the end of the turn: #{err}" else undefined
-          # then saves
-          async.forEach saved, saveModel, (err) =>
-            if err?
-              logger.warn err
-              notifier.notify 'turns', 'failure', rule.name, err
-              return end()
-            notifier.notify 'turns', 'success', rule.name
-            end()
-
-      # function that select target of a rule and execute it on them
-      selectAndExecute = (rule, end) =>
-        # ignore disabled rules
-        return end() unless rule.active
-        notifier.notify 'turns', 'rule', rule.name
-
-        # use a sandbox to catch asynchronous errors
-        sandbox = Domain.create()
-        sandbox.name = rule.name
-        sandbox.on 'error', (err) =>
-          # exit at the first execution error (TODO do not dispose sandbox on Node 0.9.6)
-          msg = "failed to select or execute rule #{rule.name}: #{err}"
-          logger.warn msg
-          notifier.notify 'turns', 'failure', rule.name, msg
-          end()
-
-        sandbox.bind(rule.select) (err, targets) =>
-          # Do not emit an error, but stops this rule a first selection error.
-          if err?
-            sandbox.dispose()
-            err = "failed to select rule #{rule.name}: #{err}"
-            logger.warn err
-            notifier.notify 'turns', 'failure', rule.name, err
-            return end()
-          return end() unless Array.isArray(targets)
-          logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
-          # arrays of modified objects
-          saved = []
-          removed = []
-
-          # function that execute the current rule on a target
-          execute = (target, executeEnd) =>
-            sandbox.bind(rule.execute) target, (err) =>
-              # stop a first execution error.
-              return executeEnd "failed to execute rule #{rule.name}: #{err}" if err?
-              # store modified object for later
-              saved.push obj for obj in rule.saved
-              filterModified target, saved
-              removed.push obj for obj in rule.removed
-              executeEnd()
-            
-          # execute on each target and leave at the end.
-          async.forEach targets, execute, (err) =>
-            sandbox.dispose()
-            if err?
-              logger.warn err
-              notifier.notify 'turns', 'failure', rule.name, err
-              return end()
-            # save all modified and removed object after the rule has executed
-            updateDb rule, saved, removed, end
-
-      # select and execute each turn rule, NOT in parallel !
-      async.forEachSeries rules, selectAndExecute, => 
-        logger.debug 'end of turn'
-        notifier.notify 'turns', 'end'
-        # trigger the next turn
-        setTimeout @triggerTurn, nextTurn(), callback, true if _auto
-        # return callback
-        callback null
+    pool[1].on 'message', end
+    # delegate to scheduler
+    pool[1].send method: 'trigger'
 
 class RuleService
   _instance = undefined

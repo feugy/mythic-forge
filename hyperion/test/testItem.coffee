@@ -174,7 +174,7 @@ describe 'Item tests', ->
 
             changes = []
             # then only a removal event was issued
-            watcher.on 'change', (operation, className, instance)->
+            watcher.on 'change', listener = (operation, className, instance) ->
               changes.push arguments
 
             # when removing the map
@@ -188,7 +188,7 @@ describe 'Item tests', ->
                 assert.equal 1, changes.length, 'watcher wasn\'t invoked'
                 assert.equal changes[0][1], 'Map'
                 assert.equal changes[0][0], 'deletion'
-                watcher.removeAllListeners 'change'
+                watcher.removeListener 'change', listener
                 done()
 
     it 'should quantity not be set on unquantifiable type', (done) ->

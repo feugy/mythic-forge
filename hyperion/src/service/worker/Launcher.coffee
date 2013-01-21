@@ -24,27 +24,19 @@ return if cluster.isMaster
 
 pathUtils = require 'path'
 modelWatcher = require('../../model/ModelWatcher').get()
+notifier = require('../Notifier').get()
 Executable = require '../../model/Executable'
-worker = require pathUtils.resolve __dirname, process.env.module
 logger = require('../../logger').getLogger 'worker'
 
-# init worker's rule cache
-Executable.resetAll ->
+ready = false
 
-# manage events received from master
-process.on 'message', (msg) ->
-  if msg?.event is 'change'
-    # trigger the change as if it comes from the worker's own modelWatcher
-    modelWatcher.emit.apply modelWatcher, ['change'].concat msg.args
-  else if msg?.event is 'executableReset'
-    # reloads the executable cache
-    Executable.resetAll ->
-  else if msg?.method of worker
-    worker._method = msg.method
-    # invoke the relevant worker method, adding a callback
-    worker[msg.method].apply worker, (msg.args or []).concat (args...) ->
-      # callback send back results to cluster master
-      process.send method: msg.method, results: args
+# init worker's rule cache
+Executable.resetAll false, (err) -> 
+  unless err?
+    ready = true
+    return process.emit 'rulesInitialized' 
+  logger.error "Failed to initialize worker's executable cache: #{err}"
+  process.exit 1
 
 # manage worker unexpected failure
 process.on 'uncaughtException', (err) ->
@@ -53,8 +45,51 @@ process.on 'uncaughtException', (err) ->
   logger.info "worker #{process.pid} caught unexpected exception: #{err}"
   process.send method: worker._method, results: [err]
   # let it fail: master will respawn it
-  process.exit 1
+  process.exit 0
+
+# now that the latest uncaughtException handler have been registered, requires the worker
+# that may intercept himself its own failures
+worker = require pathUtils.resolve __dirname, process.env.module
+
+# manage events received from master
+process.on 'message', (msg) ->
+  if msg?.event is 'change'
+    # trigger the change as if it comes from the worker's own modelWatcher
+    modelWatcher.emit.apply modelWatcher, ['change'].concat msg.args or []
+  else if msg?.event is 'executableReset'
+    ready = false
+    # reloads the executable cache
+    Executable.resetAll false, (err) -> 
+      return ready = true unless err?
+      logger.error "Failed to initialize worker's executable cache: #{err}"
+      process.exit 1
+  else if msg?.method of worker
+    # do not proceed if still initializing
+    unless ready
+      return process.send method: msg.method, results: ['worker not ready'] 
+    worker._method = msg.method
+    # invoke the relevant worker method, adding a callback
+    worker[msg.method].apply worker, (msg.args or []).concat (args...) ->
+      # callback send back results to cluster master
+      process.send method: msg.method, results: args
 
 # on change events, send them back to master
-modelWatcher.on 'change', (args...) ->
-  process.send event: 'change', args: [args].concat [process.pid]
+modelWatcher.on 'change', (operation, className, changes, wId) ->
+  # do not relay to master changes that comes from another worker !
+  return if wId?
+  try
+    process.send event: 'change', args: [operation, className, changes, process.pid]
+  catch err
+    # master probably dead.
+    console.error "worker #{process.pid}, module #{process.env.module} failed to relay change due to: #{err}"
+    process.exit 1
+
+# on notification, send them back to master
+notifier.on notifier.NOTIFICATION, (args...) ->
+  try 
+    process.send event: notifier.NOTIFICATION, args: args, from: process.pid
+  catch err
+    # master probably dead.
+    console.error "worker #{process.pid}, module #{process.env.module} failed to relay notification due to: #{err}"
+    process.exit 1
+  

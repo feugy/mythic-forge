@@ -41,39 +41,39 @@ describe 'GameService tests', ->
   beforeEach (done) ->
     # cleans ItemTypes and Items
     testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
-      throw new Error err if err?
-      Executable.resetAll (err) -> 
-        throw new Error err if err?
+      return done err if err?
+      Executable.resetAll true, (err) -> 
+        return done err if err?
         ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> Field.collection.drop ->
           # given a map
           new Map({name: 'test-game'}).save (err, saved) ->
-            throw new Error err if err?
+            return done err if err?
             map = saved
             # given an item type
             type = new ItemType {name: 'character'}
             type.setProperty 'name', 'string', ''
             type.setProperty 'health', 'integer', 10
             type.save (err, saved) ->
-              throw new Error err if err?
+              return done err if err?
               type = saved
               new Item({map: map, type: type, name: 'Jack', x:0, y:0}).save (err, saved) ->
-                throw new Error err if err?
+                return done err if err?
                 item1 = saved
                 new Item({map: map, type: type, name: 'John', x:10, y:10}).save (err, saved) ->
-                  throw new Error err if err?
+                  return done err if err?
                   item2 = saved
                   new Item({map: map, type: type, name: 'Peter'}).save (err, saved) ->
-                    throw new Error err if err?
+                    return done err if err?
                     item3 = saved
                     # given a field type
                     new FieldType({name: 'plain'}).save (err, saved) ->
-                      throw new Error err if err?
+                      return done err if err?
                       fieldType = saved
                       new Field({mapId:map._id, typeId:fieldType._id, x:5, y:3}).save (err, saved) ->
-                        throw new Error err if err?
+                        return done err if err?
                         field1 = saved
                         new Field({mapId:map._id, typeId:fieldType._id, x:-2, y:-10}).save (err, saved) ->
-                          throw new Error err if err?
+                          return done err if err?
                           field2 = saved
                           done()
 

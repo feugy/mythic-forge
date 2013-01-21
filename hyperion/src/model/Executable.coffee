@@ -37,6 +37,25 @@ utils.enforceFolderSync root, false, logger
 game = path.resolve path.normalize utils.confKey 'game.dev'
 throw new Error "executable.source must not be sibling or under game.dev" if 0 is path.dirname(root).indexOf path.dirname game
 
+# when receiving a change from another worker, update the executable cache
+modelWatcher.on 'change', (operation, className, changes, wId) ->
+  return unless wId? and className is 'Executable'
+  # update the executable cache
+  switch operation
+    when 'creation' 
+      executables[changes._id] = changes
+    when 'update'
+      return unless changes._id of executables
+      # partial update
+      executables[changes._id][attr] = value for attr, value of changes when !(attr in ['_id'])
+      # clean require cache.
+      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
+    when 'deletion' 
+      return unless changes._id of executables
+      # clean require cache.
+      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
+      delete executables[changes._id]
+
 # hashmap to differentiate creations from updates
 wasNew= {}
 
@@ -67,23 +86,6 @@ compileFile = (executable, silent, callback) ->
       delete wasNew[executable._id]
     # and invoke final callback
     callback null, executable
-
-# when receiving a change from another worker, update the executable cache
-modelWatcher.on 'change', (operation, className, changes, wId) ->
-  return unless wId? and className is 'Executable'
-  # update the executable cache
-  switch operation
-    when 'creation' then executables[changes._id] = changes
-    when 'update'
-      # partial update
-      executables[changes._id][attr] = value for attr, value of changes
-      # clean require cache.
-      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
-    when 'deletion' 
-      return unless changes._id of executables
-      # clean require cache.
-      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
-      delete executables[changes._id]
 
 # Search inside existing executables. The following searches are supported:
 # - {id,_id,name: String,RegExp]}: search by ids
@@ -165,38 +167,41 @@ class Executable
 
   # Reset the executable local cache. It recompiles all existing executables
   #
+  # @param clean [Boolean] true to clean the compilation folder and recompile everything. 
+  # False to only popuplate the local executable cache.
   # @param callback [Function] invoked when the reset is done.
   # @option callback err [String] an error callback. Null if no error occured.
-  @resetAll: (callback) ->
+  @resetAll: (clean, callback) ->
     # clean local files, and compiled scripts
     executables = {}
-    utils.enforceFolderSync compiledRoot, true, logger
+    utils.enforceFolder compiledRoot, clean, logger, (err) ->
+      return callback err if err?
 
-    fs.readdir root, (err, files) ->
-      return callback "Error while listing executables: #{err}" if err?
+      fs.readdir root, (err, files) ->
+        return callback "Error while listing executables: #{err}" if err?
 
-      readFile = (file, end) -> 
-        # only take coffeescript in account
-        if ext isnt path.extname file
-          return end()
-        # creates an empty executable
-        executable = new Executable {_id:file.replace ext, ''}
+        readFile = (file, end) -> 
+          # only take coffeescript in account
+          if ext isnt path.extname file
+            return end()
+          # creates an empty executable
+          executable = new Executable {_id:file.replace ext, ''}
 
-        fs.readFile executable.path, encoding, (err, content) ->
-          return callback "Error while reading executable '#{executable._id}': #{err}" if err?
-          # complete the executable content, and add it to the array.
-          executable.content = content
-          compileFile executable, true, (err, executable) ->
-            return callback "Compilation failed: #{err}" if err?
-            end()
+          fs.readFile executable.path, encoding, (err, content) ->
+            return callback "Error while reading executable '#{executable._id}': #{err}" if err?
+            # complete the executable content, and add it to the array.
+            executable.content = content
+            compileFile executable, true, (err, executable) ->
+              return callback "Compilation failed: #{err}" if err?
+              end()
 
-      # each individual file must be read
-      async.forEach files, readFile, (err) -> 
-        logger.debug 'Local executables cached successfully reseted' unless err?
-        # ask to all worker to reload also
-        if cluster.isMaster
-          worker.send event: 'executableReset' for id, worker of cluster.workers
-        callback err
+        # each individual file must be read
+        async.forEach files, readFile, (err) -> 
+          logger.debug 'Local executables cached successfully reseted' unless err?
+          # ask to all worker to reload also
+          if cluster.isMaster
+            worker.send event: 'executableReset' for id, worker of cluster.workers
+          callback err
 
   # Find existing executables.
   #

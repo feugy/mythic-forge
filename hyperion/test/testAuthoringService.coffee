@@ -41,15 +41,17 @@ describe 'AuthoringService tests', ->
       return done err if err?
       service.init done
 
+  notifListener = (event, args...) ->
+    notifications.push args if event is 'authoring'
+
   beforeEach (done) ->
     # given a registered notification listener
     notifications = []
-    notifier.on notifier.NOTIFICATION, (event, args...) ->
-      notifications.push args if event is 'authoring'
+    notifier.on notifier.NOTIFICATION, notifListener
     done()
 
   afterEach (done) ->
-    notifier.removeAllListeners notifier.NOTIFICATION
+    notifier.removeListener notifier.NOTIFICATION, notifListener
     done()
 
   it 'should file be created', (done) -> 
