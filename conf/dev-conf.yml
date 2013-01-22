@@ -9,6 +9,7 @@ logger:
     model: warn
     web: warn
     webSocket: warn
+    worker: warn
     console: all
 
 # Server's configuration

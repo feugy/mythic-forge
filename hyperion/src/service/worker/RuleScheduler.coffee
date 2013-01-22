@@ -175,7 +175,7 @@ trigger = (callback, _auto = false) ->
 # For tests, do not use the automatic triggering
 unless process.env.NODE_ENV is 'test'
   # Trigger automatic
-  process.on 'rulesInitialized', trigger (->), true 
+  process.on 'rulesInitialized', -> trigger (->), true 
 
 module.exports = 
 

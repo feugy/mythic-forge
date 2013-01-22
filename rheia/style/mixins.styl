@@ -147,7 +147,7 @@ typeIcons(selector, size, margin = 0)
     top 3px
 
   // type icons
-  for icon, i in map event-type _ field-type item-type player rule turn-rule
+  for icon, i in map event-type _ field-type item-type player rule turn-rule _ script
     {selector}.{icon}
       background-position -1*i*unit(size, 'px') -3*unit(size, 'px')
   for icon, i in _ event _ _ item

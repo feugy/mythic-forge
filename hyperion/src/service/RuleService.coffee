@@ -106,7 +106,9 @@ class _RuleService
         fs.readFile executable.compiledPath, (err, content) =>
           return callback "Failed to export rules. Error while reading rule #{executable.compiledPath}: #{err}" if err?
           content = content.toString()
-          if content.indexOf "})(Rule);" isnt -1
+          
+          # rules specific behaviour
+          if -1 isnt content.indexOf '})(Rule);'
             # removes the executable part
             content = content.replace '\n    this.execute = __bind(this.execute, this);\n', '\n'
 
@@ -114,26 +116,28 @@ class _RuleService
             end = content.indexOf('\n  };', start)-1
 
             content = content.substring(0, start)+content.substring end+6
-            # gets the required dependencies
-            deps = []
-            vars = []
-            while -1 isnt content.search depReg
-              # removes the require directive and extract relevant variable and path
-              content = content.replace depReg, (str, variable, dep)->
-                deps.push dep.replace /^'\.\.\//, "'"
-                vars.push variable
-                return ''
-              # removes also the scope declaration
-              content = content.replace " #{vars[vars.length-1]},", ''
 
-            # replace module.exports by return
-            content = content.replace 'module.exports =', 'return'
-            
-            # adds the define part
-            content = "define('#{executable._id}', [#{deps.join ','}], function(#{vars.join ','}){\n#{content}\n});"
-            
-            # and keep the remaining code
-            rules[executable._id] = content 
+          # gets the required dependencies
+          deps = []
+          vars = []
+          while -1 isnt content.search depReg
+            # removes the require directive and extract relevant variable and path
+            content = content.replace depReg, (str, variable, dep)->
+              deps.push dep.replace /^'\.\.\//, "'"
+              vars.push variable
+              return ''
+
+            # removes also the scope declaration
+            content = content.replace " #{vars[vars.length-1]},", ''
+
+          # replace module.exports by return
+          content = content.replace 'module.exports =', 'return'
+          
+          # adds the define part
+          content = "define('#{executable._id}', [#{deps.join ','}], function(#{vars.join ','}){\n#{content}\n});"
+          
+          # and keep the remaining code
+          rules[executable._id] = content 
           done()
 
       # read content of all existing executables

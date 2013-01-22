@@ -319,10 +319,68 @@ describe 'RuleService tests', ->
         # then module.exports was replaced by return
         assert.equal -1, rule.indexOf('module.exports ='), 'still module.exports'
         
-        # then the execute() funciton isnt available
+        # then the execute() function isnt available
         assert.equal -1, rule.indexOf('execute'), 'still execute() in rule' 
         assert.equal -1, rule.indexOf('hello !'), 'still execute() code in rule'
         done()
+
+    it 'should arbitrary script be exportable to client', (done) ->
+      # given an arbitrary script
+      script.content = """
+        moment = require 'moment'
+        _time = null
+        module.exports = {
+          time: (details) ->
+            if details is undefined
+              # return set or current time
+              if _time? then _time else moment()
+            else if details is null
+              # reset to current time
+              _time = null
+              moment()
+            else
+              # blocks time
+              _time = moment details
+        }
+      """
+      script.save (err) ->
+        return done err if err?
+        # when exporting rules to client
+        service.export (err, rules) ->
+          return done "Unable to export rules: #{err}" if err?
+
+          assert.property rules, 'rule0'
+          rule = rules.rule0
+
+          # then requires have been replaced by a single define
+          assert.equal 0, rule.indexOf('define(\'rule0\', [\'moment\'], function(moment){\n'), 'no define() call'
+          assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
+          assert.equal -1, rule.indexOf('require'), 'still require() in rule'
+
+          # then module.exports was replaced by return
+          assert.equal -1, rule.indexOf('module.exports ='), 'still module.exports'
+          
+          assert.equal rule.replace(/[\n\r]/g, ''), "define('rule0', ['moment'], function(moment){"+
+            "var _time;"+
+            "_time = null;"+
+            "return {"+
+            "  time: function(details) {"+
+            "    if (details === void 0) {"+
+            "      if (_time != null) {"+
+            "        return _time;"+
+            "      } else {"+
+            "        return moment();"+
+            "      }"+
+            "    } else if (details === null) {"+
+            "      _time = null;"+
+            "      return moment();"+
+            "    } else {"+
+            "      return _time = moment(details);"+
+            "    }"+
+            "  }"+
+            "};"+
+            "});"
+          done()
 
     it 'should rule be updated and modifications applicable', (done) ->
       # given a modification on rule content

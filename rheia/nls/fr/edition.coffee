@@ -24,6 +24,7 @@ define
     fieldType: 'Type de terrains %s'
     rule: 'Règle'
     turnRule: 'Règle de tour'
+    script: 'Script'
     map: 'Carte %s'
     multipleAffectation: 'Affectation multiple'
 
@@ -32,6 +33,7 @@ define
     removeEventTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'évènements <b>%s</b> ?</p><p>Tous les évènements de ce type seront aussi supprimés.</p>"
     removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
+    removeScriptConfirm: "<p>Voulez-vous vraiment supprimer le script <b>%s</b> ?</p>"
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
     invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
     invalidExecutableNameError: "l'identifiant d'un executable ne peut contenir que des caractères alphanumeriques"
@@ -42,6 +44,7 @@ define
     newItemType: "Type d'objets"
     newFieldType: 'Type de terrains'
     newRule: 'Règle'
+    newScript: 'Script'
     newTurnRule: 'Règle de tour'
     newMap: 'Carte'
     newEventType: "Type d'évènements"

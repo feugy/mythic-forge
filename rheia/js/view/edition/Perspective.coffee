@@ -32,9 +32,10 @@ define [
   'view/edition/Map'
   'view/edition/Rule'
   'view/edition/TurnRule'
+  'view/edition/Script'
   'widget/search'
 ], ($, TabPerspective, i18n, i18nEdition, template, utils, Explorer, 
-    ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView) ->
+    ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView, ScriptView) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -137,5 +138,6 @@ define [
         when 'EventType' then view = new EventTypeView id
         when 'Rule' then view = new RuleView id
         when 'TurnRule' then view = new TurnRuleView id
+        when 'Script' then view = new ScriptView id
         when 'Map' then view = new MapView id
       view

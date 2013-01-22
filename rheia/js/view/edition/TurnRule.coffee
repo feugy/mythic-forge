@@ -56,7 +56,7 @@ define [
     # Updates rendering with values from the edited object.
     _fillRendering: =>
       @_onRankChange()
-      # superclass handles description image, name, description and content
+      # superclass handles name and content
       super()
 
     # **private**

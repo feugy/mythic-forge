@@ -50,6 +50,11 @@ define [
     
     EventType: -> 
       EventType.collection.fetch()
+  
+    Script: -> 
+      # open container to allow it to be filled
+      $('.explorer dd[data-category="Script"]').show()
+      Executable.collection.fetch()
 
     Rule: ->
       # open container to allow it to be filled
@@ -80,9 +85,10 @@ define [
     
         return grouped
       when 'TurnRule' then criteria = 'rank'
+      when 'Script' then criteria = 'id'
       else criteria = 'name'
         
-    return _.chain(collection.models).map((model) -> 
+    _.chain(collection.models).map((model) -> 
         {criteria:model[criteria], value:model}
       ).sortBy((model) ->
         model.criteria
@@ -159,19 +165,25 @@ define [
         when EventType.collection then category = 'EventType'
         when Executable.collection
           # Execuables are both used to rule and turn rules. We must distinguish them
-          @$el.find('dd[data-category="Rule"], dd[data-category="TurnRule"]').prev('dt').addClass 'loaded'
+          @$el.find("""dd[data-category="Script"], 
+            dd[data-category="Rule"], 
+            dd[data-category="TurnRule"]""").prev('dt').addClass 'loaded'
+          scriptContainer = @$el.find 'dd[data-category="Script"]'
           ruleContainer = @$el.find 'dd[data-category="Rule"]'
           turnRuleContainer = @$el.find 'dd[data-category="TurnRule"]'
-          containers = $([ruleContainer[0], turnRuleContainer[0]]).empty()
+          containers = $([scriptContainer[0], ruleContainer[0], turnRuleContainer[0]]).empty()
 
           # cast down between turn rules and rules
+          scripts = []
           rules = []
           turnRules = []
           for executable in Executable.collection.models
             if executable.kind is 'TurnRule'
               turnRules.push executable
-            else 
+            else if executable.kind is 'Rule'
               rules.push executable
+            else
+              scripts.push executable
 
           # rules specificity: organize in categories
           grouped = sortCollection models: rules, 'Rule'
@@ -189,6 +201,10 @@ define [
           # turn rules are organized by their rank
           turnRules = sortCollection models: turnRules, 'TurnRule'
           turnRuleContainer.append $('<div></div>').typeDetails model:model for model in turnRules
+          
+          # scripts are organized by their id
+          scripts = sortCollection models: scripts, 'Script'
+          scriptContainer.append $('<div></div>').typeDetails model:model for model in scripts
 
       return unless category?
 
@@ -216,7 +232,7 @@ define [
         when EventType.collection
           if operation isnt 'update' or '_name' of changes or 'descImage' of changes then category = 'EventType'
         when Executable.collection 
-          if operation isnt 'update' or '_id' of changes then category = element.kind
+          if operation isnt 'update' or '_id' of changes then category = (if element.kind then element.kind else 'Script')
       return unless category?
 
       container = @$el.find "dd[data-category='#{category}']"
@@ -225,15 +241,20 @@ define [
       add = () =>
         # gets the list of updated models
         if collection is Executable.collection
-          # cast down between turn rules and rules
+          # cast down between turn rules, rules and scripts
+          scripts = []
           rules = []
           turnRules = []
           for executable in Executable.collection.models
             if executable.kind is 'TurnRule'
               turnRules.push executable
-            else 
+            else if executable.kind is 'Rule'
               rules.push executable
-          models = sortCollection {models: if element.kind is 'Rule' then rules else turnRules}, element.kind
+            else
+              scripts.push executable
+          models = sortCollection 
+            models: if element.kind is 'Rule' then rules else if element.kind is 'TurnRule' then turnRules else scripts
+          , element.kind or 'Script'
         else 
           models = sortCollection collection
 
@@ -256,7 +277,7 @@ define [
         , 10
         
       switch operation
-        when 'remove' then container.find(".#{element.id}").transition x:shift, animDuration, -> $(this).remove()
+        when 'remove' then container.find(".#{element.id}").remove()
         when 'add' then add()
         when 'update' 
           container.find(".#{element.id}").remove()
@@ -275,4 +296,5 @@ define [
     #
     # @param executable [Executable] the concerned executable
     _onActiveChange: (executable) =>  
+      return unless executable.kind?
       @$el.find(".#{executable.id}").toggleClass 'inactive', !executable.active

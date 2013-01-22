@@ -49,15 +49,20 @@ modelWatcher.on 'change', (operation, className, changes, wId) ->
       # partial update
       executables[changes._id][attr] = value for attr, value of changes when !(attr in ['_id'])
       # clean require cache.
-      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
+      cleanNodeCache()
     when 'deletion' 
       return unless changes._id of executables
       # clean require cache.
-      delete require.cache[path.resolve path.normalize executables[changes._id].compiledPath]
+      cleanNodeCache()
       delete executables[changes._id]
 
 # hashmap to differentiate creations from updates
 wasNew= {}
+
+# Clean nodejs internal require cache when an executable has been updated or deleted, to allow new
+# exported value to be available during next require
+cleanNodeCache = ->
+  delete require.cache[path.resolve path.normalize executable.compiledPath] for id, executable of executables
 
 # Do a single compilation of a source file.
 #
@@ -79,7 +84,7 @@ compileFile = (executable, silent, callback) ->
     executables[executable._id] = executable
     # clean require cache.
     requireId = path.resolve path.normalize executable.compiledPath
-    delete require.cache[requireId]
+    cleanNodeCache()
     # propagate change
     unless silent
       modelWatcher.change (if wasNew[executable._id] then 'creation' else 'update'), "Executable", executable, ['content']
@@ -173,6 +178,7 @@ class Executable
   # @option callback err [String] an error callback. Null if no error occured.
   @resetAll: (clean, callback) ->
     # clean local files, and compiled scripts
+    cleanNodeCache()
     executables = {}
     utils.enforceFolder compiledRoot, clean, logger, (err) ->
       return callback err if err?
@@ -282,6 +288,7 @@ class Executable
   remove: (callback) =>
     fs.exists @path, (exists) =>
       return callback "Error while removing executable #{@_id}: this executable does not exists" if not exists
+      cleanNodeCache()
       delete executables[@_id]
       fs.unlink @path, (err) =>
         return callback "Error while removing executable #{@_id}: #{err}" if err?

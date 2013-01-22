@@ -4,7 +4,6 @@
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
-  - [!] provide scripts for rules
   - [!] documentation
   - Rule engine
     - [!] i18n utilities for rules and parameters
@@ -229,6 +228,7 @@
       - rule CRUD
       - rule special behaviour when renaming
     - TurnRule
+    - Scripts
   - administration perspective
     - create and restore game client versions
     - display externally triggered deployements

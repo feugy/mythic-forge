@@ -20,7 +20,7 @@
 Executable = require '../src/model/Executable'
 testUtils = require './utils/testUtils'
 utils = require '../src/util/common'
-path = require 'path'
+pathUtils = require 'path'
 fs = require 'fs'
 assert = require('chai').assert
 
@@ -81,7 +81,13 @@ describe 'Executable tests', ->
   describe 'given an executable', -> 
 
     beforeEach (done) ->
-      executable = new Executable {_id:'test2', content:'console.log("hello world 2");'}
+      executable = new Executable 
+        _id: 'test2'
+        content:"""
+          constant = 10
+          module.exports = 
+            constant: constant, 
+            utility: (num) -> constant+num"""
       executable.save (err) ->
         done()
 
@@ -106,4 +112,40 @@ describe 'Executable tests', ->
           # then only the relevant values were modified
           assert.equal executables[0].content, newContent
           assert.equal executables[0]._id, 'test2'
+          done()
+
+    it 'should executable be removed', (done) ->
+      # when removing an executable
+      executable.remove ->
+        # then it's in the folder anymore
+        Executable.find (err, executables) -> 
+          return done "Can't find executable file: #{err}" if err?
+          assert.equal executables.length, 0
+          done()
+
+    it 'should depending executable show updates', (done) ->
+      # given another executable depending on the existing one
+      ex2 = new Executable 
+        _id: 'test3'
+        content:"""
+          ex1 = require './test2'
+          module.exports = ex1.utility 10
+        """
+
+      ex2.save (err) ->
+        return done err if err?
+        result = require pathUtils.relative __dirname, ex2.compiledPath
+        assert.equal result, 20
+        # when modifying existing executable
+        newContent = """
+          constant = 20
+          module.exports = 
+            constant: constant, 
+            utility: (num) -> constant+num
+          """
+        executable.content = newContent
+        executable.save (err) ->
+          return done err if err?
+          result = require pathUtils.relative __dirname, ex2.compiledPath
+          assert.equal result, 30
           done()

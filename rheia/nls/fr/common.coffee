@@ -36,6 +36,7 @@ define
       turnRules: 'Règles de tour'
       fields: 'Terrains'
       players: 'Joueurs'
+      scripts: 'Scripts'
     login: 'Rheia - Connexion'
       
   labels:

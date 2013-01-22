@@ -53,6 +53,9 @@ define [
     ,
       name: i18n.titles.categories.turnRules
       id: 'TurnRule'
+    ,
+      name: i18n.titles.categories.scripts
+      id: 'Script'
     ]
 
     constructor: (element, options) ->
