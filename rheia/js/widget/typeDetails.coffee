@@ -57,8 +57,8 @@ define [
       img = @options.model.descImage
       if img? and category isnt 'FieldType'
         @_pendingImage = "/images/#{img}"
-        @bindTo rheia.router, 'imageLoaded', => @_onImageLoaded.apply @, arguments
-        rheia.imagesService.load @_pendingImage
+        @bindTo app.router, 'imageLoaded', => @_onImageLoaded.apply @, arguments
+        app.imagesService.load @_pendingImage
 
       switch category
         when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.name
@@ -131,7 +131,7 @@ define [
     # @param img [Image] an Image object, null in case of failure
     _onImageLoaded: (success, src, img) =>
       return unless @_pendingImage is src
-      @unboundFrom rheia.router, 'imageLoaded'
+      @unboundFrom app.router, 'imageLoaded'
       @$el.find("img").attr 'src', img if success
 
   # widget declaration

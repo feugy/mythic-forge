@@ -53,7 +53,7 @@ define [
       # load missing characters
       processItems = (err, items) =>
         unless err? or null is _.find(items, (item) -> item._id is loaded[0])
-          rheia.sockets.game.removeListener 'getItems-resp', processItems
+          app.sockets.game.removeListener 'getItems-resp', processItems
           model.characters = []
           # immediately add enriched characters
           for raw in items
@@ -70,8 +70,8 @@ define [
 
           callback()
 
-      rheia.sockets.game.on 'getItems-resp', processItems
-      rheia.sockets.game.emit 'getItems', loaded
+      app.sockets.game.on 'getItems-resp', processItems
+      app.sockets.game.emit 'getItems', loaded
     else
       callback()
 
@@ -98,20 +98,20 @@ define [
       @connected = []
 
       utils.onRouterReady =>
-        rheia.sockets.admin.on 'players', @_onPlayerEvent
+        app.sockets.admin.on 'players', @_onPlayerEvent
 
         # initialize the connected list
-        rheia.sockets.admin.once 'connectedList-resp', (list) =>
+        app.sockets.admin.once 'connectedList-resp', (list) =>
           @connected = list
           @trigger 'connectedPlayersChanged', @connected, []
-        rheia.sockets.admin.emit 'connectedList'
+        app.sockets.admin.emit 'connectedList'
 
     # Method to arbitrary kick a user. 
     # No callback, but an event will be received if kick was effective, and the list of connected players will be updated
     #
     # @param email [String] email of kicked player
     kick: (email) =>
-      rheia.sockets.admin.emit 'kick', email
+      app.sockets.admin.emit 'kick', email
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -192,7 +192,7 @@ define [
         enrichCharacters @
 
       # update if one of characters item was removed
-      rheia.router.on 'modelChanged', (kind, model) => 
+      app.router.on 'modelChanged', (kind, model) => 
         return unless kind is 'remove' and !@equals model
         modified = false
         @characters = _.filter @characters, (character) -> 

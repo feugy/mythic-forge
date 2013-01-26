@@ -141,7 +141,7 @@ define [
           # keeps the cursor position if possible
           position = @_editor.selection.getCursor()
           @_editor.setValue value
-          # setValue will select all new text. rheiaeset the cursor to original position.
+          # setValue will select all new text. Reset the cursor to original position.
           @_editor.clearSelection()
           @_editor.selection.moveCursorToPosition position
           @_editor.getSession().setUndoManager undoMgr

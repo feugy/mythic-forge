@@ -27,7 +27,8 @@ define [
   'view/admin/Deploy'
   'view/admin/Turns'
   'view/admin/Log'
-], ($, Backbone, i18n, i18nAdmin, template, DeployView, TurnsView, LogView) ->
+  'view/admin/Time'
+], ($, Backbone, i18n, i18nAdmin, template, DeployView, TurnsView, LogView, TimeView) ->
 
   i18n = $.extend true, i18n, i18nAdmin
 
@@ -52,7 +53,8 @@ define [
       # creates the views
       @$('.right').append(new DeployView().$el)
         .append new LogView().$el
-      @$('.left').append new TurnsView().$el
+      @$('.left').append(new TimeView().$el)
+        .append new TurnsView().$el
 
       # for chaining purposes
       @

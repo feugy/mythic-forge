@@ -113,7 +113,7 @@ define [
         @bindTo Item.collection, 'update', @_onUpdateItem
         @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
 
-        @bindTo rheia.router, 'searchResults', (err, instances, results) =>
+        @bindTo app.router, 'searchResults', (err, instances, results) =>
           return unless instances is true
           if err?
             # displays an error
@@ -135,10 +135,10 @@ define [
         isType: false,
         dndType: i18n.constants.instanceAffectation
         tooltipFct: utils.instanceTooltip
-      ).on('search', (event, query) -> rheia.searchService.searchInstances query
+      ).on('search', (event, query) -> app.searchService.searchInstances query
       ).on('openElement', @_onOpenSearchResult
       ).on('removeElement', (event, details) => 
-        rheia.router.trigger 'remove', details.category, details.id
+        app.router.trigger 'remove', details.category, details.id
       ).data 'search'
 
       # instanciate map widget
@@ -154,7 +154,7 @@ define [
         @_map.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
       ).on('itemClicked', (event, item) =>
         # opens the clicked item
-        rheia.router.trigger 'open', 'Item', item.id
+        app.router.trigger 'open', 'Item', item.id
       ).on('zoomChanged', =>
         @_inhibitZoom = true
         @$el.find('.zoom').val @_mapWidget.options.zoom
@@ -333,7 +333,7 @@ define [
         @_creationType = ItemType.collection.get $(event.target).closest('.loadable').data 'id'
         console.log "type #{@_creationType?.id} selected for new item"
         popup.dialog 'close'
-        rheia.router.trigger 'open', 'Item'
+        app.router.trigger 'open', 'Item'
 
     # **private**
     # Display a popup to choose an event type before creating a new event
@@ -366,7 +366,7 @@ define [
         @_creationType = EventType.collection.get $(event.target).closest('.loadable').data 'id'
         console.log "type #{@_creationType?.id} selected for new event"
         popup.dialog 'close'
-        rheia.router.trigger 'open', 'Event'
+        app.router.trigger 'open', 'Event'
 
     # **private**
     # Handler invoked when a tab was added to the widget. Make tab draggable to affect instance.
@@ -423,7 +423,7 @@ define [
     _onOpenSearchResult: (event, details) => 
       # check object existence first
       obj = require("model/#{details.category}").collection.get details.id
-      return rheia.router.trigger 'open', details.category, details.id if obj?
+      return app.router.trigger 'open', details.category, details.id if obj?
       # object does not exists anymore
       utils.popup i18n.titles.shadowObj, i18n.msgs.shadowObj, 'warning', [text: i18n.buttons.ok]
       # relaunches search

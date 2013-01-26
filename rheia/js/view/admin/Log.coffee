@@ -58,7 +58,7 @@ define [
       super tagName: 'div', className:'logs view'
       @_count = 0;
       utils.onRouterReady =>
-        @bindTo rheia.sockets.admin, 'log', @_onLog
+        @bindTo app.sockets.admin, 'log', @_onLog
 
       @render()
 

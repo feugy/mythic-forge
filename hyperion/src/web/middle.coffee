@@ -269,8 +269,10 @@ notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
   if event is 'disconnect'
     # close socket of disconnected user.
     closeSocket details[0].socketId, details[0].email, details[1] 
-  logger.debug "broadcast of #{scope}:#{event}"
-  adminNS.emit.apply adminNS, [scope, event].concat details
+  if scope is 'time' 
+    updateNS.emit 'change', 'time', details[0] 
+  else
+    adminNS.emit.apply adminNS, [scope, event].concat details
 
 # send all log within admin namespace
 LoggerFactory.on 'log', (details) ->

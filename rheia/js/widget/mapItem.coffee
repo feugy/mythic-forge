@@ -221,7 +221,7 @@ define [
     # @param img [Image] if successful, loaded image DOM node
     _onLoaded: (success, src, img) =>
       return unless src is "/images/#{@options.source}"
-      @unboundFrom rheia.router, 'imageLoaded'
+      @unboundFrom app.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
         # As it was already loaded, browser cache will be involved

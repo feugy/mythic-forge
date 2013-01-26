@@ -86,8 +86,8 @@ requirejs.config
     'utf8':
       exports: 'UTF8'
 
-# initialize rheia global namespace
-window.rheia = {}
+# initialize application global namespace
+window.app = {}
 
 # Mapping between socket.io error reasons and i18n error messages
 errorMapping = 
@@ -147,7 +147,7 @@ define [
     undefined
 
   # different namespaces that ca be used to communicate qith server
-  rheia.sockets =
+  app.sockets =
     game: null
     admin: null
     updates: null
@@ -163,11 +163,11 @@ define [
     connected = true
 
     # wire logout facilities
-    rheia.router.on 'logout', => 
-      localStorage.removeItem 'rheia.token'
+    app.router.on 'logout', => 
+      localStorage.removeItem 'app.token'
       isLoggingOut = true
       socket.emit 'logout'
-      rheia.router.navigate 'login', trigger: true
+      app.router.navigate 'login', trigger: true
 
     socket = io.connect conf.apiBaseUrl, {query:"token=#{token}"}
 
@@ -176,7 +176,7 @@ define [
 
     socket.on 'disconnect', (reason) ->
       connected = false 
-      rheia.sockets[name].removeAllListeners() for name of rheia.sockets
+      app.sockets[name].removeAllListeners() for name of app.sockets
       return if isLoggingOut
       errorCallback if reason is 'booted' then 'kicked' else 'disconnected'
 
@@ -184,17 +184,17 @@ define [
       # On connection, retrieve current connected player immediately
       socket.emit 'getConnected', (err, player) =>
         # stores the token to allow re-connection
-        rheia.player = player
-        localStorage.setItem 'rheia.token', player.token
+        app.player = player
+        localStorage.setItem 'app.token', player.token
         # update socket.io query to allow reconnection with new token value
         socket.socket.options.query = "token=#{player.token}"
 
-      names = Object.keys rheia.sockets
+      names = Object.keys app.sockets
 
       async.forEach names, (name, next) ->
-        rheia.sockets[name] = socket.of "/#{name}"
-        rheia.sockets[name].on 'connect', next
-        rheia.sockets[name].on 'connect_failed', next
+        app.sockets[name] = socket.of "/#{name}"
+        app.sockets[name].on 'connect', next
+        app.sockets[name].on 'connect_failed', next
       , (err) ->
         return errorCallback err if err?
         callback()
@@ -210,9 +210,9 @@ define [
     constructor: ->
       super()
       # global router instance
-      rheia.router = @
+      app.router = @
 
-      rheia.imagesService = new ImagesService()
+      app.imagesService = new ImagesService()
 
       # Define some URL routes (order is significant: evaluated from last to first)
       @route '*route', '_onNotFound'
@@ -220,7 +220,7 @@ define [
       @route 'login?error=:err', '_onLoginError'
       @route 'login?token=:token', '_onLoggedIn'
       @route 'login?redirect=:redirect', 'logAndRedirect', (redirect) =>
-        localStorage.setItem 'rheia.redirect', decodeURIComponent redirect
+        localStorage.setItem 'app.redirect', decodeURIComponent redirect
         @_onDisplayLogin()
       @route 'edition', 'edition', =>
         @_showPerspective 'editionPerspective', EditionPerspective
@@ -256,24 +256,24 @@ define [
       return if perspectiveLoading
       perspectiveLoading = true
       # check if we are connected
-      if rheia.sockets.game is null
+      if app.sockets.game is null
         perspectiveLoading = false
-        token = localStorage.getItem 'rheia.token'
+        token = localStorage.getItem 'app.token'
         return @navigate 'login', trigger:true unless token?
         return @_onLoggedIn token
 
       # update last perspective visited
-      localStorage.setItem 'rheia.lastPerspective', window.location.pathname.replace conf.basePath, ''
+      localStorage.setItem 'app.lastPerspective', window.location.pathname.replace conf.basePath, ''
 
-      rheia.layoutView.loading i18n.titles[name]
+      app.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists
-      if name of rheia
-        rheia.layoutView.show rheia[name].$el
+      if name of app
+        app.layoutView.show app[name].$el
         return perspectiveLoading = false
 
       # or requires, instanciate and render the view
-      rheia[name] = new Perspective()
-      rheia.layoutView.show rheia[name].render().$el
+      app[name] = new Perspective()
+      app.layoutView.show app[name].render().$el
       perspectiveLoading = false
 
     # **private**
@@ -288,9 +288,9 @@ define [
     #
     # @param token [String] valid autorization token
     _onLoggedIn: (token) =>
-      redirect = localStorage.getItem 'rheia.redirect'
+      redirect = localStorage.getItem 'app.redirect'
       if redirect?
-        localStorage.removeItem 'rheia.redirect'
+        localStorage.removeItem 'app.redirect'
         return window.location.pathname = redirect
       # Connects token
       connect token, =>
@@ -300,19 +300,19 @@ define [
         # do not recreates singletons in case of reconnection
         if $('body > .layout').length is 0
           # instanciates singletons.
-          rheia.searchService = new SearchService()
-          rheia.adminService = new AdminService()
-          rheia.layoutView = new LayoutView()
+          app.searchService = new SearchService()
+          app.adminService = new AdminService()
+          app.layoutView = new LayoutView()
 
           # display layout
-          $('body').append rheia.layoutView.render().$el
+          $('body').append app.layoutView.render().$el
 
         # allow other part to wire to updates
         $(window).trigger 'connected'
 
         # run current or last-saved perspective
         current = window.location.pathname.replace conf.basePath, ''
-        current = localStorage.getItem 'rheia.lastPerspective' if current is 'login'
+        current = localStorage.getItem 'app.lastPerspective' if current is 'login'
         current = 'edition' unless current?
         # reset Backbone.history internal state to allow re-running current route
         Backbone.history.fragment = null

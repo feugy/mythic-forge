@@ -303,7 +303,7 @@ define [
       @_saveInProgress = true
       if 'oldName' of spec
         # removes existing data
-        rheia.imagesService.remove @model._className, @model.id, spec.oldName, if spec.idx? then spec.idx
+        app.imagesService.remove @model._className, @model.id, spec.oldName, if spec.idx? then spec.idx
       else
         # upload new file data
-        rheia.imagesService.upload @model._className, @model.id, spec.file, if spec.idx? then spec.idx
+        app.imagesService.upload @model._className, @model.id, spec.file, if spec.idx? then spec.idx

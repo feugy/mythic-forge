@@ -57,7 +57,7 @@ define [
           @_setCurrent @options.current-1
 
       # loading handler
-      @bindTo rheia.router, 'imageLoaded', (success, src, image) => 
+      @bindTo app.router, 'imageLoaded', (success, src, image) => 
         img = _(@options.images).find (source) -> _(src).endsWith source
         return unless img?
         @$el.find("img[data-src='#{img}']").attr('src', image).removeData('src').addClass @options.imageClass
@@ -122,7 +122,7 @@ define [
       container = @$el.find '.container'
       for image in @options.images
         container.append """<img class="#{@options.imageClass}" data-src="#{image}"/>"""
-        rheia.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
+        app.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
 
       # try to keep the current position
       if @options.current < images.length

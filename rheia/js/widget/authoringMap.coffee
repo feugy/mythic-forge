@@ -106,7 +106,7 @@ define [
             @_loadedImages.push img
             @_pendingImages++
             # data is inside displayed bounds: loads it
-            rheia.router.trigger 'loadImage', img 
+            app.router.trigger 'loadImage', img 
 
     # Removes field from map. Will be effective only if the field was displayed.
     # Works only on arrays of json field, not on Backbone.models (to reduce memory usage)
@@ -243,7 +243,7 @@ define [
       @_drawMarkers()
 
       # image loading loading handler
-      @bindTo rheia.router, 'imageLoaded', @_onImageLoaded
+      @bindTo app.router, 'imageLoaded', @_onImageLoaded
   
       # gets first data
       _.defer => @setOption 'lowerCoord', o.lowerCoord
@@ -392,7 +392,7 @@ define [
       # do nothing if loading failed.
       return unless src in @_loadedImages
       # looks for data corresponding to this image
-      img = rheia.imagesService.getImage src
+      img = app.imagesService.getImage src
 
       @_loadedImages.splice @_loadedImages.indexOf(src), 1
       src = src.slice src.lastIndexOf('/')+1

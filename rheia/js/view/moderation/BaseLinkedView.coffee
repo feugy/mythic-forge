@@ -188,7 +188,7 @@ define [
         ).on('change', @_onChange
         ).on('open', (event, instance) =>
           # opens players, items, events
-          rheia.router.trigger 'open', instance._className, instance.id
+          app.router.trigger 'open', instance._className, instance.id
         ).appendTo(row).data 'property'
 
       @_onChange()

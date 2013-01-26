@@ -47,7 +47,7 @@ define [
           return callback() if err?
           raw = _.find(froms, (from) -> from._id is id)
           return callback() unless raw?
-          rheia.sockets.game.removeListener 'getItems-resp', processFrom
+          app.sockets.game.removeListener 'getItems-resp', processFrom
 
           existing = Item.collection.get raw._id
           if existing?
@@ -60,8 +60,8 @@ define [
             Item.collection.add model.from
           callback()
 
-        rheia.sockets.game.on 'getItems-resp', processFrom
-        rheia.sockets.game.emit 'getItems', [id]
+        app.sockets.game.on 'getItems-resp', processFrom
+        app.sockets.game.emit 'getItems', [id]
 
   # Client cache of events.
   class _Events extends Base.LinkedCollection
@@ -144,7 +144,7 @@ define [
         enrichFrom @, => @trigger 'update', @, from: @from
 
       # update if from item was removed
-      rheia.router.on 'modelChanged', (kind, model) => 
+      app.router.on 'modelChanged', (kind, model) => 
         if kind is 'remove' and @from?.equals model
           console.log "update event #{@id} after removing its from #{model.id}"
           @from = null

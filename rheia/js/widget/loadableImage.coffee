@@ -73,8 +73,8 @@ define [
         _.defer => @_onLoaded false, '/images/null'
       else 
         # loading handler
-        @bindTo rheia.router, 'imageLoaded', @_onLoaded
-        rheia.router.trigger 'loadImage', "/images/#{@options.source}"
+        @bindTo app.router, 'imageLoaded', @_onLoaded
+        app.router.trigger 'loadImage', "/images/#{@options.source}"
 
     # **private**
     # Creates an alternative text if necessary
@@ -130,7 +130,7 @@ define [
     # @param img [Image] if successful, loaded image DOM node
     _onLoaded: (success, src, img) => 
       return unless src is "/images/#{@options.source}"
-      @unboundFrom rheia.router, 'imageLoaded'
+      @unboundFrom app.router, 'imageLoaded'
       if success 
         # displays image data and hides alertnative text
         @_image.attr 'src', img

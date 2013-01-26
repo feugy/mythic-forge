@@ -23,7 +23,7 @@ define [
   'utils/utilities'
 ], (_, utils) ->
 
-  # Instanciated as a singleton in `rheia.imagesService` by the Router
+  # Instanciated as a singleton in `app.imagesService` by the Router
   class ImagesService
 
     # **private**        
@@ -40,7 +40,7 @@ define [
 
     # Constructor. 
     constructor: ->
-      rheia.router.on 'loadImage', @load
+      app.router.on 'loadImage', @load
     
     # Load an image. Once it's available, `imageLoaded` event will be emitted on the bus.
     # If this image has already been loaded (url used as key), the event is imediately emitted.
@@ -53,7 +53,7 @@ define [
       # Use cache if available, with a timeout to simulate asynchronous behaviour
       if image of @_cache
         _.defer =>
-          rheia.router.trigger 'imageLoaded', true, image, "#{image}?#{@_timestamps[image]}"
+          app.router.trigger 'imageLoaded', true, image, "#{image}?#{@_timestamps[image]}"
       else unless image in @_pendingImages
         @_pendingImages.push image
         # creates an image facility
@@ -96,21 +96,21 @@ define [
         delete @_timestamps[src]
 
         # wait for server response
-        rheia.sockets.admin.once 'uploadImage-resp', (err, saved) =>
+        app.sockets.admin.once 'uploadImage-resp', (err, saved) =>
           throw new Error "Failed to upload image for model #{modelName} #{id}: #{err}" if err?
           # populate cache
           @load src
 
           console.log "image #{src} uploaded"
           # trigger end of upload
-          rheia.router.trigger 'imageUploaded', saved._id, src
+          app.router.trigger 'imageUploaded', saved._id, src
 
         console.log "upload new image #{src}..."
         # upload data to server
         if idx?
-          rheia.sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
+          app.sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
         else 
-          rheia.sockets.admin.emit 'uploadImage', modelName, id, ext, data
+          app.sockets.admin.emit 'uploadImage', modelName, id, ext, data
 
       # read data from file
       reader.readAsDataURL file
@@ -129,18 +129,18 @@ define [
       delete @_cache[src]
 
       # wait for server response
-      rheia.sockets.admin.once 'removeImage-resp', (err, saved) =>
+      app.sockets.admin.once 'removeImage-resp', (err, saved) =>
         throw new Error "Failed to remove image for model #{modelName} #{id}: #{err}" if err?
         console.log "image #{src} removed"
         # trigger end of upload
-        rheia.router.trigger 'imageRemoved', saved._id, src
+        app.router.trigger 'imageRemoved', saved._id, src
 
       console.log "removes new image #{src}..."
       # remove image from server
       if idx?
-        rheia.sockets.admin.emit 'removeImage', modelName, id, idx
+        app.sockets.admin.emit 'removeImage', modelName, id, idx
       else 
-        rheia.sockets.admin.emit 'removeImage', modelName, id
+        app.sockets.admin.emit 'removeImage', modelName, id
 
     # **private**
     # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
@@ -155,7 +155,7 @@ define [
       # Store Image object and emit on the event bus
       console.log 'store in cache src', src
       @_cache[src] = event.target
-      rheia.router.trigger 'imageLoaded', true, src, "#{src}?#{@_timestamps[src]}"
+      app.router.trigger 'imageLoaded', true, src, "#{src}?#{@_timestamps[src]}"
   
     # **private**
     # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
@@ -168,4 +168,4 @@ define [
       # Remove event from pending array
       @_pendingImages.splice @_pendingImages.indexOf(src), 1
       # Emit an error on the event bus
-      rheia.router.trigger 'imageLoaded', false, src
+      app.router.trigger 'imageLoaded', false, src

@@ -56,7 +56,7 @@ define [
       super tagName: 'div', className:'deploy view'
 
       utils.onRouterReady =>  
-        @_service = rheia.adminService
+        @_service = app.adminService
         @bindTo @_service, 'initialized', @render # re-render all when state changed
         @bindTo @_service, 'versionChanged', @_onRefreshVersions
         @bindTo @_service, 'progress', @_onStateChanged

@@ -62,8 +62,8 @@ define [
       @_forceClose = false
 
       # bind to global events
-      @bindTo rheia.router, 'open', @_onOpenElement
-      @bindTo rheia.router, 'remove', @_onRemoveElement
+      @bindTo app.router, 'open', @_onOpenElement
+      @bindTo app.router, 'remove', @_onRemoveElement
 
       # bind shortcuts
       $(document).on("keydown.#{@cid}", {keys:'ctrl+s', includeInputs:true}, @_onSaveHotKey)

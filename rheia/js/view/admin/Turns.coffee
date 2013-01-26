@@ -66,7 +66,7 @@ define [
       utils.onRouterReady =>  
         # retrieve rules
         Executable.collection.fetch()  
-        rheia.sockets.admin.on 'turns', @_onTurnsEvent
+        app.sockets.admin.on 'turns', @_onTurnsEvent
       @render()
 
     # The `render()` method is invoked by backbone to display view content at screen.
@@ -81,7 +81,7 @@ define [
         event?.preventDefault()
         return if @_turnInProgress
         console.info 'manually triggers a turn...'
-        rheia.sockets.admin.emit 'triggerTurn'
+        app.sockets.admin.emit 'triggerTurn'
       ).data 'button'
 
       # for chaining purposes

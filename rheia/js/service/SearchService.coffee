@@ -49,14 +49,14 @@ define [
   # The search service performs search on server side, and dispatch results to corresponding 
   # collections
   #
-  # Instanciated as a singleton in `rheia.searchService` by the Router
+  # Instanciated as a singleton in `app.searchService` by the Router
   class SearchService
     
     # Service constructor
     constructor: () ->
       # bind to server responses
-      rheia.sockets.admin.on 'searchTypes-resp', @_onSearchTypesResults
-      rheia.sockets.admin.on 'searchInstances-resp', @_onSearchInstancesResults
+      app.sockets.admin.on 'searchTypes-resp', @_onSearchTypesResults
+      app.sockets.admin.on 'searchInstances-resp', @_onSearchInstancesResults
 
     # Performs a type search. At the end, triggers a `searchResults` event with error and results in parameter
     # (and false as `instances` second parameter).
@@ -67,7 +67,7 @@ define [
       parseQuery query
       query = JSON.stringify query
       console.log "triggers new search on type with query: #{query}"
-      rheia.sockets.admin.emit 'searchTypes', query
+      app.sockets.admin.emit 'searchTypes', query
     
     # Performs an instance search. At the end, triggers a `searchResults` event with error and results in parameter
     # (and true as `instances` second parameter).
@@ -78,7 +78,7 @@ define [
       parseQuery query
       query = JSON.stringify query
       console.log "triggers new search on instances with query: #{query}"
-      rheia.sockets.admin.emit 'searchInstances', query
+      app.sockets.admin.emit 'searchInstances', query
 
     # **private**
     # Type search results handler. 
@@ -88,7 +88,7 @@ define [
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched types
     _onSearchTypesResults: (err, results) =>
-      return rheia.router.trigger 'searchResults', err, false, [] if err?
+      return app.router.trigger 'searchResults', err, false, [] if err?
 
       models = []
       for result in results
@@ -115,7 +115,7 @@ define [
           # keep the parse model for results
           models.push model
 
-      rheia.router.trigger 'searchResults', null, false, models
+      app.router.trigger 'searchResults', null, false, models
 
     # **private**
     # Type search instances handler. 
@@ -125,7 +125,7 @@ define [
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched instances
     _onSearchInstancesResults: (err, results) =>
-      return rheia.router.trigger 'searchResults', err, true, [] if err?
+      return app.router.trigger 'searchResults', err, true, [] if err?
 
       models = []
       for result in results
@@ -145,4 +145,4 @@ define [
           # keep the parse model for results
           models.push model
 
-      rheia.router.trigger 'searchResults', null, true, models
+      app.router.trigger 'searchResults', null, true, models

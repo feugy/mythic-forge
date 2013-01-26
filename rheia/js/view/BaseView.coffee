@@ -101,7 +101,7 @@ define [
       @bindTo @_collection, 'add', @_onCreated
       @bindTo @model, 'update', @_onSaved
       @bindTo @_collection, 'remove', @_onRemoved
-      @bindTo rheia.router, 'serverError', @_onServerError
+      @bindTo app.router, 'serverError', @_onServerError
 
     # Returns a unique id. 
     #

@@ -49,17 +49,17 @@ define [
 
       utils.onRouterReady =>
         # bind _onGetList response
-        rheia.sockets.admin.on 'list-resp', @_onGetList
-        rheia.sockets.game.on 'getTypes-resp', (err, types) =>
+        app.sockets.admin.on 'list-resp', @_onGetList
+        app.sockets.game.on 'getTypes-resp', (err, types) =>
           # ignore errors
           unless err?
             # add returned models of the current class
             @_onAdd type._className, type for type in types 
 
         # bind updates
-        rheia.sockets.updates.on 'creation', @_onAdd
-        rheia.sockets.updates.on 'update', @_onUpdate
-        rheia.sockets.updates.on 'deletion', @_onRemove
+        app.sockets.updates.on 'creation', @_onAdd
+        app.sockets.updates.on 'update', @_onUpdate
+        app.sockets.updates.on 'deletion', @_onRemove
 
     # Provide a custom sync method to wire model to the server.
     # Only read operation is supported.
@@ -69,7 +69,7 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       throw new Error "Unsupported #{method} operation on #{@_className}" unless method is 'read'
-      rheia.sockets.admin.emit 'list', @_className
+      app.sockets.admin.emit 'list', @_className
 
     # **private**
     # Return handler of `list` server method.
@@ -79,7 +79,7 @@ define [
     # @param models [Array<Object>] raw models.
     _onGetList: (err, modelName, models) =>
       return unless modelName is @_className
-      return rheia.router.trigger 'serverError', err, method:"#{@_className}.collection.sync", details:'read' if err?
+      return app.router.trigger 'serverError', err, method:"#{@_className}.collection.sync", details:'read' if err?
       # add returned types in current collection
       @reset models
 
@@ -94,7 +94,7 @@ define [
       # add the created raw model. An event will be triggered
       @add model
       # propagates changes on collection to global change event
-      rheia.router.trigger 'modelChanged', 'add',  @get model[@model.prototype.idAttribute]
+      app.router.trigger 'modelChanged', 'add',  @get model[@model.prototype.idAttribute]
 
     # **private**
     # Callback invoked when a database update is received.
@@ -121,7 +121,7 @@ define [
       @trigger 'update', model, @, changes
       model.trigger 'update', model, changes
       # propagates changes on collection to global change event
-      rheia.router.trigger 'modelChanged', 'update', model
+      app.router.trigger 'modelChanged', 'update', model
 
     # **private**
     # Callback invoked when a database deletion is received.
@@ -139,7 +139,7 @@ define [
         @remove removed 
         removed.trigger 'destroy', removed, @, options
         # propagates changes on collection to global change event
-        rheia.router.trigger 'modelChanged', 'remove', removed
+        app.router.trigger 'modelChanged', 'remove', removed
 
   # BaseLinkedCollection provides common behaviour for model wih linked objects collections.
   #
@@ -171,7 +171,7 @@ define [
         # add the created raw model. An event will be triggered
         @add model
         # propagates changes on collection to global change event
-        rheia.router.trigger 'modelChanged', 'add', model
+        app.router.trigger 'modelChanged', 'add', model
 
     # **private**
     # Callback invoked when a database update is received.
@@ -294,15 +294,15 @@ define [
     sync: (method, collection, args) =>
       switch method 
         when 'create', 'update' 
-          rheia.sockets.admin.once 'save-resp', (err) =>
-            rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          rheia.sockets.admin.emit 'save', @_className, @_serialize()
+          app.sockets.admin.once 'save-resp', (err) =>
+            app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
+          app.sockets.admin.emit 'save', @_className, @_serialize()
         when 'delete' 
-          rheia.sockets.admin.once 'remove-resp', (err) =>
-            rheia.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          rheia.sockets.admin.emit 'remove', @_className, @_serialize()
+          app.sockets.admin.once 'remove-resp', (err) =>
+            app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
+          app.sockets.admin.emit 'remove', @_className, @_serialize()
         when 'read'
-          rheia.sockets.game.emit 'getTypes', [@[@idAttribute]]
+          app.sockets.game.emit 'getTypes', [@[@idAttribute]]
 
     # Enhance destroy method to force server response before triggering `destroy` event
     destroy: (options) =>
@@ -373,7 +373,7 @@ define [
           _.defer => @trigger 'typeFetched', @
       
       # update if one of linked model is removed
-      rheia.router.on 'modelChanged', (kind, model) => 
+      app.router.on 'modelChanged', (kind, model) => 
         return unless kind is 'remove' and !@equals model
 
         properties = @type.properties
@@ -524,7 +524,7 @@ define [
         instance = instances[0]
         # only for our own request
         return unless instances.length is 1 and instances[0][@idAttribute] is @[@idAttribute]
-        rheia.sockets.game.removeListener "get#{@_className}s-resp", process
+        app.sockets.game.removeListener "get#{@_className}s-resp", process
 
         # update each properties
         properties = @type.properties
@@ -560,8 +560,8 @@ define [
         callback null, @
 
       # now that we have the linked ids, get the corresponding instances.
-      rheia.sockets.game.on "get#{@_className}s-resp", process
-      rheia.sockets.game.emit "get#{@_className}s", [@id]
+      app.sockets.game.on "get#{@_className}s-resp", process
+      app.sockets.game.emit "get#{@_className}s", [@id]
 
     # **private** 
     # Method used to serialize a model when saving and removing it

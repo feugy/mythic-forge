@@ -159,9 +159,9 @@ define [
       switch method 
         when 'update' 
           # for update, we do not use 'save' method, but the 'saveAndRename' one.
-          rheia.sockets.admin.once 'saveAndRename-resp', (err) =>
-            rheia.router.trigger 'serverError', err, method:'Executable.sync', details:method, id:@id if err?
-          rheia.sockets.admin.emit 'saveAndRename', @toJSON(), args.newId
+          app.sockets.admin.once 'saveAndRename-resp', (err) =>
+            app.router.trigger 'serverError', err, method:'Executable.sync', details:method, id:@id if err?
+          app.sockets.admin.emit 'saveAndRename', @toJSON(), args.newId
         else super method, collection, args
 
     # Overload inherited setter to recompile when content changed.
@@ -206,7 +206,7 @@ define [
             @trigger 'change:name', @
 
           # we missed the kind when constructing the model. Indicates to other parts
-          rheia.router.trigger 'kindChanged', @ if oldKind isnt @kind
+          app.router.trigger 'kindChanged', @ if oldKind isnt @kind
 
     # Overload inherited getter to add "virtual" attribute `category`, `rank` and `active`
     get: (key) =>

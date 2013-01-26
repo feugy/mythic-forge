@@ -22,8 +22,10 @@ fs = require 'fs-extra'
 async = require 'async'
 pathUtils = require 'path'
 git = require 'gift'
+moment = require 'moment'
 utils = require '../src/util/common'
 versionUtils = require '../src/util/versionning'
+ruleUtils = require '../src/util/rule'
 assert = require('chai').assert
 
 # The commit utility change file content, adds it and commit it
@@ -67,6 +69,65 @@ describe 'Utilities tests', ->
       assert.ok code < 58 or code > 64, "characters #{char} (#{code}) is forbidden"
     done()
 
+  describe 'given timer configured every seconds', ->
+    @timeout 4000
+
+    it 'should time event be fired any seconds', (done) ->
+      events = []
+      now = moment()
+      saveTick = (tick) -> events.push tick
+
+      _.delay =>
+        ruleUtils.timer.removeListener 'change', saveTick
+
+        assert.equal events.length, 3
+        assert.equal events[0].seconds(), (now.seconds()+1)%60
+        assert.equal events[1].seconds(), (now.seconds()+2)%60
+        assert.equal events[2].seconds(), (now.seconds()+3)%60
+        done()
+      , 3100
+      ruleUtils.timer.on 'change', saveTick
+
+    it 'should timer be stopped', (done) ->
+      events = []
+      now = moment()
+      stop = null
+      saveTick = (tick) -> 
+        stop = moment()
+        events.push tick
+        ruleUtils.timer.stopped = true
+
+      _.delay =>
+        ruleUtils.timer.removeListener 'change', saveTick
+
+        assert.equal events.length, 1
+        assert.equal events[0].seconds(), (now.seconds()+1)%60
+        assert.closeTo stop.diff(events[0]), 0, 999
+        done()
+      , 2100
+      ruleUtils.timer.on 'change', saveTick
+
+    it 'should timer be modified and restarted', (done) ->
+      events = []
+      future = moment().add 'y', 1
+      saveTick = (tick) -> events.push tick
+      
+      _.delay ->
+        ruleUtils.timer.set future
+        ruleUtils.timer.stopped = false
+      , 1100
+      ruleUtils.timer.on 'change', saveTick
+
+      _.delay =>
+        ruleUtils.timer.removeListener 'change', saveTick
+
+        assert.equal events.length, 2
+        assert.equal events[0].seconds(), (future.seconds()+1)%60
+        assert.equal events[1].seconds(), (future.seconds()+2)%60
+        assert.equal events[0].year(), moment().year() + 1
+        done()
+      , 3100
+      
   describe 'given an initialized git repository', ->
 
     tag1 = 'tag1'

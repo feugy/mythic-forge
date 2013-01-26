@@ -42,7 +42,7 @@ define [
     #
     # @param callback [Function] asynchronously executed callback, when router is ready
     onRouterReady: (callback) ->
-      if rheia?.adminService?
+      if app?.adminService?
         _.defer callback
       else
         $(window).on 'connected', callback 

@@ -66,7 +66,7 @@ define [
 
       utils.onRouterReady =>
         # connect server response callbacks
-        rheia.sockets.game.on 'consultMap-resp', @_onConsult
+        app.sockets.game.on 'consultMap-resp', @_onConsult
 
     # Allows to retrieve items and fields on this map by coordinates, in a given rectangle.
     #
@@ -81,7 +81,7 @@ define [
       @_consultRunning = true
       console.log "Consult map #{@get 'name'} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
       # emit the message on the socket.
-      rheia.sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
+      app.sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
 
     # **private**
     # Return callback of consultMap server operation.

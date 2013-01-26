@@ -66,7 +66,7 @@ define [
       @_explorer = new Explorer()
 
       # bind to global events
-      @bindTo rheia.router, 'searchResults', (err, instances, results) =>
+      @bindTo app.router, 'searchResults', (err, instances, results) =>
         return if instances is true
         if err?
           # displays an error
@@ -89,18 +89,18 @@ define [
       # creates a search widget
       @_searchWidget = @$el.find('> .left .search').search(
         helpTip: i18n.tips.searchTypes
-      ).on('search', (event, query) -> rheia.searchService.searchTypes query
-      ).on('openElement', (event, details) -> rheia.router.trigger 'open', details.category, details.id
-      ).on('removeElement', (event, details) -> rheia.router.trigger 'remove', details.category, details.id
+      ).on('search', (event, query) -> app.searchService.searchTypes query
+      ).on('openElement', (event, details) -> app.router.trigger 'open', details.category, details.id
+      ).on('removeElement', (event, details) -> app.router.trigger 'remove', details.category, details.id
       ).data 'search'
 
 
       # general change handler: trigger again search
-      @bindTo rheia.router, 'modelChanged', (kind, model) => 
+      @bindTo app.router, 'modelChanged', (kind, model) => 
         @_searchWidget?.triggerSearch true if model?._className in ['ItemType', 'EventType', 'FieldType', 'Map', 'Executable']
       
       # Executable kind changed: refresh search results
-      @bindTo rheia.router, 'kindChanged', => 
+      @bindTo app.router, 'kindChanged', => 
         prev = @_searchWidget?.options.results
         return unless Array.isArray(prev) and prev.length
         @_searchWidget.setOption 'results', prev

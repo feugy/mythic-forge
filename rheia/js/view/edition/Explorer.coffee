@@ -144,9 +144,9 @@ define [
         # load the relevant category
         loaders[category]() if category of loaders
       ).on('openElement', (event, details) =>
-        rheia.router.trigger 'open', details.category, details.id
+        app.router.trigger 'open', details.category, details.id
       ).on('removeElement', (event, details) =>
-        rheia.router.trigger 'remove', details.category, details.id
+        app.router.trigger 'remove', details.category, details.id
       ).data 'typeTree'
       # for chaining purposes
       @

@@ -37,26 +37,26 @@ define [
       super options
       # bind updates
       utils.onRouterReady =>
-        rheia.sockets.updates.on 'creation', @_onAdd
-        rheia.sockets.updates.on 'deletion', @_onRemove
+        app.sockets.updates.on 'creation', @_onAdd
+        app.sockets.updates.on 'deletion', @_onRemove
 
     # Allow multiple saves on fields. Update is not permitted.
     #
     # @param fields [Array<Field>] saved fields
     save: (fields) =>
-      rheia.sockets.admin.once 'save-resp', (err) =>
-        rheia.router.trigger 'serverError', err, method:'Fields.save', arg:fields if err?
+      app.sockets.admin.once 'save-resp', (err) =>
+        app.router.trigger 'serverError', err, method:'Fields.save', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      rheia.sockets.admin.emit 'save', 'Field', fields
+      app.sockets.admin.emit 'save', 'Field', fields
 
     # Allow multiple removes on fields
     #
     # @param fields [Array<Field>] removed fields
     destroy: (fields) =>
-      rheia.sockets.admin.once 'remove-resp', (err) =>
-        rheia.router.trigger 'serverError', err, method:'Fields.remove', arg:fields if err?
+      app.sockets.admin.once 'remove-resp', (err) =>
+        app.router.trigger 'serverError', err, method:'Fields.remove', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      rheia.sockets.admin.emit 'remove', 'Field', fields
+      app.sockets.admin.emit 'remove', 'Field', fields
 
     # Provide a custom sync method to wire model to the server.
     # No operation supported.

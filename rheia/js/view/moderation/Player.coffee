@@ -169,7 +169,7 @@ define [
       ).on('change', @_onChange
       ).on('open', (event, instance) =>
         # opens items
-        rheia.router.trigger 'open', instance._className, instance.id
+        app.router.trigger 'open', instance._className, instance.id
       ).data 'property'
 
       @_passwordWidget = @$el.find('.password .right > *').property(

@@ -25,6 +25,7 @@ pathUtils = require 'path'
 fs = require 'fs'
 utils = require '../util/common'
 Rule = require '../model/Rule'
+ruleUtils = require '../util/rule'
 Executable = require '../model/Executable'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
@@ -61,6 +62,7 @@ spawn = (poolIdx, options) ->
       notifier.notify.apply notifier, data.args
 
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
+# It also manage turn rules, and game timer.
 #
 # @Todo: refresh cache when executable changes... 
 class _RuleService
@@ -90,7 +92,21 @@ class _RuleService
           wId = if wId? then wId else process.pid
           for id, worker of cluster.workers when worker.process.pid isnt wId
             worker.send event: 'change', args:[operation, className, changes, wId]
+
+      # propagate time changes
+      ruleUtils.timer.on 'change', (time) ->
+        notifier.notify 'time', 'change', time.valueOf()
         
+  # Allow to change game timer
+  #
+  # @param time [Number] Unix epoch of new time. null to reset to current
+  setTime: (time = null) => ruleUtils.timer.set time
+
+  # Allow to pause or resume game timer
+  #
+  # @param stopped [Boolean] true to pause time, false to resumt it
+  pauseTime: (stopped) => ruleUtils.timer.stopped = stopped is true
+
   # Exports existing rules to clients: turn rules are ignored and execute() function is not exposed.
   #
   # @param callback [Function] callback executed when rules where exported. Called with parameters:

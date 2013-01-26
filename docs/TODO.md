@@ -7,7 +7,7 @@
   - [!] documentation
   - Rule engine
     - [!] i18n utilities for rules and parameters
-    - [!] modifiable unic system date
+    - [!] modifiable unic system date: TODO test server
     - [!] reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
     - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
@@ -18,6 +18,7 @@
 - Rheia
   - Bugs
     - [!] persistent change detection after saving a rule
+    - script/rule/turnrule editor position when more than one error
   - [!] documentation
   - Authoring perspective
     - multiple file search & replace

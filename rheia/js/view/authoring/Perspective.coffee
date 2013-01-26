@@ -97,7 +97,7 @@ define [
       @bindTo @_explorer, 'rename', @_onChooseFileName
       @bindTo @_explorer, 'create', @_onChooseFileName
       @bindTo @_explorer, 'remove', @_onRemove
-      @bindTo rheia.router, 'serverError', @_onServerError
+      @bindTo app.router, 'serverError', @_onServerError
       @bindTo FSItem.collection, 'reset', =>
         # removes all views
         while @_views.length > 0

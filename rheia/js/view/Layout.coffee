@@ -42,10 +42,10 @@ define [
       super tagName: 'div', className:'layout'
       @bindTo Backbone.history, 'route', @_onRoute
       @bindTo Player.collection, 'connectedPlayersChanged', @_onConnectedPlayersChanged
-      @bindTo rheia.adminService, 'progress', @_onDeployementStateChanged
-      @bindTo rheia.adminService, 'state', =>
+      @bindTo app.adminService, 'progress', @_onDeployementStateChanged
+      @bindTo app.adminService, 'state', =>
         # a deployement is in progress
-        if rheia.adminService.isDeploying() or rheia.adminService.hasDeployed()
+        if app.adminService.isDeploying() or app.adminService.hasDeployed()
           @_onDeployementStateChanged 'DEPLOY_START'
 
     # the render method, which use the specified template
@@ -66,7 +66,7 @@ define [
           primary: "ui-icon small logout"
       ).click (event) =>
         event?.preventDefault()
-        rheia.router.trigger 'logout'
+        app.router.trigger 'logout'
 
       # for chaining purposes
       @

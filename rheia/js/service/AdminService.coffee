@@ -37,7 +37,7 @@ define [
   # list or current version changed, and an `initialized` event is triggered when the admin service 
   # get its state for the first time
   #
-  # Instanciated as a singleton in `rheia.adminService` by the Router
+  # Instanciated as a singleton in `app.adminService` by the Router
   class AdminService
     _.extend @prototype, Backbone.Events
 
@@ -56,11 +56,11 @@ define [
     # Service constructor
     constructor: ->
       # first, ask for deployement state
-      rheia.sockets.admin.emit 'deployementState'
-      rheia.sockets.admin.on 'deployement', @_onDeployementState
+      app.sockets.admin.emit 'deployementState'
+      app.sockets.admin.on 'deployement', @_onDeployementState
 
-      rheia.sockets.admin.on 'deployementState-resp',  (err, state) =>
-        return rheia.router.trigger 'serverError', err, method:"AdminService.deployementState" if err?
+      app.sockets.admin.on 'deployementState-resp',  (err, state) =>
+        return app.router.trigger 'serverError', err, method:"AdminService.deployementState" if err?
         @_state = state
         @initialized = true
         @trigger 'initialized'
@@ -70,11 +70,11 @@ define [
         AdminService::[method] = (args...) =>
           console.info "#{method} #{args.join ' '}..."
           args.splice 0, 0, method
-          rheia.sockets.admin.emit.apply rheia.sockets.admin, args
+          app.sockets.admin.emit.apply app.sockets.admin, args
 
         # register an error callback
-        rheia.sockets.admin.on "#{method}-resp", (err) =>
-          rheia.router.trigger 'serverError', err, method:"AdminService.#{method}" if err?
+        app.sockets.admin.on "#{method}-resp", (err) =>
+          app.router.trigger 'serverError', err, method:"AdminService.#{method}" if err?
 
       proxyMethod method for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
 
@@ -91,7 +91,7 @@ define [
     # Simple getter that indicate if the current version deployer is the connected player
     # @return true if there is a deployement in progress, and the deployer is the current player
     isDeployer: =>
-      @_state?.deployed? and @_state?.author is rheia?.player?.email
+      @_state?.deployed? and @_state?.author is app?.player?.email
       
     # Simple getter that indicates the current deployer
     # @return the current deployer email or null
@@ -120,18 +120,18 @@ define [
       @trigger 'progress', state, step
       switch state 
         when 'DEPLOY_FAILED'
-          rheia.router.trigger 'serverError', step, method:'AdminService.deploy'
+          app.router.trigger 'serverError', step, method:'AdminService.deploy'
           @trigger 'deploy', step
           @_state.deployed = null
           @_state.author = null
           @_state.deploying = false
         when 'COMMIT_FAILED'
-          rheia.router.trigger 'serverError', step, method:'AdminService.commit'
+          app.router.trigger 'serverError', step, method:'AdminService.commit'
           @trigger 'commit', step
           @_state.deployed = null
           @_state.author = null
         when 'ROLLBACK_FAILED'
-          rheia.router.trigger 'serverError', step, method:'AdminService.rollback'
+          app.router.trigger 'serverError', step, method:'AdminService.rollback'
           @trigger 'rollback', step
           @_state.deployed = null
           @_state.author = null

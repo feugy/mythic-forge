@@ -31,6 +31,7 @@ define
     deployed: 'Déploiement terminé'
     confirmRestore: 'Confirmation du changement'
     logView: 'Logs serveur'
+    timeView: 'Heure du jeu'
 
   labels:
     gameVersions: 'Version en développement'
@@ -54,6 +55,8 @@ define
     commit: 'Confirmer'
     rollback: 'Retour en arrière'
     triggerTurn: 'Déclencher le tour'
+    pauseTime: 'Arreter'
+    playTime: 'Reprendre'
 
   msgs: 
     confirmDeploy: """<p>Vous allez déployer en production le client de jeu actuellement en développement.</p>
