@@ -53,6 +53,10 @@ worker = require pathUtils.resolve __dirname, process.env.module
 
 # manage events received from master
 process.on 'message', (msg) ->
+  # do not proceed if still initializing
+  if !ready
+    process.send method: msg.method, results: ['worker not ready'] if msg?.method of worker
+    return
   if msg?.event is 'change'
     # trigger the change as if it comes from the worker's own modelWatcher
     modelWatcher.emit.apply modelWatcher, ['change'].concat msg.args or []
@@ -64,9 +68,6 @@ process.on 'message', (msg) ->
       logger.error "Failed to initialize worker's executable cache: #{err}"
       process.exit 1
   else if msg?.method of worker
-    # do not proceed if still initializing
-    unless ready
-      return process.send method: msg.method, results: ['worker not ready'] 
     worker._method = msg.method
     # invoke the relevant worker method, adding a callback
     worker[msg.method].apply worker, (msg.args or []).concat (args...) ->

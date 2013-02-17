@@ -27,7 +27,6 @@ EventType = require '../model/EventType'
 FieldType = require '../model/FieldType'
 Executable = require '../model/Executable'
 ruleService = require('./RuleService').get()
-ObjectId = require('mongodb').BSONPure.ObjectID
 logger = require('../logger').getLogger 'service'
 
 # The GameService allow all operations needed by the game interface.
@@ -94,7 +93,7 @@ class _GameService
 
     logger.debug "Consult map #{mapId} between #{lowX}:#{lowY} and #{upX}:#{upY}"
     # first get the items
-    Item.where('map', new ObjectId(''+mapId))
+    Item.where('map', mapId)
       .where('x').gte(lowX)
       .where('x').lte(upX)
       .where('y').gte(lowY)
@@ -102,7 +101,7 @@ class _GameService
       .exec (err, items) ->
         return callback err, [], [] if err?
         # then gets the fields
-        Field.where('mapId', new ObjectId(''+mapId))
+        Field.where('mapId', mapId)
           .where('x').gte(lowX)
           .where('x').lte(upX)
           .where('y').gte(lowY)

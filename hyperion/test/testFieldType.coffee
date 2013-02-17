@@ -32,9 +32,8 @@ describe 'FieldType tests', ->
 
   it 'should type be created', (done) -> 
     # given a new FieldType
-    type = new FieldType()
-    name = 'montain'
-    type.name = name
+    id = 'montain'
+    type = new FieldType id: id
 
     # when saving it
     type.save (err, saved) ->
@@ -45,55 +44,13 @@ describe 'FieldType tests', ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
-        assert.equal types[0].name, name
+        assert.equal types[0].id, id
         done()
-
-  it 'should name and desc be internationalizables', (done) -> 
-    # given a new FieldType with translated name
-    type = new FieldType()
-    name = 'dust'
-    type.name = name
-    type.locale = 'fr'
-    nameFr = 'poussière'
-    type.name = nameFr
-
-    # when saving it
-    type.save (err, saved) ->
-      throw new Error "Can't save type: #{err}" if err?
-
-      # then translations are available
-      saved.locale = null
-      assert.equal saved.name, name
-      saved.locale = 'fr'
-      assert.equal saved.name, nameFr
-
-      # when setting the tanslated description and saving it
-      saved.locale = null
-      desc = 'another one bites the dust'
-      saved.desc = desc
-      saved.locale = 'fr'
-      descFr = 'encore un qui mort la poussière' 
-      saved.desc = descFr
-
-      saved.save (err, saved) ->
-        throw new Error "Can't save type: #{err}" if err?
-
-        # then it is in mongo
-        FieldType.find {}, (err, types) ->
-          # then it's the only one document
-          assert.equal 1, types.length
-          # then it's values were saved
-          assert.equal types[0].name, name
-          assert.equal types[0].desc, desc
-          types[0].locale = 'fr'
-          assert.equal types[0].name, nameFr
-          assert.equal types[0].desc, descFr
-          done()
 
   describe 'given a type', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
-      new FieldType({name: 'river'}).save (err, saved) -> 
+      new FieldType({id: 'river'}).save (err, saved) -> 
         type = saved
         done()
 

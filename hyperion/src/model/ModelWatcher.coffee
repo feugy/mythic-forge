@@ -37,8 +37,8 @@ class _ModelWatcher extends EventEmitter
   # and as second the changed instance. 
   # 
   # For creation and deletion, the whole instance is passed to the event, minus the
-  # type which is replaced by its _id.
-  # For update, only the _id, type's _id and modified fields are propagated.
+  # type which is replaced by its id.
+  # For update, only the id, type's id and modified fields are propagated.
   #
   # @param operation [String] one of "creation", "update" or "deletion"
   # @param className [String] classname of the modified instance
@@ -51,26 +51,30 @@ class _ModelWatcher extends EventEmitter
     else 
       changes = _.clone instance
 
+    if changes._id?
+      changes.id = changes._id
+      delete changes._id
+
     delete changes.__v # added by mongoose to store version
     # removes orignal saves for array properties
     delete changes[prop] for prop of changes when 0 is prop.indexOf '__orig'
 
     # do not embed the linked map and type for items, events and fields
-    changes.type = changes.type?._id if className is 'Item' or className is 'Event'
+    changes.type = changes.type?.id if className is 'Item' or className is 'Event'
 
     if modified and 'map' in modified and (className is 'Item' or className is 'Field')
       # but send the map if it changed
-      changes.map = changes.map?._id if 'object' is utils.type changes.map and changes.map._id
+      changes.map = changes.map?.id if 'object' is utils.type changes.map and changes.map.id
 
     if operation is 'update'
       if className isnt 'Executable' and className isnt 'FSItem'
         # for update, only emit modified datas
         changes = 
-          _id: instance._id
+          id: instance.id
         changes[path] = instance.get path for path in modified
 
     else if operation isnt 'creation' and operation isnt 'deletion'
-      throw new Error "Unknown operation #{operation} on instance #{changes._id or changes.path}}"
+      throw new Error "Unknown operation #{operation} on instance #{changes.id or changes.path}}"
 
     # Specific case of FSItem that must be relative to gameClient root
     changes.path = pathUtils.relative gameClientRoot, changes.path if className is 'FSItem'
@@ -80,7 +84,7 @@ class _ModelWatcher extends EventEmitter
       require('../model/Player').purge changes
       return if Object.keys(changes).length is 0
 
-    logger.debug "change propagation: #{operation} of instance #{changes._id or changes.path} (#{className}): #{_.keys changes or {}}"
+    logger.debug "change propagation: #{operation} of instance #{changes.id or changes.path} (#{className}): #{_.keys changes or {}}"
     @emit 'change', operation, className, changes
 
 class ModelWatcher

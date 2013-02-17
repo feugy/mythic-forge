@@ -92,10 +92,10 @@ class _ImagesService
         else throw new Error "save must be called with arguments (modelName, id, ext, imageData, [idx], callback)"
 
       proceed = (err) =>
-        return callback "Failed to save image #{suffix} on model #{model._id}: #{err}" if err? and err.code isnt 'ENOENT'
-        fileName = "#{model._id}-#{suffix}.#{ext}"
+        return callback "Failed to save image #{suffix} on model #{model.id}: #{err}" if err? and err.code isnt 'ENOENT'
+        fileName = "#{model.id}-#{suffix}.#{ext}"
         fs.writeFile pathUtils.join(imagesPath, fileName), new Buffer(imageData, 'base64'), (err) =>
-          return callback "Failed to save image #{suffix} on model #{model._id}: #{err}" if err?
+          return callback "Failed to save image #{suffix} on model #{model.id}: #{err}" if err?
           # updates correct attribute
           if args.length is 1
             model.descImage = fileName
@@ -117,7 +117,7 @@ class _ImagesService
             if err?
               # removes image
               fs.unlink pathUtils.join imagesPath, fileName
-              return callback "Failed to save image #{suffix} on model #{model._id}: #{err}"
+              return callback "Failed to save image #{suffix} on model #{model.id}: #{err}"
             # everything's fine
             callback null, saved
 
@@ -177,7 +177,7 @@ class _ImagesService
 
       # removes the existing file
       fs.unlink pathUtils.join(imagesPath, existing), (err) =>
-        return callback "Failed to remove image #{suffix} on model #{model._id}: #{err}" if err? and err.code isnt 'ENOENT'
+        return callback "Failed to remove image #{suffix} on model #{model.id}: #{err}" if err? and err.code isnt 'ENOENT'
         # updates correct attribute
         if args.length is 1
           model.descImage = null
@@ -196,7 +196,7 @@ class _ImagesService
           model.markModified 'images'
         # save model
         model.save (err, saved) =>
-          return callback "Failed to remove image #{suffix} on model #{model._id}: #{err}" if err?
+          return callback "Failed to remove image #{suffix} on model #{model.id}: #{err}" if err?
           # everything's fine
           callback null, saved
 

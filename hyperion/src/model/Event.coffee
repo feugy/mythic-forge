@@ -23,7 +23,7 @@ Item = require './Item'
 conn = require './connection'
 modelUtils = require '../util/model'
 
-# Define the schema for map event: no name or desc, and properties
+# Define the schema for map event with properties
 Event = typeFactory 'Event', 
 
   # creation date. May not be modified
@@ -41,8 +41,6 @@ Event = typeFactory 'Event',
     type: {}
     default: -> null # use a function to force instance variable
 , 
-  noDesc: true
-  noName: true
   instanceProperties: true
   typeClass: 'EventType'
   strict: false
@@ -56,7 +54,7 @@ Event = typeFactory 'Event',
       return next() unless event.from?
       # loads the type, but not from local cache to be able to modify it without side effects
       Item.findById event.from, (err, item) ->
-        return next(new Error "Unable to init event #{event._id}. Error while resolving its from: #{err}") if err?
+        return next(new Error "Unable to init event #{event.id}. Error while resolving its from: #{err}") if err?
         # Do the replacement
         event.from = item
         # Never use resolved item, or it may lead to circular references. 
@@ -74,7 +72,7 @@ Event = typeFactory 'Event',
 
       # replace from with its id, for storing in Mongo, without using setters.
       saveFrom = @from
-      @_doc.from = saveFrom?._id
+      @_doc.from = saveFrom?.id
       next()
       # restore save to allow reference reuse.
       @_doc.from = saveFrom

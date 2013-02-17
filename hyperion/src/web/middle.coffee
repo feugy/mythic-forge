@@ -291,7 +291,7 @@ LoggerFactory.on 'log', (details) ->
 updateNS = io.of('/updates')
 
 watcher.on 'change', (operation, className, instance) ->
-  logger.debug "broadcast of #{operation} on #{instance._id} (#{className})"
+  logger.debug "broadcast of #{operation} on #{instance.id} (#{className})"
   updateNS.emit operation, className, instance
 
 # Authentication: 

@@ -22,7 +22,7 @@ typeFactory = require './typeFactory'
 conn = require './connection'
 Map = require './Map'
 
-# Define the schema for map event: no name or desc, and properties
+# Define the schema for map item with its properties
 Item = typeFactory 'Item', 
   # link to map
   map: {}
@@ -62,8 +62,6 @@ Item = typeFactory 'Item',
     type: Number
     default: null
 , 
-  noDesc: true
-  noName: true
   instanceProperties: true
   typeClass: 'ItemType'
   strict: false
@@ -76,8 +74,8 @@ Item = typeFactory 'Item',
       return next() unless item.map?
       # loads the type from local cache
       Map.findCached [item.map], (err, maps) ->
-        return next(new Error "Unable to init item #{item._id}. Error while resolving its map: #{err}") if err?
-        return next(new Error "Unable to init item #{item._id} because there is no map with id #{item.map}") unless maps.length is 1    
+        return next(new Error "Unable to init item #{item.id}. Error while resolving its map: #{err}") if err?
+        return next(new Error "Unable to init item #{item.id} because there is no map with id #{item.map}") unless maps.length is 1    
         # Do the replacement.
         item.map = maps[0]
         next()
@@ -94,7 +92,7 @@ Item = typeFactory 'Item',
 
       # replace map with its id, for storing in Mongo, without using setters.
       saveMap = @map
-      @_doc.map = saveMap?._id
+      @_doc.map = saveMap?.id
       next()
       # restore save to allow reference reuse.
       @_doc.map = saveMap

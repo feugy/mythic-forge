@@ -468,35 +468,21 @@ optimize = (folder, callback) ->
           mainConfigFile: configFile
           optimizeCss: 'standard'
           preserveLicenseComments: false
+          locale: null
+          optimize: 'uglify2'
+          useStrict: true
           modules: [
             name: mainFile
           ]
 
-        # as requirejs.optimize is asynchronous, but do not have proper error handling (it throws directly errors)
-        # we must caught global exceptions
-        # domain cannot help us, because they still propagate exception to other error handlers
-
-        # temporary stores existing listeners
-        listeners = process.listeners 'uncaughtException'
-        process.removeAllListeners 'uncaughtException'
-
-        # restore previous listeners
-        restore = ->
-          process.removeAllListeners 'uncaughtException'
-          process.on 'uncaughtException', listener for listener in listeners
-          
-        process.on 'uncaughtException', (err) ->
-          restore()
-          callback err
-
         # at least, performs optimization
         start = new Date().getTime()
         logger.debug "start optimization..."
-        requirejs.optimize config, (buildResponse) =>
-          restore()
+        requirejs.optimize config, (result) =>
+          return callback result.message if utils.isA(result, Error)
           logger.debug "optimization succeeded in #{(new Date().getTime() - start)/1000}s"
-          logger.debug buildResponse
-          callback null, main, folderOut 
+          logger.debug result
+          callback null, main, folderOut
 
 # Moves game files from optimized folder to production folder.
 # Creates a folder for static assets (every files) named with current timestamp, 

@@ -29,7 +29,6 @@ Player = require '../model/Player'
 utils = require '../util/common'
 async = require 'async'
 _ = require 'underscore'
-ObjectId = require('mongodb').BSONPure.ObjectID
 logger = require('../logger').getLogger 'service'
 
 # Function that validate the query content, regarding what is possible in `searchType()`
@@ -63,18 +62,15 @@ validateQuery = (query) ->
     return "'#{query}' is nor an array, nor an object"
 
 # Enhance query for types by making-it Mongo-db compliant:
-# - add ObjectId constructor for id search
 # - add 'properties.' before arbitrary properties
-# - support locale for 'name' and 'desc'
 # - check arbitrary property existence
 # - transforms 'and'/'or' to '$and'/'$or'
 #
 # @param query [Object] query that is enhanced
-# @param locale [String] desired locale
-enhanceTypeQuery = (query, locale) ->
+enhanceTypeQuery = (query) ->
   if Array.isArray query
     # recursive enhancement inside term arrays
-    enhanceTypeQuery term, locale for term in query
+    enhanceTypeQuery term for term in query
   else
     attr = Object.keys(query)[0]
     value = query[attr]
@@ -86,17 +82,10 @@ enhanceTypeQuery = (query, locale) ->
       when 'and', 'or'
         query["$#{attr}"] = value
         delete query[attr]
-        enhanceTypeQuery value, locale
+        enhanceTypeQuery value
       when 'id'
-        try 
-          query._id = new ObjectId query[attr]
-        catch exc
-          # not a valid ObjectId, put an invalid ObjectId
-          query._id = null
+        query._id = value
         delete query.id
-      when 'name', 'desc'
-        query["_#{attr}.#{locale}"] = value
-        delete query[attr]
       when 'quantifiable', 'kind'
          # nothing to do
       else
@@ -114,19 +103,17 @@ class _SearchService
 
 
   # Enhance query for instances by making-it Mongo-db compliant:
-  # - add ObjectId constructor for id search and map/type attributes
   # - support search on map/type attributes : 'map.kind', 'type.name', etc...
   # - transforms 'and'/'or' to '$and'/'$or'
   #
   # @param query [Object] query that is enhanced
-  # @param locale [String] desired locale
   # @param callback [Function] callback invoked when query has been enhanced
   # @option callback err [String] error string, or null if no error occured
-  _enhanceInstanceQuery: (query, locale, callback) =>
+  _enhanceInstanceQuery: (query, callback) =>
     if Array.isArray query
       # recursive enhancement inside term arrays
       return async.forEachSeries query, (term, next) =>
-        @_enhanceInstanceQuery term, locale, next
+        @_enhanceInstanceQuery term, next
       , callback
     else
       attr = Object.keys(query)[0]
@@ -140,7 +127,7 @@ class _SearchService
         when 'and', 'or'
           delete query[attr]
           query["$#{attr}"] = value
-          return @_enhanceInstanceQuery value, locale, callback
+          return @_enhanceInstanceQuery value, callback
         when 'id', 'map', 'type', 'from', 'characters'
 
           if value is '!' and attr isnt 'characters'
@@ -148,11 +135,7 @@ class _SearchService
           else if value is '!'
             value = {$elemMatch: {$exists:true}}
           else
-            try 
-              value = new ObjectId query[attr]
-            catch exc
-              # not a valid ObjectId, put an invalid ObjectId
-              value = null
+            value = query[attr]
 
           if attr is 'id'
             delete query.id
@@ -172,17 +155,17 @@ class _SearchService
             delete query[attr]
             if match[1] is 'map' or match[1] is 'type'
               # map and type: search in types
-              return @searchTypes subQuery, locale, (err, results) =>
+              return @searchTypes subQuery, (err, results) =>
                 return callback err if err?
                 # then we can search instance of a given map/type ids
-                query[match[1]] = {$in:_.pluck(results, '_id')}
+                query[match[1]] = {$in:_.pluck(results, 'id')}
                 callback null
             else
               # others: search in instances
-              return @searchInstances subQuery, locale, (err, results) =>
+              return @searchInstances subQuery, (err, results) =>
                 return callback err if err?
                 # then we can search instance linked to given ids (stored as strings, unless for from and characters)
-                ids = if match[1] in ['from', 'characters'] then _.pluck(results, '_id') else _.chain(results).pluck('_id').invoke('toString').value()
+                ids = if match[1] in ['from', 'characters'] then _.pluck(results, 'id') else _.chain(results).pluck('id').value()
                 query[match[1]] = {$in:ids}
                 callback null
 
@@ -200,8 +183,6 @@ class _SearchService
   #
   # Allows the following token:
   # - `id:*val*` search by id, *val* is a string (item, event, field, map, rule, turn-rule)
-  # - `name:*val*` search in name (depending the locale), *val* is a string or a regexp (item, event, field, map, rule, turn-rule)
-  # - `desc:*val*` search in description (depending the locale), *val* is a string or a regexp (item, event, field)
   # - `*prop*:'!'` search property existence, *prop* is a string (item, event)
   # - `*prop*:*val*` search property default value, *prop* is a string, *val* is a string, number, boolean or regexp (item, event)
   # - `quantifiable:*val*` search quantifiable status, *val* is true|false (item)
@@ -214,23 +195,7 @@ class _SearchService
   # @param callback [Function] result callback, invoked with arguments
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching types
-  #
-  # @overload searchType(query, callback)
-  #   Search with default locale
-  #
-  # @overload searchType(query, locale, callback)
-  #   Search with specified locale
-  #   @param locale [String] the desired locale
-  searchTypes: (args..., callback) =>
-    switch args.length
-      when 1
-        query = args[0]
-        locale = 'default'
-      when 2
-        query = args[0]
-        locale = args[1]
-      else new Error 'searchType() must be call with query and callback, or query, locale and callback'
-
+  searchTypes: (query, callback) =>
     # special case: string query must be parse to object
     if 'string' is utils.type query
       try 
@@ -254,7 +219,7 @@ class _SearchService
     search Executable, =>
 
       # fourth, enhance the query for mongoDB
-      enhanceTypeQuery query, locale
+      enhanceTypeQuery query
 
       # then, perform it on each database collection
       async.forEach [ItemType, EventType, FieldType, Map], search, (err) =>
@@ -296,23 +261,7 @@ class _SearchService
   # @param callback [Function] result callback, invoked with arguments
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching instances
-  #
-  # @overload searchInstances(query, callback)
-  #   Search with default locale
-  #
-  # @overload searchInstances(query, locale, callback)
-  #   Search with specified locale
-  #   @param locale [String] the desired locale
-  searchInstances: (args..., callback) =>
-    switch args.length
-      when 1
-        query = args[0]
-        locale = 'default'
-      when 2
-        query = args[0]
-        locale = args[1]
-      else new Error 'searchInstances() must be call with query and callback, or query, locale and callback'
-
+  searchInstances: (query, callback) =>
     # special case: string query must be parse to object
     if 'string' is utils.type query
       try 
@@ -327,7 +276,7 @@ class _SearchService
     results = []
 
     # second, enhance the query for mongoDB
-    @_enhanceInstanceQuery query, locale, (err) =>
+    @_enhanceInstanceQuery query, (err) =>
       return callback "Failed to enhance query: #{err}" if err?
 
       # third, perform it on each database collection

@@ -19,6 +19,7 @@
 'use strict'
 
 mongoose = require 'mongoose'
+ObjectId = require('mongodb').BSONPure.ObjectID
 conn = require './connection'
 modelWatcher = require('./ModelWatcher').get()
 Map = require './Map'
@@ -26,18 +27,24 @@ logger = require('../logger').getLogger 'model'
 
 # Define the schema for fields.
 FieldSchema = new mongoose.Schema 
+  # manually managed id
+  _id: String
+
   # link to map
   mapId: 
     type: String
     required: true
+
   # link to type
   typeId: 
     type: String
     required: true
+
   # image num
   num: 
     type: Number
     default: 0
+
   # coordinates on the map
   x: 
     type:Number
@@ -45,7 +52,16 @@ FieldSchema = new mongoose.Schema
   y: 
     type:Number
     default: 0
-, strict:true
+, 
+  strict: true
+  _id: false
+  # Extends original Mongoose toJSON method to change _id to id.
+  toJSON:
+    transform: (doc, ret, options) ->
+      ret.id = ret._id
+      delete ret._id
+      delete ret.__v
+      ret
 
 # Override the equals() method defined in Document, to check correctly the equality between _ids, 
 # with their `equals()` method and not with the strict equality operator.
@@ -53,8 +69,13 @@ FieldSchema = new mongoose.Schema
 # @param other [Object] other object against which the current object is compared
 # @return true if both objects have the same _id, false otherwise
 FieldSchema.methods.equals = (object) ->
-  @_id.equals object?._id
-        
+  @id is object?.id
+   
+# manually manage ids within the 'id' attribute, and store them into the '_id' attribute.
+# Define a virtual getter on model's class name.
+# Handy when models have been serialized to distinguish them
+FieldSchema.virtual('id').set (value) -> @_id = value
+
 # pre-save middleware: only allow save of new fields. Do not allow updates
 #
 # @param next [Function] function that must be called to proceed with other middleware.
@@ -62,6 +83,7 @@ FieldSchema.methods.equals = (object) ->
 FieldSchema.pre 'save', (next) ->
   # wuit with an error if the field isn't new
   return next new Error 'only creations are allowed on fields' unless @isNew
+  @id = new ObjectId().toString()
   next()
 
 # post-save middleware: now that the instance was properly saved, propagate its modifications

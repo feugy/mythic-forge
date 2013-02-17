@@ -38,8 +38,8 @@ class TurnRule
   # Turn rule rank inside existing rules
   rank: 0
 
-  # Construct a rule, with a friendly name.
-  constructor: (@name, @rank = 0) ->
+  # Construct a rule, with a fthe rule rank
+  constructor: (@rank = 0) ->
     @removed= []
     @saved= []
  

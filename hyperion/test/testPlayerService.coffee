@@ -37,9 +37,9 @@ describe 'PlayerService tests', ->
   beforeEach (done) ->
     notifications = []
     # cleans Players, ItemTypes and Items
-    Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> 
+    Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> Item.loadIdCache ->
       # given an item type
-      type = new ItemType {name: 'character'}
+      type = new ItemType id: 'character'
       type.setProperty 'friends', 'array', 'Item'
       type.save (err, saved) ->
         return done err if err?

@@ -150,10 +150,10 @@ class _RuleService
           content = content.replace 'module.exports =', 'return'
           
           # adds the define part
-          content = "define('#{executable._id}', [#{deps.join ','}], function(#{vars.join ','}){\n#{content}\n});"
+          content = "define('#{executable.id}', [#{deps.join ','}], function(#{vars.join ','}){\n#{content}\n});"
           
           # and keep the remaining code
-          rules[executable._id] = content 
+          rules[executable.id] = content 
           done()
 
       # read content of all existing executables
@@ -206,13 +206,13 @@ class _RuleService
   # As a first validation, the rule is resolved for the target.
   # All objects modified by the rule will be registered in database.
   #
-  # @param ruleName [String] the executed rule name
+  # @param ruleId [String] the executed rule id
   #
-  # @overload execute(ruleName, playerId, callback)
+  # @overload execute(ruleId, playerId, callback)
   #   Executes a specific rule for a player
   #   @param playerId [ObjectId] the concerned player's id
   #
-  # @overload resolve(ruleName, actorId, targetId, callback)
+  # @overload resolve(ruleId, actorId, targetId, callback)
   #   Executes a specific rule for an actor and a given target
   #   @param actorId [ObjectId] the concerned actor's id
   #   @param targetId [ObjetId] the targeted item or event

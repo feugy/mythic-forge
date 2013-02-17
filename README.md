@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/feugy/mythic-forge.png)](https://travis-ci.org/feugy/mythic-forge)
+
 # Welcome !
 
 Mythic-forge is an online gaming platform for Web developpers.

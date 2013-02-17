@@ -1,9 +1,5 @@
 requirejs.config  
-  config:
-    i18n:
-      locale: 'fr'
-
-  paths:
+   paths:
     # Missing backbone path
     'underscore': 'lib/underscore-1.3.3-min'
     'underscore.string': 'lib/unserscore.string-2.2.0rc-min'

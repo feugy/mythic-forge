@@ -32,18 +32,17 @@ awaited = false
 describe 'Item tests', -> 
 
   beforeEach (done) ->
-    type = new ItemType({name: 'plain'})
-    type.setProperty 'rocks', 'integer', 100
-    type.save (err, saved) ->
-      return done err if err?
-      Item.collection.drop -> done()
+    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> ItemType.loadIdCache ->
+      type = new ItemType id: 'plain'
+      type.setProperty 'rocks', 'integer', 100
+      type.save done
 
-  afterEach (end) ->
-    ItemType.collection.drop -> Item.collection.drop -> end()
+  afterEach (done) ->
+    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> ItemType.loadIdCache done
 
   it 'should item be created', (done) -> 
     # given a new Item
-    item = new Item {x: 10, y:-3, type:type}
+    item = new Item x: 10, y:-3, type:type
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
@@ -70,7 +69,7 @@ describe 'Item tests', ->
 
   it 'should new item have default properties values', (done) ->
     # when creating an item of this type
-    item = new Item {type: type}
+    item = new Item type: type
     item.save (err)->
       return done "Can't save item: #{err}" if err?
       # then the default value was set
@@ -80,7 +79,7 @@ describe 'Item tests', ->
   describe 'given an Item', ->
 
     beforeEach (done) ->
-      item = new Item {x: 150, y: 300, type: type}
+      item = new Item x: 150, y: 300, type: type
       item.save done
 
     it 'should item be removed', (done) ->
@@ -143,7 +142,7 @@ describe 'Item tests', ->
       item.save (err) ->
         return done err if err?
 
-        Item.findOne {_id: item._id}, (err, doc) ->
+        Item.findOne {_id: item.id}, (err, doc) ->
           return done "Can't find item: #{err}" if err?
           # then only the relevant values were modified
           assert.equal doc.x, 150
@@ -163,12 +162,12 @@ describe 'Item tests', ->
 
     it 'should item be removed with map', (done) ->
       # given a map
-      map = new Map(name: 'map1').save (err, map) ->
+      map = new Map(id: 'map1').save (err, map) ->
         return done err if err?
         # given a map item
         new Item(map: map, x: 0, y: 0, type: type).save (err, item2) ->
           return done err if err?
-          Item.find {map: map._id}, (err, items) ->
+          Item.find {map: map.id}, (err, items) ->
             return done err if err?
             assert.equal items.length, 1
 
@@ -182,7 +181,7 @@ describe 'Item tests', ->
               return done "Failed to remove map: #{err}" if err?
 
               # then items are not in mongo anymore
-              Item.find {map: map._id}, (err, items) ->
+              Item.find {map: map.id}, (err, items) ->
                 return done err if err?
                 assert.equal items.length, 0
                 assert.equal 1, changes.length, 'watcher wasn\'t invoked'
@@ -226,7 +225,7 @@ describe 'Item tests', ->
   describe 'given a type with object properties and several Items', -> 
 
     beforeEach (done) ->
-      type = new ItemType {name: 'river'}
+      type = new ItemType id: 'river'
       type.setProperty 'name', 'string', ''
       type.setProperty 'end', 'object', 'Item'
       type.setProperty 'affluents', 'array', 'Item'
@@ -250,7 +249,7 @@ describe 'Item tests', ->
       Item.findOne {name: item2.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # then linked items are replaced by their ids
-        assert.ok item._id.equals doc.end
+        assert.equal item.id, doc.end
         done()
 
     it 'should ids be stored for linked arrays', (done) ->
@@ -259,7 +258,7 @@ describe 'Item tests', ->
         return done "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
         assert.equal doc.affluents.length, 1
-        assert.ok item2._id.equals doc.affluents[0]
+        assert.equal item2.id, doc.affluents[0]
         done()
 
     it 'should getLinked retrieves linked objects', (done) ->
@@ -270,7 +269,7 @@ describe 'Item tests', ->
         doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          assert.ok item._id.equals doc.end._id
+          assert.equal item.id, doc.end.id
           assert.equal doc.end.name, item.name
           assert.equal doc.end.end, item.end
           assert.equal doc.end.affluents[0], item.affluents[0]
@@ -286,7 +285,7 @@ describe 'Item tests', ->
           # then linked items are provided
           assert.equal doc.affluents.length, 1
           linked = doc.affluents[0]
-          assert.ok item2._id.equals linked._id
+          assert.equal item2.id, linked.id
           assert.equal linked.name, item2.name
           assert.equal linked.end, item2.end
           assert.equal linked.affluents.length, 0
@@ -300,14 +299,14 @@ describe 'Item tests', ->
         Item.getLinked docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
-          assert.ok item._id.equals docs[0].end._id
+          assert.equal item.id, docs[0].end.id
           assert.equal docs[0].end.name, item.name
           assert.equal docs[0].end.end, item.end
           assert.equal docs[0].end.affluents[0], item.affluents[0]
           # then the second item has resolved links
           assert.equal docs[1].affluents.length, 1
           linked = docs[1].affluents[0]
-          assert.ok item2._id.equals linked._id
+          assert.equal item2.id, linked.id
           assert.equal linked.name, item2.name
           assert.equal linked.end, item2.end
           assert.equal linked.affluents.length, 0
@@ -320,7 +319,7 @@ describe 'Item tests', ->
         return done err if err?
       
         # given an unresolved item
-        Item.findById item._id, (err, doc) ->
+        Item.findById item.id, (err, doc) ->
           return done "Can't find item: #{err}" if err?
           assert.equal doc.affluents.length, 1
           assert.equal utils.type(doc.affluents[0]), 'string'
@@ -345,9 +344,9 @@ describe 'Item tests', ->
         assert.equal operation, 'update'
         assert.ok item2.equals instance
         # then modified object ids are shipped
-        assert.ok item2._id.equals instance.end
+        assert.equal item2.id, instance.end
         assert.equal instance.affluents?.length, 1
-        assert.ok item._id.equals instance.affluents[0]
+        assert.equal item.id, instance.affluents[0]
         awaited = true
 
       # when saving it
@@ -357,8 +356,8 @@ describe 'Item tests', ->
 
         # then the saved object has object ids instead of full objects
         assert.ok item2.equals saved
-        assert.ok item2._id.equals saved.end
+        assert.equal item2.id, saved.end
         assert.equal saved.affluents?.length, 1
-        assert.ok item._id.equals saved.affluents[0]
+        assert.equal item.id, saved.affluents[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()

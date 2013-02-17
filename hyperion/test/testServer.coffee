@@ -138,11 +138,11 @@ describe 'server tests', ->
 
       beforeEach (done) ->
         # given a clean ItemTypes and Items collections
-        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop ->
-          new Map({name: 'server-test'}).save (err, saved) ->
+        EventType.collection.drop -> Event.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Map.loadIdCache ->
+          new Map(id: 'server-test').save (err, saved) ->
             return done err if err?
             map = saved
-            character = new ItemType {name: 'character'}
+            character = new ItemType id: 'character'
             character.setProperty 'name', 'string', ''
             character.save (err, saved) ->
               return done err if err?
@@ -154,7 +154,7 @@ describe 'server tests', ->
                 new Item(map: map, type: character, name: 'John', x:10, y:10).save (err, saved) ->
                   return done err if err?
                   john = saved
-                  life = new EventType {name: 'life'}
+                  life = new EventType id: 'life'
                   life.setProperty 'step', 'string', 'birth'
                   life.setProperty 'concerns', 'object', 'Item'
                   life.save (err, saved) ->
@@ -184,7 +184,7 @@ describe 'server tests', ->
           done()
 
         # when consulting the map
-        socket.emit 'consultMap', map._id, 0, 0, 10, 10
+        socket.emit 'consultMap', map.id, 0, 0, 10, 10
 
       it 'should types be retrieved', (done) ->
         # given a connected socket.io client
@@ -206,11 +206,11 @@ describe 'server tests', ->
               assert.equal type.properties.step.type, awaited.properties.step.type
             else 
               assert.fail "Unknown returned type, #{type}"
-            assert.equal type._name.default, awaited.name
+            assert.equal type.id, awaited.id
           done()
 
         # when retrieving types by ids
-        socket.emit 'getTypes', [character._id, life._id]
+        socket.emit 'getTypes', [character.id, life.id]
 
       it 'should items be retrieved', (done) ->
         # given a connected socket.io client
@@ -226,17 +226,17 @@ describe 'server tests', ->
           assert.ok john.equals items[1]
           assert.equal items[1]._className, 'Item'
           assert.equal items[1].name, 'John'
-          assert.ok character._id.equals items[0].type._id
+          assert.equal character.id, items[0].type.id
           assert.ok 'name' of items[0].type.properties
           assert.equal items[0].type.properties.name.type, character.properties.name.type
-          assert.ok character._id.equals items[1].type._id
+          assert.equal character.id, items[1].type.id
           assert.ok 'name' of items[1].type.properties
           assert.equal items[1].type.properties.name.type, character.properties.name.type
           done()
           # TODO tests link resolution
 
         # when retrieving items by ids
-        socket.emit 'getItems', [jack._id, john._id]
+        socket.emit 'getItems', [jack.id, john.id]
 
       it 'should events be retrieved', (done) ->
         # given a connected socket.io client
@@ -252,10 +252,10 @@ describe 'server tests', ->
           assert.ok death.equals events[1]
           assert.equal events[1]._className, 'Event'
           assert.equal events[1].step, 'death'
-          assert.ok life._id.equals events[0].type._id
+          assert.equal life.id, events[0].type.id
           assert.ok 'concerns' of events[0].type.properties
           assert.equal events[0].type.properties.concerns.type, life.properties.concerns.type
-          assert.ok life._id.equals events[1].type._id
+          assert.equal life.id, events[1].type.id
           assert.ok 'concerns' of events[1].type.properties
           assert.equal events[1].type.properties.concerns.type, life.properties.concerns.type
           # then their links where resolved
@@ -270,7 +270,7 @@ describe 'server tests', ->
           done()
 
         # when retrieving events by ids
-        socket.emit 'getEvents', [birth._id, death._id]
+        socket.emit 'getEvents', [birth.id, death.id]
 
       describe 'given a rule', ->
         @bail true
@@ -281,13 +281,11 @@ describe 'server tests', ->
             Executable.resetAll true, (err) -> 
               return done err if err?
               script = new Executable 
-                _id:'rename', 
+                id:'rename', 
                 content: """Rule = require '../model/Rule'
                   Item = require '../model/Item'
 
                   module.exports = new (class RenameRule extends Rule
-                    constructor: ->
-                      @name= 'rename'
                     canExecute: (actor, target, callback) =>
                       callback null, if target.name is 'Jack' then [] else null
                     execute: (actor, target, params, callback) =>
@@ -316,7 +314,7 @@ describe 'server tests', ->
             done()
 
           # when searching all types
-          socket.emit 'searchTypes', '{"or": [{"name": "/'+map.name+'/i"}, {"id": "'+character._id+'"}]}'
+          socket.emit 'searchTypes', '{"or": [{"id": "/'+map.id+'/i"}, {"id": "'+character.id+'"}]}'
 
         it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client
@@ -326,7 +324,7 @@ describe 'server tests', ->
           socket.once 'getExecutables-resp', (err, executables) ->
             return done err if err?
             assert.equal executables.length, 1
-            assert.equal executables[0]._id, script._id
+            assert.equal executables[0].id, script.id
             assert.equal executables[0].content, script.content
             done()
 
@@ -373,23 +371,23 @@ describe 'server tests', ->
 
             # then an update is received on john's name
             socket2.once 'update', (className, item) ->
-              assert.ok jack._id.equals item._id
+              assert.equal jack.id, item.id
               assert.equal className, 'Item'
               assert.equal item.name, 'Joe'
               updated = true
 
             # when executing the rename rule for john on jack
-            socket.emit 'executeRule', 'rename', john._id, jack._id, []
+            socket.emit 'executeRule', 'rename', john.id, jack.id, []
 
           # when resolving rules for john on jack
-          socket.emit 'resolveRules', john._id, jack._id
+          socket.emit 'resolveRules', john.id, jack.id
 
     describe 'given a type', ->
       @bail true
 
       before (done) ->
-        ItemType.collection.drop -> testUtils.cleanFolder utils.confKey('images.store'), ->
-          new ItemType({name: 'character'}).save (err, saved) ->
+        ItemType.collection.drop -> testUtils.cleanFolder utils.confKey('images.store'), -> ItemType.loadIdCache ->
+          new ItemType(id: 'character').save (err, saved) ->
             return done err if err?
             character = saved
             done()
@@ -421,7 +419,7 @@ describe 'server tests', ->
           socket.once 'uploadImage-resp', (err, saved) ->
             return done err if err?
             # then the description image is updated in model
-            assert.equal saved.descImage, "#{character._id}-type.png"
+            assert.equal saved.descImage, "#{character.id}-type.png"
             # then the file exists and is equal to the original file
             file = pathUtils.join utils.confKey('images.store'), saved.descImage
             assert.ok fs.existsSync file
@@ -436,10 +434,10 @@ describe 'server tests', ->
               assert.ok !(fs.existsSync(file))
               done()
 
-            socket.emit 'removeImage', 'ItemType', character._id
+            socket.emit 'removeImage', 'ItemType', character.id
 
           # when saving the type image
-          socket.emit 'uploadImage', 'ItemType', character._id, 'png', data.toString('base64')
+          socket.emit 'uploadImage', 'ItemType', character.id, 'png', data.toString('base64')
 
 
       it 'should instance image be uploaded and removed', (done) ->
@@ -455,7 +453,7 @@ describe 'server tests', ->
             return done err if err?
             # then the instance image is updated in model for rank 0
             assert.equal saved.images.length, 1
-            assert.equal saved.images[0].file, "#{character._id}-0.png"
+            assert.equal saved.images[0].file, "#{character.id}-0.png"
             assert.equal saved.images[0].width, 0
             assert.equal saved.images[0].height, 0
             # then the file exists and is equal to the original file
@@ -472,7 +470,7 @@ describe 'server tests', ->
               assert.ok !(fs.existsSync(file))
               done()
 
-            socket.emit 'removeImage', 'ItemType', character._id, 0
+            socket.emit 'removeImage', 'ItemType', character.id, 0
 
           # when saving the instance image #0
-          socket.emit 'uploadImage', 'ItemType', character._id, 'png', data.toString('base64'), 0
+          socket.emit 'uploadImage', 'ItemType', character.id, 'png', data.toString('base64'), 0

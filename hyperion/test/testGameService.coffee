@@ -44,13 +44,13 @@ describe 'GameService tests', ->
       return done err if err?
       Executable.resetAll true, (err) -> 
         return done err if err?
-        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> Field.collection.drop ->
+        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> Field.collection.drop -> Map.loadIdCache ->
           # given a map
-          new Map({name: 'test-game'}).save (err, saved) ->
+          new Map(id: 'test-game').save (err, saved) ->
             return done err if err?
             map = saved
             # given an item type
-            type = new ItemType {name: 'character'}
+            type = new ItemType id: 'character'
             type.setProperty 'name', 'string', ''
             type.setProperty 'health', 'integer', 10
             type.save (err, saved) ->
@@ -66,20 +66,20 @@ describe 'GameService tests', ->
                     return done err if err?
                     item3 = saved
                     # given a field type
-                    new FieldType({name: 'plain'}).save (err, saved) ->
+                    new FieldType(id: 'plain').save (err, saved) ->
                       return done err if err?
                       fieldType = saved
-                      new Field({mapId:map._id, typeId:fieldType._id, x:5, y:3}).save (err, saved) ->
+                      new Field({mapId:map.id, typeId:fieldType.id, x:5, y:3}).save (err, saved) ->
                         return done err if err?
                         field1 = saved
-                        new Field({mapId:map._id, typeId:fieldType._id, x:-2, y:-10}).save (err, saved) ->
+                        new Field({mapId:map.id, typeId:fieldType.id, x:-2, y:-10}).save (err, saved) ->
                           return done err if err?
                           field2 = saved
                           done()
 
   it 'should consultMap returned only relevant items', (done) ->
     # when retrieving items within coordinate -5:-5 and 5:5
-    service.consultMap map._id, -5, -5, 5, 5, (err, items, fields) ->
+    service.consultMap map.id, -5, -5, 5, 5, (err, items, fields) ->
       throw new Error "Can't consultMap: #{err}" if err?
       # then only item1 is returned
       assert.equal items.length, 1
@@ -91,7 +91,7 @@ describe 'GameService tests', ->
         
   it 'should consultMap returned nothing if no item found', (done) ->
     # when retrieving items within coordinate -1:-1 and -5:-5
-    service.consultMap map._id, -1, -1, -5, -5, (err, items, fields) ->
+    service.consultMap map.id, -1, -1, -5, -5, (err, items, fields) ->
       throw new Error "Can't consultMap: #{err}" if err?
       # then no items returned
       assert.equal items.length, 0

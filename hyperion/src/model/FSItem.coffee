@@ -194,7 +194,7 @@ class FSItem
       else
         # removes file
         fs.unlink @path, (err) =>
-          return callback "Error while removing file #{@_id}: #{err}" if err?
+          return callback "Error while removing file #{@path}: #{err}" if err?
           logger.debug "file #{@path} successfully removed"
           modelWatcher.change 'deletion', 'FSItem', @
           callback null, @
@@ -242,7 +242,7 @@ class FSItem
               modelWatcher.change 'creation', 'FSItem', @
               callback null, @
 
-  # Provide the equals() method to check correctly the equality between _ids.
+  # Provide the equals() method to check correctly the equality between paths.
   #
   # @param other [Object] other object against which the current object is compared
   # @return true if both objects have the same path, false otherwise

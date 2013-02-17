@@ -7,7 +7,7 @@
   - [!] documentation
   - Rule engine
     - [!] i18n utilities for rules and parameters
-    - [!] modifiable unic system date: TODO test server
+    - [!] modifiable unic system date: TODO test server, get initial date state
     - [!] reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
     - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)

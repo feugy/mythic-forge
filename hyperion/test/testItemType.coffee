@@ -19,6 +19,7 @@
 
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
+typeFactory = require '../src/model/typeFactory'
 watcher = require('../src/model/ModelWatcher').get()
 assert = require('chai').assert
 
@@ -34,7 +35,7 @@ describe 'ItemType tests', ->
   beforeEach (done) ->
     listener = null
     # empty items and types.
-    Item.collection.drop -> ItemType.collection.drop -> done()
+    Item.collection.drop -> ItemType.collection.drop -> Item.loadIdCache done
 
   afterEach (done) ->
     # remove all listeners
@@ -43,12 +44,12 @@ describe 'ItemType tests', ->
 
   it 'should type\'s properties be distinct', (done) ->
     # given a type with a property
-    type = new ItemType({name: 'vehicule'})
+    type = new ItemType({id: 'vehicule'})
     type.setProperty 'wheels', 'integer', 4
     type.save (err) ->
       return done err if err?
       # when creating another type with distinct property
-      type2 = new ItemType({name: 'animal'})
+      type2 = new ItemType({id: 'animal'})
       type2.setProperty 'mammal', 'boolean', true
       type2.save (err) ->
         return done err if err?
@@ -63,9 +64,8 @@ describe 'ItemType tests', ->
 
   it 'should type be created', (done) -> 
     # given a new ItemType
-    type = new ItemType()
-    name = 'montain'
-    type.name = name
+    id = 'montain'
+    type = new ItemType id:id
 
     # when saving it
     type.save (err, saved) ->
@@ -76,55 +76,12 @@ describe 'ItemType tests', ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
-        assert.equal types[0].name, name
+        assert.equal types[0].id, id
         done()
-
-  it 'should name and desc be internationalizables', (done) -> 
-    # given a new ItemType with translated name
-    type = new ItemType()
-    name = 'dust'
-    type.name = name
-    type.locale = 'fr'
-    nameFr = 'poussière'
-    type.name = nameFr
-
-    # when saving it
-    type.save (err, saved) ->
-      return done "Can't save type: #{err}" if err?
-
-      # then translations are available
-      saved.locale = null
-      assert.equal saved.name, name
-      saved.locale = 'fr'
-      assert.equal saved.name, nameFr
-
-      # when setting the tanslated description and saving it
-      saved.locale = null
-      desc = 'another one bites the dust'
-      saved.desc = desc
-      saved.locale = 'fr'
-      descFr = 'encore un qui mort la poussière' 
-      saved.desc = descFr
-
-      saved.save (err, saved) ->
-        return done "Can't save type: #{err}" if err?
-
-        # then it is in mongo
-        ItemType.find {}, (err, types) ->
-          # then it's the only one document
-          assert.equal 1, types.length
-          # then it's values were saved
-          assert.equal types[0].name, name
-          assert.equal types[0].desc, desc
-          types[0].locale = 'fr'
-          assert.equal types[0].name, nameFr
-          assert.equal types[0].desc, descFr
-          done()
 
   it 'should date property always be stores as Date', (done) -> 
     # given a new ItemType with a null time property
-    type = new ItemType()
-    name = 'test-date'
+    type = new ItemType id:'test-date'
     type.setProperty 'time', 'date', null
     # when saving it
     type.save (err, saved) ->
@@ -191,8 +148,7 @@ describe 'ItemType tests', ->
   describe 'given a type with a property', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
-      type = new ItemType()
-      type.name = 'river'
+      type = new ItemType id: 'river'
       type.setProperty 'color', 'string', 'blue'
       type.save (err, saved) -> 
         type = saved
@@ -221,7 +177,7 @@ describe 'ItemType tests', ->
           # then it's the only one document
           assert.equal types.length, 1
           # then only the relevant values were modified
-          assert.equal types[0].name, 'river',
+          assert.equal types[0].id, 'river',
           assert.ok 'depth' of types[0].properties, 'no depth in properties'
           assert.equal types[0].properties.depth?.type, 'integer'
           assert.equal types[0].properties.depth?.def, 10
@@ -266,7 +222,7 @@ describe 'ItemType tests', ->
 
     beforeEach (done) ->
       # creates a type with a string property 'color' and an array property 'affluents'.
-      type = new ItemType {name: 'river'}
+      type = new ItemType id: 'river'
       type.setProperty 'color', 'string', 'blue'
       type.setProperty 'affluents', 'array', 'Item'
       type.save (err) -> 
@@ -287,7 +243,7 @@ describe 'ItemType tests', ->
       # then a modification event was issued
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
-        updates.push instance._id.toString()
+        updates.push instance.id
         assert.equal operation, 'update'
         assert.equal instance.depth, 30
 
@@ -297,11 +253,11 @@ describe 'ItemType tests', ->
       type.save (err) -> 
         return done err if err?
         next = ->
-          Item.find {type: type._id}, (err, items) ->
+          Item.find {type: type.id}, (err, items) ->
             for item in items
               assert.isDefined item.depth
               assert.equal item.depth, defaultDepth
-              assert.ok item._id.toString() in updates
+              assert.ok item.id in updates
             done()
         setTimeout next, 500
 
@@ -311,7 +267,7 @@ describe 'ItemType tests', ->
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
         assert.equal operation, 'update'
-        updates.push instance._id.toString()
+        updates.push instance.id
         assert.ok instance.color is undefined
 
       # when setting a property to a type
@@ -320,11 +276,11 @@ describe 'ItemType tests', ->
       type.save (err) -> 
         next done err if err?
         next = ->
-          Item.find {type: type._id}, (err, items) ->
+          Item.find {type: type.id}, (err, items) ->
             return done err if err?
             for item in items
               assert.ok undefined is item.color, 'color still present'
-              assert.ok item._id.toString() in updates
+              assert.ok item.id in updates
             done()
         setTimeout next, 50
 
@@ -334,7 +290,7 @@ describe 'ItemType tests', ->
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
         assert.equal operation, 'update'
-        updates.push instance._id.toString()
+        updates.push instance.id
         assert.ok instance.color is undefined
 
       # when setting quantifiable to true
@@ -343,23 +299,23 @@ describe 'ItemType tests', ->
         return done err if err?
 
         next = ->
-          Item.find {type: type._id}, (err, items) ->
+          Item.find {type: type.id}, (err, items) ->
             return done err if err?
             # then all items have their quantity to 0
             for item in items
               assert.equal 0, item.quantity , 'quantity not set to 0'
-              assert.ok item._id.toString() in updates
+              assert.ok item.id in updates
 
             # when setting quantifiable to false
             type.quantifiable = false
             type.save (err) -> 
               return done err if err?
               next2 = ->
-                Item.find {type: type._id}, (err, items) ->
+                Item.find {type: type.id}, (err, items) ->
                   # then all
                   for item in items
                     assert.isNull item.quantity , 'quantity not set to null'
-                    assert.ok item._id.toString() in updates
+                    assert.ok item.id in updates
                   done()
 
               setTimeout next2, 50

@@ -35,11 +35,11 @@ logger = require('../../logger').getLogger 'worker'
 #
 # @param actor [Object] the concerned actor or Player
 # @param targets [Array<Item/Event>] array of targets the targeted item and event
-# @param wholeRule [Boolean] true to returns the whole rule and not just name/category
+# @param wholeRule [Boolean] true to returns the whole rule and not just id/category
 # @parma worker [Object] current object on which _errMsg is set for unexpected errors
 # @param callback [Function] callback executed when rules where determined. Called with parameters:
 # @option callback err [String] an error string, or null if no error occured
-# @option callback rules [Object] applicable rules: an associated array with rule names id as key, and
+# @option callback rules [Object] applicable rules: an associated array with rule id as key, and
 # as value an array containing for each concerned target:
 # - target [Object] the target
 # - params [Object] the awaited parameters specification
@@ -58,10 +58,14 @@ internalResolve = (actor, targets, wholeRule, worker, callback) ->
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
         obj = require pathUtils.relative __dirname, executable.compiledPath
-        rules.push obj if obj? and(utils.isA obj, Rule) and obj.active
+        obj.id = executable.id
+        if obj? and(utils.isA obj, Rule) and obj.active
+          rules.push obj 
+          obj.id = executable.id
+          obj.category = '' unless 'string' is utils.type obj.category
       catch err
         # report require errors
-        err = "failed to require executable #{executable._id}: #{err}"
+        err = "failed to require executable #{executable.id}: #{err}"
         logger.warn err
         return callback err
 
@@ -72,33 +76,33 @@ internalResolve = (actor, targets, wholeRule, worker, callback) ->
 
     # second part of the resolution, after the actor was resolved
     process = (err) ->
-      return callback "Cannot resolve rule because actor's (#{actor._id}) linked item/event cannot be resolve: #{err}" if err?
+      return callback "Cannot resolve rule because actor's (#{actor.id}) linked item/event cannot be resolve: #{err}" if err?
 
       # process all targets in parallel.
       for target in targets
         # third part of the resolution, after target have been resolved
         process2 = (err) ->
-          return callback "Cannot resolve rule because target's (#{target._id}) linked item/event cannot be resolve: #{err}" if err?
+          return callback "Cannot resolve rule because target's (#{target.id}) linked item/event cannot be resolve: #{err}" if err?
 
           # function applied to filter rules that apply to the current target.
           filterRule = (rule, end) -> 
             
             # message used in case of uncaught exception
-            worker._errMsg = "Failed to resolve rule #{rule.name}. Received exception "
+            worker._errMsg = "Failed to resolve rule #{rule.id}. Received exception "
 
             rule.canExecute actor, target, (err, parameters) ->
               # exit at the first resolution error
-              return callback "Failed to resolve rule #{rule.name}. Received exception #{err}" if err?
+              return callback "Failed to resolve rule #{rule.id}. Received exception #{err}" if err?
               if Array.isArray parameters
-                logger.debug "rule #{rule.name} applies"
+                logger.debug "rule #{rule.id} applies"
                 if wholeRule
                   result = rule: rule
                 else
                   result = category: rule.category
                 result.target = target
                 result.params = parameters
-                results[rule.name] = [] unless rule.name of results
-                results[rule.name].push result 
+                results[rule.id] = [] unless rule.id of results
+                results[rule.id].push result 
               end()
           
           # resolve all rules for this target.
@@ -139,7 +143,7 @@ module.exports =
   #
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
-  # @option callback rules [Object] applicable rules: an associated array with rule names id as key, and
+  # @option callback rules [Object] applicable rules: an associated array with rule id as key, and
   # as value an array containing for each concerned target:
   # - target [Object] the target
   # - params [Object] the awaited parameters specification
@@ -160,8 +164,8 @@ module.exports =
       targetId = args[1]
       Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
         return resolveEnd "Cannot resolve rules. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?
-        actor = result for result in results when result._id.equals actorId
-        target = result for result in results when result._id.equals targetId
+        actor = result for result in results when result.id is actorId
+        target = result for result in results when result.id is targetId
         return callback "No actor with id #{actorId}" unless actor?
 
         process = =>
@@ -195,7 +199,7 @@ module.exports =
         return callback "Cannot resolve rules. Failed to retrieve actor (#{actorId}) or items at position x:#{x} y:#{y}: #{err}" if err?
         actor = null
         for result,i in results 
-          if result._id.equals actorId
+          if result.id is actorId
             actor = result
             # remove actor from target unless he's on the map
             results.splice i, 1 unless actor.x is x and actor.y is y
@@ -205,7 +209,7 @@ module.exports =
         # filters item with actor map
         results = _.filter results, (item) -> actor.map.equals item?.map
         # gets also field at the coordinate
-        Field.findOne {mapId: actor.map._id, x:x, y:y}, (err, field) =>
+        Field.findOne {mapId: actor.map.id, x:x, y:y}, (err, field) =>
           return callback "Cannot resolve rules. Failed to retrieve field at position x:#{x} y:#{y}: #{err}" if err?
           results.splice 0, 0, field if field?
           logger.debug "resolve rules for actor #{actorId} at x:#{x} y:#{y}"
@@ -217,13 +221,13 @@ module.exports =
   # As a first validation, the rule is resolved for the target.
   # All objects modified by the rule will be registered in database.
   #
-  # @param ruleName [String] the executed rule name
+  # @param ruleId [String] the executed rule id
   #
-  # @overload execute(ruleName, playerId, callback)
+  # @overload execute(ruleId, playerId, callback)
   #   Executes a specific rule for a player
   #   @param playerId [ObjectId] the concerned player's id
   #
-  # @overload resolve(ruleName, actorId, targetId, callback)
+  # @overload resolve(ruleId, actorId, targetId, callback)
   #   Executes a specific rule for an actor and a given target
   #   @param actorId [ObjectId] the concerned actor's id
   #   @param targetId [ObjetId] the targeted item or event
@@ -232,21 +236,21 @@ module.exports =
   # @param callback [Function] callback executed when rule was applied. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
-  execute: (ruleName, args..., parameters, callback) =>
+  execute: (ruleId, args..., parameters, callback) =>
     actor = null
     target = null
     # second part of the process
     process = =>
-      logger.debug "execute rule #{ruleName} of #{actor._id} for #{target._id}"
+      logger.debug "execute rule #{ruleId} of #{actor.id} for #{target.id}"
 
       # then resolve rules
       internalResolve actor, [target], true, @, (err, rules) =>
         # if the rule does not apply, leave right now
-        return callback "Cannot resolve rule #{ruleName}: #{err}" if err?
+        return callback "Cannot resolve rule #{ruleId}: #{err}" if err?
         applicable = null
-        applicable = _.find rules[ruleName], (obj) -> target.equals obj.target if ruleName of rules
+        applicable = _.find rules[ruleId], (obj) -> target.equals obj.target if ruleId of rules
         unless applicable? 
-          return callback "The rule #{ruleName} of #{actor._id} does not apply any more for #{target._id}"
+          return callback "The rule #{ruleId} of #{actor.id} does not apply any more for #{target.id}"
         rule = applicable.rule
 
         # reinitialize creation and removal arrays.
@@ -254,28 +258,28 @@ module.exports =
         rule.removed = []
         # check parameters
         modelUtils.checkParameters parameters, applicable.params, actor, target, (err) =>
-          return callback "Invalid parameter for #{ruleName}: #{err}" if err?
+          return callback "Invalid parameter for #{rule.id}: #{err}" if err?
 
           # message used in case of uncaught exception
-          @_errMsg = "Failed to execute rule #{ruleName} of #{actor._id} for #{target._id}:"
+          @_errMsg = "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}:"
 
           rule.execute actor, target, parameters, (err, result) => 
-            return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+            return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
 
             saved = []
             # removes objects from mongo
-            logger.debug "remove model #{obj._id}" for obj in rule.removed
+            logger.debug "remove model #{obj.id}" for obj in rule.removed
             async.forEach rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
-              return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+              return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
               # adds new objects to be saved
               saved = saved.concat rule.saved
               # looks for modified linked objects
               modelUtils.filterModified actor, saved
               modelUtils.filterModified target, saved
               # saves the whole in MongoDB
-              logger.debug "save modified model #{obj._id}" for obj in saved
+              logger.debug "save modified model #{obj.id}" for obj in saved
               async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
-                return callback "Failed to execute rule #{rule.name} of #{actor._id} for #{target._id}: #{err}" if err?
+                return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                 # everything was fine
                 callback null, result
 
@@ -298,8 +302,8 @@ module.exports =
       # actorId and targetId are specified. Retrieve corresponding items and events
       Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
         return callback "Cannot execute rule. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?
-        actor = result for result in results when result._id.equals actorId
-        target = result for result in results when result._id.equals targetId
+        actor = result for result in results when result.id is actorId
+        target = result for result in results when result.id is targetId
         return callback "No actor with id #{actorId}" unless actor?
         if target?
           process()

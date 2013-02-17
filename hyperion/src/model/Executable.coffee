@@ -18,6 +18,7 @@
 ###
 'use strict'
 
+_ = require 'underscore'
 fs = require 'fs'
 path = require 'path'
 async = require 'async'
@@ -26,6 +27,8 @@ cluster = require 'cluster'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../logger').getLogger 'model'
 utils = require '../util/common'
+modelUtils = require '../util/model'
+Item = require '../model/Item'
 
 root = path.resolve path.normalize utils.confKey 'executable.source'
 compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
@@ -43,18 +46,18 @@ modelWatcher.on 'change', (operation, className, changes, wId) ->
   # update the executable cache
   switch operation
     when 'creation' 
-      executables[changes._id] = changes
+      executables[changes.id] = changes
     when 'update'
-      return unless changes._id of executables
+      return unless changes.id of executables
       # partial update
-      executables[changes._id][attr] = value for attr, value of changes when !(attr in ['_id'])
+      executables[changes.id][attr] = value for attr, value of changes when !(attr in ['id'])
       # clean require cache.
       cleanNodeCache()
     when 'deletion' 
-      return unless changes._id of executables
+      return unless changes.id of executables
       # clean require cache.
       cleanNodeCache()
-      delete executables[changes._id]
+      delete executables[changes.id]
 
 # hashmap to differentiate creations from updates
 wasNew= {}
@@ -75,25 +78,25 @@ compileFile = (executable, silent, callback) ->
   try 
     js = coffee.compile executable.content, {bare: true}
   catch exc
-    return callback "Error while compilling executable #{executable._id}: #{exc}"
+    return callback "Error while compilling executable #{executable.id}: #{exc}"
   # Eventually, write a copy with a js extension
   fs.writeFile executable.compiledPath, js, (err) =>
-    return callback "Error while saving compiled executable #{executable._id}: #{err}" if err?
-    logger.debug "executable #{executable._id} successfully compiled"
+    return callback "Error while saving compiled executable #{executable.id}: #{err}" if err?
+    logger.debug "executable #{executable.id} successfully compiled"
     # store it in local cache.
-    executables[executable._id] = executable
+    executables[executable.id] = executable
     # clean require cache.
     requireId = path.resolve path.normalize executable.compiledPath
     cleanNodeCache()
     # propagate change
     unless silent
-      modelWatcher.change (if wasNew[executable._id] then 'creation' else 'update'), "Executable", executable, ['content']
-      delete wasNew[executable._id]
+      modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable, ['content']
+      delete wasNew[executable.id]
     # and invoke final callback
     callback null, executable
 
 # Search inside existing executables. The following searches are supported:
-# - {id,_id,name: String,RegExp]}: search by ids
+# - {id: String,RegExp]}: search by ids
 # - {content: String,RegExp}: search inside executable content
 # - {rank: Number}: search inside executable's exported rank attribute
 # - {active: Boolean}: search inside executable's exported active attribute
@@ -139,7 +142,6 @@ search = (query, all, _operator = null) ->
       # this is a boolean term: search inside
       return search value, all, field
     else
-      field = '_id' if field is 'id' or field is 'name'
       candidates = all.concat()
       if field is 'category' or field is 'rank' or field is 'active'
         # We must replace executables by their exported object.
@@ -177,8 +179,11 @@ class Executable
   # @param callback [Function] invoked when the reset is done.
   # @option callback err [String] an error callback. Null if no error occured.
   @resetAll: (clean, callback) ->
+    # indicates 
+    #modelWatcher.change 'deletion', 'Executable', executable for id, executable of executables
     # clean local files, and compiled scripts
     cleanNodeCache()
+    removed = _.keys executables
     executables = {}
     utils.enforceFolder compiledRoot, clean, logger, (err) ->
       return callback err if err?
@@ -191,10 +196,10 @@ class Executable
           if ext isnt path.extname file
             return end()
           # creates an empty executable
-          executable = new Executable {_id:file.replace ext, ''}
+          executable = new Executable {id:file.replace ext, ''}
 
           fs.readFile executable.path, encoding, (err, content) ->
-            return callback "Error while reading executable '#{executable._id}': #{err}" if err?
+            return callback "Error while reading executable '#{executable.id}': #{err}" if err?
             # complete the executable content, and add it to the array.
             executable.content = content
             compileFile executable, true, (err, executable) ->
@@ -206,6 +211,8 @@ class Executable
           logger.debug 'Local executables cached successfully reseted' unless err?
           # ask to all worker to reload also
           if cluster.isMaster
+            # to remove ids from idCache
+            modelWatcher.emit 'executableReset', removed
             worker.send event: 'executableReset' for id, worker of cluster.workers
           callback err
 
@@ -214,7 +221,7 @@ class Executable
   # @param query [Object|String] optionnal condition to select relevant executables. Same syntax as MongoDB queries, supports:
   # - $and
   # - $or
-  # - '_id'|'id'|'name' field (search by id) with string
+  # - 'id' field (search by id) with string
   # - 'content' field (search in content) with string or regexp
   # - 'category' field (search rules' category) with string or regexp
   # - 'rank' field (search turn rules' rank) with number
@@ -230,7 +237,7 @@ class Executable
 
     results = []
     # just take the local cache and transforms it into an array.
-    results.push executable for _id, executable of executables
+    results.push executable for id, executable of executables
     # and perform search if relevant
     results = search query, results if query?
     callback null, results
@@ -245,7 +252,7 @@ class Executable
     callback null, (executables[id] for id in ids when id of executables)
 
   # The unic file name of the executable, which is also its id.
-  _id: null
+  id: null
 
   # The executable content (Utf-8 string encoded).
   content: ''
@@ -259,13 +266,13 @@ class Executable
   # Create a new executable, with its file name.
   # 
   # @param attributes object raw attributes, containing: 
-  # @option attributes_id [String] its file name (without it's path).
+  # @option attributes id [String] its file name (without it's path).
   # @option attributes content [String] the file content. Empty by default.
   constructor: (attributes) ->
-    @_id = attributes._id
+    @id = attributes.id
     @content = attributes.content || ''
-    @path = path.join root, @_id+ext
-    @compiledPath = path.join compiledRoot, @_id+'.js'
+    @path = path.join root, @id+ext
+    @compiledPath = path.join compiledRoot, @id+'.js'
 
   # Save (or update) a executable and its content.
   # 
@@ -273,10 +280,13 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the saved item
   save: (callback) =>
-    wasNew[@_id] = !(@_id of executables)
+    wasNew[@id] = !(@id of executables)
+    # check id unicity and validity
+    return callback new Error "id #{@id} for model Executable is invalid" unless modelUtils.isValidId @id
+    return callback new Error "id #{@id} for model Executable is already used" if wasNew[@id] and Item.isUsed @id
     fs.writeFile @path, @content, encoding, (err) =>
-      return callback "Error while saving executable #{@_id}: #{err}" if err?
-      logger.debug "executable #{@_id} successfully saved"
+      return callback "Error while saving executable #{@id}: #{err}" if err?
+      logger.debug "executable #{@id} successfully saved"
       # Trigger the compilation.
       compileFile @, false, callback
 
@@ -287,22 +297,23 @@ class Executable
   #   @param item [Item] the removed item
   remove: (callback) =>
     fs.exists @path, (exists) =>
-      return callback "Error while removing executable #{@_id}: this executable does not exists" if not exists
+      return callback "Error while removing executable #{@id}: this executable does not exists" if not exists
       cleanNodeCache()
-      delete executables[@_id]
+      delete executables[@id]
       fs.unlink @path, (err) =>
-        return callback "Error while removing executable #{@_id}: #{err}" if err?
+        return callback "Error while removing executable #{@id}: #{err}" if err?
         fs.unlink @compiledPath, (err) =>
-          logger.debug "executable #{@_id} successfully removed"
+          logger.debug "executable #{@id} successfully removed"
           # propagate change
           modelWatcher.change 'deletion', "Executable", @
           callback null, @
 
-  # Provide the equals() method to check correctly the equality between _ids.
+  # Provide the equals() method to check correctly the equality between ids.
   #
   # @param other [Object] other object against which the current object is compared
-  # @return true if both objects have the same _id, false otherwise
+  # @return true if both objects have the same id, false otherwise
   equals: (object) =>
-    @_id is object?._id
+    return false unless 'object' is utils.type object
+    @id is object?.id
 
 module.exports = Executable

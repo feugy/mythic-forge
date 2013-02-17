@@ -20,6 +20,7 @@
 Player = require '../src/model/Player'
 Item = require '../src/model/Item'
 ItemType = require '../src/model/ItemType'
+typeFactory = require '../src/model/typeFactory'
 watcher = require('../src/model/ModelWatcher').get()
 ObjectId = require('mongodb').BSONPure.ObjectID
 assert = require('chai').assert
@@ -31,24 +32,25 @@ awaited = false
 
 describe 'Player tests', ->
 
-  beforeEach (done) ->
+  before (done) ->
     # given an Item type, an item, and an empty Player collection.
-    ItemType.collection.drop -> 
-      new ItemType({name: 'character'}).save (err, saved) ->
+    ItemType.collection.drop -> Player.collection.drop ->
+      new ItemType({id: 'character'}).save (err, saved) ->
         return done err if err?
         type = saved
         Item.collection.drop -> 
           new Item({type: type}).save (err, saved) ->
             return done err if err?
             item = saved
-            Player.collection.drop -> done()
+            done()
       
-  afterEach (done) ->
-    Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> done()
+  beforeEach (done) ->
+    Player.collection.drop ->  Player.loadIdCache done
 
   # Restore admin player for further tests
   after (done) ->
-    new Player(email:'admin', password: 'admin', isAdmin:true).save done
+    ItemType.collection.drop -> Item.collection.drop ->
+      new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
   it 'should player be created', (done) -> 
     # given a new Player
@@ -160,14 +162,14 @@ describe 'Player tests', ->
 
     it 'should unknown players be erased when loading', (done) ->
       # given a unknown character added to player in db
-      Player.collection.update {_id:player._id}, {$push: characters:new ObjectId().toString()}, (err) ->
+      Player.collection.update {_id:player.id}, {$push: characters:new ObjectId().toString()}, (err) ->
         return done err if err?
-        Player.collection.findOne _id: player._id, (err, doc) ->
+        Player.collection.findOne _id: player.id, (err, doc) ->
           return done err if err?
           assert.equal doc.characters.length, 2
 
           # when loading character
-          Player.findById player._id, (err, doc) ->
+          Player.findById player.id, (err, doc) ->
             return done "Can't find player: #{err}" if err?
 
             # then only the relevant values were modified
@@ -179,7 +181,7 @@ describe 'Player tests', ->
 
     it 'should unknown players be erased when saving', (done) ->
       # given a unknown character added to player
-      unknown = new ObjectId()
+      unknown = new ObjectId().toString()
       player.characters.push unknown, item
       player.markModified 'characters'
 
@@ -189,9 +191,9 @@ describe 'Player tests', ->
         assert.equal operation, 'update'
         assert.ok player.equals instance
         assert.equal 3, instance.characters.length
-        assert.ok item._id.equals instance.characters[0]
-        assert.ok unknown.equals instance.characters[1]
-        assert.ok item._id.equals instance.characters[2]
+        assert.equal item.id, instance.characters[0]
+        assert.equal unknown, instance.characters[1]
+        assert.equal item.id, instance.characters[2]
         awaited = true
 
       # when saving it and retrieving it
@@ -201,10 +203,10 @@ describe 'Player tests', ->
         # then the added unknown character is still here
         assert.equal 3, saved.characters.length
         assert.ok item.equals saved.characters[0]
-        assert.ok unknown.equals saved.characters[1]
+        assert.equal unknown, saved.characters[1]
         assert.ok item.equals saved.characters[2]
 
-        Player.findById player._id, (err, doc) ->
+        Player.findById player.id, (err, doc) ->
           return done "Can't find player: #{err}" if err?
           # then the added unknown character was removed
           assert.equal 2, doc.characters.length

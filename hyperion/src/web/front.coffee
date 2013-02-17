@@ -26,6 +26,7 @@ fs = require 'fs'
 http = require 'http'
 coffee = require 'coffee-script'
 utils = require '../util/common'
+ruleUtils = require '../util/rule'
 stylus = require 'stylus'
 notifier = require('../service/Notifier').get()
 
@@ -75,6 +76,9 @@ module.exports = (app = null) ->
         baseUrl: "#{baseUrl}#{base}"
         apiBaseUrl: "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}"
         imagesUrl: "#{baseUrl}/images/"
+        timer:
+          value: ruleUtils.timer.current().valueOf()
+          paused: ruleUtils.timer.stopped
 
       res.header 'Content-Type', 'application/javascript; charset=UTF-8'
       res.send "window.conf = #{JSON.stringify conf}"

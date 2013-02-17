@@ -57,7 +57,7 @@ define [
     # @param className [String] css ClassName, set by subclasses
     constructor: (className) ->
       super tagName: 'div', className:'time view'
-      @_paused = false
+      @_paused = conf.timer.paused
       utils.onRouterReady =>
         @bindTo app.sockets.updates, 'change', @_onTimeChanged
 
@@ -78,6 +78,8 @@ define [
         dateFormat: i18n.constants.dateFormat.toLowerCase()
         timeFormat: i18n.constants.timeFormat.toLowerCase()
         onSelect: @_onSetTime
+
+      @_time.datetimepicker 'setDate', moment(conf.timer.value).toDate()
       @
 
     # **private**

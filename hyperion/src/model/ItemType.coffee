@@ -73,7 +73,7 @@ ItemType = typeFactory 'ItemType',
         # save type
         next()
         # get type instances
-        Item.find {type: @_id}, (err, instances) =>
+        Item.find {type: @id}, (err, instances) =>
           return next new Error "Failed to update type instances: #{err}" if err?
           # save all the modified instances
           async.forEach instances, (instance, done) -> 

@@ -19,7 +19,6 @@
 'use strict'
 
 _ = require 'underscore'
-ObjectId = require('mongodb').BSONPure.ObjectID
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
@@ -81,38 +80,35 @@ class _AdminService
       when 'ItemType' then modelClass = ItemType
       when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType
+      when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
       when 'Player' then modelClass = Player
       when 'Item' 
         populateTypeAndSave = (model) ->
-          ItemType.findCached [model?.type?._id], (err, types) ->
-            return callback "Failed to save item #{values._id}. Error while resolving its type: #{err}" if err?
-            return callback "Failed to save item #{values._id} because there is no type with id #{values?.type?._id}" unless types.length is 1    
+          ItemType.findCached [model?.type?.id], (err, types) ->
+            return callback "Failed to save item #{values.id}. Error while resolving its type: #{err}" if err?
+            return callback "Failed to save item #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1    
             # Do the replacement.
             model.type = types[0]
             _save model
 
-        # Do not store maps with string ids
-        if 'string' is utils.type values?.map?._id
-          values.map._id = new ObjectId values.map._id
-
-        if '_id' of values
+        if 'id' of values
           # resolve type
-          return Item.findCached [values._id], (err, models) ->
-            return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or models.length is 0
+          return Item.findCached [values.id], (err, models) ->
+            return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0
             model = models[0]
 
             # update values
             for key, value of values
-              model[key] = value unless key in ['_id', 'type', 'map']
+              model[key] = value unless key in ['id', 'type', 'map']
 
             # update map value
-            if model.map?._id?.toString() isnt values.map?._id?.toString()
-              if values.map?._id
+            if model.map?.id isnt values.map?.id
+              if values.map?.id
                 # resolve map
-                return Map.findCached [values.map._id], (err, maps) ->
-                  return callback "Failed to save item #{values._id}. Error while resolving its map: #{err}" if err?
-                  return callback "Failed to save item #{values._id} because there is no map with id #{item.map}" unless maps.length is 1  
+                return Map.findCached [values.map.id], (err, maps) ->
+                  return callback "Failed to save item #{values.id}. Error while resolving its map: #{err}" if err?
+                  return callback "Failed to save item #{values.id} because there is no map with id #{item.map}" unless maps.length is 1  
                   model.map = maps[0]
                   populateTypeAndSave model
               else
@@ -126,35 +122,35 @@ class _AdminService
 
       when 'Event' 
         populateTypeAndSave = (model) ->
-          EventType.findCached [model?.type?._id], (err, types) ->
-            return callback "Failed to save event #{values._id}. Error while resolving its type: #{err}" if err?
-            return callback "Failed to save event #{values._id} because there is no type with id #{values?.type?._id}" unless types.length is 1    
+          EventType.findCached [model?.type?.id], (err, types) ->
+            return callback "Failed to save event #{values.id}. Error while resolving its type: #{err}" if err?
+            return callback "Failed to save event #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1    
             # Do the replacement.
             model.type = types[0]
             _save model
 
         resolveFrom = (model) ->
           if model.from?
-            id = if 'object' is utils.type model.from then model.from?._id else model.from
+            id = if 'object' is utils.type model.from then model.from?.id else model.from
             # resolve from item
             return Item.findCached [id], (err, froms) ->
-              return callback "Failed to save event #{values._id}. Error while resolving its from: #{err}" if err?
-              return callbacl "Failed to save event #{values._id} because there is no from with id #{id}" unless froms.length is 1  
+              return callback "Failed to save event #{values.id}. Error while resolving its from: #{err}" if err?
+              return callbacl "Failed to save event #{values.id} because there is no from with id #{id}" unless froms.length is 1  
               model.from = froms[0]
               populateTypeAndSave model
           else
             model.from = null
             populateTypeAndSave model
 
-        if '_id' of values
+        if 'id' of values
           # resolve type
-          return Event.findCached [values._id], (err, models) ->
-            return callback "Unexisting Item with id #{values._id}: #{err}", modelName if err? or models.length is 0
+          return Event.findCached [values.id], (err, models) ->
+            return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0
             model = models[0]
 
             # update values
             for key, value of values
-              model[key] = value unless key in ['_id', 'type']
+              model[key] = value unless key in ['id', 'type']
 
             # update from value
             resolveFrom model
@@ -175,18 +171,10 @@ class _AdminService
           # do not save mongoose details.
           if 'toObject' of field and field.toObject instanceof Function
             field = field.toObject()
-          return callback 'Fields cannot be updated', modelName, savedFields if '_id' of field
+          return callback 'Fields cannot be updated', modelName, savedFields if 'id' of field
           new Field(field).save unqueue
 
-        return unqueue null, null
-
-      when 'Executable' 
-        # special behaviour for Executables: save only works with new Executbales
-        return Executable.findCached [values._id], (err, models) ->
-          return callback "Id #{values._id} already used", modelName unless models.length is 0
-          # create new if not found
-          model = new Executable values 
-          return _save model
+        return unqueue null, null 
 
       when 'FSItem'
         return authoringService.save values, email, (err, saved) -> callback err, modelName, saved
@@ -195,14 +183,14 @@ class _AdminService
     if 'toObject' of values and values.toObject instanceof Function
       values = values.toObject()
 
-    # get existing values
-    if '_id' of values
-      modelClass.findCached [values._id], (err, models) ->
-        return callback "Unexisting #{modelName} with id #{values._id}: #{err}", modelName if err? or models.length is 0
+    # get existing values if if present and used for classes that support it
+    if 'id' of values and (modelName in ['FSItem', 'Field'] or Item.isUsed values.id)
+      modelClass.findCached [values.id], (err, models) ->
+        return callback "Unexisting #{modelName} with id #{values.id}: #{err}", modelName if err? or models.length is 0
         model = models[0]
 
         for key, value of values
-          model[key] = value unless key in ['_id', 'properties', 'characters']
+          model[key] = value unless key in ['id', 'properties', 'characters']
           # manually set and unset properties
           if key is 'properties'
             # at the begining, all existing properties may be unset
@@ -227,8 +215,8 @@ class _AdminService
 
           else if key is 'characters'
             # manually mark characters as modified if needed
-            previous = _.pluck model.characters, '_id'
-            newly = _.pluck value, '_id'
+            previous = _.pluck model.characters, 'id'
+            newly = _.pluck value, 'id'
             if _.difference(newly, previous).length isnt 0
               model.characters = value
               model.markModified 'characters'
@@ -237,39 +225,6 @@ class _AdminService
     else 
       # or save new one
       _save new modelClass values
-
-  # Dedicated save method for Executables. Allow renaming while saving.
-  #
-  # @param values [Object] saved values, used as argument of the model constructor
-  # @param newId [String] executable new name, of null to disabled renaming.
-  # @param callback [Function] end callback, invoked with three arguments
-  # @option callback err [String] error string. Null if no error occured
-  # @option callback oldId [String] previous id, in case of renaming
-  # @option callback model [Object] saved executable
-  saveAndRename: (values, newId, callback) =>
-    # checks that executable exists
-    previousId = values._id
-    Executable.findCached [previousId], (err, executables) ->
-      return callback "Unexisting Executable with id #{previousId}" if err? or executables.length is 0
-      executable = executables[0]
-
-      _save = (executable) ->
-        executable.save (err, saved) -> callback err, previousId, saved
-
-      if newId
-        # check that newId is free
-        Executable.findCached [newId], (err, existings) ->
-          return callback "Id #{newId} already used" unless existings.length is 0
-          # remove old value
-          executable.remove (err) -> 
-            # and save new one after changing the id
-            values._id = newId
-            _save new Executable values
-
-      else 
-        for key, value of values
-          executable[key] = value unless key is '_id'
-        _save executable
 
   # Deletes an instance of any model.
   #
@@ -283,8 +238,8 @@ class _AdminService
   # @option callback model [Object] saved model
   remove: (modelName, values, email, callback) =>
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
-    unless 'Field' is modelName or 'FSItem' is modelName or '_id' of values
-      return callback "Cannot remove #{modelName} because no '_id' specified", modelName 
+    unless 'Field' is modelName or 'FSItem' is modelName or 'id' of values
+      return callback "Cannot remove #{modelName} because no 'id' specified", modelName 
     modelClass = null
     switch modelName
       when 'ItemType' then modelClass = ItemType
@@ -305,8 +260,8 @@ class _AdminService
           return callback err, modelName, removedFields if values.length is 0
           field = values.pop()
           # find field by id
-          Field.findById field._id, (err, model) ->
-            return callback "Unexisting field with id #{field._id}", modelName, removedFields if err? or !(model?)
+          Field.findById field.id, (err, model) ->
+            return callback "Unexisting field with id #{field.id}", modelName, removedFields if err? or !(model?)
             removedFields.push model
             # and remove it.
             model.remove unqueue
@@ -317,8 +272,8 @@ class _AdminService
         return authoringService.remove values, email, (err, removed) -> callback err, modelName, removed
 
     # get existing values
-    modelClass.findCached [values._id], (err, models) ->
-      return callback "Unexisting #{modelName} with id #{values._id}", modelName if err? or models.length is 0
+    modelClass.findCached [values.id], (err, models) ->
+      return callback "Unexisting #{modelName} with id #{values.id}", modelName if err? or models.length is 0
       # special player case: purge and disconnect before removing
       if modelName is 'Player'
         playerService.disconnect models[0].email, 'removal', (err) ->

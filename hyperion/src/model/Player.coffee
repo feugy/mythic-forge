@@ -80,8 +80,6 @@ Player = typeFactory 'Player',
     default: null
 , 
   strict: true 
-  noDesc: true
-  noName: true,
   middlewares:
 
     # retrieve the characters corresponding to the stored ids.
@@ -92,9 +90,9 @@ Player = typeFactory 'Player',
       return next() if player.characters.length is 0 
       # loads the character from database
       Item.find {_id: {$in: player.characters}}, (err, characters) ->
-        return next(new Error "Unable to init item #{player._id}. Error while resolving its character: #{err}") if err?
+        return next(new Error "Unable to init item #{player.id}. Error while resolving its character: #{err}") if err?
         # Do the replacement, whatever we really found. Unexisting characters will be erased
-        player.characters = _.map player.characters, (id) -> _.find characters, (character) -> character._id.equals id
+        player.characters = _.map player.characters, (id) -> _.find characters, (character) -> character.id is id
         player.characters = _.without player.characters, null, undefined
         # store original value
         player.__origcharacters = player.characters.concat() or []
@@ -113,7 +111,7 @@ Player = typeFactory 'Player',
         # replace characters with their id, for storing in Mongo, without using setters.
         saveCharacters = @characters.concat()
         # Do not store string version of id.
-        @_doc.characters[i] = character._id for character, i in saveCharacters when character?._id?
+        @_doc.characters[i] = character.id for character, i in saveCharacters when character?.id?
         next()
         # store new original value
         @__origcharacters = @_doc.characters.concat() or []
@@ -122,8 +120,8 @@ Player = typeFactory 'Player',
 
       if @provider is null and !@password
         # before accepting saves without password, check that we have passord inside DB
-        @constructor.findOne _id:@_id, (err, player) ->
-          return next new Error "Cannot check password existence in db for player #{@_id}: #{err}" if err?
+        @constructor.findOne _id:@id, (err, player) ->
+          return next new Error "Cannot check password existence in db for player #{@id}: #{err}" if err?
           return next new Error "Cannot save manually provided account without password" unless player?.get('password')?
           process()
       else 

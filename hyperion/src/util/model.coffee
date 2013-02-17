@@ -21,6 +21,7 @@
 _ = require 'underscore'
 async = require 'async'
 Model = require('mongoose').Model
+watcher = require('../model/ModelWatcher').get()
 utils = require '../util/common'
 
 # string and text: null or type is string
@@ -32,10 +33,10 @@ checkString = (val, property) ->
 
 # object: null or string (id) or object with a collection that have the good name.    
 checkObject = (val, property) ->
-  if val is null or 'string' is utils.type(val)
+  if val is null or 'string' is utils.type val
     null
-  else if 'object' is utils.type(val)
-    unless val?.collection?.name is property.def.toLowerCase()+'s' or property.def.toLowerCase() is 'any' and utils.isA val, Model
+  else if 'object' is utils.type val
+    unless val?.collection?.name is "#{property.def.toLowerCase()}s" or property.def.toLowerCase() is 'any' and utils.isA val, Model
       "#{val} isn't a valid #{property.def}" 
     else
       null
@@ -142,42 +143,6 @@ filterModified = (obj, modified) ->
 
 module.exports =
 
-  # Allows to add i18n fields on a Mongoose schema.
-  # adds a transient attribute `locale` that allows to manage model locale.
-  #
-  # @param schema [Schema] the concerned Mongoose schema
-  enhanceI18n: (schema) ->
-    schema.virtual('locale')
-      .get () ->
-        if @_locale? then @_locale else 'default'
-      .set (value) ->
-        @_locale = value
-
-  # Creates an internatializable field inside a Mongoose Schema.
-  # A "private" field prefixed with `_` holds all translation.
-  # A virtual field with getter and setter allow to access translations.
-  # To change the translation of a field, change the `locale` attribute of the model.
-  #
-  # You must first use `enhanceI18n()` on the schema.
-  #
-  # @param schema [Schema] the concerned Mongoose schema
-  # @param field [String] name of the i18n field.
-  # @param options [Object] optionnal options used to create the real field. Allow to specify validation of required status.
-  addI18n: (schema, field, options = {}) ->
-    throw new Error 'please call enhanceI18n on schema before adding it i18n fields' if 'locale' of schema
-    spec = {}
-    spec["_#{field}"] = _.extend options, {type: {}, default: -> {}}
-    schema.add spec
-    schema.virtual(field)
-      .get () ->
-        # check the local existence.
-        locale = @get 'locale'
-        throw new Error "unknown locale #{locale} for field #{field} of model #{@_id}" unless locale of @get("_#{field}")
-        @get("_#{field}")[locale]
-      .set (value) ->
-        @get("_#{field}")[@get 'locale'] = value
-        @markModified "_#{field}"
-
   # Enforce that a property value does not violate its corresponding definition.
   #
   # @param value [Object] the checked value.
@@ -274,7 +239,7 @@ module.exports =
                 return next "#{param.name}: #{JSON.stringify value} isn't a valid object id or id+qty"
 
               # check id is in possible values
-              objValue = _.find possibles, (obj) -> id is obj?._id?.toString()
+              objValue = _.find possibles, (obj) -> id is obj?.id
               return next "#{param.name}: #{id} is not a valid option" unless objValue?
 
               # check quantity 
@@ -300,13 +265,13 @@ module.exports =
         # first look for items
         return require('../model/Item').findCached ids, (err, objs) ->
           return next "#{param.name}: failed to resolve possible items: #{err}" if err?
-          ids = _.difference ids, _.pluck objs, '_id'
+          ids = _.difference ids, _.pluck objs, 'id'
           possibles = possibles.concat objs
           return process possibles if ids.length is 0
           # then look for events
           require('../model/Event').findCached ids, (err, objs) ->
             return next "#{param.name}: failed to resolve possible events: #{err}" if err?
-            ids = _.difference ids, _.pluck objs, '_id'
+            ids = _.difference ids, _.pluck objs, 'id'
             possibles = possibles.concat objs
             process possibles 
       
@@ -332,13 +297,13 @@ module.exports =
     for name, property of properties
       value = instance[name]
       if property.type is 'object'
-        if value isnt null and 'object' is utils.type(value) and value?._id?
-          instance[name] = value._id.toString() 
+        if value isnt null and 'object' is utils.type(value) and value?.id?
+          instance[name] = value.id 
           instance.markModified name
       else if property.type is 'array'
         if 'array' is utils.type value
-          for linked, i in value when 'object' is utils.type(linked) and linked?._id?
-            value[i] = linked._id.toString() 
+          for linked, i in value when 'object' is utils.type(linked) and linked?.id?
+            value[i] = linked.id 
             instance.markModified name
           # filter null values
           instance[name] = _.filter value, (obj) -> obj?
@@ -362,3 +327,12 @@ module.exports =
   # @param obj [Object] root model that begins the analysis
   # @param modified [Array] array of already modified object, concatenated with found modified objects
   filterModified: filterModified
+
+  # Check id validity. Must be a string containing only alphanumerical characters and -.
+  #
+  # @param id [String] the checked id
+  # @return true if the id is valid, false otherwise
+  isValidId: (id) ->
+    return false unless 'string' is utils.type id
+    return false unless id.match /^[\w-]+$/
+    true

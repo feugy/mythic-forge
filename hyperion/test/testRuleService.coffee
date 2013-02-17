@@ -63,11 +63,11 @@ describe 'RuleService tests', ->
       testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
         FieldType.collection.drop -> Field.collection.drop ->
           EventType.collection.drop -> Event.collection.drop ->
-            Map.collection.drop ->
-              map = new Map {name: 'map-Test'}
+            Map.collection.drop -> Map.loadIdCache ->
+              map = new Map {id: 'map-Test'}
               map.save (err) ->
                 return done err if err?
-                map2 = new Map {name: 'map-Test-2'}
+                map2 = new Map {id: 'map-Test-2'}
                 map2.save (err) ->
                   return done err if err?
                   Executable.resetAll true, done
@@ -80,11 +80,9 @@ describe 'RuleService tests', ->
   it 'should linked object be modified and saved by a rule', (done) ->
     # given a rule that need links resolution
     script = new Executable 
-      _id:'rule3', 
+      id:'rule3', 
       content: """Rule = require '../model/Rule'
         class DriveLeft extends Rule
-          constructor: ->
-            @name= 'rule 3'
           canExecute: (actor, target, callback) =>
             target.getLinked ->
               callback null, if target.pilot.equals actor then [] else null
@@ -97,12 +95,12 @@ describe 'RuleService tests', ->
     script.save (err) ->
       # given a character type and a car type
       return done err if err?
-      type1 = new ItemType({name: 'character'})
+      type1 = new ItemType id: 'character'
       type1.setProperty 'name', 'string', ''
       type1.save (err, saved) ->
         return done err if err?
         type1 = saved
-        type2 = new ItemType({name: 'car'})
+        type2 = new ItemType id: 'car'
         type2.setProperty 'pilot', 'object', 'Item'
         type2.save (err, saved) ->
           return done err if err?
@@ -116,12 +114,12 @@ describe 'RuleService tests', ->
               item2 = saved
               
               # given the rules that are applicable for a target 
-              service.resolve item1._id, item2._id, (err, results)->
+              service.resolve item1.id, item2.id, (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
-                return done 'the rule 3 was not resolved' unless 'rule 3' of results
+                return done 'the rule3 was not resolved' unless 'rule3' of results
 
                 # when executing this rule on that target
-                service.execute 'rule 3', item1._id, item2._id, {}, (err, result)->
+                service.execute 'rule3', item1.id, item2.id, {}, (err, result)->
                   return done "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
@@ -137,12 +135,10 @@ describe 'RuleService tests', ->
   it 'should rule create new objects', (done) ->
     # given a rule that creates an object
     script = new Executable
-      _id:'rule4', 
+      id:'rule4', 
       content: """Rule = require '../model/Rule'
         Item = require '../model/Item'
         module.exports = new (class AddPart extends Rule
-          constructor: ->
-            @name= 'rule 4'
           canExecute: (actor, target, callback) =>
             callback null, if actor.stock.length is 0 then [] else null
           execute: (actor, target, params, callback) =>
@@ -154,44 +150,43 @@ describe 'RuleService tests', ->
     script.save (err) ->
       # given a type
       return done err if err?
-      type1 = new ItemType({name: 'container'})
+      type1 = new ItemType id: 'container'
       type1.setProperty 'name', 'string', ''
       type1.setProperty 'stock', 'array', 'Item'
       type1.save (err, saved) ->
+        return done err if err?
         # given one item
         new Item({type: type1, name:'base'}).save (err, saved) ->
           return done err if err?
           item1 = saved
               
           # given the rules that are applicable for himself
-          service.resolve item1._id, item1._id, (err, results)->
+          service.resolve item1.id, item1.id, (err, results)->
             return done "Unable to resolve rules: #{err}" if err?
-            return done 'the rule 4 was not resolved' if results['rule 4'].length isnt 1
+            return done 'the rule4 was not resolved' if results['rule4'].length isnt 1
 
             # when executing this rule on that target
-            service.execute 'rule 4', item1._id, item1._id, {}, (err, result)->
+            service.execute 'rule4', item1.id, item1.id, {}, (err, result)->
               return done "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
               assert.equal result, 'part added'
                 # then the item was created on database
-              Item.findOne {type: type1._id, name: 'part'}, (err, created) =>
+              Item.findOne {type: type1.id, name: 'part'}, (err, created) =>
                 return done "Item not created" if err? or not(created?)
 
                 # then the container was modified on database
-                Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
+                Item.findOne {type: type1.id, name: 'base'}, (err, existing) =>
                   assert.equal 1, existing.stock.length
-                  assert.ok created._id.equals existing.stock[0]
+                  assert.equal created.id, existing.stock[0]
                   done()
 
   it 'should rule delete existing objects', (done) ->
     # given a rule that creates an object
     script = new Executable
-      _id:'rule5', 
+      id:'rule5', 
       content: """Rule = require '../model/Rule'
         module.exports = new (class RemovePart extends Rule
-          constructor: ->
-            @name= 'rule 5'
           canExecute: (actor, target, callback) =>
             callback null, []
           execute: (actor, target, params, callback) =>
@@ -202,7 +197,7 @@ describe 'RuleService tests', ->
       # given a type
       return done err if err?
       new ItemType(
-        name: 'container'
+        id: 'container'
         properties: 
           name: 
             type: 'string'
@@ -225,23 +220,23 @@ describe 'RuleService tests', ->
             item1 = saved  
 
             # given the rules that are applicable for the both items
-            service.resolve item1._id, item2._id, (err, results)->
+            service.resolve item1.id, item2.id, (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
-              return done 'the rule 5 was not resolved' if results['rule 5'].length isnt 1
+              return done 'the rule5 was not resolved' if results['rule5'].length isnt 1
 
               # when executing this rule on that target
-              service.execute 'rule 5', item1._id, item2._id, {}, (err, result)->
+              service.execute 'rule5', item1.id, item2.id, {}, (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
                 assert.equal result, 'part removed'
                 # then the item does not exist in database anymore
-                Item.findOne {type: type1._id, name: 'part'}, (err, existing) =>
+                Item.findOne {type: type1.id, name: 'part'}, (err, existing) =>
                   return done "Item not created" if err?
 
                   assert.ok existing is null
                   # then the container does not contain the part
-                  Item.findOne {type: type1._id, name: 'base'}, (err, existing) =>
+                  Item.findOne {type: type1.id, name: 'base'}, (err, existing) =>
                     return done "Item not created" if err?
 
                     existing.getLinked ->
@@ -253,11 +248,9 @@ describe 'RuleService tests', ->
     beforeEach (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
-        _id:'rule0'
+        id:'rule0'
         content:"""Rule = require '../model/Rule'
           class MyRule extends Rule
-            constructor: ->
-              @name= 'rule 0'
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
@@ -279,23 +272,23 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player._id, (err, results)->
+      service.resolve player.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
         # then the rule must have matched
-        assert.property results, 'rule 0'
-        assert.equal 1, results['rule 0'].length
-        assert.ok player.equals results['rule 0'][0].target
+        assert.property results, 'rule0'
+        assert.equal 1, results['rule0'].length
+        assert.ok player.equals results['rule0'][0].target
         done()
 
     it 'should rule be executed for player', (done) ->
       # given an applicable rule for a target 
-      service.resolve player._id, (err, results)->
+      service.resolve player.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 0', player._id, {}, (err, result)->
+        service.execute 'rule0', player.id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -386,8 +379,6 @@ describe 'RuleService tests', ->
       # given a modification on rule content
       script.content = """Rule = require '../model/Rule'
         class MyRule extends Rule
-          constructor: ->
-            @name= 'rule 0'
           canExecute: (actor, target, callback) =>
             callback null, []
           execute: (actor, target, params, callback) =>
@@ -396,11 +387,11 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # given an applicable rule for a target 
-        service.resolve player._id, (err, results)->
+        service.resolve player.id, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
-          service.execute 'rule 0', player._id, {}, (err, result)->
+          service.execute 'rule0', player.id, {}, (err, result)->
             return done "Unable to execute rules: #{err}" if err?
 
             # then the modficiation was taken in account
@@ -412,11 +403,9 @@ describe 'RuleService tests', ->
     beforeEach (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
-        _id:'rule1', 
+        id:'rule1', 
         content: """Rule = require '../model/Rule'
           class MyRule extends Rule
-            constructor: ->
-              @name= 'rule 1'
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
@@ -426,7 +415,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         new ItemType(
-          name: 'spare'
+          id: 'spare'
           properties: 
             name: 
               type: 'string'
@@ -440,10 +429,10 @@ describe 'RuleService tests', ->
         ).save (err, saved) ->
           return done err if err?
           type1 = saved
-          new FieldType(name: 'plain').save (err, saved) ->
+          new FieldType(id: 'plain').save (err, saved) ->
             return done err if err?
             fieldType = saved
-            new EventType(name: 'communication').save (err, saved) ->
+            new EventType(id: 'communication').save (err, saved) ->
               return done err if err?
               eventType = saved
               # Drop existing events
@@ -452,7 +441,7 @@ describe 'RuleService tests', ->
                   return done err if err?
                   event1 = saved
                   # Drops existing items
-                  Item.collection.drop -> Field.collection.drop ->
+                  Item.collection.drop -> Field.collection.drop -> Item.loadIdCache ->
                     # Creates some items
                     new Item(map: map, x:0, y:0, type: type1).save (err, saved) ->
                       return done err if err?
@@ -467,34 +456,33 @@ describe 'RuleService tests', ->
                             return done err if err?
                             item4 = saved
                             # Creates field
-                            new Field(mapId: map._id, typeId: fieldType._id, x:1, y:2).save (err, saved) ->
+                            new Field(mapId: map.id, typeId: fieldType.id, x:1, y:2).save (err, saved) ->
                               return done err if err?
                               field1 = saved
-                              new Field(mapId: map2._id, typeId: fieldType._id, x:1, y:2).save (err, saved) ->
+                              new Field(mapId: map2.id, typeId: fieldType.id, x:1, y:2).save (err, saved) ->
                                 return done err if err?
                                 field2 = saved
                                 done()
 
     it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items
-      service.resolve item1._id, -1, 0, (err, results)->
+      service.resolve item1.id, -1, 0, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
         # then the no item found at the coordinate
-        for key of results 
-          assert.fail 'results are not empty'
+        assert.fail 'results are not empty' for key of results
         done()
 
     it 'should rule be applicable on coordinates', (done) ->
       # when resolving applicable rules at a coordinate
-      service.resolve item1._id, 1, 2, (err, results)->
+      service.resolve item1.id, 1, 2, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has only matched objects from the first map
-        assert.property results, 'rule 1'
-        results = results['rule 1']
+        assert.property results, 'rule1'
+        results = results['rule1']
         assert.equal results.length, 3
         # then the dumb rule has matched the second item
         match = _.find results, (res) -> item2.equals res.target
@@ -509,13 +497,13 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on coordinates with map isolation', (done) ->
       # when resolving applicable rules at a coordinate of the second map
-      service.resolve item4._id, 1, 2, (err, results)->
+      service.resolve item4.id, 1, 2, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has only matched objects from the first map
-        assert.property results, 'rule 1'
-        results = results['rule 1']
+        assert.property results, 'rule1'
+        results = results['rule1']
         assert.equal results.length, 2
         # then the dumb rule has matched the fourth item
         match = _.find results, (res) -> item4.equals res.target
@@ -527,23 +515,23 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on item target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1._id, item2._id, (err, results)->
+      service.resolve item1.id, item2.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        assert.property results, 'rule 1'
-        match = _.find results['rule 1'], (res) -> item2.equals res.target
+        assert.property results, 'rule1'
+        match = _.find results['rule1'], (res) -> item2.equals res.target
         assert.isNotNull match, 'The item2\'s id is not in results'
         done()
 
     it 'should rule be executed for item target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1._id, item2._id, (err, results)->
+      service.resolve item1.id, item2.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 1', item1._id, item2._id, {}, (err, result)->
+        service.execute 'rule1', item1.id, item2.id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -552,23 +540,23 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on event target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1._id, event1._id, (err, results)->
+      service.resolve item1.id, event1.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        assert.property results, 'rule 1'
-        match = _.find results['rule 1'], (res) -> event1.equals res.target
+        assert.property results, 'rule1'
+        match = _.find results['rule1'], (res) -> event1.equals res.target
         assert.isNotNull match, 'The event1\'s id is not in results'
         done()
 
     it 'should rule be executed for event target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1._id, event1._id, (err, results)->
+      service.resolve item1.id, event1.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 1', item1._id, event1._id, {}, (err, result)->
+        service.execute 'rule1', item1.id, event1.id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -577,23 +565,23 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on field target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1._id, field1._id, (err, results)->
+      service.resolve item1.id, field1.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
         # then the dumb rule has matched the second item
-        assert.property results, 'rule 1'
-        match = _.find results['rule 1'], (res) -> field1.equals res.target
+        assert.property results, 'rule1'
+        match = _.find results['rule1'], (res) -> field1.equals res.target
         assert.isNotNull match, 'The field1\'s id is not in results'
         done()
 
     it 'should rule be executed for field target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1._id, field1._id, (err, results)->
+      service.resolve item1.id, field1.id, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule 1', item1._id, field1._id, {}, (err, result)->
+        service.execute 'rule1', item1.id, field1.id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -603,11 +591,9 @@ describe 'RuleService tests', ->
     it 'should rule execution modifies item in database', (done) ->
       # given a rule that modified coordinates
       script = new Executable
-        _id:'rule2', 
+        id:'rule2', 
         content: """Rule = require '../model/Rule'
           class MoveRule extends Rule
-            constructor: ->
-              @name= 'rule 2'
             canExecute: (actor, target, callback) =>
               callback null, if target.x is 1 then [] else null
             execute: (actor, target, params, callback) =>
@@ -619,14 +605,14 @@ describe 'RuleService tests', ->
         return done err if err?
 
         # given the rules that are applicable for a target 
-        service.resolve item1._id, item2._id, (err, results)->
+        service.resolve item1.id, item2.id, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
-          assert.property results, 'rule 2'
-          assert.equal 1, results['rule 2'].length
+          assert.property results, 'rule2'
+          assert.equal 1, results['rule2'].length
 
           # when executing this rule on that target
-          service.execute 'rule 2', item1._id, item2._id, {}, (err, result)->
+          service.execute 'rule2', item1.id, item2.id, {}, (err, result)->
             if err?
               assert.fail "Unable to execute rules: #{err}"
               return done();
@@ -643,11 +629,9 @@ describe 'RuleService tests', ->
     it 'should modification be detected on dynamic attributes', (done) ->
       # given a rule that modified dynamic attributes
       new Executable(
-        _id:'rule22'
+        id:'rule22'
         content: """Rule = require '../model/Rule'
           class AssembleRule extends Rule
-            constructor: ->
-              @name= 'rule 22'
             canExecute: (actor, target, callback) =>
               callback null, if target.type.equals(actor.type) and !target.equals actor then [] else null
             execute: (actor, target, params, callback) =>
@@ -658,23 +642,23 @@ describe 'RuleService tests', ->
       ).save (err) ->
         return done err if err?
         # when executing this rule on that target
-        service.execute 'rule 22', item1._id, item2._id, {}, (err, result)->
+        service.execute 'rule22', item1.id, item2.id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
           # then the rule is executed.
           assert.equal result, 'target assembled'
 
           # then the first item was modified on database
-          Item.findById item1._id, (err, item) =>
+          Item.findById item1.id, (err, item) =>
             return done "failed to retrieve item: #{err}" if err?
             assert.ok item1.equals item
             assert.equal item.parts.length, 1
-            assert.ok item2._id.equals(item.parts[0]), 'item1 do not have item2 in its parts'
+            assert.equal item2.id, item.parts[0], 'item1 do not have item2 in its parts'
 
             # then the second item was modified on database
-            Item.findById item2._id, (err, item) =>
+            Item.findById item2.id, (err, item) =>
               return done "failed to retrieve item: #{err}" if err?
               assert.ok item2.equals item
-              assert.ok item1._id.equals(item.compose), 'item2 do not compose item1'
+              assert.equal item1.id, item.compose, 'item2 do not compose item1'
               done()
 
   describe 'given an item type and an item', ->
@@ -684,11 +668,12 @@ describe 'RuleService tests', ->
         Item.collection.drop ->
           # given a type
           return done err if err?
-          type1 = new ItemType({name: 'dog'})
+          type1 = new ItemType id: 'dog'
           type1.setProperty 'name', 'string', ''
           type1.setProperty 'fed', 'integer', 0
           type1.setProperty 'execution', 'string', ''
           type1.save (err, saved) ->
+            return done err if err?
             type1 = saved
             # given two items
             new Item({type: type1, name:'lassie'}).save (err, saved) ->
@@ -701,15 +686,12 @@ describe 'RuleService tests', ->
 
     it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
-      script = new Executable _id:'rule6', content: """TurnRule = require '../model/TurnRule'
+      script = new Executable id:'rule6', content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
-          ObjectId = require('mongodb').BSONPure.ObjectID
 
           module.exports = new (class Dumb extends TurnRule
-            constructor: ->
-              @name= 'rule 6'
             select: (callback) =>
-              Item.find {type: new ObjectId "#{type1._id}"}, callback
+              Item.find {type: "#{type1.id}"}, callback
             execute: (target, callback) =>
               target.fed++
               callback null
@@ -721,11 +703,11 @@ describe 'RuleService tests', ->
           return done "Unable to trigger turn: #{err}" if err?
 
           # then the both dogs where fed
-          Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+          Item.findOne {type: type1.id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
             assert.equal 1, existing.fed, 'lassie wasn\'t fed'
          
-            Item.findOne {type: type1._id, name: 'medor'}, (err, existing) =>
+            Item.findOne {type: type1.id, name: 'medor'}, (err, existing) =>
               return done "Unable to find item: #{err}" if err?
               assert.equal 1, existing.fed, 'medor wasn\'t fed'
               done()
@@ -733,34 +715,32 @@ describe 'RuleService tests', ->
     it 'should turn rule be executed in right order', (done) ->
       async.forEach [
         # given a first turn rule on lassie with rank 10
-        new Executable _id:'rule7', content: """TurnRule = require '../model/TurnRule'
+        new Executable id:'rule7', content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
-                @name= 'rule 7'
                 @rank= 10
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
               execute: (target, callback) =>
                 target.fed = 1
-                target.execution = target.execution+','+@name
+                target.execution = target.execution+','+@id
                 callback null
             )()"""
       ,
         # given a another turn rule on lassie with rank 1
-        new Executable _id:'rule8', content: """TurnRule = require '../model/TurnRule'
+        new Executable id:'rule8', content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
-                @name= 'rule 8'
                 @rank= 1
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
               execute: (target, callback) =>
                 target.fed = 10
-                target.execution = target.execution+','+@name
+                target.execution = target.execution+','+@id
                 callback null
             )()"""
       ], (script, next) ->
@@ -775,19 +755,19 @@ describe 'RuleService tests', ->
           assert.equal 6, notifications.length
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'rule'
-          assert.equal notifications[1][1], 'rule 8'
+          assert.equal notifications[1][1], 'rule8'
           assert.equal notifications[2][0], 'success'
-          assert.equal notifications[2][1], 'rule 8'
+          assert.equal notifications[2][1], 'rule8'
           assert.equal notifications[3][0], 'rule'
-          assert.equal notifications[3][1], 'rule 7'
+          assert.equal notifications[3][1], 'rule7'
           assert.equal notifications[4][0], 'success'
-          assert.equal notifications[4][1], 'rule 7'
+          assert.equal notifications[4][1], 'rule7'
           assert.equal notifications[5][0], 'end'
         
           # then lassie fed status was reseted, and execution order is correct
-          Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+          Item.findOne {type: type1.id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
-            assert.equal ',rule 8,rule 7', existing.execution, 'wrong execution order'
+            assert.equal ',rule8,rule7', existing.execution, 'wrong execution order'
             assert.equal 1, existing.fed, 'lassie was fed'
             done()
 
@@ -795,13 +775,11 @@ describe 'RuleService tests', ->
       async.forEach [
         # given a turn rule with broken select 
         new Executable
-          _id:'rule12'
+          id:'rule12'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
-              constructor: ->
-                @name= 'rule 12'
               select: (callback) =>
                 callback "selection failure"
               execute: (target, callback) =>
@@ -810,13 +788,12 @@ describe 'RuleService tests', ->
       ,
         # given a correct dumb rule on lassie
         new Executable
-          _id:'rule13'
+          id:'rule13'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
-                @name= 'rule 13'
                 @rank= 2
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
@@ -835,31 +812,29 @@ describe 'RuleService tests', ->
           assert.equal 6, notifications.length
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'rule'
-          assert.equal notifications[1][1], 'rule 12'
+          assert.equal notifications[1][1], 'rule12'
           assert.equal notifications[2][0], 'failure'
-          assert.equal notifications[2][1], 'rule 12'
+          assert.equal notifications[2][1], 'rule12'
           assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'selection failure'
           assert.equal notifications[3][0], 'rule'
-          assert.equal notifications[3][1], 'rule 13'
+          assert.equal notifications[3][1], 'rule13'
           assert.equal notifications[4][0], 'success'
-          assert.equal notifications[4][1], 'rule 13'
+          assert.equal notifications[4][1], 'rule13'
           assert.equal notifications[5][0], 'end'
           done()
 
     it 'should turn asynchronous selection failure be reported', (done) ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
-        _id:'rule27', 
+        id:'rule27', 
         content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
           _ = require 'underscore'
 
           module.exports = new (class Dumb extends TurnRule
-            constructor: ->
-              @name= 'rule 27'
             select: (callback) =>
-              _.defer => throw new Error @name+' throw error'
+              _.defer => throw new Error @id+' throw error'
             execute: (target, callback) =>
               callback null
           )()"""
@@ -873,9 +848,9 @@ describe 'RuleService tests', ->
           assert.equal 4, notifications.length
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'rule'
-          assert.equal notifications[1][1], 'rule 27'
+          assert.equal notifications[1][1], 'rule27'
           assert.equal notifications[2][0], 'failure'
-          assert.equal notifications[2][1], 'rule 27'
+          assert.equal notifications[2][1], 'rule27'
           assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'failed to select'
           assert.equal notifications[3][0], 'end'
@@ -885,13 +860,11 @@ describe 'RuleService tests', ->
       async.forEach [
         # given a turn rule with broken execute 
         new Executable
-          _id:'rule14'
+          id:'rule14'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
-              constructor: ->
-                @name= 'rule 14'
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
               execute: (target, callback) =>
@@ -900,16 +873,16 @@ describe 'RuleService tests', ->
       ,
         # given a correct dumb rule on lassie
         new Executable
-          _id:'rule15'
+          id:'rule15'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
-                @name= 'rule 15'
+                super()
                 @rank= 2
               select: (callback) =>
-                Item.find {name: 'lassie'}, callback
+                Item.find {id: 'lassie'}, callback
               execute: (target, callback) =>
                 callback null
             )()"""
@@ -925,33 +898,31 @@ describe 'RuleService tests', ->
           assert.equal 6, notifications.length
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'rule'
-          assert.equal notifications[1][1], 'rule 14'
+          assert.equal notifications[1][1], 'rule14'
           assert.equal notifications[2][0], 'failure'
-          assert.equal notifications[2][1], 'rule 14'
+          assert.equal notifications[2][1], 'rule14'
           assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'execution failure'
           assert.equal notifications[3][0], 'rule'
-          assert.equal notifications[3][1], 'rule 15'
+          assert.equal notifications[3][1], 'rule15'
           assert.equal notifications[4][0], 'success'
-          assert.equal notifications[4][1], 'rule 15'
+          assert.equal notifications[4][1], 'rule15'
           assert.equal notifications[5][0], 'end'
           done()
         
     it 'should turn asynchronous execution failure be reported', (done) ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
-        _id:'rule28', 
+        id:'rule28', 
         content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
           _ = require 'underscore'
 
           module.exports = new (class Dumb extends TurnRule
-            constructor: ->
-              @name= 'rule 28'
             select: (callback) =>
               Item.find {name: 'lassie'}, callback
             execute: (target, callback) =>
-              _.defer => throw new Error @name+' throw error'
+              _.defer => throw new Error @id+' throw error'
           )()"""
       script.save (err) ->
         return done err if err?
@@ -963,9 +934,9 @@ describe 'RuleService tests', ->
           assert.equal 4, notifications.length
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'rule'
-          assert.equal notifications[1][1], 'rule 28'
+          assert.equal notifications[1][1], 'rule28'
           assert.equal notifications[2][0], 'failure'
-          assert.equal notifications[2][1], 'rule 28'
+          assert.equal notifications[2][1], 'rule28'
           assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'failed to select or execute'
           assert.equal notifications[3][0], 'end'
@@ -975,13 +946,11 @@ describe 'RuleService tests', ->
       async.forEach [
         # given a turn rule with broken update 
         new Executable
-          _id:'rule16'
+          id:'rule16'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
-              constructor: ->
-                @name= 'rule 16'
               select: (callback) =>
                 Item.find {name: 'medor'}, callback
               execute: (target, callback) =>
@@ -992,13 +961,12 @@ describe 'RuleService tests', ->
       ,
         # given a correct dumb rule on lassie
         new Executable
-          _id:'rule17'
+          id:'rule17'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
-                @name= 'rule 17'
                 @rank= 2
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
@@ -1017,15 +985,15 @@ describe 'RuleService tests', ->
           assert.equal 6, notifications.length
           assert.equal notifications[0][0], 'begin'
           assert.equal notifications[1][0], 'rule'
-          assert.equal notifications[1][1], 'rule 16'
+          assert.equal notifications[1][1], 'rule16'
           assert.equal notifications[2][0], 'failure'
-          assert.equal notifications[2][1], 'rule 16'
+          assert.equal notifications[2][1], 'rule16'
           assert.isNotNull notifications[2][2]
           assert.include notifications[2][2], 'update failure'
           assert.equal notifications[3][0], 'rule'
-          assert.equal notifications[3][1], 'rule 17'
+          assert.equal notifications[3][1], 'rule17'
           assert.equal notifications[4][0], 'success'
-          assert.equal notifications[4][1], 'rule 17'
+          assert.equal notifications[4][1], 'rule17'
           assert.equal notifications[5][0], 'end'
           done()
 
@@ -1033,13 +1001,11 @@ describe 'RuleService tests', ->
       async.forEach [
         # given a turn rule with broken require
         new Executable
-          _id:'rule18'
+          id:'rule18'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../unknown'
 
             module.exports = new (class Dumb extends TurnRule
-              constructor: ->
-                @name= 'rule 18'
               select: (callback) =>
                 callback null
               execute: (target, callback) =>
@@ -1048,13 +1014,12 @@ describe 'RuleService tests', ->
       ,
         # given a correct dumb rule on lassie
         new Executable
-          _id:'rule19'
+          id:'rule19'
           content: """TurnRule = require '../model/TurnRule'
             Item = require '../model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
-                @name= 'rule 19'
                 @rank= 2
               select: (callback) =>
                 Item.find {name: 'lassie'}, callback
@@ -1077,22 +1042,21 @@ describe 'RuleService tests', ->
           assert.isNotNull notifications[1][2]
           assert.include notifications[1][2], 'failed to require'
           assert.equal notifications[2][0], 'rule'
-          assert.equal notifications[2][1], 'rule 19'
+          assert.equal notifications[2][1], 'rule19'
           assert.equal notifications[3][0], 'success'
-          assert.equal notifications[3][1], 'rule 19'
+          assert.equal notifications[3][1], 'rule19'
           assert.equal notifications[4][0], 'end'
           done()
 
     it 'should disabled turn rule not be executed', (done) ->
       # given a disabled turn rule on lassie
       script = new Executable
-        _id:'rule9', 
+        id:'rule9', 
         content: """TurnRule = require '../model/TurnRule'
           Item = require '../model/Item'
 
           module.exports = new (class Dumb extends TurnRule
             constructor: ->
-              @name= 'rule 9'
               @active = false
             select: (callback) =>
               Item.find {name: "#{item1.name}"}, callback
@@ -1107,7 +1071,7 @@ describe 'RuleService tests', ->
           return done "Unable to trigger turn: #{err}" if err?
 
           # then lassie wasn't fed
-          Item.findOne {type: type1._id, name: 'lassie'}, (err, existing) =>
+          Item.findOne {type: type1.id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
             assert.equal 0, existing.fed, 'disabled rule was executed'
             done()
@@ -1115,12 +1079,11 @@ describe 'RuleService tests', ->
     it 'should disabled rule not be resolved', (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
-        _id:'rule10', 
+        id:'rule10', 
         content: """Rule = require '../model/Rule'
           
           module.exports = new (class Dumb extends Rule
             constructor: ->
-              @name= 'rule 10'
               @active = false
             canExecute: (actor, target, callback) =>
               callback null, []
@@ -1132,21 +1095,20 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1._id, item1._id, (err, results) ->
+        service.resolve item1.id, item1.id, (err, results) ->
           return done "Unable to resolve rules: #{err}" if err?
           # then the rule was not resolved
-          assert.notProperty results, 'rule 6', 'Disabled rule was resolved'
+          assert.notProperty results, 'rule6', 'Disabled rule was resolved'
           done()
 
     it 'should disabled rule not be executed', (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
-        _id:'rule11', 
+        id:'rule11', 
         content: """Rule = require '../model/Rule'
           
           module.exports = new (class Dumb extends Rule
             constructor: ->
-              @name= 'rule 11'
               @active = false
             canExecute: (actor, target, callback) =>
               callback null, []
@@ -1158,7 +1120,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 11', item1._id, item1._id, {}, (err, results) ->
+        service.execute 'rule11', item1.id, item1.id, {}, (err, results) ->
           # then the rule was not resolved
           assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
           done()
@@ -1174,13 +1136,11 @@ describe 'RuleService tests', ->
     it 'should failling rule not be resolved', (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
-        _id:'rule20', 
+        id:'rule20', 
         content: """Rule = require '../model/Rule'
           require '../unknown'
           
           module.exports = new (class Dumb extends Rule
-            constructor: ->
-              @name= 'rule 20'
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
@@ -1190,7 +1150,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1._id, item1._id, (err) ->
+        service.resolve item1.id, item1.id, (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'failed to require'
@@ -1199,36 +1159,32 @@ describe 'RuleService tests', ->
     it 'should asynchronous failling rule not be resolved', (done) ->
       # Creates a rule with an asynchronous error in canExecute
       script = new Executable 
-        _id:'rule25', 
+        id:'rule25', 
         content: """Rule = require '../model/Rule'
           _ = require 'underscore'
           module.exports = new (class Dumb extends Rule
-            constructor: ->
-              @name= 'rule 25'
             canExecute: (actor, target, callback) =>
-              _.defer => throw new Error @name+' throw error'
+              _.defer => throw new Error @id+' throw error'
             execute: (actor, target, params, callback) =>
               callback null, null
           )()"""
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.resolve item1._id, item1._id, (err) ->
+        service.resolve item1.id, item1.id, (err) ->
           # then the error is reported
           assert.isNotNull err
-          assert.include err, 'rule 25 throw error'
+          assert.include err, 'rule25 throw error'
           done()
 
     it 'should failling rule not be executed', (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
-        _id:'rule21', 
+        id:'rule21', 
         content: """Rule = require '../model/Rule'
           require '../unknown'
           
           module.exports = new (class Dumb extends Rule
-            constructor: ->
-              @name= 'rule 21'
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
@@ -1238,7 +1194,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 21', item1._id, item1._id, {}, (err, results) ->
+        service.execute 'rule21', item1.id, item1.id, {}, (err, results) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'failed to require'
@@ -1247,34 +1203,30 @@ describe 'RuleService tests', ->
     it 'should asynchronous failling rule not be executed', (done) ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
-        _id:'rule26', 
+        id:'rule26', 
         content: """Rule = require '../model/Rule'
           _ = require 'underscore'
           module.exports = new (class Dumb extends Rule
-            constructor: ->
-              @name= 'rule 26'
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
-              _.defer => throw new Error @name+' throw error'
+              _.defer => throw new Error @id+' throw error'
           )()"""
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.execute 'rule 26', item1._id, item1._id, {}, (err, results) ->
+        service.execute 'rule26', item1.id, item1.id, {}, (err, results) ->
           # then the error is reported
           assert.isNotNull err
-          assert.include err, 'rule 26 throw error'
+          assert.include err, 'rule26 throw error'
           done()
 
     it 'should incorrect parameter rule not be executed', (done) ->
       # Creates a rule with invalid parameter
       script = new Executable 
-        _id:'rule23', 
+        id:'rule23', 
         content: """Rule = require '../model/Rule'
           module.exports = new (class Dumb extends Rule
-            constructor: ->
-              @name= 'rule 23'
             canExecute: (actor, target, callback) =>
               callback null, [
                 name: 'p1'
@@ -1287,20 +1239,18 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule 23', item1._id, item1._id, {p1: item1}, (err, results) ->
+        service.execute 'rule23', item1.id, item1.id, {p1: item1}, (err, results) ->
           # then the error is reported
           assert.isNotNull err
-          assert.include err, 'Invalid parameter for rule 23'
+          assert.include err, 'Invalid parameter for rule23'
           done()
 
     it 'should parameterized rule be executed', (done) ->
       # Creates a rule with valid parameter
       script = new Executable 
-        _id:'rule24', 
+        id:'rule24', 
         content: """Rule = require '../model/Rule'
           module.exports = new (class Dumb extends Rule
-            constructor: ->
-              @name= 'rule 24'
             canExecute: (actor, target, callback) =>
               callback null, [
                 name: 'p1'
@@ -1313,8 +1263,8 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.execute 'rule 24', item1._id, item1._id, {p1: item1._id.toString()}, (err, results) ->
+        service.execute 'rule24', item1.id, item1.id, {p1: item1.id}, (err, results) ->
           # then no error reported, and parameter was properly used
           return done err if err?
-          assert.ok item1._id.equals results
+          assert.equal item1.id, results
           done()

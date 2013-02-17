@@ -36,74 +36,82 @@ describe 'Event tests', ->
 
   before (done) ->
     # given an item type and an item
-    new ItemType(
-      name: 'character'
-      properties:
-        name: type:'string', def:'Joe'
-        chat: type:'array', def: 'Event'
-    ).save (err, saved) ->
-      return done err if err?
-      itemType = saved
-
-      new Item(type: itemType, name: 'Jack').save (err, saved) ->
+    # empty events and types.
+    Event.collection.drop -> EventType.collection.drop -> Item.collection.drop -> ItemType.collection.drop -> Event.loadIdCache ->
+      new ItemType(
+        id: 'character'
+        properties:
+          name: type:'string', def:'Joe'
+          chat: type:'array', def: 'Event'
+      ).save (err, saved) ->
         return done err if err?
-        item = saved
+        itemType = saved
+
+        new Item(type: itemType, id: 'Jack').save (err, saved) ->
+          return done err if err?
+          item = saved
+          done()
+
+  afterEach (done) ->
+    EventType.collection.drop -> Event.collection.drop -> Event.loadIdCache done
+
+  describe 'given a type', ->
+
+    beforeEach (done) ->
+      type = new EventType id:'talk'
+      type.setProperty 'content', 'string', '---'
+      type.save (err, saved) ->
+        return done err if err?
+        Event.collection.drop -> Event.loadIdCache done
+
+    it 'should event be created', (done) -> 
+      # given a new Event
+      event = new Event {type:type, from: item, content:'hello !'}
+
+      # then a creation event was issued
+      watcher.once 'change', (operation, className, instance)->
+        assert.equal className, 'Event'
+        assert.equal operation, 'creation'
+        assert.ok event.equals instance
+        assert.equal instance.from, item.id
+        awaited = true
+
+      # when saving it
+      awaited = false
+      event.save (err) ->
+        return done "Can't save event: #{err}" if err?
+
+        # then it is in mongo
+        Event.find {}, (err, docs) ->
+          return done "Can't find event: #{err}" if err?
+          # then it's the only one document
+          assert.equal docs.length, 1
+          # then it's values were saved
+          assert.equal docs[0].content, 'hello !'
+          assert.ok item.equals docs[0].from
+          assert.closeTo docs[0].created.getTime(), new Date().getTime(), 500
+          assert.closeTo docs[0].created.getTime(), docs[0].updated.getTime(), 50
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          done()
+
+    it 'should new event have default properties values', (done) ->
+      # when creating an event of this type
+      event = new Event {type: type}
+      event.save (err)->
+        return done "Can't save event: #{err}" if err?
+        # then the default value was set
+        assert.equal event.content, '---'
         done()
-
-  beforeEach (done) ->
-    type = new EventType({name: 'talk'})
-    type.setProperty 'content', 'string', '---'
-    type.save (err, saved) ->
-      return done err if err?
-      Event.collection.drop -> done()
-
-  afterEach (end) ->
-    EventType.collection.drop -> Event.collection.drop -> end()
-
-  it 'should event be created', (done) -> 
-    # given a new Event
-    event = new Event {type:type, from: item, content:'hello !'}
-
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Event'
-      assert.equal operation, 'creation'
-      assert.ok event.equals instance
-      assert.equal instance.from, item._id
-      awaited = true
-
-    # when saving it
-    awaited = false
-    event.save (err) ->
-      return done "Can't save event: #{err}" if err?
-
-      # then it is in mongo
-      Event.find {}, (err, docs) ->
-        return done "Can't find event: #{err}" if err?
-        # then it's the only one document
-        assert.equal docs.length, 1
-        # then it's values were saved
-        assert.equal docs[0].content, 'hello !'
-        assert.ok item.equals docs[0].from
-        assert.closeTo docs[0].created.getTime(), new Date().getTime(), 500
-        assert.closeTo docs[0].created.getTime(), docs[0].updated.getTime(), 50
-        assert.ok awaited, 'watcher wasn\'t invoked'
-        done()
-
-  it 'should new event have default properties values', (done) ->
-    # when creating an event of this type
-    event = new Event {type: type}
-    event.save (err)->
-      return done "Can't save event: #{err}" if err?
-      # then the default value was set
-      assert.equal event.content, '---'
-      done()
 
   describe 'given an Event', ->
 
     beforeEach (done) ->
-      event = new Event {content: 'hi !', from: item, type: type}
-      event.save -> done()
+      type = new EventType id:'talk'
+      type.setProperty 'content', 'string', '---'
+      type.save (err, saved) ->
+        return done err if err?
+        event = new Event {content: 'hi !', from: item, type: type}
+        event.save -> done()
 
     it 'should event be modified', (done) ->
       # then a removal event was issued
@@ -199,7 +207,7 @@ describe 'Event tests', ->
   describe 'given a type with object properties and several Events', -> 
 
     beforeEach (done) ->
-      type = new EventType {name: 'talk'}
+      type = new EventType {id: 'talk'}
       type.setProperty 'content', 'string', ''
       type.setProperty 'father', 'object', 'Event'
       type.setProperty 'children', 'array', 'Event'
@@ -224,7 +232,7 @@ describe 'Event tests', ->
       Event.findOne {content: event2.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # then linked events are replaced by their ids
-        assert.ok event._id.equals doc.father
+        assert.equal event.id, doc.father
         done()
 
     it 'should ids be stored for linked arrays', (done) ->
@@ -233,7 +241,7 @@ describe 'Event tests', ->
         return done "Can't find event: #{err}" if err?
         # then linked arrays are replaced by their ids
         assert.equal doc.children.length, 1
-        assert.ok event2._id.equals doc.children[0]
+        assert.equal event2.id, doc.children[0]
         done()
 
     it 'should getLinked retrieves linked objects', (done) ->
@@ -244,7 +252,7 @@ describe 'Event tests', ->
         doc.getLinked (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
-          assert.ok event._id.equals doc.father._id
+          assert.equal event.id, doc.father.id
           assert.equal doc.father.content, event.content
           assert.equal doc.father.father, event.father
           assert.equal doc.father.children[0], event.children[0]
@@ -260,7 +268,7 @@ describe 'Event tests', ->
           # then linked events are provided
           assert.equal doc.children.length, 1
           linked = doc.children[0]
-          assert.ok event2._id.equals linked._id
+          assert.equal event2.id, linked.id
           assert.equal linked.content, event2.content
           assert.equal linked.father, event2.father
           assert.equal linked.children.length, 0
@@ -274,14 +282,14 @@ describe 'Event tests', ->
         Event.getLinked docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first event has resolved links
-          assert.ok event._id.equals docs[1].father._id
+          assert.equal event.id, docs[1].father.id
           assert.equal docs[1].father.content, event.content
           assert.equal docs[1].father.father, event.father
           assert.equal docs[1].father.children[0], event.children[0]
           # then the second event has resolved links
           assert.equal docs[0].children.length, 1
           linked = docs[0].children[0]
-          assert.ok event2._id.equals linked._id
+          assert.equal event2.id, linked.id
           assert.equal linked.content, event2.content
           assert.equal linked.father, event2.father
           assert.equal linked.children.length, 0
@@ -294,7 +302,7 @@ describe 'Event tests', ->
         return done err if err?
       
         # given an unresolved events
-        Event.findById event._id, (err, doc) ->
+        Event.findById event.id, (err, doc) ->
           return done "Can't find event: #{err}" if err?
           assert.equal doc.children.length, 1
           assert.equal utils.type(doc.children[0]), 'string'
@@ -317,7 +325,7 @@ describe 'Event tests', ->
           return done err if err?
 
           # given an unresolved events
-          Event.find _id:$in:[event._id, event2._id], (err, docs) ->
+          Event.find _id:$in:[event.id, event2.id], (err, docs) ->
             return done "Can't find event: #{err}" if err?
             assert.equal docs.length, 2
             # when resolving then
@@ -360,7 +368,7 @@ describe 'Event tests', ->
           return done err if err?
 
            # given an unresolved events
-          Event.findById event._id, (err, doc) ->
+          Event.findById event.id, (err, doc) ->
             return done "Can't find event: #{err}" if err?
             assert.ok item.equals doc.from
             assert.equal doc.from.chat.length, 1
@@ -374,7 +382,7 @@ describe 'Event tests', ->
               assert.equal utils.type(docs[0].from.chat[0]), 'string'
 
               # given an unresolved item
-              Item.findById item._id, (err, doc) ->
+              Item.findById item.id, (err, doc) ->
                 return done "Can't find item: #{err}" if err?
                 assert.ok item.equals doc
                 assert.equal doc.chat.length, 1
@@ -407,9 +415,9 @@ describe 'Event tests', ->
         assert.equal operation, 'update'
         assert.ok event2.equals instance
         # then modified object ids are shipped
-        assert.ok event2._id.equals instance.father
+        assert.equal event2.id, instance.father
         assert.equal instance.children?.length, 1
-        assert.ok event._id.equals instance.children[0]
+        assert.equal event.id, instance.children[0]
         awaited = true
 
       # when saving it
@@ -419,8 +427,8 @@ describe 'Event tests', ->
 
         # then the saved object has object ids instead of full objects
         assert.ok event2.equals saved
-        assert.ok event2._id.equals saved.father
+        assert.equal event2.id, saved.father
         assert.equal saved.children?.length, 1
-        assert.ok event._id.equals saved.children[0]
+        assert.equal event.id, saved.children[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()

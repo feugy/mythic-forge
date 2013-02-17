@@ -34,15 +34,15 @@ describe 'Executable tests', ->
     # Empty the source and compilation folders content
     testUtils.cleanFolder root, (err) -> 
       return done err if err?
-      Executable.resetAll true, (err) -> 
+      Executable.resetAll true, (err) ->
         return done err if err?
         done()
       
   it 'should executable be created', (done) -> 
     # given a new executable
     content = 'console.log "hello world"'
-    name = 'test1'
-    executable = new Executable {_id: name, content: content}
+    id = 'test1'
+    executable = new Executable id: id, content: content
     
     # when saving it
     executable.save (err) ->
@@ -55,15 +55,15 @@ describe 'Executable tests', ->
         # then it's the only one executable
         assert.equal executables.length, 1
         # then it's values were saved
-        assert.equal executables[0]._id, name
+        assert.equal executables[0].id, id
         assert.equal executables[0].content, content
         done()
       
   it 'should executable compilation error be reported', (done) -> 
     # given a new executable with compilation error
     content = 'console. "hello world"'
-    name = 'test3'
-    executable = new Executable {_id: name, content: content}
+    id = 'test3'
+    executable = new Executable id: id, content: content
     
     # when saving it
     executable.save (err) ->
@@ -82,14 +82,13 @@ describe 'Executable tests', ->
 
     beforeEach (done) ->
       executable = new Executable 
-        _id: 'test2'
+        id: 'test2'
         content:"""
           constant = 10
           module.exports = 
             constant: constant, 
             utility: (num) -> constant+num"""
-      executable.save (err) ->
-        done()
+      executable.save done
 
     it 'should executable be removed', (done) ->
       # when removing an executable
@@ -111,7 +110,7 @@ describe 'Executable tests', ->
           assert.equal executables.length, 1
           # then only the relevant values were modified
           assert.equal executables[0].content, newContent
-          assert.equal executables[0]._id, 'test2'
+          assert.equal executables[0].id, 'test2'
           done()
 
     it 'should executable be removed', (done) ->
@@ -126,12 +125,11 @@ describe 'Executable tests', ->
     it 'should depending executable show updates', (done) ->
       # given another executable depending on the existing one
       ex2 = new Executable 
-        _id: 'test3'
+        id: 'test3'
         content:"""
           ex1 = require './test2'
           module.exports = ex1.utility 10
         """
-
       ex2.save (err) ->
         return done err if err?
         result = require pathUtils.relative __dirname, ex2.compiledPath
@@ -146,6 +144,7 @@ describe 'Executable tests', ->
         executable.content = newContent
         executable.save (err) ->
           return done err if err?
+          # then depending executable was reloaded
           result = require pathUtils.relative __dirname, ex2.compiledPath
           assert.equal result, 30
           done()

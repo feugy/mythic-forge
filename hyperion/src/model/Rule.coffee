@@ -41,8 +41,8 @@ class Rule
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
 
-  # Construct a rule, with a friendly name and a category.
-  constructor: (@name, @category = '') ->
+  # Construct a rule, with a category.
+  constructor: (@category = '') ->
     @removed= []
     @saved= []
  

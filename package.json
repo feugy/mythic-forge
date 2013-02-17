@@ -15,15 +15,15 @@
     "gift": "https://github.com/feugy/gift/tarball/master",
     "js-yaml": "1.0.2",
     "moment": "1.7.2",
-    "mongoose": "3.4.0",
-    "mongodb": "1.1.11",
+    "mongoose": "3.5.5",
+    "mongodb": "1.2.12",
     "passport": "0.1.15",
     "passport-facebook": "0.1.4",
     "passport-google-oauth": "0.1.4",
     "password-hash": "1.2.1",
     "passport-local": "0.1.6",
     "passport-twitter": "0.1.4",
-    "requirejs": "2.1.1",
+    "requirejs": "2.1.4",
     "socket.io": "https://github.com/feugy/socket.io/tarball/master",
     "stylus": "0.30.1",
     "underscore": "1.4.2",
@@ -38,7 +38,9 @@
     "zombie": "1.4.1"
   },
   "scripts": {
-    "test": "(set NODE_ENV=test) & mocha -R spec --compilers coffee:coffee-script hyperion/test",
+    "test": "NODE_ENV=test mocha -R nyan --compilers coffee:coffee-script hyperion/test",
+    "testwin": "(set NODE_ENV=test) & mocha -R spec --compilers coffee:coffee-script hyperion/test",
+    "preinstall": "npm install -g mocha coffee-script",
     "postinstall": "coffee --bare --compile --output hyperion/lib hyperion/src"
   },
   "bin": {

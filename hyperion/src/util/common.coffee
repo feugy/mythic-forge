@@ -63,7 +63,7 @@ emitter.isA = (obj, clazz) ->
   return false if not (obj? and clazz?)
   currentClass = obj.constructor
   while currentClass?
-    return true if currentClass.name is clazz.name
+    return true if currentClass.name.toLowerCase() is clazz.name.toLowerCase()
     currentClass = currentClass.__super__?.constructor
   false
 

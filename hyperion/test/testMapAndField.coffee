@@ -21,6 +21,7 @@ Map = require '../src/model/Map'
 Field = require '../src/model/Field'
 FieldType = require '../src/model/FieldType'
 watcher = require('../src/model/ModelWatcher').get()
+typeFactory = require '../src/model/typeFactory'
 assert = require('chai').assert
 
 awaited = false
@@ -31,15 +32,15 @@ map = null
 describe 'Map and Field tests', -> 
 
   beforeEach (done) ->
-    Map.collection.drop -> Field.collection.drop -> FieldType.collection.drop -> 
-      new FieldType({name: 'plain'}).save (err, saved) ->
+    Map.collection.drop -> Field.collection.drop -> FieldType.collection.drop -> Map.loadIdCache -> 
+      new FieldType({id: 'plain'}).save (err, saved) ->
         return done err if err?
         fieldType = saved
         done()
 
   it 'should map be created', (done) -> 
     # given a new map
-    map = new Map {name: 'map1'}
+    map = new Map {id: 'map1'}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
@@ -59,14 +60,14 @@ describe 'Map and Field tests', ->
         # then it's the only one document
         assert.equal docs.length, 1
         # then it's values were saved
-        assert.equal docs[0].name,  'map1'
+        assert.equal docs[0].id,  'map1'
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
 
   describe 'given a map', ->
 
     beforeEach (done) ->
-      map = new Map {name: 'map2'}
+      map = new Map {id: 'map2'}
       map.save -> done()
 
     it 'should map be removed', (done) ->
@@ -93,11 +94,12 @@ describe 'Map and Field tests', ->
         assert.equal className, 'Map'
         assert.equal operation, 'update'
         assert.ok map.equals instance
-        assert.equal instance._name.default, 'map3'
+        assert.equal instance.id, 'map2'
+        assert.equal instance.kind, 'square'
         awaited = true
 
       # when modifying and saving an item
-      map.name= 'map3'
+      map.kind= 'square'
       awaited = false
       map.save ->
 
@@ -105,42 +107,43 @@ describe 'Map and Field tests', ->
           # then it's the only one document
           assert.equal docs.length, 1
           # then only the relevant values were modified
-          assert.equal docs[0].name, 'map3'
+          assert.equal docs[0].id, 'map2'
+          assert.equal docs[0].kind, 'square'
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
     it 'should field be created', (done) ->
       # when creating a field on the map
-      field = new Field {mapId:map._id, typeId:fieldType._id, x:0, y:0}
+      field = new Field {mapId:map.id, typeId:fieldType.id, x:0, y:0}
       field.save (err)->
         return done "Can't save field: #{err}" if err?
         # then its retrievable by map
-        Field.find {mapId: map._id}, (err, fields) ->
+        Field.find {mapId: map.id}, (err, fields) ->
           return done "Can't find field by map: #{err}" if err?
           assert.equal fields.length, 1
           assert.ok field.equals fields[0]
-          assert.equal fields[0].mapId, map._id
+          assert.equal fields[0].mapId, map.id
           assert.equal fields[0].x, 0
           assert.equal fields[0].y, 0
           done()
 
     it 'should field be removed', (done) ->
       # given an exiting a field on the map
-      field = new Field {mapId:map._id, typeId:fieldType._id, x:10, y:10}
+      field = new Field {mapId:map.id, typeId:fieldType.id, x:10, y:10}
       field.save (err)->
         return done "Can't save field: #{err}" if err?
         # when removing it
         field.remove (err) ->
           return done "Can't remove field: #{err}" if err?
           # then it's not in the map anymore
-          Field.findOne {_id: field._id}, (err, field) ->
+          Field.findOne {_id: field.id}, (err, field) ->
             return done "Can't find field by id: #{err}" if err?
             assert.ok field is null
             done()
 
     it 'should field cannot be updated', (done) ->
       # given an exiting a field on the map
-      field = new Field {mapId:map._id, typeId:fieldType._id, x:10, y:10}
+      field = new Field {mapId:map.id, typeId:fieldType.id, x:10, y:10}
       field.save (err)->
         return done "Can't save field: #{err}" if err?
         # when updating it
@@ -152,11 +155,11 @@ describe 'Map and Field tests', ->
 
     it 'should field be removed with map', (done) ->
       # given some fields on the map
-      new Field(mapId:map._id, typeId:fieldType._id, x:10, y:10).save (err) ->
+      new Field(mapId:map.id, typeId:fieldType.id, x:10, y:10).save (err) ->
         return done err if err?
-        new Field(mapId:map._id, typeId:fieldType._id, x:5, y:5).save (err) ->
+        new Field(mapId:map.id, typeId:fieldType.id, x:5, y:5).save (err) ->
           return done err if err?
-          Field.find {mapId: map._id}, (err, fields) ->
+          Field.find {mapId: map.id}, (err, fields) ->
             return done err if err?
             assert.equal fields.length, 2
 
@@ -170,7 +173,7 @@ describe 'Map and Field tests', ->
               return done "Failed to remove map: #{err}" if err?
 
               # then fields are not in mongo anymore
-              Field.find {mapId: map._id}, (err, fields) ->
+              Field.find {mapId: map.id}, (err, fields) ->
                 return done err if err?
                 assert.equal fields.length, 0
                 assert.equal 1, changes.length, 'watcher wasn\'t invoked'

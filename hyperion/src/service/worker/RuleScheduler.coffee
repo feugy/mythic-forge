@@ -78,12 +78,15 @@ trigger = (callback, _auto = false) ->
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
         obj = require pathUtils.relative __dirname, executable.compiledPath
-        rules.push obj if obj? and utils.isA(obj, TurnRule)
+        if obj? and utils.isA(obj, TurnRule)
+          rules.push obj 
+          obj.id = executable.id
+          obj.rank = 0 unless 'number' is utils.type obj.rank
       catch err
         # report require errors
-        err = "failed to require executable #{executable._id}: #{err}"
+        err = "failed to require executable #{executable.id}: #{err}"
         logger.warn err
-        notifier.notify 'turns', 'error', executable._id, err
+        notifier.notify 'turns', 'error', executable.id, err
 
     # sort rules by rank
     rules.sort (a, b) -> a.rank - b.rank
@@ -92,39 +95,39 @@ trigger = (callback, _auto = false) ->
     updateDb = (rule, saved, removed, end) =>
       # at the end, save and remove modified objects
       removeModel = (target, removeEnd) =>
-        logger.debug "remove model #{target._id}"
+        logger.debug "remove model #{target.id}"
         target.remove (err) =>
           # stop a first execution error.
-          removeEnd if err? then "Failed to remove model #{target._id} at the end of the turn: #{err}" else undefined
+          removeEnd if err? then "Failed to remove model #{target.id} at the end of the turn: #{err}" else undefined
       # first removals
       async.forEach removed, removeModel, => 
         saveModel = (target, saveEnd) =>
-          logger.debug "save model #{target._id}"
+          logger.debug "save model #{target.id}"
           target.save (err) =>
             # stop a first execution error.
-            saveEnd if err? then "Failed to save model #{target._id} at the end of the turn: #{err}" else undefined
+            saveEnd if err? then "Failed to save model #{target.id} at the end of the turn: #{err}" else undefined
         # then saves
         async.forEach saved, saveModel, (err) =>
           if err?
             logger.warn err
-            notifier.notify 'turns', 'failure', rule.name, err
+            notifier.notify 'turns', 'failure', rule.id, err
             return end()
-          notifier.notify 'turns', 'success', rule.name
+          notifier.notify 'turns', 'success', rule.id
           end()
 
     # function that select target of a rule and execute it on them
     selectAndExecute = (rule, end) =>
       # ignore disabled rules
       return end() unless rule.active
-      notifier.notify 'turns', 'rule', rule.name
+      notifier.notify 'turns', 'rule', rule.id
 
       # catch asynchronous errors and perform reporting before leaving
       error = (err) =>
         process.removeListener 'uncaughtException', error
         # exit at the first execution error
-        msg = "failed to select or execute rule #{rule.name}: #{err}"
+        msg = "failed to select or execute rule #{rule.id}: #{err}"
         logger.warn msg
-        notifier.notify 'turns', 'failure', rule.name, msg
+        notifier.notify 'turns', 'failure', rule.id, msg
         commitSuicide = true
         turnEnd()
 
@@ -133,9 +136,9 @@ trigger = (callback, _auto = false) ->
       rule.select (err, targets) =>
         # Do not emit an error, but stops this rule a first selection error.
         if err?
-          err = "failed to select rule #{rule.name}: #{err}"
+          err = "failed to select rule #{rule.id}: #{err}"
           logger.warn err
-          notifier.notify 'turns', 'failure', rule.name, err
+          notifier.notify 'turns', 'failure', rule.id, err
           process.removeListener 'uncaughtException', error
           return end()
 
@@ -143,7 +146,7 @@ trigger = (callback, _auto = false) ->
           process.removeListener 'uncaughtException', error
           return end() 
 
-        logger.debug "rule #{rule.name} selected #{targets.length} target(s)"
+        logger.debug "rule #{rule.id} selected #{targets.length} target(s)"
         # arrays of modified objects
         saved = []
         removed = []
@@ -152,7 +155,7 @@ trigger = (callback, _auto = false) ->
         execute = (target, executeEnd) =>
           rule.execute target, (err) =>
             # stop a first execution error.
-            return executeEnd "failed to execute rule #{rule.name}: #{err}" if err?
+            return executeEnd "failed to execute rule #{rule.id}: #{err}" if err?
             # store modified object for later
             saved.push obj for obj in rule.saved
             modelUtils.filterModified target, saved
@@ -164,7 +167,7 @@ trigger = (callback, _auto = false) ->
           process.removeListener 'uncaughtException', error
           if err?
             logger.warn err
-            notifier.notify 'turns', 'failure', rule.name, err
+            notifier.notify 'turns', 'failure', rule.id, err
             return end()
           # save all modified and removed object after the rule has executed
           updateDb rule, saved, removed, end

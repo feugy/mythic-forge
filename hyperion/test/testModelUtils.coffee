@@ -22,6 +22,7 @@ async = require 'async'
 assert = require('chai').assert
 utils = require '../src/util/common'
 modelUtils = require '../src/util/model'
+typeFactory = require '../src/model/typeFactory'
 ItemType = require '../src/model/ItemType'
 Item = require '../src/model/Item'
 EventType = require '../src/model/EventType'
@@ -453,22 +454,22 @@ describe 'Model utilities tests', ->
       e1 = null
 
       before (done) ->
-        # given a first unquantifiable type with properties
-        new ItemType(
-          name: 'brick'
-          quantifiable: false
-          properties: 
-            parts: 
-              type: 'array'
-              def: 'Item'
-            compose:
-              type: 'object'
-              def: 'Item'
-        ).save (err, saved) ->
-          return done err if err?
-          brick = saved
-          # Drops existing items
-          Item.collection.drop ->
+        # Drops existing items and events, as well as their types
+        Item.collection.drop -> Event.collection.drop -> ItemType.collection.drop -> EventType.collection.drop -> Item.loadIdCache ->
+          # given a first unquantifiable type with properties
+          new ItemType(
+            id: 'brick'
+            quantifiable: false
+            properties: 
+              parts: 
+                type: 'array'
+                def: 'Item'
+              compose:
+                type: 'object'
+                def: 'Item'
+          ).save (err, saved) ->
+            return done err if err?
+            brick = saved
             # Creates some bricks
             new Item(type: brick).save (err, saved) ->
               return done err if err?
@@ -489,7 +490,7 @@ describe 'Model utilities tests', ->
                       b2 = saved
                       # given another quantifiable type
                       new ItemType(
-                        name: 'spare'
+                        id: 'spare'
                         quantifiable: true
                       ).save (err, saved) ->
                         return done err if err?
@@ -500,7 +501,7 @@ describe 'Model utilities tests', ->
                           s1 = saved
                           # given an event type
                           new EventType(
-                            name: 'thunder'
+                            id: 'thunder'
                             properties:
                               linked: 
                                 type: 'array'
@@ -538,96 +539,83 @@ describe 'Model utilities tests', ->
           done()
 
       it 'should fail on few occurences than expected', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', numMin: 2, within: [id]], null, null, (err) ->
+        modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', numMin: 2, within: [b1.id]], null, null, (err) ->
           assert.isNotNull err
           assert.include err, 'p1: expected at least 2 value(s)'
           done()
      
       it 'should fail on more occurences than expected', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: [id, id, id]}, [name: 'p1', type: 'object', numMax: 2, within: [id]], null, null, (err) ->
+        modelUtils.checkParameters {p1: [b1.id, b1.id, b1.id]}, [name: 'p1', type: 'object', numMax: 2, within: [b1.id]], null, null, (err) ->
           assert.isNotNull err
           assert.include err, 'p1: expected at most 2 value(s)'
           done()
    
       it 'should accept optionnal values', (done) ->
-        id= b1._id.toString()
-        expected = [name: 'p1', type: 'object', numMin: 0, within: [id]]
+        expected = [name: 'p1', type: 'object', numMin: 0, within: [b1.id]]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
           assert.isNull err
-          modelUtils.checkParameters {p1: id}, expected, null, null, (err) ->
+          modelUtils.checkParameters {p1: b1.id}, expected, null, null, (err) ->
             assert.isNull err
             done()
 
       it 'should accept value while waiting for at most 2', (done) ->
-        id= b1._id.toString()
-        expected = [name: 'p1', type: 'object', numMax: 2, within: [id]]
-        modelUtils.checkParameters {p1: id}, expected, null, null, (err) ->
+        expected = [name: 'p1', type: 'object', numMax: 2, within: [b1.id]]
+        modelUtils.checkParameters {p1: b1.id}, expected, null, null, (err) ->
           assert.isNull err
-          modelUtils.checkParameters {p1: [id]}, expected, null, null, (err) ->
+          modelUtils.checkParameters {p1: [b1.id]}, expected, null, null, (err) ->
             assert.isNull err
-            modelUtils.checkParameters {p1: [id, id]}, expected, null, null, (err) ->
+            modelUtils.checkParameters {p1: [b1.id, b1.id]}, expected, null, null, (err) ->
               assert.isNull err
               done()
 
       it 'should fail on value not within awaited values', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', within: [b2._id.toString(), b3._id.toString()]], null, null, (err) ->
+        modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', within: [b2.id, b3.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, "p1: #{id} is not a valid option"
+          assert.include err, "p1: #{b1.id} is not a valid option"
           done()
 
       it 'should fail on value not within dynamic actor property', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'compose'}], b2, null, (err) ->
+        modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'compose'}], b2, null, (err) ->
           assert.isNotNull err
-          assert.include err, "p1: #{id} is not a valid option"
+          assert.include err, "p1: #{b1.id} is not a valid option"
           done()
 
       it 'should fail on value not within dynamic target property', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', property: {from: 'target', path: 'parts'}], null, b2, (err) ->
+        modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', property: {from: 'target', path: 'parts'}], null, b2, (err) ->
           assert.isNotNull err
-          assert.include err, "p1: #{id} is not a valid option"
+          assert.include err, "p1: #{b1.id} is not a valid option"
           done()
 
       it 'should fail on missing quantity for quantifiable value', (done) ->
-        id= s1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'linked'}], e1, null, (err) ->
+        modelUtils.checkParameters {p1: s1.id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'linked'}], e1, null, (err) ->
           assert.isNotNull err
-          assert.include err, "p1: #{id} is missing quantity"
+          assert.include err, "p1: #{s1.id} is missing quantity"
           done()
 
       it 'should fail on negative quantity for quantifiable value', (done) ->
-        id= s1._id.toString()
-        modelUtils.checkParameters {p1: {id:id, qty:0}}, [name: 'p1', type: 'object', within: [id]], null, null, (err) ->
+        modelUtils.checkParameters {p1: {id:s1.id, qty:0}}, [name: 'p1', type: 'object', within: [s1.id]], null, null, (err) ->
           assert.isNotNull err
           assert.include err, "p1: quantity must be a positive number"
           done()
 
       it 'should fail when requesting more than possible quantity for quantifiable value', (done) ->
-        id= s1._id.toString()
-        modelUtils.checkParameters {p1: {id:id, qty:10}}, [name: 'p1', type: 'object', within: [id]], null, null, (err) ->
+        modelUtils.checkParameters {p1: {id:s1.id, qty:10}}, [name: 'p1', type: 'object', within: [s1.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, "p1: not enought #{id} to honor quantity 10"
+          assert.include err, "p1: not enought #{s1.id} to honor quantity 10"
           done()
 
       it 'should accept value within fixed possibilities', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', within: [id]], null, null, (err) ->
+        modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', within: [b1.id]], null, null, (err) ->
           assert.isNull err
           done()
 
       it 'should accept value within dynamic actor property', (done) ->
-        id= b1._id.toString()
-        modelUtils.checkParameters {p1: id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'compose.parts'}], b2, null, (err) ->
+        modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'compose.parts'}], b2, null, (err) ->
           assert.isNull err
           done()
 
       it 'should accept value within dynamic target property', (done) ->
-        id= s1._id.toString()
-        modelUtils.checkParameters {p1: {id:id, qty:2}}, [name: 'p1', type: 'object', property: {from: 'target', path: 'linked'}], b2, e1, (err) ->
+        modelUtils.checkParameters {p1: {id:s1.id, qty:2}}, [name: 'p1', type: 'object', property: {from: 'target', path: 'linked'}], b2, e1, (err) ->
           assert.isNull err
           done()
 

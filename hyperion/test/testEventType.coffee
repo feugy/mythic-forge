@@ -31,18 +31,18 @@ describe 'EventType tests', ->
 
   beforeEach (done) ->
     # empty events and types.
-    Event.collection.drop -> EventType.collection.drop -> done()
+    Event.collection.drop -> EventType.collection.drop -> Event.loadIdCache done
 
   it 'should type\'s properties be distinct', (done) ->
     # given a type with a property
-    type = new EventType({name: 'birth'})
+    type = new EventType({id: 'birth'})
     type.setProperty 'weight', 'float', 3.5
     type.save (err) ->
       if (err?)
         throw new Error err
         done()
       # when creating another type with distinct property
-      type2 = new EventType({name: 'death'})
+      type2 = new EventType({id: 'death'})
       type2.setProperty 'when', 'date', new Date()
       type2.save (err) ->
         if (err?)
@@ -59,9 +59,8 @@ describe 'EventType tests', ->
 
   it 'should type be created', (done) -> 
     # given a new EventType
-    type = new EventType()
-    name = 'talk'
-    type.name= name
+    id = 'talk'
+    type = new EventType id: id
 
     # when saving it
     type.save (err, saved) ->
@@ -72,56 +71,14 @@ describe 'EventType tests', ->
         # then it's the only one document
         assert.equal types.length, 1
         # then it's values were saved
-        assert.equal types[0].name, name
+        assert.equal types[0].id, id
         done()
 
-  it 'should name and desc be internationalizables', (done) -> 
-    # given a new EventType with translated name
-    type = new EventType()
-    name = 'talk'
-    type.name= name
-    type.locale = 'fr'
-    nameFr = 'discussion'
-    type.name= nameFr
-
-    # when saving it
-    type.save (err, saved) ->
-      throw new Error "Can't save type: #{err}" if err?
-
-      # then translations are available
-      saved.locale = null
-      assert.equal saved.name, name
-      saved.locale = 'fr'
-      assert.equal saved.name, nameFr
-
-      # when setting the tanslated description and saving it
-      saved.locale = null
-      desc = 'a speech between players'
-      saved.desc= desc
-      saved.locale = 'fr'
-      descFr = 'une discussion entre joueurs' 
-      saved.desc= descFr
-
-      saved.save (err, saved) ->
-        throw new Error "Can't save type: #{err}" if err?
-
-        # then it is in mongo
-        EventType.find {}, (err, types) ->
-          # then it's the only one document
-          assert.equal 1, types.length
-          # then it's values were saved
-          assert.equal types[0].name, name
-          assert.equal types[0].desc, desc
-          types[0].locale = 'fr'
-          assert.equal types[0].name, nameFr
-          assert.equal types[0].desc, descFr
-          done()
 
   describe 'given a type with a property', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
-      type = new EventType()
-      type.name= 'talk'
+      type = new EventType id: 'talk'
       type.setProperty 'content', 'string', '---'
       type.save (err, saved) -> 
         type = saved
@@ -150,7 +107,7 @@ describe 'EventType tests', ->
           # then it's the only one document
           assert.equal types.length, 1
           # then only the relevant values were modified
-          assert.equal types[0].name, 'talk',
+          assert.equal types[0].id, 'talk',
           assert.ok 'length' of types[0].properties, 'no length in properties'
           assert.equal types[0].properties.length?.type, 'integer'
           assert.equal types[0].properties.length?.def, 100
@@ -195,7 +152,7 @@ describe 'EventType tests', ->
 
     beforeEach (done) ->
       # creates a type with a string property 'color' and an array property 'subTalks'.
-      type = new EventType {name: 'talk'}
+      type = new EventType id: 'talk'
       type.setProperty 'content', 'string', ''
       type.setProperty 'subTalks', 'array', 'Event'
       type.save (err, saved) -> 
@@ -220,7 +177,7 @@ describe 'EventType tests', ->
       # then a modification event was issued
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Event'
-        updates.push instance._id+''
+        updates.push instance.id
         assert.equal operation, 'update'
         assert.equal instance.length, defaultLength
 
@@ -228,10 +185,10 @@ describe 'EventType tests', ->
       type.setProperty 'length', 'integer', defaultLength
       type.save (err) -> 
         block = ->
-          Event.find {type: type._id}, (err, events) ->
+          Event.find {type: type.id}, (err, events) ->
             for event in events
               assert.equal event.length, defaultLength
-              assert.ok event._id+'' in updates
+              assert.ok event.id in updates
             watcher.removeListener 'change', listener
             done()
         setTimeout block, 50
@@ -242,17 +199,17 @@ describe 'EventType tests', ->
       watcher.on 'change', listener = (operation,className, instance)->
         return if className isnt 'Event'
         assert.equal operation, 'update'
-        updates.push instance._id+''
+        updates.push instance.id
         assert.ok instance.content is undefined
 
       # when setting a property to a type
       type.unsetProperty 'content'
       type.save (err) -> 
         block = ->
-          Event.find {type: type._id}, (err, events) ->
+          Event.find {type: type.id}, (err, events) ->
             for event in events
               assert.ok undefined is event.content, 'content still present'
-              assert.ok event._id+'' in updates
+              assert.ok event.id in updates
             watcher.removeListener 'change', listener
             done()
         setTimeout block, 50
