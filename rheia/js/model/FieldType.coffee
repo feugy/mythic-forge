@@ -40,11 +40,7 @@ define [
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'FieldType'
-
-    # **private**
-    # List of model attributes that are localized.
-    _i18nAttributes: ['name', 'desc']
-
+      
     # **private**
     # List of properties that must be defined in this instance.
     _fixedAttributes: ['descImage', 'images']

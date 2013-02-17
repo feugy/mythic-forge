@@ -17,9 +17,9 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Event = require '../src/model/Event'
-EventType = require '../src/model/EventType'
-watcher = require('../src/model/ModelWatcher').get()
+Event = require '../hyperion/src/model/Event'
+EventType = require '../hyperion/src/model/EventType'
+watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 
 event1 = null

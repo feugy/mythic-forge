@@ -1,2 +1,2 @@
---reporter spec
+-R spec
 --compilers coffee:coffee-script

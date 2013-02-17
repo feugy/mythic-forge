@@ -18,20 +18,20 @@
 ###
 
 pathUtils = require 'path'
-server = require('../src/web/middle').server
+server = require('../hyperion/src/web/middle').server
 socketClient = require 'socket.io-client'
-Map = require '../src/model/Map'
-Item = require '../src/model/Item'
-ItemType = require '../src/model/ItemType'
-Event = require '../src/model/Event'
-EventType = require '../src/model/EventType'
-Executable = require '../src/model/Executable'
-FSItem = require '../src/model/FSItem'
-utils = require '../src/util/common'
+Map = require '../hyperion/src/model/Map'
+Item = require '../hyperion/src/model/Item'
+ItemType = require '../hyperion/src/model/ItemType'
+Event = require '../hyperion/src/model/Event'
+EventType = require '../hyperion/src/model/EventType'
+Executable = require '../hyperion/src/model/Executable'
+FSItem = require '../hyperion/src/model/FSItem'
+utils = require '../hyperion/src/util/common'
 request = require 'request'
 fs = require 'fs-extra'
 testUtils = require './utils/testUtils'
-authoringService = require('../src/service/AuthoringService').get()
+authoringService = require('../hyperion/src/service/AuthoringService').get()
 assert = require('chai').assert
 
 port = 9090
@@ -70,7 +70,7 @@ describe 'server tests', ->
       socket = socketClient.connect "#{rootUrl}/admin"
 
       # given a file with binary content
-      fs.readFile './hyperion/test/fixtures/image1.png', (err, imgData) ->
+      fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, imgData) ->
         return done err if err?
         root = utils.confKey 'game.dev'
         # given a clean root
@@ -412,7 +412,7 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/admin"
 
         # given an image
-        fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
+        fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
           return done err if err?
 
           # then the character type was updated
@@ -445,7 +445,7 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/admin"
 
         # given an image
-        fs.readFile './hyperion/test/fixtures/image1.png', (err, data) ->
+        fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
           return done err if err?
 
           # then the character type was updated

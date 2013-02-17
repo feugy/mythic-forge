@@ -17,11 +17,11 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Map = require '../src/model/Map'
-Field = require '../src/model/Field'
-FieldType = require '../src/model/FieldType'
-watcher = require('../src/model/ModelWatcher').get()
-typeFactory = require '../src/model/typeFactory'
+Map = require '../hyperion/src/model/Map'
+Field = require '../hyperion/src/model/Field'
+FieldType = require '../hyperion/src/model/FieldType'
+watcher = require('../hyperion/src/model/ModelWatcher').get()
+typeFactory = require '../hyperion/src/model/typeFactory'
 assert = require('chai').assert
 
 awaited = false

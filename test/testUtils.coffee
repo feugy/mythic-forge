@@ -23,9 +23,9 @@ async = require 'async'
 pathUtils = require 'path'
 git = require 'gift'
 moment = require 'moment'
-utils = require '../src/util/common'
-versionUtils = require '../src/util/versionning'
-ruleUtils = require '../src/util/rule'
+utils = require '../hyperion/src/util/common'
+versionUtils = require '../hyperion/src/util/versionning'
+ruleUtils = require '../hyperion/src/util/rule'
 assert = require('chai').assert
 
 # The commit utility change file content, adds it and commit it

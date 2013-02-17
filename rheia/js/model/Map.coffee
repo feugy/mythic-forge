@@ -44,19 +44,12 @@ define [
     _className: 'Map'
 
     # **private**
-    # List of model attributes that are localized.
-    _i18nAttributes: ['name']
-
-    # **private**
     # List of properties that must be defined in this instance.
     _fixedAttributes: ['kind']
 
     # **private**
     # flag to avoid multiple concurrent server call.
     _consultRunning: false
-
-    # bind the Backbone attribute and the MongoDB attribute
-    idAttribute: '_id'
 
     # Map constructor.
     #
@@ -79,7 +72,7 @@ define [
     consult: (low, up) =>
       return if @_consultRunning
       @_consultRunning = true
-      console.log "Consult map #{@get 'name'} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
+      console.log "Consult map #{@id} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
       # emit the message on the socket.
       app.sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
 
@@ -94,7 +87,7 @@ define [
         @_consultRunning = false
         return console.error "Fail to retrieve map content: #{err}" if err?
         # add them to the collection (Item model will be created)
-        console.log "#{items.length} map item(s) received #{@get 'name'}"
+        console.log "#{items.length} map item(s) received #{@id}"
         Item.collection.add items
-        console.log "#{fields.length} map field(s) received on #{@get 'name'}"
+        console.log "#{fields.length} map field(s) received on #{@id}"
         Field.collection.add fields

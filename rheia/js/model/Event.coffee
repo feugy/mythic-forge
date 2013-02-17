@@ -33,7 +33,7 @@ define [
   enrichFrom = (model, callback) ->
     callback = if 'function' is utils.type callback then callback else () -> true
     raw = model.from
-    id = if 'object' is utils.type raw then raw._id else raw
+    id = if 'object' is utils.type raw then raw.id else raw
     require ['model/Item'], (Item) => 
       model.from = Item.collection.get id
       return callback() if model.from?
@@ -45,11 +45,11 @@ define [
         # load missing from
         processFrom = (err, froms) =>
           return callback() if err?
-          raw = _.find(froms, (from) -> from._id is id)
+          raw = _.find(froms, (from) -> from.id is id)
           return callback() unless raw?
           app.sockets.game.removeListener 'getItems-resp', processFrom
 
-          existing = Item.collection.get raw._id
+          existing = Item.collection.get raw.id
           if existing?
             model.from = existing
             # reuse existing but merge its values
@@ -75,7 +75,7 @@ define [
 
     # **private**
     # List of not upadated attributes
-    _notUpdated: ['_id', 'type']
+    _notUpdated: ['id', 'type']
 
     # **private**
     # Callback invoked when a database creation is received.

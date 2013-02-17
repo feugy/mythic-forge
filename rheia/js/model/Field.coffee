@@ -78,7 +78,7 @@ define [
       super models, options
       models = if _.isArray models then models.slice() else [models]
       for model in models
-        @_removeReference @_byId[model._id]
+        @_removeReference @_byId[model.id]
       # deletes local caching
       @models = []
       @_byCid = {}
@@ -124,7 +124,7 @@ define [
     @collection: new _Fields @
 
     # bind the Backbone attribute and the MongoDB attribute
-    idAttribute: '_id'
+    idAttribute: 'id'
 
     # Initialization logic: declare dynamic properties for each of model's attributes
     initialize: =>

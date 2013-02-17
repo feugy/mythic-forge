@@ -103,7 +103,7 @@ define [
 
           console.log "image #{src} uploaded"
           # trigger end of upload
-          app.router.trigger 'imageUploaded', saved._id, src
+          app.router.trigger 'imageUploaded', saved.id, src
 
         console.log "upload new image #{src}..."
         # upload data to server
@@ -133,7 +133,7 @@ define [
         throw new Error "Failed to remove image for model #{modelName} #{id}: #{err}" if err?
         console.log "image #{src} removed"
         # trigger end of upload
-        app.router.trigger 'imageRemoved', saved._id, src
+        app.router.trigger 'imageRemoved', saved.id, src
 
       console.log "removes new image #{src}..."
       # remove image from server

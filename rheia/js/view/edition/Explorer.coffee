@@ -224,15 +224,15 @@ define [
       category = null
       switch collection
         when Map.collection 
-          if operation isnt 'update' or '_name' of changes then category = 'Map'
+          if operation isnt 'update' then category = 'Map'
         when FieldType.collection
-          if operation isnt 'update' or '_name' of changes or 'images' of changes then category = 'FieldType'
+          if operation isnt 'update' or 'images' of changes then category = 'FieldType'
         when ItemType.collection
-          if operation isnt 'update' or '_name' of changes or 'descImage' of changes then category = 'ItemType'
+          if operation isnt 'update' or 'descImage' of changes then category = 'ItemType'
         when EventType.collection
-          if operation isnt 'update' or '_name' of changes or 'descImage' of changes then category = 'EventType'
+          if operation isnt 'update' or 'descImage' of changes then category = 'EventType'
         when Executable.collection 
-          if operation isnt 'update' or '_id' of changes then category = (if element.kind then element.kind else 'Script')
+          if operation isnt 'update' then category = (if element.kind then element.kind else 'Script')
       return unless category?
 
       container = @$el.find "dd[data-category='#{category}']"

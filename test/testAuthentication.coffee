@@ -17,10 +17,10 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-middle = require '../src/web/middle'
-front = require '../src/web/front'
-Player = require '../src/model/Player'
-utils = require '../src/util/common'
+middle = require '../hyperion/src/web/middle'
+front = require '../hyperion/src/web/front'
+Player = require '../hyperion/src/model/Player'
+utils = require '../hyperion/src/util/common'
 request = require 'request'
 parseUrl = require('url').parse
 assert = require('chai').assert

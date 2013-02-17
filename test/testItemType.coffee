@@ -17,10 +17,10 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Item = require '../src/model/Item'
-ItemType = require '../src/model/ItemType'
-typeFactory = require '../src/model/typeFactory'
-watcher = require('../src/model/ModelWatcher').get()
+Item = require '../hyperion/src/model/Item'
+ItemType = require '../hyperion/src/model/ItemType'
+typeFactory = require '../hyperion/src/model/typeFactory'
+watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 
 item1 = null

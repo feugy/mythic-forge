@@ -20,13 +20,13 @@
 moment = require 'moment'
 async = require 'async'
 assert = require('chai').assert
-utils = require '../src/util/common'
-modelUtils = require '../src/util/model'
-typeFactory = require '../src/model/typeFactory'
-ItemType = require '../src/model/ItemType'
-Item = require '../src/model/Item'
-EventType = require '../src/model/EventType'
-Event = require '../src/model/Event'
+utils = require '../hyperion/src/util/common'
+modelUtils = require '../hyperion/src/util/model'
+typeFactory = require '../hyperion/src/model/typeFactory'
+ItemType = require '../hyperion/src/model/ItemType'
+Item = require '../hyperion/src/model/Item'
+EventType = require '../hyperion/src/model/EventType'
+Event = require '../hyperion/src/model/Event'
 
 # integer value tests
 describe 'Model utilities tests', ->

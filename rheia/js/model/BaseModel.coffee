@@ -38,7 +38,7 @@ define [
 
     # **private**
     # List of attributes that must not be updated
-    _notUpdated: ['_id']
+    _notUpdated: ['id']
 
     # Collection constructor, that wired on events.
     #
@@ -192,7 +192,7 @@ define [
   # BaseModel provides common behaviour for model.
   #
   # The `sync` method is wired to server Api `save` and  `remove` when creating, updating and destroying models.
-  # i18n fields are supported, with a local specific attribute, and `equals` method is provided
+  # `equals` method is provided
   class BaseModel extends Backbone.Model
 
     # Local cache for models.
@@ -200,10 +200,7 @@ define [
     @collection = null
 
     # bind the Backbone attribute and the MongoDB attribute
-    idAttribute: '_id'
-
-    # the locale used for i18n fields
-    locale: 'default'
+    idAttribute: 'id'
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -215,20 +212,12 @@ define [
     # **May be defined by subclasses**
     _fixedAttributes: []
 
-    # **private**
-    # List of model attributes that are localized.
-    # **May be defined by subclasses**
-    _i18nAttributes: []
-
     # Initialization logic: declare dynamic properties for each of model's attributes
     initialize: =>    
       names = _.keys @attributes
       # define property on attributes that must be present
-      names = _.uniq names.concat @_fixedAttributes, @_i18nAttributes
+      names = _.uniq names.concat @_fixedAttributes
       for name in names
-        # take in account i18n properties
-        publicName = name.replace /^_/, ''
-        name = publicName if publicName in @_i18nAttributes
         unless Object.getOwnPropertyDescriptor(@, name)?
           ((name) =>
           
@@ -239,16 +228,7 @@ define [
               set: (v) -> @set name, v
           )(name)
 
-    # Overrides inherited getter to handle i18n fields.
-    #
-    # @param attr [String] the retrieved attribute
-    # @return the corresponding attribute value
-    get: (attr) =>
-      return super attr unless attr in @_i18nAttributes
-      value = super "_#{attr}"
-      if value? then value[@locale] else undefined
-
-    # Overrides inherited setter to handle i18n fields.
+    # Overrides inherited setter to declare dynamic property
     #
     # @param attr [String] the modified attribute
     # @param value [Object] the new attribute value
@@ -256,22 +236,13 @@ define [
     set: (attr, value, options) =>
       # treat single attribute
       single = (name) =>
-        if name in @_i18nAttributes
-          # manage i18n property
-          _name = "_#{name}"
-          val = @attributes[_name]
-          val ||= {}
-          val[@locale] = attr[name]
-          delete attr[name]
-          attr[_name] = val
-        else
-          # define property if needed
-          unless Object.getOwnPropertyDescriptor(@, name)?
-            Object.defineProperty @, name,
-              enumerable: true
-              configurable: true
-              get: -> @get name
-              set: (v) -> @set name, v
+        # define property if needed
+        unless Object.getOwnPropertyDescriptor(@, name)?
+          Object.defineProperty @, name,
+            enumerable: true
+            configurable: true
+            get: -> @get name
+            set: (v) -> @set name, v
 
       # Always works in 'object mode'
       unless 'object' is utils.type attr
@@ -322,7 +293,7 @@ define [
     # @param other [Object] the object against which the current item is tested
     # @return true if both object have the samge ids, and false otherwise.
     equals: (other) =>
-      @.id is other?.id
+      @id is other?.id
 
   # BaseLinkedModel provides common behaviour for model with linked properties.
   # 
@@ -453,7 +424,7 @@ define [
           clazz = @constructor
           for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"
             clazz = require(candidateScript)
-          obj = clazz.collection.get val?._id
+          obj = clazz.collection.get val?.id
           unless obj?
             obj = new clazz val
             clazz.collection.add obj

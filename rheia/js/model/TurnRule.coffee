@@ -26,5 +26,5 @@ define [], ->
     # Activation status. True by default
     active: true
 
-    # Construct a rule, with a friendly name and a rank
-    constructor: (@name, @rank = 0) ->
+    # Construct a rule, with a rank
+    constructor: (@rank = 0) ->

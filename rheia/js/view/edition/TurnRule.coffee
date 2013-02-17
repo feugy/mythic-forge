@@ -50,7 +50,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable _id: i18n.labels.newName, content: emptyRule
+      @model = new Executable id: i18n.labels.newName, content: emptyRule
       
     # **private**
     # Updates rendering with values from the edited object.

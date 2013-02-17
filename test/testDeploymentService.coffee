@@ -22,16 +22,16 @@ async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 http = require 'http'
-FSItem = require '../src/model/FSItem'
-utils = require '../src/util/common'
+FSItem = require '../hyperion/src/model/FSItem'
+utils = require '../hyperion/src/util/common'
 util = require 'util'
-front = require '../src/web/front'
+front = require '../hyperion/src/web/front'
 Browser = require 'zombie'
 git = require 'gift'
 assert = require('chai').assert
-service = require('../src/service/DeployementService').get()
-authoringService = require('../src/service/AuthoringService').get()
-notifier = require('../src/service/Notifier').get()
+service = require('../hyperion/src/service/DeployementService').get()
+authoringService = require('../hyperion/src/service/AuthoringService').get()
+notifier = require('../hyperion/src/service/Notifier').get()
 
 port = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"
@@ -69,15 +69,16 @@ describe 'Deployement tests', ->
 
     beforeEach (done) ->
       # given a clean game source
-      fs.remove root, ->
+      fs.remove root, (err) ->
+        return done err if err?
         fs.mkdirs root, (err) ->
           return done err if err?
           # given a valid game client in it
-          fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client'), root, done
+          fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, done
 
     it 'should coffee compilation errors be reported', (done) ->
       # given a non-compiling coffee script
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.coffee.error'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+      fs.copy pathUtils.join('.', 'test', 'fixtures', 'Router.coffee.error'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
 
         # when optimizing the game client
@@ -96,7 +97,7 @@ describe 'Deployement tests', ->
     
     it 'should stylus compilation errors be reported', (done) ->
       # given a non-compiling stylus sheet
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'rheia.styl.error'), pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
+      fs.copy pathUtils.join(__dirname, 'fixtures', 'rheia.styl.error'), pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
         return done err if err?
 
         # when optimizing the game client
@@ -134,7 +135,7 @@ describe 'Deployement tests', ->
 
     it 'should main html file without requirejs be detected', (done) ->
       # given a main file without requirejs
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'index.html.norequire'), pathUtils.join(root, 'index.html'), (err) ->
+      fs.copy pathUtils.join(__dirname, 'fixtures', 'index.html.norequire'), pathUtils.join(root, 'index.html'), (err) ->
         return done err if err?
 
         # when optimizing the game client
@@ -155,7 +156,7 @@ describe 'Deployement tests', ->
     it 'should requirejs optimization error be detected', (done) ->
 
       # given a requirejs entry file without error
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+      fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
 
         # when optimizing the game client
@@ -175,7 +176,7 @@ describe 'Deployement tests', ->
 
     it 'should no requirejs configuration be detected', (done) ->
       # given a requirejs entry file without configuration
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'Router.js.noconfigjs'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+      fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.js.noconfigjs'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
 
         # when optimizing the game client
@@ -199,7 +200,7 @@ describe 'Deployement tests', ->
 
     before (done) ->
       # given a valid game client in it
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client'), root, (err) ->
+      fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, (err) ->
         return done err if err?
         # given a initiazed git repository
         git.init repository, (err) ->
@@ -335,7 +336,7 @@ describe 'Deployement tests', ->
       @timeout 20000
 
       # given a modification on a file
-      fs.copy pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'common.coffee.v2'), pathUtils.join(root, 'nls', 'common.coffee'), (err) ->
+      fs.copy pathUtils.join(__dirname, 'fixtures', 'common.coffee.v2'), pathUtils.join(root, 'nls', 'common.coffee'), (err) ->
         return done err if err?
         repo.commit 'change to v2', all:true, (err, stdout, stderr) ->
           return done err if err?
@@ -370,7 +371,7 @@ describe 'Deployement tests', ->
         return done err if err?
         
         # then file common.coffee was restored
-        fs.readFile pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'working-client', 'nls', 'common.coffee'), 'utf-8', (err, originalContent) ->
+        fs.readFile pathUtils.join(__dirname, 'fixtures', 'working-client', 'nls', 'common.coffee'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
 
@@ -392,7 +393,7 @@ describe 'Deployement tests', ->
       service.restoreVersion version2, (err) ->
         return done err if err?
         # then file common.coffee was restored
-        fs.readFile pathUtils.join('.', 'hyperion', 'test', 'fixtures', 'common.coffee.v2'), 'utf-8', (err, originalContent) ->
+        fs.readFile pathUtils.join(__dirname, 'fixtures', 'common.coffee.v2'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
 
@@ -416,7 +417,7 @@ describe 'Deployement tests', ->
 
       # given a modification on game files
       labels = pathUtils.join root, 'nls', 'common.coffee'
-      original = pathUtils.join '.', 'hyperion', 'test', 'fixtures', 'common.coffee.v3'
+      original = pathUtils.join __dirname, 'fixtures', 'common.coffee.v3'
       fs.copy original, labels, (err) ->
         return done err if err?
 

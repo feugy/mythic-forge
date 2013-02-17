@@ -254,7 +254,7 @@ define [
         idx = if random then Math.floor(Math.random()*@_selectedImages.length) else i%@_selectedImages.length
         created.push new Field
           mapId: @model.id
-          typeId: type._id
+          typeId: type.id
           num: @_selectedImages[idx]
           x: coord.x
           y: coord.y

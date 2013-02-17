@@ -42,9 +42,5 @@ define [
     _className: 'ItemType'
 
     # **private**
-    # List of model attributes that are localized.
-    _i18nAttributes: ['name', 'desc']
-
-    # **private**
     # List of properties that must be defined in this instance.
     _fixedAttributes: ['descImage', 'images', 'properties', 'quantifiable']

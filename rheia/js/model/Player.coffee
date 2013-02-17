@@ -38,7 +38,7 @@ define [
     model.characters = []
     # try to replace all characters by their respective Backbone Model
     for raw in raws
-      id = if 'object' is utils.type raw then raw._id else raw
+      id = if 'object' is utils.type raw then raw.id else raw
       loaded.push id
       character = Item.collection.get id
       if !(character?) and 'object' is utils.type raw
@@ -52,12 +52,12 @@ define [
     if doLoad
       # load missing characters
       processItems = (err, items) =>
-        unless err? or null is _.find(items, (item) -> item._id is loaded[0])
+        unless err? or null is _.find(items, (item) -> item.id is loaded[0])
           app.sockets.game.removeListener 'getItems-resp', processItems
           model.characters = []
           # immediately add enriched characters
           for raw in items
-            existing = Item.collection.get raw._id
+            existing = Item.collection.get raw.id
             if existing?
               model.characters.push existing
               # reuse existing but merge its values
@@ -177,9 +177,6 @@ define [
     # **private**
     # List of properties that must be defined in this instance.
     _fixedAttributes: ['email', 'provider', 'lastConnection', 'firstName', 'lastName', 'password', 'isAdmin', 'characters', 'prefs']
-
-    # bind the Backbone attribute and the MongoDB attribute
-    idAttribute: '_id'
 
     # Player constructor.
     #

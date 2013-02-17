@@ -20,9 +20,9 @@
 pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
-FSItem = require '../src/model/FSItem'
-utils = require '../src/util/common'
-watcher = require('../src/model/ModelWatcher').get()
+FSItem = require '../hyperion/src/model/FSItem'
+utils = require '../hyperion/src/util/common'
+watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 
 root = null

@@ -17,15 +17,15 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-Item = require '../src/model/Item'
-ItemType = require '../src/model/ItemType'
-Map = require '../src/model/Map'
-Field = require '../src/model/Field'
-FieldType = require '../src/model/FieldType'
-utils = require '../src/util/common'
+Item = require '../hyperion/src/model/Item'
+ItemType = require '../hyperion/src/model/ItemType'
+Map = require '../hyperion/src/model/Map'
+Field = require '../hyperion/src/model/Field'
+FieldType = require '../hyperion/src/model/FieldType'
+utils = require '../hyperion/src/util/common'
 testUtils = require './utils/testUtils'
-Executable = require '../src/model/Executable'
-service = require('../src/service/GameService').get()
+Executable = require '../hyperion/src/model/Executable'
+service = require('../hyperion/src/service/GameService').get()
 assert = require('chai').assert
      
 type = null

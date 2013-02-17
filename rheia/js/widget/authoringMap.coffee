@@ -120,7 +120,7 @@ define [
           # draw white tile at removed field coordinate
           o.renderer.drawTile ctx, data, 'white'
           # removes from local cache
-          for field, i in @_data when field._id is data._id
+          for field, i in @_data when field.id is data.id
             @_data.splice i, 1
             break
 

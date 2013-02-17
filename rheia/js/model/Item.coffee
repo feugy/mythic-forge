@@ -36,7 +36,7 @@ define [
 
     # **private**
     # List of not upadated attributes
-    _notUpdated: ['_id', 'type', 'map']
+    _notUpdated: ['id', 'type', 'map']
 
     # enhanced inheritted method to trigger `add` event on existing models that
     # are added a second time.
@@ -48,7 +48,7 @@ define [
       
       models = if Array.isArray models then models else [models]
       # keep existing models that will be merged
-      existings.push @_byId[model._id] for model in models when @_byId?[model._id]?
+      existings.push @_byId[model.id] for model in models when @_byId?[model.id]?
             
       options = {} unless options?
       options.merge = true
@@ -69,12 +69,12 @@ define [
     _onUpdate: (className, changes) =>
       return unless className is @_className
       if 'map' of changes and changes.map?
-        id = if 'object' is utils.type changes.map then changes.map._id else changes.map
+        id = if 'object' is utils.type changes.map then changes.map.id else changes.map
         changes.map = require('model/Map').collection.get id
 
       # manages transition changes
       if 'transition' of changes
-        model = @get changes._id
+        model = @get changes.id
         model?._transition = changes.transition
 
       # Call inherited merhod
@@ -82,7 +82,7 @@ define [
 
       # reset transition change detection when updated
       if 'transition' of changes
-        model = @get changes._id
+        model = @get changes.id
         model?._transitionChanged = false
 
   # Modelisation of a single Item.
@@ -129,14 +129,14 @@ define [
       if attributes?.map?
         # to avoid circular dependencies
         Map = require 'model/Map'
-        id = if 'string' is utils.type attributes.map then attributes.map else attributes.map._id
+        id = if 'string' is utils.type attributes.map then attributes.map else attributes.map.id
         # gets by id
         map = Map.collection.get id
         unless map?
           # construct it directly because it does not exist
           if 'string' is utils.type attributes.map
             # do not add it: just temporary
-            @map = new Map _id: id 
+            @map = new Map id: id 
           else
             @map = new Map attributes.map
             Map.collection.add @map

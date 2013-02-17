@@ -18,16 +18,16 @@
 ###
 
 testUtils = require './utils/testUtils'
-utils = require '../src/util/common'
-ItemType = require '../src/model/ItemType'
-FieldType = require '../src/model/FieldType'
-EventType = require '../src/model/EventType'
-Item = require '../src/model/Item'
-Event = require '../src/model/Event'
-Player = require '../src/model/Player'
-Map = require '../src/model/Map'
-Executable = require '../src/model/Executable'
-service = require('../src/service/SearchService').get()
+utils = require '../hyperion/src/util/common'
+ItemType = require '../hyperion/src/model/ItemType'
+FieldType = require '../hyperion/src/model/FieldType'
+EventType = require '../hyperion/src/model/EventType'
+Item = require '../hyperion/src/model/Item'
+Event = require '../hyperion/src/model/Event'
+Player = require '../hyperion/src/model/Player'
+Map = require '../hyperion/src/model/Map'
+Executable = require '../hyperion/src/model/Executable'
+service = require('../hyperion/src/service/SearchService').get()
 assert = require('chai').assert
 
 assert.contains = (array, model, message='') ->

@@ -41,7 +41,7 @@ define [
 
     # **private**
     # name of the model attribute that holds name.
-    _nameAttribute: '_id'
+    _nameAttribute: 'id'
 
     # **private**
     # models collection on which the view is bound
@@ -72,7 +72,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable _id: i18n.labels.newName, content: emptyScript
+      @model = new Executable id: i18n.labels.newName, content: emptyScript
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -109,7 +109,8 @@ define [
       super()
       # clean compilation error
       @$el.find('.errors > .compilation').remove()
-      if @_tempId?
+      # TODO
+      ###if @_tempId?
         @model._id = @_nameWidget.options.value
         # we need to unset id because it allows Backbone to differentiate creation from update
         @model.id = null
@@ -117,7 +118,7 @@ define [
       else if @_nameWidget.options.value isnt @model.id 
         # keeps the new id to allow tab renaming
         @_newId = @_nameWidget.options.value
-        return {newId: @_nameWidget.options.value}
+        return {newId: @_nameWidget.options.value}###
 
     # **private**
     # Prepare data to be rendered into the template
