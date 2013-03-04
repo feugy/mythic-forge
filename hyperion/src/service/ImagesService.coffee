@@ -97,7 +97,7 @@ class _ImagesService
         fs.writeFile pathUtils.join(imagesPath, fileName), new Buffer(imageData, 'base64'), (err) =>
           return callback "Failed to save image #{suffix} on model #{model.id}: #{err}" if err?
           # updates correct attribute
-          if args.length is 1
+          if suffix is 'type'
             model.descImage = fileName
           else 
             images = model.images

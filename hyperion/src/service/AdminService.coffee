@@ -29,6 +29,7 @@ Event = require '../model/Event'
 Player = require '../model/Player'
 Executable = require '../model/Executable'
 utils = require '../util/common'
+modelUtils = require '../util/model'
 logger = require('../logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 authoringService = require('./AuthoringService').get()
@@ -38,6 +39,15 @@ listSupported = supported[4..]
 # The AdminService export administration features.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 class _AdminService
+
+  # This simple method indicates wether or not the id is valid and not used.
+  #
+  # @param id [String] the checked id
+  # @option callback err [String] error string. Null if no error occured and id is valid and not used
+  isIdValid: (id, callback) =>
+    return callback "#{id} is invalid" unless modelUtils.isValidId id
+    return callback "#{id} is already used" if ItemType.isUsed id
+    callback null
 
   # The list method retrieve all instances of a given model, in:
   # Map, ItemType, Executable, FieldType, EventType and FSItem (AuthoringService.readRoot()). 
@@ -92,7 +102,7 @@ class _AdminService
             model.type = types[0]
             _save model
 
-        if 'id' of values
+        if 'id' of values and Item.isUsed values.id
           # resolve type
           return Item.findCached [values.id], (err, models) ->
             return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0
@@ -142,7 +152,7 @@ class _AdminService
             model.from = null
             populateTypeAndSave model
 
-        if 'id' of values
+        if 'id' of values and Event.isUsed values.id
           # resolve type
           return Event.findCached [values.id], (err, models) ->
             return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0

@@ -334,5 +334,5 @@ module.exports =
   # @return true if the id is valid, false otherwise
   isValidId: (id) ->
     return false unless 'string' is utils.type id
-    return false unless id.match /^[\w-]+$/
+    return false unless id.match /^[\w$-]+$/
     true
