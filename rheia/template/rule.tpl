@@ -32,6 +32,5 @@ class CustomRule extends Rule
   execute: (actor, target, params, callback) =>
     callback null
   
-# A rule object must be exported. You can set its name and (constructor first parameter) 
-# and category (constructor second optionnal parameter)
-module.exports = new CustomRule 'my rule', 'my category'
+# A rule object must be exported. You can set its category (constructor optionnal parameter)
+module.exports = new CustomRule()

@@ -131,7 +131,7 @@ define [
       names = _.keys @attributes
       for name in names
         ((name) =>
-          unless Object.getOwnPropertyDescriptor(@, name)?
+          unless name is 'id' or Object.getOwnPropertyDescriptor(@, name)?
             Object.defineProperty @, name,
               enumerable: true
               configurable: true

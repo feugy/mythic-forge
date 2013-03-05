@@ -60,6 +60,14 @@ define [
       super()
 
     # **private**
+    # Prepare data to be rendered into the template
+    #
+    # @return data filled into the template
+    _getRenderData: =>
+      title: _.sprintf i18n.titles.turnRule, @model.id
+      i18n: i18n
+
+    # **private**
     # Invoked when a model is created on the server.
     # Extends inherited method to bind event handler on new model.
     #
@@ -77,4 +85,4 @@ define [
     # Refresh rank displayal when the model's content changed.
     _onRankChange: =>
       rank = @model.rank
-      @$el.find('.rank').html if rank then rank else 0
+      @$el.find('.rank').html if rank? then rank else 0

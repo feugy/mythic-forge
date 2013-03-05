@@ -115,9 +115,6 @@ define [
     # the exported object present inside the executable's content.
     exported: null
 
-    # The rule's name, present inside the executable's content.
-    name: null
-
     # last compilation error
     error: null
 
@@ -131,7 +128,7 @@ define [
 
     # **private**
     # List of properties that must be defined in this instance.
-    _fixedAttributes: ['content', 'path', 'category', 'rank', 'active', 'name']
+    _fixedAttributes: ['content', 'path', 'category', 'rank', 'active']
 
     # **private**
     # the old value of exported rule's category.
@@ -144,25 +141,6 @@ define [
     # **private**
     # the old value of exported turn rule's active status.
     _oldActive: null
-
-    # **private**
-    # the old value of exported turn rule's name.
-    _oldName: null
-
-    # Provide a custom sync method to wire Types to the server.
-    # Customize the update behaviour to rename if necessary.
-    #
-    # @param method [String] the CRUD method ("create", "read", "update", or "delete")
-    # @param collection [Items] the current collection
-    # @param args [Object] arguments. For executable renaming, please specify `newId` string value while updating.
-    sync: (method, collection, args) =>
-      switch method 
-        when 'update' 
-          # for update, we do not use 'save' method, but the 'saveAndRename' one.
-          app.sockets.admin.once 'saveAndRename-resp', (err) =>
-            app.router.trigger 'serverError', err, method:'Executable.sync', details:method, id:@id if err?
-          app.sockets.admin.emit 'saveAndRename', @toJSON(), args.newId
-        else super method, collection, args
 
     # Overload inherited setter to recompile when content changed.
     set: (key, value, options) =>
@@ -179,6 +157,7 @@ define [
             # reset internal state as if rule was new
             @exported = null
             @error = err
+            console.error "failed to compile #{@id}: #{err}"
             return @trigger 'change:error', @
           @exported = exported
           oldKind = @kind
@@ -201,10 +180,6 @@ define [
             @_oldActive = @exported?.active
             @trigger 'change:active', @
 
-          if @exported?.name isnt @_oldName
-            @_oldName = @exported?.name
-            @trigger 'change:name', @
-
           # we missed the kind when constructing the model. Indicates to other parts
           app.router.trigger 'kindChanged', @ if oldKind isnt @kind
 
@@ -215,5 +190,4 @@ define [
         when 'category' then @exported?.category
         when 'rank' then @exported?.rank
         when 'active' then @exported?.active
-        when 'name' then @exported?.name
         else super key

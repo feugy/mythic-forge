@@ -109,6 +109,14 @@ define [
       @bindTo FSItem.collection, 'remove', (item) => 
         item.off 'history', @_onUpdateHistory
 
+    # **private**
+    # Get the id of a given view that can be used inside the DOM as an Id or a class.
+    # Use an MD5 hash
+    # 
+    # @param view [Object] the concerned view
+    # @return its DOM compliant id
+    _domId: (view) => md5 view.model.id
+
     # The `render()` method is invoked by backbne to display view content at screen.
     # oInstanciate bar buttons.
     render: =>
@@ -261,7 +269,7 @@ define [
       super event, ui
       # gets the added view from the internal array
       id = $(ui.tab).attr('href').replace '#tabs-', ''
-      view = _.find @_views, (view) -> id is md5 view.getId()
+      view = _.find @_views, (view) -> id is md5 view.model.id
       
       # bind changes to update tab
       view.on 'change', @_onUpdateFileBar

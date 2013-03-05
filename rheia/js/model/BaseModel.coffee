@@ -115,7 +115,6 @@ define [
           modified = true
           model.set key, value 
           # console.log "update property #{key}"
-      return unless modified
 
       # emit a change.
       @trigger 'update', model, @, changes
@@ -218,7 +217,7 @@ define [
       # define property on attributes that must be present
       names = _.uniq names.concat @_fixedAttributes
       for name in names
-        unless Object.getOwnPropertyDescriptor(@, name)?
+        unless name is 'id' or Object.getOwnPropertyDescriptor(@, name)?
           ((name) =>
           
             Object.defineProperty @, name,
@@ -237,7 +236,7 @@ define [
       # treat single attribute
       single = (name) =>
         # define property if needed
-        unless Object.getOwnPropertyDescriptor(@, name)?
+        unless name is 'id' or Object.getOwnPropertyDescriptor(@, name)?
           Object.defineProperty @, name,
             enumerable: true
             configurable: true
@@ -265,6 +264,8 @@ define [
     sync: (method, collection, args) =>
       switch method 
         when 'create', 'update' 
+          # add object if creation
+          @constructor.collection.add @ if 'create'
           app.sockets.admin.once 'save-resp', (err) =>
             app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
           app.sockets.admin.emit 'save', @_className, @_serialize()
@@ -396,7 +397,7 @@ define [
       # treat single attribute
       declareProps = =>
         # define property if needed
-        for name of @type.properties when !(Object.getOwnPropertyDescriptor(@, name)?)
+        for name of @type.properties when name isnt 'id' and !(Object.getOwnPropertyDescriptor(@, name)?)
           ((name) => 
             Object.defineProperty @, name,
               enumerable: true

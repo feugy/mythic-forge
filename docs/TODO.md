@@ -18,7 +18,7 @@
 - Rheia
   - Bugs
     - [!] persistent change detection after saving a rule
-    - script/rule/turnrule editor position when more than one error
+    - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - [!] documentation
   - Authoring perspective
     - multiple file search & replace

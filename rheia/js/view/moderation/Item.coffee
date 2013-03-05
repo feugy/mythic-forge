@@ -84,7 +84,7 @@ define [
     # @param @_created [Object] a freshly created model, null for existing model
     constructor: (id, @_created) ->
       # superclass constructor
-      super id, 'item-type', @_created
+      super id, 'item-type item', @_created
 
       # bind to map collection events: update map list.
       @bindTo Map.collection, 'add', @_onMapListRetrieved
@@ -102,7 +102,7 @@ define [
     # This method is intended to by overloaded by subclass to provide template data for rendering
     #
     # @return an object used as template data (this by default)
-    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @model.type.name, @model.id or '~'
+    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @model.type.id, @model.id or '~'
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -254,7 +254,7 @@ define [
     # Empties and fills the map list.
     _onMapListRetrieved: =>
       maps = "<option value='none'>#{i18n.labels.noMap}</option>"
-      maps += "<option value='#{map.id}'>#{map.name}</option>" for map in Map.collection.models   
+      maps += "<option value='#{map.id}'>#{map.id}</option>" for map in Map.collection.models   
       @_mapList.empty().append maps      
 
       @_mapList.find("[value='#{@model.map?.id}']").attr 'selected', 'selected' if @model?.map?

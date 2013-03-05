@@ -91,8 +91,41 @@
 
   .view 
 
-    > table .right > *
-      margin-bottom 0.5em
+    > table
+      margin-top 10px
+      width 100%
+
+      td 
+        vertical-align top
+
+      label
+        display inline-block
+        margin-right 1em
+        padding-top 0.4em
+        text-align right
+        vertical-align top
+        width 120px
+
+      .left
+        width 130px
+        padding-top 0.5em
+        text-align right
+
+      label
+        width 100%
+        margin 0 1em 0.5em 0
+
+      .right
+        padding-left 1em
+        
+        > *
+          margin-bottom 0.5em
+
+        label
+          width 75px
+
+      input[type="text"]
+        min-width 50%
 
     .prop 
 
@@ -108,14 +141,6 @@
         padding 0.5em 1em
       * 
         color errorColor
-
-  .view.event
-  .view.player
-
-    > table td.left
-      padding-top 0.5em
-      text-align: right;
-      width: 130px;
 
     .update-date
     .creation-date

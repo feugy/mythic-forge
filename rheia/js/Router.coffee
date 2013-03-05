@@ -136,7 +136,7 @@ define [
   return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or 
     ($.browser.webkit and version >= 530) or
     ($.browser.chrome and version >= 20)
-  
+
   # simple flag to avoid loading multiple perspective at the same time
   perspectiveLoading = false
   isLoggingOut = false

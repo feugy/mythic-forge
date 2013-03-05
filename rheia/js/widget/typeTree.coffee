@@ -85,7 +85,7 @@ define [
       @$el.addClass('type-tree').empty()
       # creates categories, and fill with relevant models
       for category in @_categories
-        content = @options.content?.filter (model) -> model?._className is category.id or model?.kind is category.id
+        content = @options.content?.filter (model) -> model?._className is category.id or model?.kind is category.id or model?.kind is null and category.id is 'Script'
         # discard category unless there is content or were told not to do
         continue unless content?.length > 0 or !@options.hideEmpty
 
@@ -112,8 +112,10 @@ define [
     # Open or hides a category. 
     # Toggle animation, and may trigger the `open` event
     #
-    # @param event [Event] the click event
+    # @param event [Event] the cancelled click event
     _onToggleCategory: (event) =>
+      event?.preventDefault()
+      event?.stopImmediatePropagation()
       title = $(event.target).closest 'dt'
       # gets the corresponding 
       if title.hasClass 'open'
@@ -125,7 +127,7 @@ define [
     # **private**
     # Open the element clicked by triggering the `openElement` event.
     #
-    # @param event [Event] the click cancelled event
+    # @param event [Event] the cancelled click event
     _onOpenElement: (event) =>
       event?.preventDefault()
       event?.stopImmediatePropagation()
@@ -138,7 +140,7 @@ define [
     # **private**
     # Removed the element clicked by triggering the `removeElement` event.
     #
-    # @param event [Event] the click cancelled event
+    # @param event [Event] the cancelled click event
     _onRemoveElement: (event) =>
       event?.preventDefault()
       event?.stopImmediatePropagation()

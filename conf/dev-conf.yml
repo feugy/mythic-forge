@@ -38,7 +38,7 @@ ssl:
 # MongoDB connection
 mongo:
   host: localhost
-  db: proto-game
+  db: mythic-forge
 
 # Executable scripts
 executable:

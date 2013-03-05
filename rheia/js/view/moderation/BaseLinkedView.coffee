@@ -143,7 +143,6 @@ define [
 
     # **private**
     # Invoked when a model is created on the server.
-    # Triggers the `affectId` event and then call `_onSaved`
     #
     # @param created [Object] the created model
     _onCreated: (created) =>

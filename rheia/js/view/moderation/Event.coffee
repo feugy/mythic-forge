@@ -67,7 +67,7 @@ define [
     # This method is intended to by overloaded by subclass to provide template data for rendering
     #
     # @return an object used as template data (this by default)
-    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.event, @model.type.name, @model.id or '~'
+    _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.event, @model.type.id, @model.id or '~'
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 

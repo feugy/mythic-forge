@@ -31,6 +31,16 @@ define [
   'model/Map'
 ], (_, utils, Executable, ItemType, EventType, FieldType, Item, Event, Player, Map) ->
 
+  classesByName = 
+    'ItemType': ItemType
+    'EventType': EventType
+    'FieldType': FieldType
+    'Map': Map
+    'Event': Event
+    'Item': Item
+    'Player': Player
+    'Executable': Executable
+
   # Simple utility method that replace regexp value by a text equivalent.
   #
   # @param query [Object] parse query. Directly modified
@@ -92,28 +102,12 @@ define [
 
       models = []
       for result in results
-        # parse returned models
-        modelClass = null
-
-        # TODO use _className instead
-        if 'content' of result 
-          modelClass = Executable
-        else if 'quantifiable' of result
-          modelClass = ItemType
-        else if 'properties' of result
-          modelClass = EventType
-        else if '_name' of result
-          if 'kind' of result
-            modelClass = Map
-          else
-            modelClass = FieldType
-
-        if modelClass?
-          # construct the relevant Backbone.Model
-          model = new modelClass result
-          modelClass.collection.add model
-          # keep the parse model for results
-          models.push model
+        modelClass = classesByName[if '_className' of result then result._className else 'Executable']
+        # construct the relevant Backbone.Model
+        model = new modelClass result
+        modelClass.collection.add model
+        # keep the parse model for results
+        models.push model
 
       app.router.trigger 'searchResults', null, false, models
 

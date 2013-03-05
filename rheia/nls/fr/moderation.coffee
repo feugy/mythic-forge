@@ -105,3 +105,4 @@ define
     chooseEventType: "<p>Choisissez un type d'objet pour le nouvel évènement :</p>"
     invalidPrefs: 'Préférences : erreur de syntaxe JSON'
     shadowObj: "<p>L'objet en question n'existe plus: il a dû être supprimé depuis votre dernière recherche.</p><p>Votre recherche a été mise à jour.<p/>"
+    invalidEmail: 'Le login/e-mail est vide ou contient des caractères invalides'

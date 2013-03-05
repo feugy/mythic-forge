@@ -93,20 +93,20 @@ define [
     # @param rule [Object] the displayed turn rule
     # @return a string containing the rendering for a given rule
     _renderRule: (rule) =>
-      "<li class='#{md5 rule.name}'><input type='checkbox' disabled/>#{rule.name}</li>"
+      "<li class='#{rule.id}'><input type='checkbox' disabled/>#{rule.id}</li>"
 
     # **private**
     # Turn progression handler.
     # `begin` and `end` events are always triggered once each other.
     # For each turn rule, `rule` will occured one time indicating the rule beginning.
     # For each turn rule, `success` or `failure` will occured one time, with error message for `failure`.
-    # An `error` event can also be received, with executable (not rule) name in second parameter.
+    # An `error` event can also be received, with executable (not rule) id in second parameter.
     # It will not be correlated with an existing rule.
     #
     # @param state [String] turn state: `begin`, `end`, `success` and `failure` event are handled
-    # @param name [String] the concerned rule name
+    # @param id [String] the concerned rule id
     # @param err [String] an optionnal error message
-    _onTurnsEvent: (state, name, err) =>
+    _onTurnsEvent: (state, id, err) =>
       switch state
         when 'begin'
           @_turnInProgress = true
@@ -118,12 +118,12 @@ define [
           @_triggerButton._setOption 'disabled', false
           @_turnInProgress = false
         when 'rule'
-          @$el.find(".#{md5 name}").addClass 'progress'
+          @$el.find(".#{id}").addClass 'progress'
         when 'success'
-          @$el.find(".#{md5 name}").removeClass('progress').addClass 'success'
-          @$el.find(".#{md5 name} input").attr 'checked', 'checked'
+          @$el.find(".#{id}").removeClass('progress').addClass 'success'
+          @$el.find(".#{id} input").attr 'checked', 'checked'
         when 'failure'
-          @$el.find(".#{md5 name}").removeClass('progress').addClass 'failure'
+          @$el.find(".#{id}").removeClass('progress').addClass 'failure'
           @$el.find('.errors').append "<div>#{err}</div>"
         when 'error'
           @$el.find('.errors').append "<div class='fatal'>#{err}</div>"
@@ -131,7 +131,7 @@ define [
     # **private**
     # Build turn ordered list when the Executable collection changed
     _onResetList: =>
-      @_rules = (rule for rule in Executable.collection.models when rule.kind is 'TurnRule' and rule.name? and rule.active)
+      @_rules = (rule for rule in Executable.collection.models when rule.kind is 'TurnRule' and rule.id? and rule.active)
       # turn rules are organized by their rank
       @_rules = _.chain(@_rules).map((rule) -> rank:rule.rank, value:rule).sortBy('rank').pluck('value').value()
 

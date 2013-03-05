@@ -109,7 +109,7 @@ define [
         removed[i] = obj.toJSON() for obj, i in removed
         @_mapWidget.removeData removed
 
-      console.log "creates map edition view for #{if id? then @model.id else 'a new object'}"
+      console.log "creates map edition view for #{@model.id}"
 
     # Extends inherited method to add button for selection removal
     #
@@ -132,7 +132,6 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new Map()
-      @model.name = i18n.labels.newName
 
     # **private**
     # Prepare data to be rendered into the template
@@ -140,10 +139,8 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       # data needed by the template
-      {
-        title: _.sprintf i18n.titles.map, if @_tempId? then i18n.labels.newType else @model.id
-        i18n: i18n
-      }
+      title: _.sprintf i18n.titles.map, @model.id
+      i18n: i18n
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -159,7 +156,7 @@ define [
         @_onChange()
 
       # hide commands until map created
-      if @_tempId?
+      if @_isNew
         @$el.find('.commands').hide()
         @$el.find('.not-saved').show()
       else
@@ -175,7 +172,7 @@ define [
         ).on('affect', @_onAffect
         ).on('coordChanged', =>
           # reloads map content
-          return if @_tempId?
+          return if @_isNew
           @model.consult @_mapWidget.options.lowerCoord, @_mapWidget.options.upperCoord
         ).on('selectionChanged', =>
           # update action bar button state
@@ -198,7 +195,7 @@ define [
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      # superclass handles description image, name and description
+      # superclass handles description image
       super()
       # update map kind
       @model.kind = @_kindWidget.find('option:selected').val()
@@ -216,7 +213,7 @@ define [
         @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
         @_mapWidget.setOption 'renderer', renderer
 
-      # superclass handles description image, name and description, and trigger _onChange
+      # superclass handles description image and trigger _onChange
       super()
 
     # **private**
@@ -227,7 +224,7 @@ define [
     #
     # @return the comparable fields array
     _getComparableFields: =>
-      # superclass handles description image, name and description 
+      # superclass handles description image
       comparable = super()
       # adds images
       comparable.push

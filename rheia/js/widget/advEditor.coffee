@@ -80,7 +80,7 @@ define [
         # update inner value and fire change event
         @options.text = @_editor.getValue()
         @$el.trigger 'change', @options.text
-      
+
       # configure it
       session.setUseSoftTabs true
 
@@ -125,7 +125,17 @@ define [
 
     # This method might be called when the editor is shown, to resize it properly
     resize: =>
-      _.defer => @_editor.resize true        
+      _.defer => @_editor.resize true  
+
+    # Allow to consult the error annotations inside the editor.
+    #
+    # @return a list of editor annotation. May be empty
+    getErrors: =>
+      annotations = @_editor.getSession().getAnnotations()
+      return [] unless _.isArray annotations
+      # prepend line number and only retain errors
+      (msg: "line #{ann.row+1}: #{ann.text}" for ann in annotations when ann.type is 'error')
+
 
     # Method invoked when the widget options are set. Update rendering if `source` changed.
     #

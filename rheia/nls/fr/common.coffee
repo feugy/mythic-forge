@@ -40,7 +40,6 @@ define
     login: 'Rheia - Connexion'
       
   labels:
-    newType: 'nouveau'
     enterLogin: 'Identifiant : '
     enterPassword: 'Mot de passe : '
     connectWith: 'Connectez vous avec :'

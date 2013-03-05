@@ -34,11 +34,6 @@ define [
     model: null    
 
     # **private**
-    # name of the model attribute that holds name.
-    # **Must be defined by subclasses**
-    _nameAttribute: null
-
-    # **private**
     # models collection on which the view is bound
     # **Must be defined by subclasses**
     _collection: null
@@ -74,39 +69,31 @@ define [
     _removeInProgress: false
 
     # **private**
-    # while the edited object is still not saved on server, we need an id.
-    _tempId: null
-
-    # **private**
-    # store further id value when changing the edited object id.
-    _newId: null
+    # flag to differentiate creation from update
+    _isNew: false
 
     # The view constructor.
     #
-    # @param router [Router] the event bus
-    # @param id [String] the edited object's id, of null for a creation.
+    # @param id [String] the edited object's id.
+    # @param className [String] the edited object's className.
     constructor: (id, className) ->
       super tagName: 'div', className:"#{className} view"
       # creation of a new item type if necessary
-      if id?
-        @model = @_collection.get id
-      else 
-        @_createNewModel() 
-        @_tempId = utils.generateId()
+      @model = @_collection.get id
+      @_isNew = false
+      unless @model?
+        @_createNewModel()
+        @model.set 'id', id
+        @_isNew = true
 
       @_canSave = false
-      @_canRemove = @_tempId is null
+      @_canRemove = !@_isNew
 
       # bind to server events
       @bindTo @_collection, 'add', @_onCreated
       @bindTo @model, 'update', @_onSaved
       @bindTo @_collection, 'remove', @_onRemoved
       @bindTo app.router, 'serverError', @_onServerError
-
-    # Returns a unique id. 
-    #
-    # @return If the edited object is persisted on server, return its id. Otherwise, a temporary unic id.
-    getId: => if @_tempId isnt null then @_tempId else @model.id
 
     # Returns the view's title
     #
@@ -157,7 +144,7 @@ define [
     # @param event [event] optionnal click event on the save button
     saveModel: (event = null) =>
       return unless @canSave()
-      console.log "save asked for #{@getId()}"
+      console.log "save asked for #{@model.id}"
       event?.preventDefault()
       # fill the model and save it
       @_saveInProgress = true
@@ -235,34 +222,34 @@ define [
     # **private**
     # Displays warning dialog when edited object have been removed externally.
     _notifyExternalRemove: () =>
-      return if $("#externalRemove-#{md5 @getId()}").length > 0
+      return if $("#externalRemove-#{@model.id}").length > 0
       utils.popup i18n.titles.external, 
-        _.sprintf(i18n.msgs.externalRemove, @model[@_nameAttribute]), 
+        _.sprintf(i18n.msgs.externalRemove, @model.id), 
         'warning', 
         [text: i18n.buttons.ok],
         0,
-        "externalRemove-#{md5 @getId()}"
+        "externalRemove-#{@model.id}"
 
     # **private**
     # Displays warning dialog when edited object have been modified externally.
     _notifyExternalChange: () =>
-      return if $("#externalChange-#{md5 @getId()}").length > 0
+      return if $("#externalChange-#{@model.id}").length > 0
       utils.popup i18n.titles.external, 
-        _.sprintf(i18n.msgs.externalChange, @model[@_nameAttribute]), 
+        _.sprintf(i18n.msgs.externalChange, @model.id), 
         'warning',
         [text: i18n.buttons.ok], 
         0,
-        "externalChange-#{md5 @getId()}"
+        "externalChange-#{@model.id}"
 
     # **private**
     # Displays error dialog when current server operation failed on edited object.
     #
     # @param err [String] server error
     _notifyServerError: (err) =>
-      return if $("#serverError-#{@getId()}").length > 0
+      return if $("#serverError-#{@model.id}").length > 0
       msgKey = if @_saveInProgress then i18n.msgs.saveFailed else i18n.msgs.removeFailed
       err = if typeof err is 'object' then err.message else err
-      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model[@_nameAttribute], err), 'cancel', [text: i18n.buttons.ok]
+      utils.popup i18n.titles.serverError, _.sprintf(msgKey, @model.id, err), 'cancel', [text: i18n.buttons.ok]
 
     # **private**
     # Change handler, wired to any changes from the rendering.
@@ -271,40 +258,21 @@ define [
     #
     # **May be overriden by subclasses**
     _onChange: =>
-      @_canRemove = @_tempId is null
+      @_canRemove = !@_isNew
       # trigger change
       @trigger 'change', @
 
     # **private**
     # Invoked when a model is created on the server.
-    # Triggers the `affectId` event and then call `_onSaved`
     #
     # @param created [Object] the created model
     _onCreated: (created) =>
       return unless @_saveInProgress
-      # for a creation
-      oldId = @_tempId
-      newId = created.id
-      @_tempId = null
-
-      if @_newId?
-        # for a renaming
-        oldId = @model.id
-        newId = @_newId
-        @_newId = null
-
-      # indicates to perspective that we affected the id
-      @trigger 'affectId', oldId, newId
-      # just to allow `_onSaved` to perform
-      @model.id = created.id
-      # unbound from the old model updates
-      @unboundFrom @model, 'update'
       # update view title
       @$el.find('> h1').html @_getRenderData()?.title
       # now refresh rendering
+      @_isNew = false
       @_onSaved created
-      # bind to the new model
-      @bindTo @model, 'update', @_onSaved
 
 
     # **private**
@@ -317,12 +285,12 @@ define [
       return unless saved.id is @model.id
       # if it was a close save, trigger close once again
       if @_isClosing
-        console.log "go on with closing #{@getId()}"
+        console.log "go on with closing #{@model.id}"
         return @trigger 'close'
 
-      console.log "object #{@getId()} saved !"
+      console.log "object #{@model.id} saved !"
       @_notifyExternalChange() unless @_saveInProgress
-      @_saveInProgress = false;
+      @_saveInProgress = false
 
       # updates edited object
       @model = saved
@@ -337,12 +305,12 @@ define [
     # @param removed [Object] the removed model
     _onRemoved: (removed) =>
       # takes in account if we removed the edited objet, and if their isn't any id change
-      return unless removed.id is @model.id and @_newId is null
+      return unless removed.id is @model.id and !@_isNew
       @_notifyExternalRemove() unless @_removeInProgress
       @_removeInProgress = false;
 
       @_isClosing = true
-      console.log "close the view of #{@getId()} because removal received"
+      console.log "close the view of #{@model.id} because removal received"
       @trigger 'close'
 
     # **private**
@@ -354,7 +322,7 @@ define [
       return unless _(details.method).startsWith "#{@model._className}.sync"
       
       # the current operation failed
-      if (details.id is @getId() or @_tempId?) and (@_saveInProgress or @_removeInProgress)
+      if (details.id is @model.id) and (@_saveInProgress or @_removeInProgress)
         # displays error.
         @_notifyServerError err
         @_saveInProgress = false

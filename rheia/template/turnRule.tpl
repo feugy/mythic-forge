@@ -28,6 +28,5 @@ class CustomRule extends TurnRule
   execute: (target, callback) =>
     callback null
   
-# A turn rule object must be exported. You can set its name and (constructor first parameter) 
-# and rank (constructor second optionnal parameter, default to 0)
-module.exports = new CustomRule 'my rule', 0
+# A turn rule object must be exported. You can set its rank (default to 0)
+module.exports = new CustomRule 0

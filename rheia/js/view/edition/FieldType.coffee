@@ -66,14 +66,13 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new FieldType()
-      @model.name = i18n.labels.newName
       @model.descImage = null
       console.log i18n.labels,  @model
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      # superclass handles description image, name and description
+      # superclass handles description image
       super()
 
       # update images specifications. File upload will be handled separately
@@ -106,10 +105,8 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       # data needed by the template
-      {
-        title: _.sprintf i18n.titles.fieldType, if @_tempId? then i18n.labels.newType else @model.id
-        i18n: i18n
-      }
+      title: _.sprintf i18n.titles.fieldType, @model.id
+      i18n: i18n
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -119,7 +116,7 @@ define [
     #
     # @return the comparable fields array
     _getComparableFields: =>
-      # superclass handles description image, name and description 
+      # superclass handles description image
       comparable = super()
       # adds images
 

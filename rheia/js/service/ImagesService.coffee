@@ -96,7 +96,7 @@ define [
         delete @_timestamps[src]
 
         # wait for server response
-        app.sockets.admin.once 'uploadImage-resp', (err, saved) =>
+        app.sockets.admin.on 'uploadImage-resp', (err, saved) =>
           throw new Error "Failed to upload image for model #{modelName} #{id}: #{err}" if err?
           # populate cache
           @load src
@@ -108,8 +108,10 @@ define [
         console.log "upload new image #{src}..."
         # upload data to server
         if idx?
+          console.log "upload image ##{idx} of type #{modelName} #{id}"
           app.sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
         else 
+          console.log "upload type image of type #{modelName} #{id}"
           app.sockets.admin.emit 'uploadImage', modelName, id, ext, data
 
       # read data from file

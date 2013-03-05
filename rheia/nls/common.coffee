@@ -26,5 +26,7 @@ define
       timeFormat: 'HH:mm:ss'
       dateTimeFormat: 'YY/MM/DD HH:mm:ss'
       instanceAffectation: 'affectInstances'
+      uidRegex: /^[\w$-]+$/i #/^[$_\u0041-\uff70].*$/i
+      emailRegex: /^[$_\u0041-\uff70]+$/i
     TOTRANSLATE: true    
 

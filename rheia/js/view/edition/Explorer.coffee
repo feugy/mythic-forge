@@ -85,8 +85,7 @@ define [
     
         return grouped
       when 'TurnRule' then criteria = 'rank'
-      when 'Script' then criteria = 'id'
-      else criteria = 'name'
+      else criteria = 'id'
         
     _.chain(collection.models).map((model) -> 
         {criteria:model[criteria], value:model}

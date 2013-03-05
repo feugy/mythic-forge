@@ -207,18 +207,21 @@ define [
     # @param id [String] optional id of the opened instance. Null for creations
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
+      return null unless type in ['Item', 'Event', 'Player']
       # creates the relevant view
       view = null
+      # generate the proper id
+      id = utils.generateId() unless id?
       switch type
         when 'Item'
           if @_creationType?
-            view = new ItemView null, new Item type: @_creationType
+            view = new ItemView id, new Item type: @_creationType
             @_creationType = null
           else
             view = new ItemView id
         when 'Event'
           if @_creationType?
-            view = new EventView null, new Event type: @_creationType
+            view = new EventView id, new Event type: @_creationType
             @_creationType = null
           else
             view = new EventView id
@@ -245,9 +248,9 @@ define [
       select = @$el.find '.maps select'
       maps = ''
       found = false
-      for map in Map.collection.sortBy 'name'
+      for map in Map.collection.sortBy 'id'
         found = true if map.equals @_map
-        maps += "<option value='#{map.id}' #{if map.equals @_map then 'selected="selected"' else ''}>#{map.name}</option>"
+        maps += "<option value='#{map.id}' #{if map.equals @_map then 'selected="selected"' else ''}>#{map.id}</option>"
      
       select.empty().append maps
 
@@ -378,7 +381,7 @@ define [
       super event, ui
 
       id = $(ui.tab).attr('href').replace '#tabs-', ''
-      view = _.find @_views, (view) -> id is md5 view.getId()
+      view = _.find @_views, (view) -> id is view.model.id
 
       # makes tab draggable
       $(ui.tab).draggable

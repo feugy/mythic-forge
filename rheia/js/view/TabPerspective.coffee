@@ -82,9 +82,6 @@ define [
     # Instanciate tab widget for view and optional action bar
     render: =>
       super()
-      # do not use click because jQuery-ui tabs prevent them in nav bar.
-      @$el.on 'mouseup', '.ui-tabs-nav .ui-icon-close', @_onCloseTab
-
       # instanciates a tab widget for views
       @_tabs = @$el.find('> .right .ui-tabs.views').tabs(
           # template with close button
@@ -99,6 +96,8 @@ define [
         # handlers
         .bind('tabsadd', @_onTabAdded)
         .bind('tabsselect', (event, ui) => 
+          # avoid updating window location
+          event?.stopPropagation()
           @_actionBars?.select ui.index
           @_views[ui.index]?.shown()
         ).data 'tabs'
@@ -116,11 +115,12 @@ define [
       # if closure is allowed, removes the tab
       if @_forceClose or view.canClose()
         @_forceClose = false
-        idx = @_indexOfView view.getId()
+        idx = @_indexOfView view.model.id
         return if idx is -1
         console.log "view #{view.getTitle()} closure"
         @_views.splice idx, 1
-        @_tabs?.remove idx
+        removed = @_tabs?.remove idx
+        $(removed).find('.ui-icon-close').off()
         @_actionBars?.remove idx
         view.off 'change'
       else
@@ -143,8 +143,15 @@ define [
     # @param id [String] the searched view's id.
     # @return index of the corresponding view, of -1
     _indexOfView: (id) =>
-      idx = (i for view, i in @_views when view.getId() is id)
+      idx = (i for view, i in @_views when view.model.id is id)
       if idx.length is 1 then idx[0] else -1
+
+    # **private**
+    # Get the id of a given view that can be used inside the DOM as an Id or a class.
+    # 
+    # @param view [Object] the concerned view
+    # @return its DOM compliant id
+    _domId: (view) => view.model.id
 
     # **private**
     # This method is invoked when an element must be showned in a tab.
@@ -162,7 +169,7 @@ define [
       return unless view?
 
       @_views.push view
-      @_tabs.add '#tabs-'+md5(view.getId()), view.getTitle()
+      @_tabs.add "#tabs-#{@_domId view}", view.getTitle()
 
     # **private**
     # This method is invoked when an element must be removed.
@@ -187,12 +194,14 @@ define [
     # @param ui [Object] tab container 
     _onTabAdded: (event, ui) =>
       # gets the added view from the internal array
-      id = $(ui.tab).attr('href').replace '#tabs-', ''
-      view = _.find @_views, (view) -> id is md5 view.getId()
+      domId = $(ui.tab).attr('href').replace '#tabs-', ''
+      view = _.find @_views, (view) => domId is @_domId view
+      # bind close behaviour
+      $(ui.tab).find('.ui-icon-close').on 'click', @_onCloseTab
       
       # bind changes to update tab
       view.on 'change', () =>
-        tab = @_tabs.element.find "a[href=#tabs-#{md5(view.getId())}] .content"
+        tab = @_tabs.element.find "a[href=#tabs-#{@_domId view}] .content"
         # toggle Css class modified wether we can save the view
         tab.toggleClass 'modified', view.canSave()
         # adds the class name to the icon
@@ -203,11 +212,9 @@ define [
       # bind close we view ask for it
       view.on 'close', => @tryCloseTab view
       $(ui.tab).find('.icon').attr 'class', "icon #{view.className}"
-      # bind Id affectation, to update tabs' ids when the model is created
-      view.on 'affectId', @_onAffectViewId
 
       # adds the action bar to the other ones
-      @_actionBars?.add "#actionBar-#{md5(view.getId())}", view.getId(), ui.index
+      @_actionBars?.add "#actionBar-#{@_domId view}", view.model.id, ui.index
       if @_actionBars?
         $(@_actionBars.panels[ui.index]).append view.getActionBar()
 
@@ -218,11 +225,11 @@ define [
     # **private**
     # trigger the tab close procedure when clicking on the relevant icon.
     #
-    # @param event [Event] click event on the close icon
+    # @param event [Event] cancelled click event on the close icon
     _onCloseTab: (event) =>
       event?.preventDefault()
-      id = $(event.target).closest('a').attr('href').replace '#tabs-', ''
-      view = _.find @_views, (view) -> id is md5 view.getId()
+      domId = $(event.target).closest('a').attr('href').replace '#tabs-', ''
+      view = _.find @_views, (view) => domId is @_domId view
       return unless view?
       console.log "try to close tab for view #{view.getTitle()}"
       @tryCloseTab view
@@ -268,24 +275,3 @@ define [
       console.log "close current tab ##{@_tabs.options.selected} by hotkey"
       @tryCloseTab @_views[@_tabs.options.selected] if @_views[@_tabs.options.selected]?
       false
-
-    # **private**
-    # View id affectation handler. Rename html corresponding ids.
-    #
-    # @param oldId [String] id old value
-    # @param newId [String] id new value
-    _onAffectViewId: (oldId, newId) =>
-      # updates view tab
-      oldId = md5 oldId
-      newId = md5 newId
-      link = @_tabs.element.find "a[href=#tabs-#{oldId}]"
-      link.attr 'href', "#tabs-#{newId}"
-      link.closest('li').attr 'aria-controls', "tabs-#{newId}"
-      # updates view panel
-      @_tabs.element.find("#tabs-#{oldId}").attr 'id', "tabs-#{newId}"
-      # updates action bar tab
-      link = @_actionBars?.element.find "a[href=#actionBar-#{oldId}]"
-      link?.attr 'href', "#actionBar-#{newId}"
-      link?.closest('li').attr 'aria-controls', "actionBar-#{newId}"
-      # updates action bar panel
-      @_actionBars.element.find("#actionBar-#{oldId}").attr 'id', "actionBar-#{newId}"

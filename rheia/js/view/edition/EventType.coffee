@@ -92,7 +92,6 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new EventType()
-      @model.name = i18n.labels.newName
       @model.descImage = null
 
     # **private**
@@ -114,7 +113,7 @@ define [
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      # superclass handles description image, name and description
+      # superclass handles description image
       super()
 
       # update template
@@ -128,7 +127,7 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      # superclass handles description image, name and description
+      # superclass handles description image
       super()
 
       # update template
@@ -147,10 +146,8 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       # data needed by the template
-      {
-        title: _.sprintf i18n.titles.eventType, if @_tempId? then i18n.labels.newType else @model.id
-        i18n: i18n
-      }
+      title: _.sprintf i18n.titles.eventType, @model.id
+      i18n: i18n
 
     # **private**
     # Removes existing properties widget, and creates new ones from _editedProperties
@@ -241,7 +238,7 @@ define [
 
         @_validators.push new validators.Regexp {
           invalidError: i18n.msgs.invalidUidError
-          regexp: /^[$_\u0041-\uff70].*$/i
+          regexp: i18n.constants.uidRegex
           required: true
           spacesAllowed: false
         }, i18n.labels.propertyUidField, $(uidName), null

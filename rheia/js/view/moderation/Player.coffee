@@ -55,20 +55,16 @@ define [
     _confirmRemoveMessage: i18n.msgs.removePlayerConfirm
 
     # **private**
-    # 'Name' of a player is its email.
-    _nameAttribute: 'email'
-
-    # **private**
-    # Error display name for fields that holds model's name.
-    _nameDisplayLabel: i18n.labels.email
-
-    # **private**
     # Password need to be validated only if plyaer is new or if field has been changed
     _passwordChanged: false
 
     # **private**
     # Button to kick user
     _kickButton: null
+
+    # **private**
+    # Widget to display email
+    _emailWidget: null
 
     # **private**
     # Widget to display character list
@@ -125,8 +121,8 @@ define [
     # @param confirm [Boolean] true to get the version of the title for confirm popups. Default to false.
     # @return the edited object name.
     getTitle: (confirm = false) => 
-      return @_nameWidget?.options.value or @model[@_nameAttribute] if confirm
-      "#{_.truncate (@_nameWidget?.options.value or @model[@_nameAttribute]), 15}<div class='uid'>&nbsp;</div>"
+      return @_emailWidget?.options.value or @model.email if confirm
+      "#{_.truncate (@_emailWidget?.options.value or @model.email), 15}<div class='uid'>&nbsp;</div>"
 
     # **private**
     # Effectively creates a new model.
@@ -142,10 +138,8 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       # data needed by the template
-      {
-        title: _.sprintf i18n.titles.player, @model.email, if @_tempId? then i18n.labels.newType else @model.id
-        i18n: i18n
-      }
+      title: _.sprintf i18n.titles.player, @model.email, @model.id
+      i18n: i18n
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -161,6 +155,12 @@ define [
         Player.collection.kick @model.email
 
       # create specific field widgets
+      @_emailWidget = @$el.find('.email.field').property(
+        type: 'string'
+        allowNull: false
+      ).on('change', @_onChange
+      ).data 'property'
+
       @_charactersWidget = @$el.find('.characters.field').property(
         type: 'array'
         isInstance: true
@@ -220,6 +220,7 @@ define [
       if @_passwordChanged
         @model.password = if @model.provider? then undefined else @_passwordWidget.options.value
       @model.isAdmin = @_isAdminCheckbox.is ':checked'
+      @model.email = @_emailWidget.options.value
       @model.firstName = @_firstNameWidget.options.value
       @model.lastName = @_lastNameWidget.options.value
       @model.lastConnection = @_lastConnectionWidget.options.value or null
@@ -232,11 +233,12 @@ define [
       # update view title
       @$el.find('> h1').html @_getRenderData().title
 
-      @_passwordChanged = @_tempId?
+      @_passwordChanged = @_isNew
       @_charactersWidget.setOption 'value', @model.characters?.concat() or []
       @_providerWidget.val @model.provider
       @_passwordWidget.setOption 'value', unless @model.provider? then '' else @model.password
       @_isAdminCheckbox.attr 'checked', @model.isAdmin
+      @_emailWidget.setOption 'value', @model.email or ''
       @_firstNameWidget.setOption 'value', @model.firstName or ''
       @_lastNameWidget.setOption 'value', @model.lastName or ''
       @_lastConnectionWidget.setOption 'value', @model.lastConnection
@@ -269,6 +271,10 @@ define [
         name: 'isAdmin'
         original: @model.isAdmin
         current: @_isAdminCheckbox.is ':checked'
+      ,
+        name: 'email'
+        original: @model.email
+        current: @_emailWidget.options.value
       ,
         name: 'lastName'
         original: @model.lastName
@@ -305,6 +311,11 @@ define [
     # - password (if provider is null)
     _createValidators: =>
       super()
+      # adds a validator for login
+      @_validators.push new validators.Regexp
+        invalidError: i18n.msgs.invalidEmail
+        regular: i18n.constants.emailRegex
+      , i18n.labels.email, @_emailWidget.$el, null, (node) -> node.find('input').val()
 
       # adds a validator for password if provider is defined
       @_validators.push new validators.Handler

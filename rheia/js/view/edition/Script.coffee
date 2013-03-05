@@ -40,10 +40,6 @@ define [
     _template: template
 
     # **private**
-    # name of the model attribute that holds name.
-    _nameAttribute: 'id'
-
-    # **private**
     # models collection on which the view is bound
     _collection: Executable.collection
 
@@ -72,59 +68,32 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable id: i18n.labels.newName, content: emptyScript
+      @model = new Executable content: emptyScript
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      # superclass handles description image, name and description
+      # superclass handles description image
       super()
       @model.content = @_editorWidget.options.text
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      # superclass handles description image, name and description
-      super()
-      @_editorWidget.setOption 'text', @model.content
-      @_onChange()
-      @_onCompilationError() if @model.error?
-
-    # **private**
-    # Extends inherited method to add a regular expression for Executable names
-    _createValidators: =>
-      # superclass disposes validators, and creates name validator
-      super()
-      @_validators.push new validators.Regexp {
-        invalidError: i18n.msgs.invalidExecutableNameError
-        regexp: /^\w*$/i
-      }, i18n.labels.name, @_nameWidget.$el, null, (node) -> node.find('input').val()
-
-    # **private**
-    # Performs view specific save operations, right before saving the model.
-    # Specify new name if name changed
-    #
-    # @return optionnal attributes that may be specificaly saved. Null or undefined to save all model
-    _specificSave: =>
+      # superclass handles description image
       super()
       # clean compilation error
       @$el.find('.errors > .compilation').remove()
-      # TODO
-      ###if @_tempId?
-        @model._id = @_nameWidget.options.value
-        # we need to unset id because it allows Backbone to differentiate creation from update
-        @model.id = null
-        return null
-      else if @_nameWidget.options.value isnt @model.id 
-        # keeps the new id to allow tab renaming
-        @_newId = @_nameWidget.options.value
-        return {newId: @_nameWidget.options.value}###
+      @_editorWidget.setOption 'text', @model.content
+      @_onChange()
+      @_onCompilationError() if @model.error?
 
     # **private**
     # Prepare data to be rendered into the template
     #
     # @return data filled into the template
     _getRenderData: =>
+      title: _.sprintf i18n.titles.script, @model.id
       i18n: i18n
 
     # **private**
@@ -151,20 +120,6 @@ define [
         original: @model.content
         current: @_editorWidget.options.text
       comparable
-
-    # **private**
-    # Invoked when a model is created on the server.
-    # Extends inherited method to bind event handler on new model.
-    #
-    # @param created [Object] the created model
-    _onCreated: (created) =>
-      return unless @_saveInProgress
-      # unbound from the old model updates
-      @unboundFrom @model, 'change:error'
-      # now refresh rendering
-      super created
-      # bind to the new model
-      @bindTo @model, 'change:error', @_onCompilationError
 
     # **private**
     # Displays the detected compilation errors.

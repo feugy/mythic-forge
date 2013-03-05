@@ -68,13 +68,12 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new ItemType()
-      @model.name = i18n.labels.newName
       @model.descImage = null
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      # superclass handles description image, name, description and properties
+      # superclass handles description image and properties
       super()
 
       @model.quantifiable = @_quantifiable.attr('checked') isnt undefined
@@ -92,7 +91,7 @@ define [
       else 
         @_quantifiable.removeAttr 'checked'
 
-      # superclass handles description image, name, description and properties
+      # superclass handles description image and properties
       super()
 
     # **private**
@@ -117,10 +116,8 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       # data needed by the template
-      {
-        title: _.sprintf i18n.titles.itemType, if @_tempId? then i18n.labels.newType else @model.id
-        i18n: i18n
-      }
+      title: _.sprintf i18n.titles.itemType, @model.id
+      i18n: i18n
 
     # **private**
     # Performs view specific rendering operations.
@@ -137,7 +134,7 @@ define [
     #
     # @return the comparable fields array
     _getComparableFields: =>
-      # superclass handles description image, name, description and properties
+      # superclass handles description image and properties
       comparable = super()
       # adds name and description
       comparable.push

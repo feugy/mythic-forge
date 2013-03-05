@@ -25,6 +25,7 @@ define [
   'i18n!nls/edition'
   'text!tpl/editionPerspective.html'
   'utils/utilities'
+  'utils/validators'
   'view/edition/Explorer'
   'view/edition/ItemType'
   'view/edition/EventType'
@@ -34,7 +35,7 @@ define [
   'view/edition/TurnRule'
   'view/edition/Script'
   'widget/search'
-], ($, TabPerspective, i18n, i18nEdition, template, utils, Explorer, 
+], ($, TabPerspective, i18n, i18nEdition, template, utils, validators, Explorer, 
     ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView, ScriptView) ->
 
   i18n = $.extend true, i18n, i18nEdition
@@ -130,8 +131,63 @@ define [
     # @param id [String] optional id of the opened instance. Null for creations
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
+      return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Map']
       # creates the relevant view
       view = null
+      unless id?
+        # choose an id within a popup
+        popup = utils.popup(i18n.titles.chooseId, i18n.msgs.chooseId, 'question', [
+          text: i18n.buttons.ok
+          icon: 'valid'
+          click: =>
+            # Do not proceed unless no validation error
+            validator.validate()
+            return false unless validator.errors.length is 0
+            id = input.val()
+            # ask server if id is free
+            app.sockets.admin.once 'isIdValid-resp', (err) =>
+              if err
+                return popup.find('.errors').empty().append i18n.msgs.alreadyUsedId
+              validator.dispose()
+              # now we can opens the view tab
+              popup.dialog 'close'
+              @_onOpenElement type, id
+            app.sockets.admin.emit 'isIdValid', id
+            false
+        ,
+          text: i18n.buttons.cancel
+          icon: 'cancel'
+          click: -> validator.dispose()
+        ],
+        1).addClass 'name-choose-popup'
+
+        # adds a text field and an error field above it
+        popup.append """<div class="id-container">
+            <label>#{i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
+            <input type='text' class='id'/>
+          </div>
+          <div class='errors'></div>"""
+        input = popup.find '.id'
+
+        # creates the validator
+        validator = new validators.Regexp 
+          required: true
+          invalidError: i18n.msgs.invalidId
+          regexp: i18n.constants.uidRegex
+        , i18n.labels.id, input, 'keyup' 
+
+        # displays error on keyup. Binds after validator creation to validate first
+        input.focus()
+        input.on 'keyup', (event) =>
+          # displays error on keyup
+          popup.find('.errors').empty()
+          if validator.errors.length
+            popup.find('.errors').append error.msg for error in validator.errors
+          if event.which is $.ui.keyCode.ENTER
+            popup.parent().find('.ui-dialog-buttonset > *').eq(0).click()
+        return null
+
+      # id is known, opens it
       switch type
         when 'FieldType' then view = new FieldTypeView id
         when 'ItemType' then view = new ItemTypeView id

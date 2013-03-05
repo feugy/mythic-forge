@@ -22,6 +22,9 @@
 img.dragged
   width 40px
 
+.id-container
+  text-align center
+
 .affect-field 
   size = 50px
 
@@ -106,31 +109,41 @@ img.dragged
   .view.script:not(.icon)
   .view.rule:not(.icon)
   .view.turn-rule:not(.icon)
+    display box
+    box-orient vertical
+    box-sizing border-box
+    width 100%
+    height 100%
 
-    > div input[type="text"]
-      min-width 25%
-      
     > .content.adv-editor
-      takeSpace 65px
-      margin 12px 15px
-      width auto
+      position relative
+      box-flex 1
       border 1px solid borderColor
 
       *
         font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
         font-size 12px
         line-height 16px
-      
-  .view.script.error > .content.adv-editor
-  .view.rule.error > .content.adv-editor
-  .view.turn-rule.error > .content.adv-editor
-    top 100px
+
+    > div > label
+      padding-top 0
 
   // map view
   .view.map
+
+    .right
+      text-align center
+
+    > div label
+      width 100px
 
     .map-widget 
       margin 20px auto 10px
 
     .not-saved
       color errorColor
+
+  .view.item-type
+
+    .images label
+      line-height 97px

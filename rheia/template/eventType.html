@@ -1,40 +1,23 @@
 <h1>{{title}}</h1>
 <div class="errors"></div>
-<table>
-  <tr>
-    <td class="left">
-      <label>{{i18n.labels.descImage}}</label>
-      <div class="desc image"/>
-    </td>
-    <td class="right">
-      <div>
-        <label>{{i18n.labels.name}}{{i18n.labels.fieldSeparator}}</label>
-        <span class="name field"></span>
-      </div>
-      <div>
-        <label>{{i18n.labels.desc}}{{i18n.labels.fieldSeparator}}</label>
-        <span class="desc field"></span>
-      </div>
-      <div>
-        <label>{{i18n.labels.template}}{{i18n.labels.fieldSeparator}}</label>
-        <span class="template field" title="{{i18n.tips.template}}"></span>
-      </div>
-    </td>
-  </tr>
-  <tr>
-    <td class="left"></td>
-    <td class="right">
-      <label>{{i18n.labels.properties}}</label>
-      <table class="properties">
-        <thead>         
-          <tr>
-            <th colspan="2">{{i18n.labels.propertyUid}}</th>
-            <th>{{i18n.labels.propertyType}}</th>
-            <th>{{i18n.labels.propertyValue}}</th>
-          </tr>        
-        </thead>
-        <tbody></tbody>
-      </table>
-    </td>
-  </tr>
-</table>
+<div class="images">
+  <label>{{i18n.labels.descImage}}{{i18n.labels.fieldSeparator}}</label>
+  <div class="desc image"/>
+</div>
+<div>
+  <label>{{i18n.labels.template}}{{i18n.labels.fieldSeparator}}</label>
+  <span class="template field" title="{{i18n.tips.template}}"></span>
+</div>
+<div>
+  <label>{{i18n.labels.properties}}{{i18n.labels.fieldSeparator}}</label>
+  <table class="properties">
+    <thead>         
+      <tr>
+        <th colspan="2">{{i18n.labels.propertyUid}}</th>
+        <th>{{i18n.labels.propertyType}}</th>
+        <th>{{i18n.labels.propertyValue}}</th>
+      </tr>        
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>

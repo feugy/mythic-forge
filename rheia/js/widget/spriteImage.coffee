@@ -42,9 +42,12 @@ define [
       @options._silent = true
       @$el.addClass 'sprite'
       @$el.hover (event) => 
-        @$el.addClass('show').find('.details').transition {opacity:1}, @options.duration
+        details = @$el.find '.details'
+        parent = @$el.parent()
+        details.toggleClass 'right', @$el.position().left + details.width() >= parent.position().left + parent.width() + 50
+        @$el.addClass 'show'
       , (event) =>
-        @$el.removeClass('show').find('.details').transition {opacity:0}, @options.duration
+        @$el.removeClass 'show'
 
       # inputs for width and height
       $("""<div class="dimensions">#{i18n.spriteImage.dimensions}<input type="numer" class="spriteW"/>
@@ -226,9 +229,6 @@ define [
     # sprites definition.
     # read-only: use `setOption('sprite')` to modify
     sprites: {}
-
-    # show/hide duration in milliseconds
-    duration: 250
 
     # list of validation errors, when the rendering changes.
     # an empty list means no error.

@@ -32,16 +32,6 @@ define [
   class BaseEditionView extends BaseView
 
     # **private**
-    # name of the model attribute that holds name.
-    # **May be defined by subclasses**
-    _nameAttribute: 'name'
-
-    # **private**
-    # Error display name for fields that holds model's name.
-    # **May be defined by subclasses**
-    _nameDisplayLabel: i18n.labels.name
-
-    # **private**
     # arrays of validators.
     _validators: []
 
@@ -60,14 +50,6 @@ define [
     # **private**
     # remove button widget
     _removeButton: null
-
-    # **private**
-    # widget that displays the model's name
-    _nameWidget: null
-
-    # **private**
-    # widget that displays the model's description
-    _descWidget: null
 
     # **private**
     # description image widget
@@ -99,8 +81,7 @@ define [
     # @param confirm [Boolean] true to get the version of the title for confirm popups. Default to false.
     # @return the edited object name.
     getTitle: (confirm = false) => 
-      return @_nameWidget?.options.value or @model[@_nameAttribute] if confirm
-      _.truncate (@_nameWidget?.options.value or @model[@_nameAttribute]), 15
+      if confirm then @model.id else _.truncate (@model.id), 15
 
     # Returns the view's action bar, and creates it if needed.
     # may be overriden by subclasses to add buttons
@@ -144,19 +125,6 @@ define [
     #
     # Creates validator and instanciate widgets
     _specificRender: =>
-      # creates property for name and description
-      @_nameWidget = @$el.find(".#{@_nameAttribute}.field").property(
-        type: 'string'
-        allowNull: false
-      ).on('change', @_onChange
-      ).data 'property'
-
-      @_descWidget = @$el.find('.desc.field').property(
-        type: 'text'
-        allowNull: false
-      ).on('change', @_onChange
-      ).data 'property'
-
       # creates all validators.
       @_createValidators()
 
@@ -184,18 +152,12 @@ define [
     # **private**
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
-      if @_nameWidget?
-        @model[@_nameAttribute] = @_nameWidget.options.value unless @_nameAttribute is @model.idAttribute
-      @model.desc = @_descWidget.options.value if @_descWidget?
-
       # we only are concerned by setting to null, because image upload is managed by `_onSave`
       @model.descImage = null if @_descImageWidget? and @_descImageWidget.options.source is null
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      @_nameWidget.setOption 'value', @model[@_nameAttribute] if @_nameWidget?
-      @_descWidget.setOption 'value', @model.desc if @_descWidget?
       @_createImages()
       @_onChange()
 
@@ -209,16 +171,6 @@ define [
     _getComparableFields: =>
       comparable = []
       # adds name and description
-      if @_nameWidget?
-        comparable.push
-          name: @_nameAttribute
-          original: @model[@_nameAttribute]
-          current: @_nameWidget.options.value
-      if @_descWidget?
-        comparable.push
-          name: 'description'
-          original: @model.desc
-          current: @_descWidget.options.value
       if @_descImageWidget?
         comparable.push
           name: 'descImage'
@@ -245,10 +197,6 @@ define [
     _createValidators: =>
       validator.dispose() for validator in @_validators
       @_validators = []
-      # adds a validator for name
-      if @_nameWidget?
-        @_validators.push new validators.String {required: true}, @_nameDisplayLabel, 
-          @_nameWidget.$el, null, (node) -> node.find('input').val()
 
     # **private**
     # Allows to compute the rendering's validity.
@@ -284,8 +232,8 @@ define [
             console.log "field #{field.name} modified"
             break;
 
-      console.log "is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_tempId?}"
-      @_canSave = isValid and hasChanged
+      console.log "is valid ? #{isValid} is modified ? #{hasChanged} is new ? #{@_isNew}"
+      @_canSave = isValid and (hasChanged or @_isNew)
 
       # inherited method call
       super()

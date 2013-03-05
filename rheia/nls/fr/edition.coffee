@@ -22,22 +22,26 @@ define
     itemType: "Type d'objets %s"
     eventType: "Type d'évènements %s"
     fieldType: 'Type de terrains %s'
-    rule: 'Règle'
-    turnRule: 'Règle de tour'
-    script: 'Script'
+    rule: 'Règle %s'
+    turnRule: 'Règle de tour %s'
+    script: 'Script %s'
     map: 'Carte %s'
     multipleAffectation: 'Affectation multiple'
+    chooseId: "Choix d'un identifiant"
 
   msgs:
+    chooseId: "<p>Vous devez d'abord choisir un identifiant.</p><p><b>Attention :</b> il doit être unique et ne pourra être modifié par la suite.</p>"
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
     removeEventTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'évènements <b>%s</b> ?</p><p>Tous les évènements de ce type seront aussi supprimés.</p>"
     removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
     removeScriptConfirm: "<p>Voulez-vous vraiment supprimer le script <b>%s</b> ?</p>"
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
-    invalidUidError: 'les uid de propriétés ne peuvent commencer que par des caractères alphabétiques ou $ et _'
+    invalidUidError: 'les uid de propriétés ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
+    invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
     invalidExecutableNameError: "l'identifiant d'un executable ne peut contenir que des caractères alphanumeriques"
     multipleAffectation: 'Choisisez les images que vous aller affecter dans la séléction (l\'ordre est significatif)'
+    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type ou une règle"
 
   buttons:
     'new': 'Nouveau...'
@@ -52,15 +56,13 @@ define
   labels:
     id: 'Identifiant'
     descImage: 'Type'
-    images: 'Instances'
+    images: 'Images'
     category: 'Catégorie'
     rank: 'Rang'
-    name: 'Nom'
-    desc: 'Description'
     newName: 'A remplir'
     quantifiable: 'Quantifiable'
     template: 'Template'
-    noRuleCategory: 'aucune'
+    noRuleCategory: '<i>aucune</i>'
     propertyUidField: 'Uid'
     properties: 'Propriétés'
     propertyUid: 'Uid (unique)'
@@ -88,7 +90,6 @@ define
   tips:
     addProperty: 'Ajoute une nouvelle propriété'
     removeSelection: 'Supprime la séléction courante de la carte éditée'
-    description: 'TODO description'
     template: "Template HTML d'affichage des évènements. Utilisez \#{X} pour inclure la properiété X de l'évènement affiché"
     searchTypes: """Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateur (or, and) et groupé avec des parenthèses.
 

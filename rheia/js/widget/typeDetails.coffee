@@ -61,7 +61,7 @@ define [
         app.imagesService.load @_pendingImage
 
       switch category
-        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.name
+        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.id
         when 'Executable' 
           name = @options.model.id
           # for opening behaviour, when need to distinguish Rules from TurnRules
@@ -98,7 +98,9 @@ define [
       else
         @$el.prepend "<img/>" if category in ['ItemType', 'EventType']
         if category in ['TurnRule', 'Rule']
-          @$el.toggleClass 'inactive', !@options.model.active 
+          @$el.addClass 'inactive'
+          @bindTo @options.model, 'change:active', =>
+            @$el.toggleClass 'inactive', !@options.model.active 
 
       # adds a contextual menu that opens on right click
       @_menu = $("""<ul class="menu">

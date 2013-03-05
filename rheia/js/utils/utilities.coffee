@@ -25,7 +25,7 @@ define [
 ], ($, _, i18n) ->
 
   classToType = {}
-  for name in 'Boolean Number String Function Array Date RegExp Undefined Null'.split ' '
+  for name in 'Boolean Number String Function Array Date RegExp Undefined Null Object'.split ' '
     classToType["[object " + name + "]"] = name.toLowerCase()
 
   generateId = ->
@@ -33,7 +33,7 @@ define [
 
   instanceName = (instance) ->
     return instance.email if instance._className is 'Player'
-    instance?.name or instance?.type?.name
+    instance?.name or instance?.type?.id
 
   {
 
@@ -173,7 +173,7 @@ define [
         when 'Item'
           content = _.sprintf i18n.tips.item, 
             if model.quantity? then model.quantity else i18n.labels.noQuantity,
-            if model.map? then model.map.name else i18n.labels.noMap,
+            if model.map? then model.map.id else i18n.labels.noMap,
             if model.x? then model.x else i18n.labels.noX,
             if model.y? then model.y else i18n.labels.noY
         when 'Event'

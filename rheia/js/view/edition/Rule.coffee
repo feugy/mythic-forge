@@ -55,7 +55,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable id: i18n.labels.newName, content: emptyRule
+      @model = new Executable content: emptyRule
 
     # **private**
     # Updates rendering with values from the edited object.
@@ -65,6 +65,14 @@ define [
       # superclass handles name and content
       super()
 
+    # **private**
+    # Prepare data to be rendered into the template
+    #
+    # @return data filled into the template
+    _getRenderData: =>
+      title: _.sprintf i18n.titles.rule, @model.id
+      i18n: i18n
+      
     # **private**
     # Invoked when a model is created on the server.
     # Extends inherited method to bind event handler on new model.
@@ -85,7 +93,7 @@ define [
     # Refresh category displayal when the model's content changed.
     _onCategoryChange: =>
       category = @model.category
-      @$el.find('.category').html if category then category else i18n.buttons.noRuleCategory
+      @$el.find('.category').html if category then category else i18n.labels.noRuleCategory
 
     # **private**
     # Refresh active displayal when the model's content changed.
