@@ -29,7 +29,8 @@ ruleUtils = require '../util/rule'
 Executable = require '../model/Executable'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
-logger = require('../logger').getLogger 'service'
+LoggerFactory = require '../logger'
+logger = LoggerFactory.getLogger 'service'
   
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
@@ -60,6 +61,9 @@ spawn = (poolIdx, options) ->
     else if data?.event is notifier.NOTIFICATION
       # trigger the notification as if it comes from the master notifier
       notifier.notify.apply notifier, data.args
+    else if data?.event is 'log'
+      # relay log
+      LoggerFactory.emit 'log', data.args
 
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
 # It also manage turn rules, and game timer.

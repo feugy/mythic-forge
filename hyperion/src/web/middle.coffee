@@ -278,8 +278,9 @@ notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
 LoggerFactory.on 'log', (details) ->
   try
     adminNS.emit 'log', details
-  catch e
+  catch err
     # avoid crashing server if a log message cannot be sent
+    process.stderr.write "failed to send log to client: #{err}"
 
 # socket.io `updates` namespace 
 #

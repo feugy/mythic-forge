@@ -47,6 +47,7 @@ methods =
 
 # Exports an event emitter
 emitter = new EventEmitter()
+emitter.setMaxListeners 0
 
 # init configuration dependent variables
 init = ->
@@ -150,7 +151,7 @@ emitter.getLogger = (name) ->
           args = Array::slice.call arguments
           # only level allows it
           if methods[opName] >= @_level
-            output.write "#{format args, opName, @_name}\n" 
+            output.write "#{format args, opName, @_name}\n"
             emitter.emit 'log', level: opName, name: @_name, args: args
       )(op)
 

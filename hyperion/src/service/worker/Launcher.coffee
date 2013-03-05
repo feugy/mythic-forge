@@ -26,7 +26,8 @@ pathUtils = require 'path'
 modelWatcher = require('../../model/ModelWatcher').get()
 notifier = require('../Notifier').get()
 Executable = require '../../model/Executable'
-logger = require('../../logger').getLogger 'worker'
+LoggerFactory = require '../../logger'
+logger = LoggerFactory.getLogger 'worker'
 
 ready = false
 
@@ -94,3 +95,10 @@ notifier.on notifier.NOTIFICATION, (args...) ->
     console.error "worker #{process.pid}, module #{process.env.module} failed to relay notification due to: #{err}"
     process.exit 1
   
+# on logs, send them back to master
+LoggerFactory.on 'log', (data) ->
+  try 
+    process.send event: 'log', args: data, from: process.pid
+  catch err
+    # avoid crashing server if a log message cannot be sent
+    process.stderr.write "failed to send log to master process: #{err}"
