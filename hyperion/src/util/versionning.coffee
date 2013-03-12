@@ -76,6 +76,10 @@ quickHistory = (repo, file, callback) ->
         message: line.substring sep3+1
 
     callback null, history
+
+
+# git initialization lock
+repoInit = false
     
 module.exports =
 
@@ -87,28 +91,50 @@ module.exports =
   # @option callback root [String] absolute path of the game source folder
   # @option callback repo [Object] git repository utility fully initialized
   initGameRepo: (logger, callback) ->
-    root = pathUtil.resolve pathUtil.normalize utils.confKey 'game.dev'
+    # in case of current initialization, retry 250ms later
+    if repoInit
+      return _.delay -> 
+        module.exports.initGameRepo logger, callback
+      , 250
 
-    # enforce folders existence at startup.
-    utils.enforceFolder root, false, logger, (err) ->
-      return callback err if err?
-      
+    root = pathUtil.resolve pathUtil.normalize utils.confKey 'game.dev'
+          
+    # enforce folders existence at startup, synchronously!
+    try 
+      repoInit = true
+      utils.enforceFolderSync root, false, logger
       repository = pathUtil.dirname root
 
-      finished = (err) =>
-        return callback err if err?
-          # creates also the git repository
-        logger.debug "git repository initialized !"
+      finished = (err) ->
+        if err
+          repoInit = false
+          return callback err
+        # creates also the git repository
         repo = git repository
-        callback null, root, repo
+        repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
+            if err
+              repoInit = false
+              return callback err
+            repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], (err) ->
+              if err
+                repoInit = false
+                return callback err
+              logger.debug "git repository initialized !"
+              repoInit = false
+              callback null, root, repo
 
       # Performs a 'git init' if git repository do not exists
       unless fs.existsSync pathUtil.join repository, '.git'
         logger.debug "initialize git repository at #{repository}..."
+        # make repository init not parralelizable, or we'll get git errors while trying to configure user infos
         git.init repository, finished
       else
         logger.debug "using existing git repository..."
         finished()
+    catch err
+      repoInit = false
+      return callback err
+      
 
   # Collapse history, from a given version to previous tag (or begining)
   # Will create a tag to aim at the new collasped commit.
