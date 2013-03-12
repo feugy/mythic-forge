@@ -51,6 +51,7 @@ describe 'FieldType tests', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
       new FieldType({id: 'river'}).save (err, saved) -> 
+        return done err if err?
         type = saved
         done()
 

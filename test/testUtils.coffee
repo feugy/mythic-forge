@@ -141,7 +141,9 @@ describe 'Utilities tests', ->
           git.init repository, (err) ->
             return done err if err?
             repo = git repository
-            done()
+            repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
+              return done err if err?
+              repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], done
 
     it 'should history be collapse from begining', (done) ->
       @timeout 3000
@@ -230,7 +232,9 @@ describe 'Utilities tests', ->
           git.init repository, (err) ->
             return done err if err?
             repo = git repository
-            done()
+            repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
+              return done err if err?
+              repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], done
 
     it 'should quickTags returns nothing', (done) ->
       versionUtils.quickTags repo, (err, tags) ->

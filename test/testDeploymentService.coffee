@@ -206,12 +206,16 @@ describe 'Deployement tests', ->
         git.init repository, (err) ->
           return done err if err?
           repo = git repository
-          repo.add [], all:true, (err) ->
+          repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
             return done err if err?
-            repo.commit 'initial', all:true, (err, stdout, stderr) ->
-              return done err if err?
-              server = http.createServer front()
-              server.listen port, 'localhost', done
+            repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], (err) ->
+            return done err if err?
+              repo.add [], all:true, (err) ->
+                return done err if err?
+                repo.commit 'initial', all:true, (err, stdout, stderr) ->
+                  return done err if err?
+                  server = http.createServer front()
+                  server.listen port, 'localhost', done
       
     after (done) ->
       server.close()
