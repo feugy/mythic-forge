@@ -50,6 +50,7 @@ loadIdCache = (callback = null) ->
     async.forEach ['players', 'items', 'itemtypes', 'events', 'eventtypes', 'maps', 'fieldtypes'], (name, next) ->
       db.collection(name).find({},fields: _id:1).toArray (err, results) ->
         return next err if err?
+        console.log ">>> found #{results.length} in collection #{name}:"+results.join ', '
         idCache[obj._id] = 1 for obj in results
         next()
     , (err) ->
