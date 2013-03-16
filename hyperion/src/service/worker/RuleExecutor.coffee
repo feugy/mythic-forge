@@ -29,7 +29,7 @@ Field = require '../../model/Field'
 Player = require '../../model/Player'
 utils = require '../../util/common'
 modelUtils = require '../../util/model'
-logger = require('../../logger').getLogger 'worker'
+logger = require('../../logger').getLogger 'service'
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #

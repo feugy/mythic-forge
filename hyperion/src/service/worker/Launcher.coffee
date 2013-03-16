@@ -45,8 +45,7 @@ process.on 'uncaughtException', (err) ->
   err = if worker._errMsg? then worker._errMsg + err.stack else err.stack
   # an exception has been caught:
   logger.info "worker #{process.pid} caught unexpected exception: #{err}"
-  _.defer ->
-    process.send method: worker._method, results: [err]
+  process.send method: worker._method, results: [err]
   # let it fail: master will respawn it
   process.exit 0
 
