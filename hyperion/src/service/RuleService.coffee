@@ -238,7 +238,9 @@ class _RuleService
         , 10
       return callback null, data.results[1] unless data.results[0]?
       # in case of error, wait for the executor to be respawned
-      _.defer -> callback data.results[0]
+      _.delay -> 
+        callback data.results[0]
+      , 150
 
     pool[0].on 'message', end
     # delegate to executor
@@ -260,7 +262,9 @@ class _RuleService
         , 10
       return callback null unless data.results[0]?
       # in case of error, wait for the executor to be respawned
-      _.defer -> callback data.results[0]
+      _.delay -> 
+        callback data.results[0]
+      , 150
 
     pool[1].on 'message', end
     # delegate to scheduler
