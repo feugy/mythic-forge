@@ -19,6 +19,7 @@
 
 Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
+testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 

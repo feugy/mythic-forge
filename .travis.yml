@@ -2,4 +2,5 @@ language: node_js
 services: 
   - mongodb
 node_js:
-  - 0.8
+  # do not use 0.10 because of zombie, and not 0.9.6+ because of some fs regression
+  - 0.9.5

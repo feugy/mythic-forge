@@ -21,6 +21,7 @@ Map = require '../hyperion/src/model/Map'
 Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
+testUtils = require './utils/testUtils'
 typeFactory = require '../hyperion/src/model/typeFactory'
 assert = require('chai').assert
 

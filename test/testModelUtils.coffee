@@ -20,6 +20,7 @@
 moment = require 'moment'
 async = require 'async'
 assert = require('chai').assert
+testUtils = require './utils/testUtils'
 utils = require '../hyperion/src/util/common'
 modelUtils = require '../hyperion/src/util/model'
 typeFactory = require '../hyperion/src/model/typeFactory'

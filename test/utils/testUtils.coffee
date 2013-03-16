@@ -20,6 +20,27 @@
 fs = require 'fs-extra'
 pathUtils = require 'path'
 async = require 'async'
+_ = require 'underscore'
+
+processOp = (path, err, callback) ->
+  unless err?
+    return callback null 
+  switch err.code 
+    when 'EPERM'
+      # removal not allowed: try to change permissions
+      fs.chmod path, '755', (err) ->
+        return callback new Error "failed to change #{path} permission before removal: #{err}" if err?
+        module.exports.remove path, callback
+    when 'ENOTEMPTY', 'EBUSY'
+      # not empty folder: just let some time to OS to really perform deletion
+      _.defer ->
+        module.exports.remove path, callback
+      , 50
+    when 'ENOENT'
+      # no file/folder: it's a success :)
+      callback null
+    else
+      callback new Error "failed to remove #{path}: #{err}"
 
 module.exports =
 
@@ -27,14 +48,36 @@ module.exports =
   # Do not recurse inside sub-folders
   #
   # @param path [String] full path to rhe concerned folder
-  # @param  callback [Function] end callback, executed with one parameter:
-  #   @param err [String] error message. Null if no error occured.
+  # @param callback [Function] end callback, executed with one parameter:
+  # @option callback err [String] error message. Null if no error occured.
   cleanFolder: (path, callback) ->
     fs.readdir path, (err, files) ->
       return callback err if err?
       
       async.forEachSeries files, (file, next) ->
-        fs.remove pathUtils.join(path, file), next
+        module.exports.remove pathUtils.join(path, file), next
       , (err) ->
         return callback err if err?
-        callback null
+        _.defer -> 
+          callback null
+        , 50
+
+  # rimraf's remove (used in fs-extra) have many problems on windows: provide a custom naive implementation for tests
+  #
+  # @param path removed file of folder
+  # @param callback [Function] end callback, executed with one parameter:
+  # @option callback err [String] error message. Null if no error occured.
+  remove: (path, callback) ->
+    fs.stat path, (err, stats) ->
+      processOp path, err, (err) ->
+        return callback err if err?
+        # a file: unlink it
+        if stats.isFile()
+          return fs.unlink path, (err) -> processOp path, err, callback
+        # a folder, recurse with async
+        fs.readdir path, (err, contents) ->
+          return callback new Error "failed to remove #{path}: #{err}" if err?
+          async.forEach (pathUtils.join path, content for content in contents), module.exports.remove, (err) ->
+            return callback err if err?
+            # remove folder once empty
+            fs.rmdir path, (err) -> processOp path, err, callback

@@ -21,6 +21,7 @@ Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 Map = require '../hyperion/src/model/Map'
 utils = require '../hyperion/src/util/common'
+testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 
@@ -33,7 +34,7 @@ describe 'Item tests', ->
 
   beforeEach (done) ->
     ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> ItemType.loadIdCache ->
-      type = new ItemType id: 'plain'
+      type = new ItemType id: 'warehouse'
       type.setProperty 'rocks', 'integer', 100
       type.save done
 

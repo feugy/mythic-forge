@@ -21,6 +21,7 @@ middle = require '../hyperion/src/web/middle'
 front = require '../hyperion/src/web/front'
 Player = require '../hyperion/src/model/Player'
 utils = require '../hyperion/src/util/common'
+testUtils = require './utils/testUtils'
 request = require 'request'
 parseUrl = require('url').parse
 assert = require('chai').assert
@@ -69,7 +70,7 @@ describe 'Authentication tests', ->
             'session[password]': twitterPassword
             authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
             oauth_token: body.match(/name\s*=\s*"oauth_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
-            force_login: true
+            force_login: 1
 
           # when registering with test account
           request 

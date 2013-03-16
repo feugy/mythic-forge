@@ -19,6 +19,7 @@
 'use strict'
 
 mongoose = require 'mongoose'
+mongodb = require 'mongodb'
 utils = require '../util/common'
 logger = require('../logger').getLogger 'model'
 
@@ -38,4 +39,7 @@ delete options.pass unless options.pass
 # opens the connection
 module.exports = mongoose.createConnection url, options, (err) ->
   throw new Error "Unable to connect to MongoDB: #{err}" if err?
+  #admin = new mongodb.Admin module.exports.db
+  #admin.buildInfo (err, info) ->
+  #  console.log ">>>> connection on mongo version #{info.version}", info
   logger.info "Connection established with MongoDB on database #{db}"

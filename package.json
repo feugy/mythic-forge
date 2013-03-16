@@ -8,32 +8,32 @@
     "url": "https://github.com/feugy/mythic-forge.git"
   },
   "dependencies": {
-    "async": "0.1.22",
+    "async": "0.2.6",
     "coffee-script": "1.4.0",
-    "express": "3.0.0",
-    "fs-extra": "0.3.1",
+    "express": "3.1.0",
+    "fs-extra": "0.5.0",
     "gift": "https://github.com/feugy/gift/tarball/master",
-    "js-yaml": "1.0.2",
-    "moment": "1.7.2",
-    "mongoose": "3.5.5",
-    "mongodb": "1.2.12",
-    "passport": "0.1.15",
-    "passport-facebook": "0.1.4",
-    "passport-google-oauth": "0.1.4",
+    "js-yaml": "2.0.3",
+    "moment": "2.0.0",
+    "mongoose": "3.5.8",
+    "mongodb": "1.2.13",
+    "passport": "0.1.16",
+    "passport-facebook": "0.1.5",
+    "passport-google-oauth": "0.1.5",
     "password-hash": "1.2.1",
     "passport-local": "0.1.6",
     "passport-twitter": "0.1.4",
-    "requirejs": "2.1.4",
+    "requirejs": "2.1.5",
     "socket.io": "https://github.com/feugy/socket.io/tarball/master",
-    "stylus": "0.30.1",
-    "underscore": "1.4.2",
+    "stylus": "0.32.1",
+    "underscore": "1.4.4",
     "underscore.string": "2.3.1",
     "ws": "0.4.25"
   },
   "devDependencies": {
-    "chai": "1.4.0",
-    "mocha": "1.7.4",
-    "request": "2.12.0",
+    "chai": "1.5.0",
+    "mocha": "1.8.2",
+    "request": "2.16.2",
     "socket.io-client": "0.9.11",
     "zombie": "1.4.1"
   },
@@ -49,6 +49,6 @@
   },
   "licence": "LGPL v3",
   "engine": {
-    "node": ">=0.8.1"
+    "node": "0.9.5"
   }
 }

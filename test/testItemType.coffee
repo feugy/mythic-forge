@@ -20,6 +20,7 @@
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 typeFactory = require '../hyperion/src/model/typeFactory'
+testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 

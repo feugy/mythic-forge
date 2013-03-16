@@ -26,7 +26,14 @@ moment = require 'moment'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 ruleUtils = require '../hyperion/src/util/rule'
+logger = require('../hyperion/src/logger').getLogger 'test'
+testUtils = require './utils/testUtils'
 assert = require('chai').assert
+
+repository = pathUtils.normalize utils.confKey 'game.dev'
+repo = null
+file1 = pathUtils.join repository, 'file1.txt'
+file2 = pathUtils.join repository, 'file2.txt'
 
 # The commit utility change file content, adds it and commit it
 commit = (spec, done) ->
@@ -36,16 +43,11 @@ commit = (spec, done) ->
   async.forEach _.zip(spec.file, spec.content), (fileAndContent, next) ->
     fs.writeFile fileAndContent[0], fileAndContent[1], (err) ->
       return next err if err?
-      spec.repo.add fileAndContent[0].replace(repository, '.'), (err) ->
+      repo.add fileAndContent[0].replace(repository, './client'), (err) ->
         next err
   , (err) ->
     return done err if err?
-    spec.repo.commit spec.message, all:true, done
-
-repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
-repo = null
-file1 = pathUtils.join repository, 'file1.txt'
-file2 = pathUtils.join repository, 'file2.txt'
+    repo.commit spec.message, all:true, done
 
 describe 'Utilities tests', -> 
 
@@ -74,16 +76,18 @@ describe 'Utilities tests', ->
 
     it 'should time event be fired any seconds', (done) ->
       events = []
-      now = moment()
-      saveTick = (tick) -> events.push tick
+      now = null
+      saveTick = (tick) -> 
+        now = moment() unless now?
+        events.push tick
 
       _.delay =>
         ruleUtils.timer.removeListener 'change', saveTick
 
-        assert.equal events.length, 3
-        assert.equal events[0].seconds(), (now.seconds()+1)%60
-        assert.equal events[1].seconds(), (now.seconds()+2)%60
-        assert.equal events[2].seconds(), (now.seconds()+3)%60
+        assert.ok events.length >= 3
+        assert.equal events[0].seconds(), now.seconds()
+        assert.equal events[1].seconds(), (now.seconds()+1)%60
+        assert.equal events[2].seconds(), (now.seconds()+2)%60
         done()
       , 3100
       ruleUtils.timer.on 'change', saveTick
@@ -134,25 +138,23 @@ describe 'Utilities tests', ->
     tag2 = 'tag2'
 
     before (done) ->
-      fs.remove repository, (err) ->
+      testUtils.remove pathUtils.dirname(repository), (err) ->
         return done err if err?
-        fs.mkdirs repository, (err) ->
-          return done err if err?
-          git.init repository, (err) ->
+        _.delay ->
+          versionUtils.initGameRepo logger, (err, root, rep) ->
             return done err if err?
-            repo = git repository
-            repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
-              return done err if err?
-              repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], done
+            repo = rep
+            done()
+        , 300
 
     it 'should history be collapse from begining', (done) ->
-      @timeout 3000
+      @timeout 5000
 
       # given three commits
       async.forEachSeries [
-        {repo:repo, file: file1, message: 'commit 1', content: 'v1'} 
-        {repo:repo, file: file1, message: 'commit 2', content: 'v2'} 
-        {repo:repo, file: file1, message: 'commit 3', content: 'v3'} 
+        {file: file1, message: 'commit 1', content: 'v1'} 
+        {file: file1, message: 'commit 2', content: 'v2'} 
+        {file: file1, message: 'commit 3', content: 'v3'} 
       ], commit, (err) ->
         return done err if err?
 
@@ -178,13 +180,13 @@ describe 'Utilities tests', ->
                 done()
 
     it 'should history be collapse from previous tag', (done) ->
-      @timeout 3000
+      @timeout 5000
 
       # given three commits
       async.forEachSeries [
-        {repo:repo, file: file2, message: 'commit 4', content: 'v1'} 
-        {repo:repo, file: file2, message: 'commit 5', content: 'v2'} 
-        {repo:repo, file: file2, message: 'commit 6', content: 'v3'} 
+        {file: file2, message: 'commit 4', content: 'v1'} 
+        {file: file2, message: 'commit 5', content: 'v2'} 
+        {file: file2, message: 'commit 6', content: 'v3'} 
       ], commit, (err) ->
         return done err if err?
 
@@ -222,19 +224,15 @@ describe 'Utilities tests', ->
 
   describe 'given an initialized git repository', ->
 
-    repository = pathUtils.join '.', 'hyperion', 'lib', 'game-test'
-
     beforeEach (done) ->
-      fs.remove repository, (err) ->
+      testUtils.remove pathUtils.dirname(repository), (err) ->
         return done err if err?
-        fs.mkdirs repository, (err) ->
-          return done err if err?
-          git.init repository, (err) ->
+        _.delay ->
+          versionUtils.initGameRepo logger, (err, root, rep) ->
             return done err if err?
-            repo = git repository
-            repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
-              return done err if err?
-              repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], done
+            repo = rep
+            done()
+        , 300
 
     it 'should quickTags returns nothing', (done) ->
       versionUtils.quickTags repo, (err, tags) ->
@@ -246,12 +244,12 @@ describe 'Utilities tests', ->
       tag1 = 'tag1'
       tag2 = 'a_more_long_tag_name'
       # given a first commit and tag
-      commit {repo:repo, file: file1, message: 'commit 1', content: 'v1'}, (err) ->
+      commit {file: file1, message: 'commit 1', content: 'v1'}, (err) ->
         return done err if err?
         repo.create_tag tag1, (err) ->
           return done err if err?
           # given a second commit and tag
-          commit {repo:repo, file: file1, message: 'commit 2', content: 'v2'}, (err) ->
+          commit {file: file1, message: 'commit 2', content: 'v2'}, (err) ->
             return done err if err?
             repo.create_tag tag2, (err) ->
               return done err if err?
@@ -271,10 +269,10 @@ describe 'Utilities tests', ->
 
     it 'should quickHistory returns commits with name, author, message and id', (done) ->
       # given a first commit
-      commit {repo:repo, file: file1, message: 'commit 1', content: 'v1'}, (err) ->
+      commit {file: file1, message: 'commit 1', content: 'v1'}, (err) ->
         return done err if err?
         # given a second commit on another file
-        commit {repo:repo, file: file2, message: 'commit 2', content: 'v1'}, (err) ->
+        commit {file: file2, message: 'commit 2', content: 'v1'}, (err) ->
           return done err if err?
 
           # when getting history
@@ -292,7 +290,7 @@ describe 'Utilities tests', ->
               assert.deepEqual _.pluck(commits, 'committed_date'), _.pluck history, 'date'
 
               # when getting file history
-              versionUtils.quickHistory repo, file1.replace(repository, '.'), (err, fileHistory) ->
+              versionUtils.quickHistory repo, file1.replace(repository, './client'), (err, fileHistory) ->
                 return done err if err?
                 # then only one commit was retrieved
                 assert.equal 1, fileHistory?.length
@@ -301,13 +299,13 @@ describe 'Utilities tests', ->
 
     it 'should listRestorables returns deleted files', (done) ->
       # given two commited files
-      commit {repo:repo, file: [file1, file2], message: 'commit 1', content: ['v1', 'v1']}, (err) ->
+      commit {file: [file1, file2], message: 'commit 1', content: ['v1', 'v1']}, (err) ->
         return done err if err?
         # given another commit on first file
-        commit {repo:repo, file: file1, message: 'commit 2', content: 'v2'}, (err) ->
+        commit {file: file1, message: 'commit 2', content: 'v2'}, (err) ->
           return done err if err?
           # given those files removed and commited
-          async.forEach [file1, file2], fs.remove, (err) ->
+          async.forEach [file1, file2], testUtils.remove, (err) ->
             return done err if err?
             repo.commit 'commit 3', all:true, (err) ->
               return done err if err?
@@ -318,15 +316,15 @@ describe 'Utilities tests', ->
                 # then both files are presents
                 assert.equal 2, restorables?.length
                 paths = _.pluck restorables, 'path'
-                assert.include paths, file1.replace(repository, '').substring 1
-                assert.include paths, file2.replace(repository, '').substring 1
+                assert.include paths, file1.replace(repository, 'client').replace '\\', '/'
+                assert.include paths, file2.replace(repository, 'client').replace '\\', '/'
                 ids = _.pluck restorables, 'id'
                 assert.equal ids[0], ids[1]
                 done()
 
     it 'should listRestorables returns nothing without deletion', (done) ->
       # given a commited files
-      commit {repo:repo, file: file2, message: 'commit 1', content: 'v1'}, (err) ->
+      commit {file: file2, message: 'commit 1', content: 'v1'}, (err) ->
         return done err if err?
 
         # when listing restorable whithout deletion

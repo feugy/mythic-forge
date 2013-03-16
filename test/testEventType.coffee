@@ -19,6 +19,7 @@
 
 Event = require '../hyperion/src/model/Event'
 EventType = require '../hyperion/src/model/EventType'
+testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 

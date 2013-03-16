@@ -50,7 +50,7 @@ gameClientRoot = utils.confKey 'game.dev'
 
 # CLean FSItem root and reinit authoring service
 initializedFSRoot = (callback) ->
-  fs.remove pathUtils.dirname(gameClientRoot), (err) -> 
+  testUtils.remove pathUtils.dirname(gameClientRoot), (err) -> 
     return callback err if err?
     authoringService.init (err) ->
       return callback err if err?

@@ -28,6 +28,7 @@ Player = require '../hyperion/src/model/Player'
 Map = require '../hyperion/src/model/Map'
 Executable = require '../hyperion/src/model/Executable'
 service = require('../hyperion/src/service/SearchService').get()
+testUtils = require './utils/testUtils'
 assert = require('chai').assert
 
 assert.contains = (array, model, message='') ->

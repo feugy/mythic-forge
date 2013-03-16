@@ -21,6 +21,7 @@ Player = require '../hyperion/src/model/Player'
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 typeFactory = require '../hyperion/src/model/typeFactory'
+testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 ObjectId = require('mongodb').BSONPure.ObjectID
 assert = require('chai').assert

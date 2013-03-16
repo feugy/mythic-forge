@@ -12,8 +12,8 @@ requirejs.config
   paths:
     'backbone': 'lib/backbone-0.9.2-min'
     'underscore': 'lib/underscore-1.3.3-min'
-    'underscore.string': 'lib/unserscore.string-2.2.0rc-min'
-    'jquery': 'lib/jquery-1.7.2-min'
+    'underscore.string': 'lib/underscore.string-2.2.0rc-min'
+    'jquery': 'lib/jquery-1.9.1-min'
     'hogan': 'lib/hogan-2.0.0-min'
     'i18n': 'lib/i18n'
     'text': 'lib/text'
@@ -54,7 +54,6 @@ define [
 
       Backbone.history.start
         pushState: true
-        root: conf.basePath
 
     _showTemplate: =>
       $('body').append(template).find('h1').html i18n.titles.editionPerspective

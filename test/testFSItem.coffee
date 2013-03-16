@@ -20,6 +20,8 @@
 pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
+_ = require 'underscore'
+testUtils = require './utils/testUtils'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
@@ -60,14 +62,14 @@ assertFSItemSave = (item, isFolder, content, isNew, done) ->
   awaited = false
   item.save (err, result) ->
 
-    throw new Error "Can't save #{if isFolder then 'folder' else 'file'}: #{err}" if err?
+    return done "Can't save #{if isFolder then 'folder' else 'file'}: #{err}" if err?
     assert.equal item.path, result.path
     assert.equal isFolder, result.isFolder
     assert.equal content, result.content
 
     # then it's on the file system
     fs.stat item.path, (err, stats) ->
-      throw new Error "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
+      return done "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
       assert.equal isFolder, stats.isDirectory()
       assert.ok awaited, 'watcher wasn\'t invoked'
       done()
@@ -89,7 +91,7 @@ assertFSItemRemove = (item, done) ->
   # when saving it
   awaited = false
   item.remove (err, result) ->
-    throw new Error "Can't remove #{if item.isFolder then 'folder' else 'file'}: #{err}" if err?
+    return done "Can't remove #{if item.isFolder then 'folder' else 'file'}: #{err}" if err?
     assert.ok item.equals result
 
     # then it's not on the file system anymore
@@ -131,7 +133,7 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
   # when moving it
   item.move newPath, (err, result) ->
 
-    throw new Error "Can't move #{if isFolder then 'folder' else 'file'}: #{err}" if err?
+    return done "Can't move #{if isFolder then 'folder' else 'file'}: #{err}" if err?
     assert.equal result.path, newPath
     assert.equal result.isFolder, isFolder
     assert.equal result.content, content unless isFolder
@@ -142,7 +144,8 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
 
       # then it's on the file system
       fs.stat newPath, (err, stats) ->
-        throw new Error "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
+
+        return done "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
         assert.equal stats.isDirectory(), isFolder
         assert.ok deletionAwaited, 'deletion event not received'
         assert.ok creationAwaited, 'creation event not received'
@@ -152,11 +155,9 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
 # Empties the root folder and re-creates it.
 cleanRoot = (done) ->
   root = utils.confKey 'game.dev'
-  fs.remove root, (err) ->
-    fs.mkdirs root, (err) ->
-      throw new Error err if err?
-      done()
-
+  testUtils.remove root, (err) ->
+    return done err if err?
+    fs.mkdirs root, done
 
 describe 'FSItem tests', -> 
 
@@ -189,18 +190,19 @@ describe 'FSItem tests', ->
     file1 = null
 
     before (done) ->
-      cleanRoot ->
+      cleanRoot (err) ->
+        return done err if err?
         file1 = new FSItem "#{root}/file.txt", false
         file1.content = new Buffer 'yeah !'
         file1.save (err, result) ->
-          throw new Error err if err?
+          return done err if err?
           file1 = result
           done()
 
     it 'should file content be read', (done) ->
       # when reading file content
       file1.read (err, result) ->
-        throw new Error "Can't read file content: #{err}" if err?
+        return done "Can't read file content: #{err}" if err?
         # then content is available
         assert.equal new Buffer(result.content, 'base64').toString(), 'yeah !'
         done()
@@ -212,7 +214,7 @@ describe 'FSItem tests', ->
       assertFSItemSave file1, false, newContent.toString('base64'), false, ->
         # then the content was written on file system
         fs.readFile file1.path, (err, content) ->
-          throw new Error "Can't read file content: #{err}" if err?
+          return done "Can't read file content: #{err}" if err?
           assert.equal newContent.toString('base64'), content.toString('base64')
           done()
 
@@ -230,9 +232,10 @@ describe 'FSItem tests', ->
     folder1 = null
 
     before (done) ->
-      cleanRoot ->
+      cleanRoot (err) ->
+        return done err if err?
         new FSItem("#{root}/folder", true).save (err, result) ->
-          throw new Error err if err?
+          return done err if err?
           folder1 = result
           done()
           
@@ -250,7 +253,7 @@ describe 'FSItem tests', ->
         content.sort (a, b) -> a.path - b.path
         # when reading file content
         folder1.read (err, result) ->
-          throw new Error "Can't read folder content: #{err}" if err?
+          return done "Can't read folder content: #{err}" if err?
           # then folder was read
           assert.isNotNull result.content
           assert.equal 3, result.content.length
@@ -274,7 +277,8 @@ describe 'FSItem tests', ->
     folders = []
 
     before (done) ->
-      cleanRoot ->
+      cleanRoot (err) ->
+        return done err if err?
         fixtures = [
           item: new FSItem("#{root}/file.txt", false)
           content: files
@@ -294,7 +298,7 @@ describe 'FSItem tests', ->
             spec.content.push result
             next()
         , (err) ->
-          throw new Error err if err?
+          return done err if err?
           done()
 
     it 'should file not be moved into folder', (done) ->

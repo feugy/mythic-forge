@@ -66,6 +66,8 @@ describe 'server tests', ->
         done()
 
     it 'should file be created, read, moved and removed', (done) ->
+      @timeout 4000
+      
       # given a connected socket.io client
       socket = socketClient.connect "#{rootUrl}/admin"
 
@@ -74,7 +76,7 @@ describe 'server tests', ->
         return done err if err?
         root = utils.confKey 'game.dev'
         # given a clean root
-        fs.remove pathUtils.dirname(root), (err) ->
+        testUtils.remove pathUtils.dirname(root), (err) ->
           return done err if err?
           authoringService.init (err) ->
             return done err if err?

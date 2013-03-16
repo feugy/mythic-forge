@@ -22,6 +22,7 @@ async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 gift = require 'gift'
+testUtils = require './utils/testUtils'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 service = require('../hyperion/src/service/AuthoringService').get()
@@ -37,7 +38,7 @@ notifications = []
 describe 'AuthoringService tests', -> 
 
   before (done) ->
-    fs.remove repo, (err) ->
+    testUtils.remove repo, (err) ->
       return done err if err?
       service.init done
 
@@ -112,7 +113,7 @@ describe 'AuthoringService tests', ->
     ]
     before (done) ->
       # given a clean game source
-      fs.remove root, ->
+      testUtils.remove root, ->
         # and some file in it
         async.forEach ['file1.txt', 'file2.txt', 'folder/file3.txt', 'folder/file4.txt'], (file, next) ->
           file = pathUtils.join root, file
@@ -140,7 +141,7 @@ describe 'AuthoringService tests', ->
     oldPath = null
 
     before (done) ->
-      fs.remove repo, (err) ->
+      testUtils.remove repo, (err) ->
         return done err if err?
         service.init (err) ->
           return done err if err?
