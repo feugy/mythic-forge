@@ -231,7 +231,7 @@ describe 'Item tests', ->
       type.setProperty 'end', 'object', 'Item'
       type.setProperty 'affluents', 'array', 'Item'
       type.save ->
-        Item.collection.drop -> 
+        Item.collection.drop -> Item.loadIdCache ->
           item = new Item {name: 'Rhône', end: null, type: type, affluents:[]}
           item.save (err, saved) ->
             return done err  if err?

@@ -36,7 +36,7 @@ describe 'ImagesService tests', ->
   describe 'given a item type, a field type and no image store', ->
     beforeEach (done) ->
       # removes any types and clean image folder
-      ItemType.collection.drop -> FieldType.collection.drop -> testUtils.cleanFolder imagesPath, ->
+      ItemType.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache -> testUtils.cleanFolder imagesPath, ->
         # creates an item type
         new ItemType().save (err, saved) -> 
           throw new Error err if err?
@@ -173,7 +173,7 @@ describe 'ImagesService tests', ->
 
     beforeEach (done) ->
       # removes any types and clean image folder
-      ItemType.collection.drop -> testUtils.cleanFolder imagesPath, ->
+      ItemType.collection.drop -> ItemType.loadIdCache -> testUtils.cleanFolder imagesPath, ->
         # creates a type
         new ItemType().save (err, saved) -> 
           throw new Error err if err?

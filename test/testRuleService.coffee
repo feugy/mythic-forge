@@ -665,7 +665,7 @@ describe 'RuleService tests', ->
 
     beforeEach (done) ->
       ItemType.collection.drop ->
-        Item.collection.drop ->
+        Item.collection.drop -> Item.loadIdCache ->
           # given a type
           return done err if err?
           type1 = new ItemType id: 'dog'

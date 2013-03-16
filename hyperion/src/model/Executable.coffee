@@ -199,7 +199,10 @@ class Executable
           executable = new Executable {id:file.replace ext, ''}
 
           fs.readFile executable.path, encoding, (err, content) ->
-            return callback "Error while reading executable '#{executable.id}': #{err}" if err?
+            if err?
+              return end() if err.code is 'ENOENT'
+              return callback "Error while reading executable '#{executable.id}': #{err}"
+              
             # complete the executable content, and add it to the array.
             executable.content = content
             compileFile executable, true, (err, executable) ->

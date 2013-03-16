@@ -157,7 +157,7 @@ describe 'ItemType tests', ->
 
     afterEach (done) ->
       # removes the type at the end.
-      ItemType.collection.drop -> Item.collection.drop -> done()
+      ItemType.collection.drop -> Item.collection.drop -> Item.loadIdCache done
 
     it 'should type be removed', (done) ->
       # when removing an item

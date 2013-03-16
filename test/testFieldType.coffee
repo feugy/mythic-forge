@@ -29,7 +29,7 @@ describe 'FieldType tests', ->
 
   beforeEach (done) ->
     # empty fields and types.
-    Field.collection.drop -> FieldType.collection.drop -> done()
+    Field.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache done
 
   it 'should type be created', (done) -> 
     # given a new FieldType
@@ -58,7 +58,7 @@ describe 'FieldType tests', ->
 
     afterEach (done) ->
       # removes the type at the end.
-      FieldType.collection.drop -> Field.collection.drop -> done()
+      FieldType.collection.drop -> Field.collection.drop -> FieldType.loadIdCache done
 
     it 'should type be removed', (done) ->
       # when removing an field

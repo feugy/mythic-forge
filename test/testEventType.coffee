@@ -87,7 +87,7 @@ describe 'EventType tests', ->
 
     afterEach (done) ->
       # removes the type at the end.
-      EventType.collection.drop -> Event.collection.drop -> done()
+      EventType.collection.drop -> Event.collection.drop -> Event.loadIdCache done
 
     it 'should type be removed', (done) ->
       # when removing an event

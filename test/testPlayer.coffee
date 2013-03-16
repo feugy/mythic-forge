@@ -35,7 +35,7 @@ describe 'Player tests', ->
 
   before (done) ->
     # given an Item type, an item, and an empty Player collection.
-    ItemType.collection.drop -> Player.collection.drop ->
+    ItemType.collection.drop -> Player.collection.drop -> ItemType.loadIdCache ->
       new ItemType({id: 'character'}).save (err, saved) ->
         return done err if err?
         type = saved
@@ -50,7 +50,7 @@ describe 'Player tests', ->
 
   # Restore admin player for further tests
   after (done) ->
-    ItemType.collection.drop -> Item.collection.drop ->
+    ItemType.collection.drop -> Item.collection.drop -> Item.loadIdCache ->
       new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
   it 'should player be created', (done) -> 

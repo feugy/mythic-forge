@@ -37,7 +37,7 @@ describe 'Event tests', ->
 
   before (done) ->
     # given an item type and an item
-    # empty events and types.
+    # empty events and types. 
     Event.collection.drop -> EventType.collection.drop -> Item.collection.drop -> ItemType.collection.drop -> Event.loadIdCache ->
       new ItemType(
         id: 'character'
