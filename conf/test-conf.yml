@@ -9,7 +9,7 @@ logger:
     model: error
     web: error
     console: error
-    worker: error
+    worker: all
 
 # Server's configuration
 server:

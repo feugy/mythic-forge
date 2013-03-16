@@ -31,6 +31,7 @@ notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
 LoggerFactory = require '../logger'
 logger = LoggerFactory.getLogger 'service'
+loggerWorker = LoggerFactory.getLogger 'worker'
   
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
@@ -51,9 +52,8 @@ spawn = (poolIdx, options) ->
   # relaunch immediately dead worker
   worker.on 'exit', (code, signal) ->
     return if worker.suicide
-    worker.removeAllListeners()
     spawn poolIdx, options
-    logger.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
+    loggerWorker.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
 
   worker.on 'message', (data) ->
     if data?.event is 'change'
@@ -82,14 +82,14 @@ class _RuleService
         options = 
           module: 'RuleExecutor'
         spawn 0, options
-        logger.info "#{process.pid} spawn worker #{options.module} with pid #{pool[0].process.pid}"
+        loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{pool[0].process.pid}"
         
         options = 
           module: 'RuleScheduler'
           # frequency, in seconds.
           frequency: utils.confKey 'turn.frequency'
         spawn 1, options
-        logger.info "#{process.pid} spawn worker #{options.module} with pid #{pool[1].process.pid}"
+        loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{pool[1].process.pid}"
 
         # when a change is detected in master, send it to workers
         modelWatcher.on 'change', (operation, className, changes, wId) ->
