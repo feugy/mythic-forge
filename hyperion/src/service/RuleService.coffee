@@ -51,6 +51,7 @@ spawn = (poolIdx, options) ->
   # relaunch immediately dead worker
   worker.on 'exit', (code, signal) ->
     return if worker.suicide
+    worker.removeAllListeners()
     spawn poolIdx, options
     logger.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
 
