@@ -18,7 +18,6 @@
 ###
 
 Executable = require '../hyperion/src/model/Executable'
-testUtils = require './utils/testUtils'
 utils = require '../hyperion/src/util/common'
 pathUtils = require 'path'
 fs = require 'fs'
@@ -32,7 +31,7 @@ describe 'Executable tests', ->
 
   beforeEach (done) ->
     # Empty the source and compilation folders content
-    testUtils.cleanFolder root, (err) -> 
+    utils.empty root, (err) -> 
       return done err if err?
       Executable.resetAll true, (err) ->
         return done err if err?

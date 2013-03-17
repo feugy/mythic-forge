@@ -22,9 +22,9 @@ fs = require 'fs'
 path = require 'path'
 ItemType = require '../hyperion/src/model/ItemType'
 FieldType = require '../hyperion/src/model/FieldType'
+utils = require '../hyperion/src/util/common'
 assert = require('chai').assert
 service = require('../hyperion/src/service/ImagesService').get()
-testUtils = require './utils/testUtils'
 
 imagesPath = require('../hyperion/src/util/common').confKey 'images.store'
 
@@ -36,7 +36,7 @@ describe 'ImagesService tests', ->
   describe 'given a item type, a field type and no image store', ->
     beforeEach (done) ->
       # removes any types and clean image folder
-      ItemType.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache -> testUtils.cleanFolder imagesPath, ->
+      ItemType.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache -> utils.empty imagesPath, ->
         # creates an item type
         new ItemType().save (err, saved) -> 
           throw new Error err if err?
@@ -173,7 +173,7 @@ describe 'ImagesService tests', ->
 
     beforeEach (done) ->
       # removes any types and clean image folder
-      ItemType.collection.drop -> ItemType.loadIdCache -> testUtils.cleanFolder imagesPath, ->
+      ItemType.collection.drop -> ItemType.loadIdCache -> utils.empty imagesPath, ->
         # creates a type
         new ItemType().save (err, saved) -> 
           throw new Error err if err?

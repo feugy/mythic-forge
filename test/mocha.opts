@@ -1,2 +1,4 @@
--R spec
+--bail
+--reporter spec
 --compilers coffee:coffee-script
+--colors

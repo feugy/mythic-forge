@@ -21,7 +21,6 @@ pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
 _ = require 'underscore'
-testUtils = require './utils/testUtils'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
@@ -155,7 +154,7 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
 # Empties the root folder and re-creates it.
 cleanRoot = (done) ->
   root = utils.confKey 'game.dev'
-  testUtils.remove root, (err) ->
+  utils.remove root, (err) ->
     return done err if err?
     fs.mkdirs root, done
 

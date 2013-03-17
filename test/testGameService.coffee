@@ -23,7 +23,6 @@ Map = require '../hyperion/src/model/Map'
 Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
 utils = require '../hyperion/src/util/common'
-testUtils = require './utils/testUtils'
 Executable = require '../hyperion/src/model/Executable'
 service = require('../hyperion/src/service/GameService').get()
 assert = require('chai').assert
@@ -40,7 +39,7 @@ describe 'GameService tests', ->
 
   beforeEach (done) ->
     # cleans ItemTypes and Items
-    testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+    utils.empty utils.confKey('executable.source'), (err) -> 
       return done err if err?
       Executable.resetAll true, (err) -> 
         return done err if err?

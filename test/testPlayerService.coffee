@@ -21,7 +21,6 @@ Player = require '../hyperion/src/model/Player'
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 utils = require '../hyperion/src/util/common'
-testUtils = require './utils/testUtils'
 service = require('../hyperion/src/service/PlayerService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
 assert = require('chai').assert

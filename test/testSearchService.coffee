@@ -17,7 +17,6 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-testUtils = require './utils/testUtils'
 utils = require '../hyperion/src/util/common'
 ItemType = require '../hyperion/src/model/ItemType'
 FieldType = require '../hyperion/src/model/FieldType'
@@ -28,7 +27,6 @@ Player = require '../hyperion/src/model/Player'
 Map = require '../hyperion/src/model/Map'
 Executable = require '../hyperion/src/model/Executable'
 service = require('../hyperion/src/service/SearchService').get()
-testUtils = require './utils/testUtils'
 assert = require('chai').assert
 
 assert.contains = (array, model, message='') ->
@@ -390,7 +388,7 @@ describe 'SearchService tests', ->
 
     before (done) ->
       # Empties the compilation and source folders content
-      testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+      utils.empty utils.confKey('executable.source'), (err) -> 
         Executable.resetAll true, (err) -> 
           return done err if err?
           Map.collection.drop -> 

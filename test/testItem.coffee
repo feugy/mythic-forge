@@ -21,7 +21,6 @@ Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 Map = require '../hyperion/src/model/Map'
 utils = require '../hyperion/src/util/common'
-testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 

@@ -30,7 +30,6 @@ Player = require '../hyperion/src/model/Player'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 service = require('../hyperion/src/service/AdminService').get()
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-testUtils = require './utils/testUtils'
 utils = require '../hyperion/src/util/common'
 pathUtils = require 'path'
 fs = require 'fs-extra'
@@ -50,7 +49,7 @@ gameClientRoot = utils.confKey 'game.dev'
 
 # CLean FSItem root and reinit authoring service
 initializedFSRoot = (callback) ->
-  testUtils.remove pathUtils.dirname(gameClientRoot), (err) -> 
+  utils.remove pathUtils.dirname(gameClientRoot), (err) -> 
     return callback err if err?
     authoringService.init (err) ->
       return callback err if err?
@@ -74,7 +73,7 @@ describe 'AdminService tests', ->
     item = []
     maps = []
     event = []
-    testUtils.cleanFolder utils.confKey('executable.source'), ->
+    utils.empty utils.confKey('executable.source'), ->
       Executable.resetAll true, (err) -> 
         return done err if err?
         ItemType.collection.drop -> Item.collection.drop ->

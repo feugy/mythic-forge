@@ -30,7 +30,6 @@ FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 request = require 'request'
 fs = require 'fs-extra'
-testUtils = require './utils/testUtils'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 assert = require('chai').assert
 
@@ -76,7 +75,7 @@ describe 'server tests', ->
         return done err if err?
         root = utils.confKey 'game.dev'
         # given a clean root
-        testUtils.remove pathUtils.dirname(root), (err) ->
+        utils.remove pathUtils.dirname(root), (err) ->
           return done err if err?
           authoringService.init (err) ->
             return done err if err?
@@ -279,7 +278,7 @@ describe 'server tests', ->
 
         beforeEach (done) ->
           # Empties the compilation and source folders content
-          testUtils.cleanFolder utils.confKey('executable.source'), (err) -> 
+          utils.empty utils.confKey('executable.source'), (err) -> 
             Executable.resetAll true, (err) -> 
               return done err if err?
               script = new Executable 
@@ -388,7 +387,7 @@ describe 'server tests', ->
       @bail true
 
       before (done) ->
-        ItemType.collection.drop -> testUtils.cleanFolder utils.confKey('images.store'), -> ItemType.loadIdCache ->
+        ItemType.collection.drop -> utils.empty utils.confKey('images.store'), -> ItemType.loadIdCache ->
           new ItemType(id: 'character').save (err, saved) ->
             return done err if err?
             character = saved

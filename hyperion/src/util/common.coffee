@@ -20,8 +20,9 @@
 
 yaml = require 'js-yaml'
 fs = require 'fs-extra'
-pathUtil = require 'path'
+pathUtils = require 'path'
 async = require 'async'
+_ = require 'underscore'
 EventEmitter = require('events').EventEmitter
 
 
@@ -31,7 +32,7 @@ emitter.setMaxListeners 0
 
 # read configuration file
 conf = null
-confPath = pathUtil.resolve "#{process.cwd()}/conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
+confPath = pathUtils.resolve "#{process.cwd()}/conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
 parseConf = ->
   try 
     conf = yaml.load fs.readFileSync confPath, 'utf8'
@@ -43,7 +44,7 @@ parseConf()
 fs.watch confPath, ->
   parseConf()
   emitter.emit 'confChanged'
-  
+
 # This method is intended to replace the broken typeof() Javascript operator.
 #
 # @param obj [Object] any check object
@@ -179,7 +180,7 @@ emitter.find = (path, regex, contentRegEx, callback) ->
         results = []
         async.forEach children, (child, next) ->
           # check child nature
-          emitter.find pathUtil.join(path, child), regex, contentRegEx, (err, subResults) ->
+          emitter.find pathUtils.join(path, child), regex, contentRegEx, (err, subResults) ->
             return next err if err?
             results = results.concat subResults
             next()
@@ -200,4 +201,71 @@ emitter.generateToken = (length) ->
     token += String.fromCharCode(rand).toLowerCase()
   token
 
+# files/folders common behaviour: handle different error codes and retry if possible
+#
+# @param path [String] removed folder or file
+# @param err [Object] underlying error, or null if removal succeeded
+# @param callback [Function] processing end callback, invoked with arguments
+# @option callback err [Object] an error object, or null if removal succeeded
+_processOp = (path, err, callback) ->
+  unless err?
+    return callback null 
+  switch err.code 
+    when 'EPERM'
+      # removal not allowed: try to change permissions
+      fs.chmod path, '755', (err) ->
+        return callback new Error "failed to change #{path} permission before removal: #{err}" if err?
+        emitter.remove path, callback
+    when 'ENOTEMPTY', 'EBUSY'
+      # not empty folder: just let some time to OS to really perform deletion
+      _.defer ->
+        emitter.remove path, callback
+      , 50
+    when 'ENOENT'
+      # no file/folder: it's a success :)
+      callback null
+    else
+      callback new Error "failed to remove #{path}: #{err}"
+
+# rimraf's remove (used in fs-extra) have many problems on windows: provide a custom naive implementation.
+#
+# @param path removed file of folder
+# @param callback [Function] end callback, executed with one parameter:
+# @option callback err [String] error message. Null if no error occured.
+emitter.remove = (path, callback) ->
+  callback ||= -> 
+  fs.stat path, (err, stats) ->
+    _processOp path, err, (err) ->
+      return callback() unless stats?
+      return callback err if err?
+      # a file: unlink it
+      if stats.isFile()
+        return fs.unlink path, (err) -> _processOp path, err, callback
+      # a folder, recurse with async
+      fs.readdir path, (err, contents) ->
+        return callback new Error "failed to remove #{path}: #{err}" if err?
+        async.forEach (pathUtils.join path, content for content in contents), emitter.remove, (err) ->
+          return callback err if err?
+          # remove folder once empty
+          fs.rmdir path, (err) -> _processOp path, err, callback
+
+# Remove everything inside the specified folder, but does not removes the folder itself.
+# Recurse inside sub-folders, using remove() method.
+#
+# @param path [String] full path to rhe concerned folder
+# @param callback [Function] end callback, executed with one parameter:
+# @option callback err [String] error message. Null if no error occured.
+emitter.empty = (path, callback) ->
+  fs.readdir path, (err, files) ->
+    return callback err if err?
+    
+    async.forEachSeries files, (file, next) ->
+      emitter.remove pathUtils.join(path, file), next
+    , (err) ->
+      return callback err if err?
+      # use a slight delay to let underlying os really remove content
+      _.defer -> 
+        callback null
+      , 50
+  
 module.exports = emitter

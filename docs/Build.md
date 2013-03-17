@@ -30,7 +30,6 @@ Obviously, node is required and must be installed on your system.
 Once done, install the following package globally (means executable are available anywhere from command line)
 
   npm install -g coffee-script
-  npm install -g mocha
   npm install -g node-gyp
 
 # MongoDB
@@ -54,18 +53,17 @@ The project layout is the following:
 Create a customize build system with the following configuration:
 
     {
-      "cmd": ["coffee", "--bare", "--output", "hyperion/lib", "--compile", "hyperion/src"],
+      "cmd": ["cake", "build"],
       "working_dir": "$project_path/$project_base_name",
       
       "windows": {
-          "cmd": ["coffee.cmd", "--bare", "--output", "hyperion/lib", "--compile", "hyperion/src"],
+          "cmd": ["cake.cmd", "build"],
           "encoding": "cp1252"
         }
     }
 
 Associate your project with it, and hit one time `Ctrl+B`: the src files will be compiled into the lib folder.
-If you edit the `Preferences > Package Settings > SublimeOnSaveBuild ` user settings, you'll be able to launch build on 
-`.coffee` file save.
+If you edit the `Preferences > Package Settings > SublimeOnSaveBuild ` user settings, you'll be able to launch build on file save.
 
 # Ace Editor
 

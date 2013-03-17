@@ -20,10 +20,10 @@
 Map = require '../hyperion/src/model/Map'
 Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
-watcher = require('../hyperion/src/model/ModelWatcher').get()
-testUtils = require './utils/testUtils'
+utils = require '../hyperion/src/util/common'
 typeFactory = require '../hyperion/src/model/typeFactory'
 assert = require('chai').assert
+watcher = require('../hyperion/src/model/ModelWatcher').get()
 
 awaited = false
 

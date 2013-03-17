@@ -38,10 +38,8 @@
     "zombie": "1.4.1"
   },
   "scripts": {
-    "test": "NODE_ENV=test mocha",
-    "testwin": "(set NODE_ENV=test) & mocha",
-    "preinstall": "npm install -g mocha coffee-script",
-    "postinstall": "coffee --bare --compile --output hyperion/lib hyperion/src"
+    "postinstall": "cake build",
+    "test": "cake test"
   },
   "bin": {
     "mf-start": "./hyperion/bin/start",

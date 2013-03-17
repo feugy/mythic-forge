@@ -25,11 +25,9 @@ http = require 'http'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
-util = require 'util'
 front = require '../hyperion/src/web/front'
 Browser = require 'zombie'
 git = require 'gift'
-testUtils = require './utils/testUtils'
 assert = require('chai').assert
 service = require('../hyperion/src/service/DeployementService').get()
 authoringService = require('../hyperion/src/service/AuthoringService').get()
@@ -48,7 +46,7 @@ describe 'Deployement tests', ->
 
   before (done) ->
     # given a clean game source
-    testUtils.remove repository, (err) ->
+    utils.remove repository, (err) ->
       return done err if err?
       fs.mkdirs root, done
 
@@ -72,7 +70,7 @@ describe 'Deployement tests', ->
 
     beforeEach (done) ->
       # given a clean game source
-      testUtils.remove root, (err) ->
+      utils.remove root, (err) ->
         return done err if err?
         fs.mkdirs root, (err) ->
           return done err if err?
@@ -118,7 +116,7 @@ describe 'Deployement tests', ->
 
     it 'should no main html file be detected', (done) ->
       # given no main file
-      testUtils.remove pathUtils.join(root, 'index.html'), (err) ->
+      utils.remove pathUtils.join(root, 'index.html'), (err) ->
         return done err if err?
 
         # when optimizing the game client

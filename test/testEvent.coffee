@@ -22,7 +22,6 @@ EventType = require '../hyperion/src/model/EventType'
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 utils = require '../hyperion/src/util/common'
-testUtils = require './utils/testUtils'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
 

@@ -27,7 +27,6 @@ utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 ruleUtils = require '../hyperion/src/util/rule'
 logger = require('../hyperion/src/logger').getLogger 'test'
-testUtils = require './utils/testUtils'
 assert = require('chai').assert
 
 repository = pathUtils.normalize utils.confKey 'game.dev'
@@ -138,7 +137,7 @@ describe 'Utilities tests', ->
     tag2 = 'tag2'
 
     before (done) ->
-      testUtils.remove pathUtils.dirname(repository), (err) ->
+      utils.remove pathUtils.dirname(repository), (err) ->
         return done err if err?
         _.delay ->
           versionUtils.initGameRepo logger, (err, root, rep) ->
@@ -225,7 +224,7 @@ describe 'Utilities tests', ->
   describe 'given an initialized git repository', ->
 
     beforeEach (done) ->
-      testUtils.remove pathUtils.dirname(repository), (err) ->
+      utils.remove pathUtils.dirname(repository), (err) ->
         return done err if err?
         _.delay ->
           versionUtils.initGameRepo logger, (err, root, rep) ->
@@ -305,7 +304,7 @@ describe 'Utilities tests', ->
         commit {file: file1, message: 'commit 2', content: 'v2'}, (err) ->
           return done err if err?
           # given those files removed and commited
-          async.forEach [file1, file2], testUtils.remove, (err) ->
+          async.forEach [file1, file2], utils.remove, (err) ->
             return done err if err?
             repo.commit 'commit 3', all:true, (err) ->
               return done err if err?

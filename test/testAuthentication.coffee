@@ -21,7 +21,6 @@ middle = require '../hyperion/src/web/middle'
 front = require '../hyperion/src/web/front'
 Player = require '../hyperion/src/model/Player'
 utils = require '../hyperion/src/util/common'
-testUtils = require './utils/testUtils'
 request = require 'request'
 parseUrl = require('url').parse
 assert = require('chai').assert
@@ -176,7 +175,7 @@ describe 'Authentication tests', ->
                     assert.isNotNull saved.lastConnection
                     assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
                     done()
-    describe.skip 'given a Google account', ->
+    describe 'given a Google account', ->
 
       googleUser = "mythic.forge.test@gmail.com"
       googlePassword = "toto1818"
@@ -269,7 +268,7 @@ describe 'Authentication tests', ->
             assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
             done()    
 
-      it 'should existing Google user be authenticated after log-in', (done) ->
+      it.skip 'TODO should existing Google user be authenticated after log-in', (done) ->
         @timeout 20000
 
         # given an existing but not logged in Google account
