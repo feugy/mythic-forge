@@ -22,7 +22,9 @@ task 'test', 'run tests with mocha', ->
   _launch 'mocha', [], {NODE_ENV: 'test'}
 
 task 'clean', 'removes hyperion/lib folder', -> 
-  _remove join('hyperion', 'lib'), (err) -> console.error err if err?
+  _remove join('hyperion', 'lib'), (err) -> 
+    console.error err if err?
+    process.exit if err? then 1 else 0
 
 _launch = (cmd, options=[], env={}, callback) ->
   # look into node_modules to find the command
@@ -31,7 +33,9 @@ _launch = (cmd, options=[], env={}, callback) ->
   # spawn it now, useing modified environement variables and caller process's standard input/output/error
   app = spawn cmd, options, stdio: 'inherit', env: _.extend({}, process.env, env)
   # invoke optionnal callback if command succeed
-  app.on 'exit', (code) -> callback() if code is 0 and callback?
+  app.on 'exit', (code) -> 
+    return callback() if code is 0 and callback?
+    process.exit code
 
 # rimraf's remove (used in fs-extra) have many problems on windows: provide a custom naive implementation.
 #
