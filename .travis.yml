@@ -4,3 +4,4 @@ services:
 node_js:
   # do not use 0.10 because of zombie, and not 0.9.6+ because of some fs regression
   - 0.9.5
+after_failure: "cat /home/travis/builds/feugy/mythic-forge/npm-debug.log"
