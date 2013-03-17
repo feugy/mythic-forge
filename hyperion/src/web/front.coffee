@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-logger = require('../logger').getLogger 'web'
+logger = require('../util/logger').getLogger 'web'
 express = require 'express'
 path = require 'path'
 url = require 'url'
@@ -26,8 +26,8 @@ fs = require 'fs'
 http = require 'http'
 coffee = require 'coffee-script'
 utils = require '../util/common'
-ruleUtils = require '../util/rule'
 stylus = require 'stylus'
+gameService = require('../service/GameService').get()
 notifier = require('../service/Notifier').get()
 
 # Stores authorized tokens to avoid requesting to much playerService
@@ -63,26 +63,11 @@ module.exports = (app = null) ->
   # @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
   registerConf = (base) ->
     app.get "#{base}/conf.js", (req, res, next) ->
-      port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'
-      host = utils.confKey 'server.host'
-      baseUrl = "http://#{host}"
-      # port 80 must be omitted, to allow images resolution on client side.
-      if port isnt 80
-        baseUrl += ":#{port}"
-      # compute the client configuration
-      conf = 
-        separator: path.sep
-        basePath: "#{base}/"
-        baseUrl: "#{baseUrl}#{base}"
-        apiBaseUrl: "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}"
-        imagesUrl: "#{baseUrl}/images/"
-        timer:
-          value: ruleUtils.timer.current().valueOf()
-          paused: ruleUtils.timer.stopped
-
-      res.header 'Content-Type', 'application/javascript; charset=UTF-8'
-      res.send "window.conf = #{JSON.stringify conf}"
-
+      locale = req.params.locale || null
+      gameService.getConf base, req.params.locale || null, (err, conf) ->
+        return res.send err, 500 if err?
+        res.header 'Content-Type', 'application/javascript; charset=UTF-8'
+        res.send "window.conf = #{JSON.stringify conf}"
 
   # Configure the proxy to serve a Rich Internet application on a given context
   #

@@ -25,7 +25,7 @@ utils = require '../util/common'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
 
       
 imagesPath = pathUtils.resolve pathUtils.normalize utils.confKey 'images.store'

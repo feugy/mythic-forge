@@ -28,7 +28,7 @@ async = require 'async'
 requirejs = require 'requirejs'
 utils = require '../util/common'
 versionUtils = require '../util/versionning'
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
 notifier = require('../service/Notifier').get()
 
 repo = null

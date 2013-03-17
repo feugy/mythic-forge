@@ -27,7 +27,7 @@ _ = require 'underscore'
 modelWatcher = require('../../model/ModelWatcher').get()
 notifier = require('../Notifier').get()
 Executable = require '../../model/Executable'
-LoggerFactory = require '../../logger'
+LoggerFactory = require '../../util/logger'
 logger = LoggerFactory.getLogger 'worker'
 
 ready = false

@@ -29,7 +29,7 @@ ruleUtils = require '../util/rule'
 Executable = require '../model/Executable'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
-LoggerFactory = require '../logger'
+LoggerFactory = require '../util/logger'
 logger = LoggerFactory.getLogger 'service'
 loggerWorker = LoggerFactory.getLogger 'worker'
   

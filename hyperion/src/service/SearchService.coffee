@@ -29,7 +29,7 @@ Player = require '../model/Player'
 utils = require '../util/common'
 async = require 'async'
 _ = require 'underscore'
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
 
 # Function that validate the query content, regarding what is possible in `searchType()`
 # 

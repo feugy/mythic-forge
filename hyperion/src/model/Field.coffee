@@ -23,7 +23,7 @@ ObjectId = require('mongodb').BSONPure.ObjectID
 conn = require './connection'
 modelWatcher = require('./ModelWatcher').get()
 Map = require './Map'
-logger = require('../logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'model'
 
 # Define the schema for fields.
 FieldSchema = new mongoose.Schema 

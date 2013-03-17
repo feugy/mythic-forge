@@ -25,7 +25,7 @@ Item = require '../model/Item'
 utils = require '../util/common'
 deployementService = require('./DeployementService').get()
 notifier = require('../service/Notifier').get()
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
 
 expiration = utils.confKey 'authentication.tokenLifeTime'
 

@@ -24,7 +24,7 @@ conn = require './connection'
 Item = require './Item'
 typeFactory = require './typeFactory'
 utils = require '../util/common'
-logger = require('../logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'model'
 
 # Define the schema for players
 Player = typeFactory 'Player', 

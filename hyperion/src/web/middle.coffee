@@ -40,7 +40,7 @@ deployementService = require('../service/DeployementService').get()
 ruleService = require('../service/RuleService').get()
 watcher = require('../model/ModelWatcher').get()
 notifier = require('../service/Notifier').get()
-LoggerFactory = require '../logger'
+LoggerFactory = require '../util/logger'
 
 logger = LoggerFactory.getLogger 'web'
 

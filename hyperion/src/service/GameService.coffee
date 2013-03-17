@@ -19,6 +19,7 @@
 'use strict'
 
 async = require 'async'
+_ = require 'underscore'
 Item = require '../model/Item'
 Event = require '../model/Event'
 Field = require '../model/Field'
@@ -26,8 +27,33 @@ ItemType = require '../model/ItemType'
 EventType = require '../model/EventType'
 FieldType = require '../model/FieldType'
 Executable = require '../model/Executable'
+ClientConf = require '../model/ClientConf'
+
+utils = require '../util/common'
+pathUtils = require 'path'
+ruleUtils = require '../util/rule'
 ruleService = require('./RuleService').get()
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
+
+port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'
+host = utils.confKey 'server.host'
+
+baseUrl = "http://#{host}"
+# port 80 must be omitted, to allow images resolution on client side.
+baseUrl += ":#{port}" if port isnt 80
+apiBaseUrl = "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}"
+
+# merge two JSON object by putting into the result object a deep coy of all original attributes
+#
+# @param result [Object] result of the merge, where original object values will replace exiting values
+# @param original [Object] object from which the merge is performed
+merge = (result, original) ->
+  for attr, value of original when !(attr in ['id', '_className'])
+    if !_.isArray(value) and _.isObject value
+      result[attr] = {} unless result[attr]?
+      merge result[attr], value
+    else
+      result[attr] = value
 
 # The GameService allow all operations needed by the game interface.
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -139,6 +165,44 @@ class _GameService
   getExecutables: (callback) =>
     logger.debug 'Consult all executables'
     Executable.find callback
+
+  # Returns the game configuration for a given locale, merging default values and local specif values
+  #
+  # @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
+  # @param locale [String] desired locale, null to ask for default
+  # @param callback [Function] callback executed when configuration ready. Invoked with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback conf [Object] computed configuration, in json format.
+  getConf: (base, locale, callback) =>
+    # get information that does not change often
+    conf = 
+      separator: pathUtils.sep
+      basePath: "#{base}/"
+      apiBaseUrl: apiBaseUrl
+      imagesUrl: "#{baseUrl}/images/"
+      # add timer information
+      timer:
+        value: ruleUtils.timer.current().valueOf()
+        paused: ruleUtils.timer.stopped
+
+    ids = ['default']
+    # add locale
+    ids.push locale if locale?
+    # add locale without sublocale
+    ids.push locale.replace /_\w*$/, '' if locale? and -1 isnt locale.indexOf '_'
+
+    # get default client configuration
+    def = ClientConf.findCached ids, (err, confs) =>
+      return callback "Failed to load client configurations: #{err}" if err?
+      confs = (o.toJSON() for o in confs)
+      def = _.findWhere confs, id:'default'
+      # first mrege with default configuration
+      merge conf, def if def?
+      confs = _.chain(confs).without(def).sortBy('id').value()
+      # then merge remaining locale specific configurations, ending by sublocales
+      merge conf, spec for spec in confs
+      # return resulting configuration
+      callback null, conf
 
 _instance = undefined
 class GameService

@@ -26,7 +26,7 @@ moment = require 'moment'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 ruleUtils = require '../hyperion/src/util/rule'
-logger = require('../hyperion/src/logger').getLogger 'test'
+logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
 repository = pathUtils.normalize utils.confKey 'game.dev'

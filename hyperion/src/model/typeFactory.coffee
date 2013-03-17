@@ -26,7 +26,7 @@ async = require 'async'
 ObjectId = require('mongodb').BSONPure.ObjectID
 MongoClient = require('mongodb').MongoClient
 modelWatcher = require('./ModelWatcher').get()
-logger = require('../logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'model'
 utils = require '../util/common'
 modelUtils = require '../util/model'
 
@@ -128,7 +128,7 @@ mongoose.Document.prototype._defineProperties = ->
 # @param typeName [String] name of the build type, used for changes propagations
 # @param spec [Object] attributes of the created type.
 # @param options [Object] Mongoose schema options, and factory custom options:
-# @option options typeProperties [Boolean] wether this type will defined properties for its instances
+# @option options typeProperties [Boolean] whether this type will defined properties for its instances
 # @option options instanceClass [String] if this type has type-properties, the instance class name
 # @option options instanceProperties [Boolean] wether this type will embed properties
 # @option options typeClass [Object] if this type has instance-properties, the type class name
@@ -261,7 +261,7 @@ module.exports = (typeName, spec, options = {}) ->
     throw new Error 'Never use it in production!' if process.env.NODE_ENV isnt 'test'
     loadIdCache callback
 
-  # Indicates wether or not an id is used
+  # Indicates whether or not an id is used
   #
   # @param id [String] tested id
   # @return true if id is used

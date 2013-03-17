@@ -28,12 +28,13 @@ Item = require '../model/Item'
 Event = require '../model/Event'
 Player = require '../model/Player'
 Executable = require '../model/Executable'
+ClientConf = require '../model/ClientConf'
 utils = require '../util/common'
 modelUtils = require '../util/model'
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 authoringService = require('./AuthoringService').get()
-supported = ['Field', 'Item', 'Event', 'Player', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
+supported = ['Field', 'Item', 'Event', 'Player', 'ClientConf', 'ItemType', 'Executable', 'FieldType', 'Map', 'EventType', 'FSItem']
 listSupported = supported[4..]
 
 # The AdminService export administration features.
@@ -67,6 +68,7 @@ class _AdminService
       when 'EventType' then EventType.find (err, result) -> callback err, modelName, result
       when 'Executable' then Executable.find (err, result) -> callback err, modelName, result
       when 'Map' then Map.find (err, result) -> callback err, modelName, result
+      when 'ClientConf' then ClientConf.find (err, result) -> callback err, modelName, result
       when 'FSItem' then authoringService.readRoot (err, root) -> callback err, modelName, root.content unless err?
 
   # Saves an instance of any model.
@@ -87,6 +89,20 @@ class _AdminService
 
     modelClass = null
     switch modelName
+      when 'ClientConf' 
+        # do not allow unspecified id for client configurations
+        values.id = 'default' unless values.id?
+        if 'id' of values and ClientConf.isUsed values.id
+          # resolve type
+          return ClientConf.findCached [values.id], (err, models) ->
+            return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0
+            model = models[0]
+            # update values, using the setter because no attributes are defined
+            model.set key, value for key, value of values when !(key in ['id', '_className'])
+            _save model
+        else
+          return _save new ClientConf values
+
       when 'ItemType' then modelClass = ItemType
       when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType
@@ -252,6 +268,7 @@ class _AdminService
       return callback "Cannot remove #{modelName} because no 'id' specified", modelName 
     modelClass = null
     switch modelName
+      when 'ClientConf' then modelClass = ClientConf
       when 'ItemType' then modelClass = ItemType
       when 'EventType' then modelClass = EventType
       when 'FieldType' then modelClass = FieldType

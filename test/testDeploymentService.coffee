@@ -32,7 +32,7 @@ assert = require('chai').assert
 service = require('../hyperion/src/service/DeployementService').get()
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
-logger = require('../hyperion/src/logger').getLogger 'test'
+logger = require('../hyperion/src/util/logger').getLogger 'test'
 
 port = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"

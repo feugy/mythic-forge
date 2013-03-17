@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-logger = require('../logger').getLogger 'service'
+logger = require('../util/logger').getLogger 'service'
 EventEmitter = require('events').EventEmitter
 
 NOTIF_EVT = 'notify'

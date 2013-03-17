@@ -24,7 +24,7 @@ _ = require 'underscore'
 _s = require 'underscore.string'
 fs = require 'fs-extra'
 pathUtils = require 'path'
-utils = require './util/common'
+utils = require '../util/common'
 EventEmitter = require('events').EventEmitter
 
 conf = null

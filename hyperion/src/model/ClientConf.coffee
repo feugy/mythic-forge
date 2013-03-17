@@ -20,21 +20,7 @@
 
 typeFactory = require './typeFactory'
 conn = require './connection'
-logger = require('../util/logger').getLogger 'model'
 
-# Define the schema for event types
-EventType = typeFactory 'EventType', 
-  # descriptive image for this type.
-  descImage:
-    type: String
-
-  # event rendering template
-  template:
-    type: String
-, 
-  typeProperties: true
-  instanceClass: 'Event'
-  hasImages: true
-
-# Export the Class.
-module.exports = conn.model 'eventType', EventType
+# Define the schema for configuration values.
+# locale will be the id, other values will be stored arbitrary
+module.exports = conn.model 'clientConf', typeFactory 'ClientConf', {}, strict: false

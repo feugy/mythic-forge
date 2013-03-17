@@ -27,6 +27,7 @@ Executable = require '../hyperion/src/model/Executable'
 Map = require '../hyperion/src/model/Map'
 FSItem = require '../hyperion/src/model/FSItem'
 Player = require '../hyperion/src/model/Player'
+ClientConf = require '../hyperion/src/model/ClientConf'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 service = require('../hyperion/src/service/AdminService').get()
 watcher = require('../hyperion/src/model/ModelWatcher').get()
@@ -44,6 +45,7 @@ maps = []
 fields = []
 items = []
 events = []
+confs = []
 fsItem = null
 gameClientRoot = utils.confKey 'game.dev'
 
@@ -73,13 +75,14 @@ describe 'AdminService tests', ->
     item = []
     maps = []
     event = []
+    confs = []
     utils.empty utils.confKey('executable.source'), ->
       Executable.resetAll true, (err) -> 
         return done err if err?
         ItemType.collection.drop -> Item.collection.drop ->
           FieldType.collection.drop -> Field.collection.drop ->
             EventType.collection.drop -> Event.collection.drop ->
-              Map.collection.drop -> Map.loadIdCache ->
+              Map.collection.drop -> ClientConf.collection.drop -> Map.loadIdCache ->
                 # creates fixtures
                 created = [
                   {clazz: ItemType, args: {id: 'type1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
@@ -92,6 +95,8 @@ describe 'AdminService tests', ->
                   {clazz: Executable, args: {id: 'rule2', content:'# world'}, store: executables}
                   {clazz: Map, args: {id: 'map1', kind:'square'}, store: maps}
                   {clazz: Map, args: {id: 'map2', kind:'diamond'}, store: maps}
+                  {clazz: ClientConf, args: {id:'default', names: plain:'plain'}, store: confs}
+                  {clazz: ClientConf, args: {id:'fr', names:{plain:'plaine', river: 'rivière'}}, store: confs}
                 ]
                 create = (def) ->
                   return done() unless def?
@@ -171,6 +176,24 @@ describe 'AdminService tests', ->
     service.list 'Item', (err, modelName, list) ->
       # then an error occured
       assert.equal err, "The Item model can't be listed"
+      done()
+
+  it 'should list fails on Events', (done) ->
+    # when listing events
+    service.list 'Event', (err, modelName, list) ->
+      # then an error occured
+      assert.equal err, "The Event model can't be listed"
+      done()
+
+  it 'should list returns configurations', (done) ->
+    # when listing items
+    service.list 'ClientConf', (err, modelName, list) ->
+      return done "Can't list configurations: #{err}" if err?
+      # then the two created executables are retrieved
+      assert.equal list.length, 2
+      assert.equal modelName, 'ClientConf'
+      assert.ok confs[0].equals(list[0])
+      assert.ok confs[1].equals(list[1])
       done()
 
   it 'should list returns fsItems in root', (done) ->
@@ -388,6 +411,34 @@ describe 'AdminService tests', ->
       # then the authoring servce serve this fsitem
       authoringService.read model, (err, obj) ->
         return done "Can't find fsitem with authoring servce #{err}" if err?
+        assert.ok obj.equals model
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should save create new configuration', (done) ->
+    # given new values
+    values = {id: 'jp', names: river: 'kawa'}
+   
+    awaited = false
+    # then a creation event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'ClientConf'
+      assert.equal operation, 'creation'
+      assert.equal instance.id, 'jp'
+      awaited = true
+
+    # when saving new item type
+    service.save 'ClientConf', values, 'admin', (err, modelName, model) ->
+      return done "Can't save conf: #{err}" if err?
+      # then the created values are returned
+      assert.ok model?
+      assert.ok model.id?
+      assert.equal model.id, values.id
+      assert.deepEqual model.get('names'), values.names
+
+      # then the model exists in DB
+      ClientConf.findById model.id, (err, obj) ->
+        return done "Can't find conf in db #{err}" if err?
         assert.ok obj.equals model
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
@@ -904,6 +955,42 @@ describe 'AdminService tests', ->
           assert.ok obj.equals returned
           done()
 
+  it 'should save update existing configuration', (done) ->
+    # given existing values
+    values = confs[1].toJSON()
+    values.names.montain = 'montagne'
+
+    awaited = false
+    # then a creation event was issued
+    listener = (operation, className, instance) ->
+      return unless className is 'ClientConf'
+      assert.equal operation, 'update'
+      assert.ok confs[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
+      awaited = true
+    watcher.on 'change', listener
+
+    # when saving existing item type
+    service.save 'ClientConf', values, 'admin', (err, modelName, model) ->
+      return done "Can't save conf: #{err}" if err?
+
+      # then the created values are returned
+      assert.equal confs[1].id, model.id, 'Saved model doesn\'t match parameters'
+      assert.equal  confs[1].get('names').plain, model.get('names').plain,
+      assert.equal 'montagne', model.get('names').montain
+      
+      # then the model exists in DB
+      ClientConf.findById model.id, (err, obj) ->
+        return done "Can't find conf in db #{err}" if err?
+        assert.ok obj.equals model, 'Conf cannot be found in DB'
+
+        # then the model was updated, not created in DB
+        ClientConf.find {}, (err, list) ->
+          return done "Can't find confs in db #{err}" if err?
+          assert.equal list.length, 2
+          assert.ok awaited, 'watcher wasn\'t invoked'
+          watcher.removeListener 'change', listener
+          done()
+
   it 'should remove fails on unallowed model', (done) ->
     unknownModelName = 'toto'
     # when removing unallowed model
@@ -1251,6 +1338,28 @@ describe 'AdminService tests', ->
       assert.equal modelName, 'Field'
       assert.equal returned.length, 0
       done()
+
+  it 'should remove delete existing configuration', (done) ->
+    awaited = false
+    # then a deletion event was issued
+    watcher.once 'change', (operation, className, instance)->
+      assert.equal className, 'ClientConf'
+      assert.equal operation, 'deletion'
+      assert.ok confs[1].equals instance
+      awaited = true
+
+    # when removing existing field type
+    service.remove 'ClientConf', confs[1], 'admin', (err, modelName, model) ->
+      return done "Can't remove conf: #{err}" if err?
+      # then the removed values are returned
+      assert.ok model?
+      assert.equal confs[1].id, model.id
+
+      # then the model do not exists anymore in DB
+      ClientConf.findById model.id, (err, obj) ->
+        assert.isNull obj
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
 
   it 'should id unicity be globally checked', (done) ->
     # given all combination of existing names and models

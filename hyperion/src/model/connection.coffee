@@ -21,7 +21,7 @@
 mongoose = require 'mongoose'
 mongodb = require 'mongodb'
 utils = require '../util/common'
-logger = require('../logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'model'
 
 host = utils.confKey 'mongo.host', 'localhost'
 port = utils.confKey 'mongo.port', 27017

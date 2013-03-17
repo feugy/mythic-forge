@@ -18,6 +18,7 @@ task 'build', 'compile Hyperion\'s coffee-script source files', ->
   _launch 'coffee', ['-c', '-b', '-o', join('hyperion', 'lib'), join('hyperion', 'src')], {}, ->
     _remove '-p' if isWin
 
+
 task 'test', 'run tests with mocha', -> 
   _launch 'mocha', [], {NODE_ENV: 'test'}
 

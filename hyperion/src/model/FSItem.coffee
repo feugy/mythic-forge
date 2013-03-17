@@ -24,7 +24,7 @@ fs = require 'fs-extra'
 async = require 'async'
 utils = require '../util/common'
 modelWatcher = require('./ModelWatcher').get()
-logger = require('../logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'model'
 
 # hashmap to differentiate creations from updates
 wasNew= {}

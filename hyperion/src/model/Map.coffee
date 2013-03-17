@@ -20,7 +20,7 @@
 
 typeFactory = require './typeFactory'
 conn = require './connection'
-logger = require('../logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'model'
 
 # Define the schema for map item types
 Map = typeFactory 'Map', 
