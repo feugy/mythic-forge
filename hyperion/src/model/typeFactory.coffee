@@ -47,7 +47,7 @@ loadIdCache = (callback = null) ->
     throw new Error "Failed to connect to mongo to get ids: #{err}" if err?
     idCache = {}
     # get ids in each collections
-    async.forEach ['players', 'items', 'itemtypes', 'events', 'eventtypes', 'maps', 'fieldtypes'], (name, next) ->
+    async.forEach ['players', 'items', 'itemtypes', 'events', 'eventtypes', 'maps', 'fieldtypes', 'clientconfs'], (name, next) ->
       db.collection(name).find({},fields: _id:1).toArray (err, results) ->
         return next err if err?
         idCache[obj._id] = 1 for obj in results

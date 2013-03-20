@@ -95,8 +95,8 @@ describe 'AdminService tests', ->
                   {clazz: Executable, args: {id: 'rule2', content:'# world'}, store: executables}
                   {clazz: Map, args: {id: 'map1', kind:'square'}, store: maps}
                   {clazz: Map, args: {id: 'map2', kind:'diamond'}, store: maps}
-                  {clazz: ClientConf, args: {id:'default', names: plain:'plain'}, store: confs}
-                  {clazz: ClientConf, args: {id:'fr', names:{plain:'plaine', river: 'rivière'}}, store: confs}
+                  {clazz: ClientConf, args: {id:'default', values: names: plain:'plain'}, store: confs}
+                  {clazz: ClientConf, args: {id:'fr', values: names: plain:'plaine', river: 'rivière'}, store: confs}
                 ]
                 create = (def) ->
                   return done() unless def?
@@ -417,7 +417,7 @@ describe 'AdminService tests', ->
 
   it 'should save create new configuration', (done) ->
     # given new values
-    values = {id: 'jp', names: river: 'kawa'}
+    values = {id: 'jp', values: names: river: 'kawa'}
    
     awaited = false
     # then a creation event was issued
@@ -434,7 +434,7 @@ describe 'AdminService tests', ->
       assert.ok model?
       assert.ok model.id?
       assert.equal model.id, values.id
-      assert.deepEqual model.get('names'), values.names
+      assert.deepEqual model.values.names, values.values.names
 
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
@@ -958,7 +958,7 @@ describe 'AdminService tests', ->
   it 'should save update existing configuration', (done) ->
     # given existing values
     values = confs[1].toJSON()
-    values.names.montain = 'montagne'
+    values.values.names.montain = 'montagne'
 
     awaited = false
     # then a creation event was issued
@@ -975,8 +975,8 @@ describe 'AdminService tests', ->
 
       # then the created values are returned
       assert.equal confs[1].id, model.id, 'Saved model doesn\'t match parameters'
-      assert.equal  confs[1].get('names').plain, model.get('names').plain,
-      assert.equal 'montagne', model.get('names').montain
+      assert.equal  confs[1].values.names.plain, model.values.names.plain,
+      assert.equal 'montagne', model.values.names.montain
       
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->

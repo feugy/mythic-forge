@@ -111,11 +111,11 @@ select
 // Icons
 multiIcon(valid invalid cancel warning question help success failure login logout)
 
-multiIcon(save remove open remove-selection upload unbind rename add remove-folder restore, 1)
+multiIcon(save remove open upload unbind rename remove-selection remove-folder restore, 1)
 
-multiIcon(new-folder new-file add-param add-property new-actor new-item new-event new-player field script, 2)
+multiIcon(new-folder new-file add-param add-property new-item new-event new-player, 2)
 
-multiIcon(map event _ item player _ rule turn-rule _ script, 3)
+multiIcon(map field item event rule turn-rule script player client-conf, 3)
 
 multiIcon(world-edition world-moderation game-authoring admin, 4)
 
@@ -375,6 +375,14 @@ body
       * 
         color white
 
+    > .external-change
+      border-radius radius
+
+      > *
+        padding 0.5em 1em
+      * 
+        color errorColor
+        
     .images
       padding-top 0.5em
 

@@ -242,7 +242,7 @@ define [
       @_firstNameWidget.setOption 'value', @model.firstName or ''
       @_lastNameWidget.setOption 'value', @model.lastName or ''
       @_lastConnectionWidget.setOption 'value', @model.lastConnection
-      @_prefsEditor.setOption 'text', JSON.stringify @model.prefs or {}
+      @_prefsEditor.setOption 'text', JSON.stringify @model.prefs or {}, null, '\t'
 
       # superclass handles description email and trigger _onChange
       super()
@@ -257,11 +257,6 @@ define [
     _getComparableFields: =>
       # superclass handles description image, name and description 
       comparable = super()
-
-      prefs = {}
-      try 
-        prefs = JSON.parse @_prefsEditor.options.text
-      catch err
 
       comparable.push
         name: 'provider'
@@ -294,7 +289,7 @@ define [
       ,
         name: 'prefs'
         original: @model.prefs
-        current: prefs
+        current: JSON.parse(@_prefsEditor.options.text) or {}
 
       if @_passwordChanged
         comparable.push

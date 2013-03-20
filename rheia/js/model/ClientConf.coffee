@@ -18,14 +18,28 @@
 ###
 'use strict'
 
-typeFactory = require './typeFactory'
-conn = require './connection'
+define [
+  'model/BaseModel'
+], (Base) ->
 
-# Define the schema for configuration values.
-# locale will be the id, other values will be stored arbitrary
-module.exports = conn.model 'clientConf', typeFactory 'ClientConf', 
-  
-  # configuration's values: plain json.
-  values:
-    type: {}
-    default: -> {} # use a function to force instance variable
+  # Client cache of client configurations.
+  class _ClientConfs extends Base.Collection
+
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'ClientConf'
+
+  # Modelisation of a single client configuration.
+  # Not wired to the server : use collections ClientConfs instead
+  class ClientConf extends Base.Model
+
+    # Local cache for models.
+    @collection: new _ClientConfs @
+
+    # **private**
+    # Class name of the managed model, for wiring to server and debugging purposes
+    _className: 'ClientConf'
+
+    # **private**
+    # List of properties that must be defined in this instance.
+    _fixedAttributes: ['values']

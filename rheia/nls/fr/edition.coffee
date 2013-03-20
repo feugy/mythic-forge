@@ -26,22 +26,27 @@ define
     turnRule: 'Règle de tour %s'
     script: 'Script %s'
     map: 'Carte %s'
+    clientConf: 'Configuration cliente, langue %s'
     multipleAffectation: 'Affectation multiple'
     chooseId: "Choix d'un identifiant"
+    chooseLocale: "Choix d'une langue"
 
   msgs:
     chooseId: "<p>Vous devez d'abord choisir un identifiant.</p><p><b>Attention :</b> il doit être unique et ne pourra être modifié par la suite.</p>"
+    chooseLocale: "<p>Vous devez d'abord choisir une langue (code sur 2 ou 4 caractères).</p><p>Cette langue pourra être utilisée depuis le client de jeu.</p>"
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
     removeEventTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'évènements <b>%s</b> ?</p><p>Tous les évènements de ce type seront aussi supprimés.</p>"
     removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
     removeScriptConfirm: "<p>Voulez-vous vraiment supprimer le script <b>%s</b> ?</p>"
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
-    invalidUidError: 'les uid de propriétés ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
+    removeClientConfConfirm: "<p>Voulez-vous vraiment suppriemer la configuration pour la langue <b>%s</b> ?</p><p>Seuls les valeurs de la langue par défaut s'appliqueront.<p/>"
     invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
     invalidExecutableNameError: "l'identifiant d'un executable ne peut contenir que des caractères alphanumeriques"
     multipleAffectation: 'Choisisez les images que vous aller affecter dans la séléction (l\'ordre est significatif)'
-    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type ou une règle"
+    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle ou configuration"
+    invalidConfValues: "Erreur de syntaxe JSON"
+    externalConfChange: "Une modification externe à été reçue et fusionné"
 
   buttons:
     'new': 'Nouveau...'
@@ -52,9 +57,11 @@ define
     newTurnRule: 'Règle de tour'
     newMap: 'Carte'
     newEventType: "Type d'évènements"
+    newClientConf: "Configuration cliente"
 
   labels:
     id: 'Identifiant'
+    locale: 'Langue'
     descImage: 'Type'
     images: 'Images'
     category: 'Catégorie'

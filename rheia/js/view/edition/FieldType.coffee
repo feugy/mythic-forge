@@ -67,7 +67,6 @@ define [
     _createNewModel: =>
       @model = new FieldType()
       @model.descImage = null
-      console.log i18n.labels,  @model
 
     # **private**
     # Gets values from rendering and saved them into the edited object.

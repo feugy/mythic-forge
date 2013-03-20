@@ -48,7 +48,7 @@ apiBaseUrl = "#{if certPath = utils.confKey('ssl.certificate', null)? then 'http
 # @param result [Object] result of the merge, where original object values will replace exiting values
 # @param original [Object] object from which the merge is performed
 merge = (result, original) ->
-  for attr, value of original when !(attr in ['id', '_className'])
+  for attr, value of original
     if !_.isArray(value) and _.isObject value
       result[attr] = {} unless result[attr]?
       merge result[attr], value
@@ -194,13 +194,12 @@ class _GameService
     # get default client configuration
     def = ClientConf.findCached ids, (err, confs) =>
       return callback "Failed to load client configurations: #{err}" if err?
-      confs = (o.toJSON() for o in confs)
-      def = _.findWhere confs, id:'default'
+      def = _.findWhere confs, _id:'default'
       # first mrege with default configuration
-      merge conf, def if def?
-      confs = _.chain(confs).without(def).sortBy('id').value()
+      merge conf, def.values if def?
+      confs = _.chain(confs).without(def).sortBy('_id').value()
       # then merge remaining locale specific configurations, ending by sublocales
-      merge conf, spec for spec in confs
+      merge conf, spec.values for spec in confs
       # return resulting configuration
       callback null, conf
 

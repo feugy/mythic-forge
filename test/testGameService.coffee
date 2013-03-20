@@ -113,7 +113,7 @@ describe 'GameService tests', ->
 
   it 'should default configuration be accessible', (done) ->
     # given custom configuration options
-    adminService.save 'ClientConf', {custom: [1, 15]}, 'test', (err) ->
+    adminService.save 'ClientConf', {values: custom: [1, 15]}, 'test', (err) ->
       return done err if err?
       # when requesting default configuration
       service.getConf 'root', null, (err, conf) ->
@@ -129,10 +129,10 @@ describe 'GameService tests', ->
 
   it 'should known locale configuration be accessible', (done) ->
     # given custom configuration options
-    adminService.save 'ClientConf', {names:{plain: 'plain', montain: 'montain'}}, 'test', (err) ->
+    adminService.save 'ClientConf', {values: names: plain: 'plain', montain: 'montain'}, 'test', (err) ->
       return done err if err?
       # given locally overriden custom configuration options
-      adminService.save 'ClientConf', {id:'fr', names:{plain: 'plaine'}}, 'test', (err) ->
+      adminService.save 'ClientConf', {id:'fr', values: names: plain: 'plaine'}, 'test', (err) ->
         return done err if err?
         # when requesting default configuration
         service.getConf 'root', 'fr', (err, conf) ->
@@ -148,13 +148,13 @@ describe 'GameService tests', ->
 
   it 'should known sublocale configuration be accessible', (done) ->
     # given custom configuration options
-    adminService.save 'ClientConf', {names:{plain: 'plain', montain: 'montain', river:'river'}}, 'test', (err) ->
+    adminService.save 'ClientConf', {values: names: plain: 'plain', montain: 'montain', river:'river'}, 'test', (err) ->
       return done err if err?
       # given locally overriden custom configuration options
-      adminService.save 'ClientConf', {id:'fr', names:{plain: 'plaine', montain:'montagne'}}, 'test', (err) ->
+      adminService.save 'ClientConf', {id:'fr', values: names: plain: 'plaine', montain:'montagne'}, 'test', (err) ->
         return done err if err?
         # given sublocally overriden custom configuration options
-        adminService.save 'ClientConf', {id:'fr_FR', names:{plain: 'dèche'}, other:'WTF'}, 'test', (err) ->
+        adminService.save 'ClientConf', {id:'fr_FR', values: other:'WTF', names: plain: 'dèche'}, 'test', (err) ->
           return done err if err?
           # when requesting default configuration
           service.getConf 'root', 'fr_FR', (err, conf) ->
@@ -172,10 +172,10 @@ describe 'GameService tests', ->
 
   it 'should unknown sublocale configuration be accessible', (done) ->
     # given custom configuration options
-    adminService.save 'ClientConf', {names:{plain: 'plain', montain: 'montain', river:'river'}}, 'test', (err) ->
+    adminService.save 'ClientConf', {values: names: plain: 'plain', montain: 'montain', river:'river'}, 'test', (err) ->
       return done err if err?
       # given locally overriden custom configuration options
-      adminService.save 'ClientConf', {id:'fr', names:{plain: 'plaine', montain:'montagne'}}, 'test', (err) ->
+      adminService.save 'ClientConf', {id:'fr', values: names: plain: 'plaine', montain:'montagne'}, 'test', (err) ->
         return done err if err?
         # when requesting default configuration
         service.getConf 'root', 'fr_BE', (err, conf) ->
@@ -192,7 +192,7 @@ describe 'GameService tests', ->
 
   it 'should unknown locale configuration be accessible', (done) ->
     # given custom configuration options
-    adminService.save 'ClientConf', {names: plain: 'plain'}, 'test', (err) ->
+    adminService.save 'ClientConf', {values: names: plain: 'plain'}, 'test', (err) ->
       return done err if err?
       # when requesting default configuration
       service.getConf 'root', 'en', (err, conf) ->

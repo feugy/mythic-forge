@@ -232,7 +232,9 @@ define [
 
     # **private**
     # Displays warning dialog when edited object have been modified externally.
-    _notifyExternalChange: () =>
+    #
+    # @param saved [Object] the received values from server
+    _notifyExternalChange: (saved) =>
       return if $("#externalChange-#{@model.id}").length > 0
       utils.popup i18n.titles.external, 
         _.sprintf(i18n.msgs.externalChange, @model.id), 
@@ -289,7 +291,7 @@ define [
         return @trigger 'close'
 
       console.log "object #{@model.id} saved !"
-      @_notifyExternalChange() unless @_saveInProgress
+      @_notifyExternalChange saved unless @_saveInProgress
       @_saveInProgress = false
 
       # updates edited object
@@ -297,6 +299,7 @@ define [
 
       # refresh rendering
       @_fillRendering()
+
         
     # **private**
     # Invoked when a model is removed from the server.

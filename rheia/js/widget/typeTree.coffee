@@ -36,6 +36,9 @@ define [
     # **private**
     # list of displayed categories
     _categories: [
+      name: i18n.titles.categories.clientConfs
+      id: 'ClientConf'
+    ,
       name: i18n.titles.categories.maps
       id: 'Map'
     ,

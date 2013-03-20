@@ -61,7 +61,7 @@ define [
         app.imagesService.load @_pendingImage
 
       switch category
-        when 'ItemType', 'FieldType', 'Map', 'EventType' then name = @options.model.id
+        when 'ItemType', 'FieldType', 'Map', 'EventType', 'ClientConf' then name = @options.model.id
         when 'Executable' 
           name = @options.model.id
           # for opening behaviour, when need to distinguish Rules from TurnRules
@@ -103,10 +103,15 @@ define [
             @$el.toggleClass 'inactive', !@options.model.active 
 
       # adds a contextual menu that opens on right click
-      @_menu = $("""<ul class="menu">
-          <li class="open"><i class="x-small ui-icon open"></i>#{_.sprintf i18n.typeDetails.open, name}</li>
-          <li class="remove"><i class="x-small ui-icon remove"></i>#{_.sprintf i18n.typeDetails.remove, name}</li>
-        </ul>""").toggleable().appendTo(@$el).data 'toggleable'
+      content = "<ul class='menu'><li class='open'><i class='x-small ui-icon open'></i>#{_.sprintf i18n.typeDetails.open, name}</li>"
+
+      # specific case of default client configuration that cannot be removed
+      if category isnt 'ClientConf' or @options.model.id isnt 'default'
+        content += "<li class='remove'><i class='x-small ui-icon remove'></i>#{_.sprintf i18n.typeDetails.remove, name}</li>"
+
+      content += '</ul>'
+      
+      @_menu = $(content).toggleable().appendTo(@$el).data 'toggleable'
 
       @$el.on 'contextmenu', (event) =>
         event?.preventDefault()

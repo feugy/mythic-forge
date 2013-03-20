@@ -109,6 +109,7 @@ img.dragged
   .view.script:not(.icon)
   .view.rule:not(.icon)
   .view.turn-rule:not(.icon)
+  .view.client-conf:not(.icon)
     display box
     box-orient vertical
     box-sizing border-box
@@ -116,6 +117,7 @@ img.dragged
     height 100%
 
     > .content.adv-editor
+    > .values.adv-editor
       position relative
       box-flex 1
       border 1px solid borderColor
@@ -147,3 +149,18 @@ img.dragged
 
     .images label
       line-height 97px
+
+@media screen and (-webkit-min-device-pixel-ratio:0)
+
+  .edition.perspective
+
+    .view.script:not(.icon)
+    .view.rule:not(.icon)
+    .view.turn-rule:not(.icon)
+    .view.client-conf:not(.icon)
+      display box
+      // required on webkit to take all available vertical space
+      position absolute
+      // compensate parent tab padding
+      margin -1em -1.4em
+      padding 1em 1.4em

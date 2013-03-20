@@ -27,6 +27,7 @@ define [
   'utils/utilities'
   'utils/validators'
   'view/edition/Explorer'
+  'view/edition/ClientConf'
   'view/edition/ItemType'
   'view/edition/EventType'
   'view/edition/FieldType'
@@ -35,7 +36,7 @@ define [
   'view/edition/TurnRule'
   'view/edition/Script'
   'widget/search'
-], ($, TabPerspective, i18n, i18nEdition, template, utils, validators, Explorer, 
+], ($, TabPerspective, i18n, i18nEdition, template, utils, validators, Explorer, ClientConfView
     ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView, ScriptView) ->
 
   i18n = $.extend true, i18n, i18nEdition
@@ -131,12 +132,12 @@ define [
     # @param id [String] optional id of the opened instance. Null for creations
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
-      return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Map']
+      return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Map', 'ClientConf']
       # creates the relevant view
       view = null
       unless id?
         # choose an id within a popup
-        popup = utils.popup(i18n.titles.chooseId, i18n.msgs.chooseId, 'question', [
+        popup = utils.popup((if type is 'ClientConf' then i18n.titles.chooseLocale else i18n.titles.chooseId), (if type is 'ClientConf' then i18n.msgs.chooseLocale else i18n.msgs.chooseId), 'question', [
           text: i18n.buttons.ok
           icon: 'valid'
           click: =>
@@ -147,7 +148,8 @@ define [
             # ask server if id is free
             app.sockets.admin.once 'isIdValid-resp', (err) =>
               if err
-                return popup.find('.errors').empty().append i18n.msgs.alreadyUsedId
+                console.log err
+                return popup.find('.errors').empty().append i18n.msgs.alreadyUsedId 
               validator.dispose()
               # now we can opens the view tab
               popup.dialog 'close'
@@ -163,7 +165,7 @@ define [
 
         # adds a text field and an error field above it
         popup.append """<div class="id-container">
-            <label>#{i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
+            <label>#{if type is 'ClientConf' then i18n.labels.locale else i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
             <input type='text' class='id'/>
           </div>
           <div class='errors'></div>"""
@@ -196,4 +198,5 @@ define [
         when 'TurnRule' then view = new TurnRuleView id
         when 'Script' then view = new ScriptView id
         when 'Map' then view = new MapView id
+        when 'ClientConf' then view = new ClientConfView id
       view

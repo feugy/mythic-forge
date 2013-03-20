@@ -37,6 +37,7 @@ define
       fields: 'Terrains'
       players: 'Joueurs'
       scripts: 'Scripts'
+      clientConfs: 'Configurations'
     login: 'Rheia - Connexion'
       
   labels:

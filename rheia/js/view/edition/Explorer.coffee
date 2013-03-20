@@ -29,9 +29,10 @@ define [
   'model/FieldType'
   'model/Executable'
   'model/Map'
+  'model/ClientConf'
   'widget/typeDetails'
   'widget/typeTree'
-], ($, Backbone, utils, i18n, i18nEdition, ItemType, EventType, FieldType, Executable, Map) ->
+], ($, Backbone, utils, i18n, i18nEdition, ItemType, EventType, FieldType, Executable, Map, ClientConf) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -65,6 +66,9 @@ define [
       # open container to allow it to be filled
       $('.explorer dd[data-category="TurnRule"]').show()
       Executable.collection.fetch()
+  
+    ClientConf: -> 
+      ClientConf.collection.fetch()
 
   # Computes the sort order of a collection.
   # For executable, group by categories.
@@ -112,7 +116,7 @@ define [
       super tagName: 'div', className:'explorer'
 
       # bind changes to collections
-      for model in [ItemType, FieldType, Executable, EventType, Map]
+      for model in [ItemType, FieldType, Executable, EventType, Map, ClientConf]
         @bindTo model.collection, 'reset', @_onResetCategory
 
         @bindTo model.collection, 'add', (element, collection) =>
@@ -162,6 +166,7 @@ define [
         when FieldType.collection then category = 'FieldType'
         when ItemType.collection then category = 'ItemType'
         when EventType.collection then category = 'EventType'
+        when ClientConf.collection then category = 'ClientConf'
         when Executable.collection
           # Execuables are both used to rule and turn rules. We must distinguish them
           @$el.find("""dd[data-category="Script"], 
@@ -232,6 +237,9 @@ define [
           if operation isnt 'update' or 'descImage' of changes then category = 'EventType'
         when Executable.collection 
           if operation isnt 'update' then category = (if element.kind then element.kind else 'Script')
+        when ClientConf.collection 
+          if operation isnt 'update' then category = 'ClientConf'
+        
       return unless category?
 
       container = @$el.find "dd[data-category='#{category}']"
