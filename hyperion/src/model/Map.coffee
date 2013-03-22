@@ -21,6 +21,7 @@
 typeFactory = require './typeFactory'
 conn = require './connection'
 logger = require('../util/logger').getLogger 'model'
+modelUtils = require '../util/model'
 
 # Define the schema for map item types
 Map = typeFactory 'Map', 
@@ -30,17 +31,25 @@ Map = typeFactory 'Map',
         default: 'hexagon'
   , 
     strict:true
+    middlewares:
 
-# pre-save middleware: once map is removed, removes also fields and items on it
-#
-# @param next [Function] function that must be called to proceed with other middleware.
-Map.pre 'remove', (next) ->
-  # performs removal
-  next()
-  # now removes fields and items on it
-  # does not issue messages
-  # does not load models
-  require('./Field').remove(mapId:@id).exec()
-  require('./Item').remove(map:@id).exec()
+      # add a name key inside default configuration if type is new
+      #
+      # @param next [Function] function that must be called to proceed with other middleware.
+      save: (next) -> 
+        return next() unless @isNew 
+        modelUtils.addConfKey @id, 'names', @id, logger, next
+
+      # once map is removed, removes also fields and items on it
+      #
+      # @param next [Function] function that must be called to proceed with other middleware.
+      remove: (next) ->
+        # performs removal
+        next()
+        # now removes fields and items on it
+        # does not issue messages
+        # does not load models
+        require('./Field').remove(mapId:@id).exec()
+        require('./Item').remove(map:@id).exec()
 
 module.exports = conn.model 'map', Map

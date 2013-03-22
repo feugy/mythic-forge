@@ -18,13 +18,15 @@
 ###
 
 Executable = require '../hyperion/src/model/Executable'
+ClientConf = require '../hyperion/src/model/ClientConf'
+watcher = require('../hyperion/src/model/ModelWatcher').get()
 utils = require '../hyperion/src/util/common'
 pathUtils = require 'path'
 fs = require 'fs'
 assert = require('chai').assert
 
 executable = null
-   
+listener = null
 root =  utils.confKey 'executable.source'
 
 describe 'Executable tests', -> 
@@ -36,13 +38,30 @@ describe 'Executable tests', ->
       Executable.resetAll true, (err) ->
         return done err if err?
         done()
-      
+
+  afterEach (done) ->
+    # remove all listeners
+    watcher.removeListener 'change', listener if listener?
+    done()
+
   it 'should executable be created', (done) -> 
     # given a new executable
     content = 'console.log "hello world"'
     id = 'test1'
     executable = new Executable id: id, content: content
     
+    awaited = false
+    confChanged = false
+
+    # then a creation event was issued
+    listener = (operation, className, instance) ->
+      if operation is 'update' and className is 'ClientConf'
+        confChanged = true
+      else if operation is 'creation' and className is 'Executable'
+        assert.ok executable.equals instance
+        awaited = true
+    watcher.on 'change', listener
+
     # when saving it
     executable.save (err) ->
       return done "Can't save executable: #{err}" if err?
@@ -56,8 +75,15 @@ describe 'Executable tests', ->
         # then it's values were saved
         assert.equal executables[0].id, id
         assert.equal executables[0].content, content
-        done()
-      
+        # then a new configuration key was added
+        ClientConf.findById 'default', (err, conf) ->
+          err = 'not found' unless err? or conf?
+          return done "Failed to get conf: #{err}" if err?
+          assert.equal conf.values?.names?[id], id
+          assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
+          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
+          done()
+        
   it 'should executable compilation error be reported', (done) -> 
     # given a new executable with compilation error
     content = 'console. "hello world"'
@@ -98,7 +124,15 @@ describe 'Executable tests', ->
           assert.equal executables.length, 0
           done()
 
-    it 'should executable be updated', (done) ->
+    it 'should executable be updated', (done) ->      
+      confChanged = false
+
+      # then a creation event was issued
+      listener = (operation, className, instance) ->
+        return unless operation is 'update' and className is 'ClientConf'
+        confChanged = true 
+      watcher.on 'change', listener
+
       # when modifying and saving a executable
       newContent = '# I have accents ! ééàà'
       executable.content = newContent
@@ -110,6 +144,7 @@ describe 'Executable tests', ->
           # then only the relevant values were modified
           assert.equal executables[0].content, newContent
           assert.equal executables[0].id, 'test2'
+          assert.isFalse confChanged, 'watcher was invoked for client configuration'
           done()
 
     it 'should executable be removed', (done) ->

@@ -47,7 +47,7 @@ class _AdminService
     ClientConf.findOne {_id:'default'}, (err, result) =>
       throw "Unable to check default configuration existence: #{err}" if err?
       return logger.info '"default" configuration already exists' if result?
-      new ClientConf(_id: 'default').save (err) =>
+      new ClientConf(id: 'default').save (err) =>
         throw "Unable to create \"default\" configuration: #{err}" if err?
         logger.info '"default" client configuration has been created'
 
@@ -103,16 +103,6 @@ class _AdminService
         # do not allow unspecified id for client configurations
         values.id = 'default' unless values.id?
         modelClass = ClientConf
-        ###if 'id' of values and ClientConf.isUsed values.id
-          # resolve type
-          return ClientConf.findCached [values.id], (err, models) ->
-            return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0
-            model = models[0]
-            # update values, using the setter because no attributes are defined
-            model.set key, value for key, value of values when !(key in ['id', '_className'])
-            _save model
-        else
-          return _save new ClientConf values####
 
       when 'ItemType' then modelClass = ItemType
       when 'EventType' then modelClass = EventType

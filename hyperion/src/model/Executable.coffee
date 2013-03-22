@@ -88,12 +88,18 @@ compileFile = (executable, silent, callback) ->
     # clean require cache.
     requireId = path.resolve path.normalize executable.compiledPath
     cleanNodeCache()
-    # propagate change
-    unless silent
-      modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable, ['content']
-      delete wasNew[executable.id]
-    # and invoke final callback
-    callback null, executable
+
+    process = ->
+      # propagate change
+      unless silent
+        modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable, ['content']
+        delete wasNew[executable.id]
+      # and invoke final callback
+      callback null, executable
+
+    # add a name key inside default configuration if type is new
+    return process() unless wasNew[executable.id]
+    modelUtils.addConfKey executable.id, 'names', executable.id, logger, process
 
 # Search inside existing executables. The following searches are supported:
 # - {id: String,RegExp]}: search by ids

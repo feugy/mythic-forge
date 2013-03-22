@@ -23,6 +23,7 @@ typeFactory = require './typeFactory'
 conn = require './connection'
 logger = require('../util/logger').getLogger 'model'
 Item = require './Item'
+modelUtils = require '../util/model'
 
 # Define the schema for map item types
 ItemType = typeFactory 'ItemType', 
@@ -64,24 +65,30 @@ ItemType = typeFactory 'ItemType',
   hasImages: true
   middlewares:
 
-    # save middleware: update items quantity when quantifiable state changes
+    # update items quantity when quantifiable state changes
+    # add a name key inside default configuration if instance is new
     #
     # @param next [Function] function that must be called to proceed with other middleware.
     save: (next) ->
-      if @isModified 'quantifiable'
-        quantity = if @get 'quantifiable' then quantity = 0 else quantity = null
-        # save type
-        next()
-        # get type instances
-        Item.find {type: @id}, (err, instances) =>
-          return next new Error "Failed to update type instances: #{err}" if err?
-          # save all the modified instances
-          async.forEach instances, (instance, done) -> 
-            instance.quantity = quantity 
-            instance.save done
-      else
-        # save type
-        next()
+      process = =>
+        if @isModified 'quantifiable'
+          quantity = if @get 'quantifiable' then quantity = 0 else quantity = null
+          # save type
+          next()
+          # get type instances
+          Item.find {type: @id}, (err, instances) =>
+            return next new Error "Failed to update type instances: #{err}" if err?
+            # save all the modified instances
+            async.forEach instances, (instance, done) -> 
+              instance.quantity = quantity 
+              instance.save done
+        else
+          # save type
+          next()
+
+      # add a name key inside default configuration if instance is new
+      return process() unless @isNew 
+      modelUtils.addConfKey @id, 'names', @id, logger, process
 
 # Export the Class.
 module.exports = conn.model 'itemType', ItemType

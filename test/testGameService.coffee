@@ -47,7 +47,8 @@ describe 'GameService tests', ->
       return done err if err?
       Executable.resetAll true, (err) -> 
         return done err if err?
-        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> Field.collection.drop -> ClientConf.collection.drop -> Map.loadIdCache ->
+        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> 
+        Field.collection.drop -> ClientConf.collection.drop -> Map.loadIdCache ->
           # given a map
           new Map(id: 'test-game').save (err, saved) ->
             return done err if err?
@@ -79,6 +80,10 @@ describe 'GameService tests', ->
                           return done err if err?
                           field2 = saved
                           done()
+
+  after (done) ->
+    # set again the default configuration
+    new ClientConf(id: 'default').save done
 
   it 'should consultMap returned only relevant items', (done) ->
     # when retrieving items within coordinate -5:-5 and 5:5
@@ -203,4 +208,16 @@ describe 'GameService tests', ->
         assert.equal conf.apiBaseUrl, 'http://localhost:3080'
         assert.equal conf.imagesUrl, 'http://localhost:3080/images/'
         assert.equal conf.names.plain, 'plain'
+        done()
+
+  it 'should invalid json not be accepted in configuration', (done) ->
+    # when saving an invalid jsonn configuration
+    adminService.save 'ClientConf', {values: '(function(){console.log("hacked !")})()'}, 'test', (err) ->
+      assert.isDefined err
+      assert.isNotNull err
+      assert.include err, 'syntax error'
+      #then configuration was not saved
+      service.getConf 'root', null, (err, conf) ->
+        return done "Can't get configuration: #{err}" if err?
+        assert.isUndefined conf.method
         done()

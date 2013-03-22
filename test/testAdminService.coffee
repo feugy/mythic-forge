@@ -47,6 +47,8 @@ items = []
 events = []
 confs = []
 fsItem = null
+listener = null
+awaited = false
 gameClientRoot = utils.confKey 'game.dev'
 
 # CLean FSItem root and reinit authoring service
@@ -68,6 +70,7 @@ initializedFSRoot = (callback) ->
 describe 'AdminService tests', -> 
 
   beforeEach (done) ->
+    awaited = false
     itemTypes = []
     eventTypes = []
     executables = []
@@ -106,6 +109,11 @@ describe 'AdminService tests', ->
                     create created.pop()
 
                 create created.pop()
+
+  afterEach (done) ->
+    # remove all listeners
+    watcher.removeListener 'change', listener if listener?
+    done()
 
   it 'should list fails on unallowed model', (done) ->
     unknownModelName = 'toto'
@@ -228,13 +236,12 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'itemtype3', properties:{health:{def:0, type:'integer'}}}
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'ItemType'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'ItemType' and operation is 'creation'
       assert.equal instance.id, 'itemtype3'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new item type
     service.save 'ItemType', values, 'admin', (err, modelName, model) ->
@@ -256,13 +263,12 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'eventtype3', properties:{weight:{def:5.2, type:'float'}}}
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'EventType'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'EventType' and operation is 'creation'
       assert.equal instance.id, 'eventtype3'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new event type
     service.save 'EventType', values, 'admin', (err, modelName, model) ->
@@ -284,13 +290,12 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'fieldtype3'}
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'FieldType'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'FieldType' and operation is 'creation'
       assert.equal instance.id, 'fieldtype3'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new field type
     service.save 'FieldType', values, 'admin', (err, modelName, model) ->
@@ -311,13 +316,12 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'rule3', content:'console.log("hello world 3");'}
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Executable'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'Executable' and operation is 'creation'
       assert.equal instance.id, 'rule3'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new executable
     service.save 'Executable', values, 'admin', (err, modelName, model) ->
@@ -339,10 +343,11 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'rule6', content:'console. "hello world 3"'}
    
-    awaited = false
-    # then no creation event was issued
-    watcher.once 'change', (operation, className, instance)->
+    # then NO creation event was issued
+    listener = (operation, className, instance)->
+      return unless className is 'Executable' and operation is 'creation'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new executable
     service.save 'Executable', values, 'admin', (err) ->
@@ -360,14 +365,12 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'map3'}
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Map'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'Map' and operation is 'creation'
       assert.equal instance.id, 'map3'
-      assert.equal instance.kind, 'hexagon'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new map
     service.save 'Map', values, 'admin', (err, modelName, model) ->
@@ -389,15 +392,14 @@ describe 'AdminService tests', ->
     # given new values
     values = path: 'test2.txt', isFolder: false, content: new Buffer('Hi !').toString('base64')
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'FSItem'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'FSItem' and operation is 'creation'
       assert.equal instance.path, values.path
       assert.isFalse instance.isFolder
       assert.equal instance.content, values.content
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new fsitem
     service.save 'FSItem', values, 'admin', (err, modelName, model) ->
@@ -419,13 +421,12 @@ describe 'AdminService tests', ->
     # given new values
     values = {id: 'jp', values: names: river: 'kawa'}
    
-    awaited = false
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'ClientConf'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'ClientConf' and operation is 'creation'
       assert.equal instance.id, 'jp'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving new item type
     service.save 'ClientConf', values, 'admin', (err, modelName, model) ->
@@ -456,7 +457,6 @@ describe 'AdminService tests', ->
       values.properties.desc = {type:'string', def:'to be defined'}
       delete values.properties.strength
 
-      awaited = false
       # then a creation event was issued
       listener = (operation, className, instance) ->
         return unless className is 'ItemType'
@@ -486,7 +486,6 @@ describe 'AdminService tests', ->
             return done "Can't find itemTypes in db #{err}" if err?
             assert.equal list.length, 2
             assert.ok awaited, 'watcher wasn\'t invoked'
-            watcher.removeListener 'change', listener
 
             # then the instance has has only property property desc
             Item.findById item.id, (err, item) ->
@@ -508,7 +507,6 @@ describe 'AdminService tests', ->
       values.properties.desc = {type:'string', def:'to be defined'}
       delete values.properties.content
 
-      awaited = false
       # then a creation event was issued
       listener = (operation, className, instance) ->
         return unless className is 'EventType'
@@ -537,7 +535,6 @@ describe 'AdminService tests', ->
             return done "Can't find eventTypes in db #{err}" if err?
             assert.equal list.length, 2
             assert.ok awaited, 'watcher wasn\'t invoked'
-            watcher.removeListener 'change', listener
 
             # then the instance has has only property property desc
             Event.findById event.id, (err, event) ->
@@ -551,13 +548,12 @@ describe 'AdminService tests', ->
     values = fieldTypes[1].toJSON()
     values.desc = 'to be defined'
 
-    awaited = false
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'FieldType'
-      assert.equal operation, 'update'
+    # then a update event was issued
+    listener = (operation, className, instance)->
+      return unless className is 'FieldType' and operation is 'update'
       assert.ok fieldTypes[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when saving existing field type
     service.save 'FieldType', values, 'admin', (err, modelName, model) ->
@@ -585,14 +581,13 @@ describe 'AdminService tests', ->
     values = maps[0].toJSON()
     values.kind = 'square'
 
-    awaited = false
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Map'
-      assert.equal operation, 'update'
+    # then a update event was issued
+    listener = (operation, className, instance)->
+      return unless className is 'Map' and operation is 'update'
       assert.ok maps[0].equals instance
       assert.equal instance.kind, 'square', 'modification not propagated'
       awaited = true
+    watcher.on 'change', listener
 
     # when saving existing map
     service.save 'Map', values, 'admin', (err, modelName, model) ->
@@ -620,13 +615,12 @@ describe 'AdminService tests', ->
     values = executables[1]
     values.content = 'console.log("hello world 4");'
 
-    awaited = false
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Executable'
-      assert.equal operation, 'update'
+    # then a update event was issued
+    listener = (operation, className, instance)->
+      return unless className is 'Executable' and operation is 'update'
       assert.deepEqual executables[1], instance
       awaited = true
+    watcher.on 'change', listener
 
     # when saving existing item types
     service.save 'Executable', values, 'admin', (err, modelName, model) ->
@@ -648,14 +642,13 @@ describe 'AdminService tests', ->
     newContent = new Buffer('Hi !! 2').toString('base64')
     fsItem.content = newContent
    
-    awaited = false
-    # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'FSItem'
-      assert.equal operation, 'update'
+    # then a update event was issued
+    listener = (operation, className, instance)->
+      return unless className is 'FSItem' and operation is 'update'
       assert.equal instance.path, fsItem.path
       assert.equal instance.content, newContent
       awaited = true
+    watcher.on 'change', listener
 
     # when saving existing fsitem
     service.save 'FSItem', fsItem, 'admin', (err, modelName, model) ->
@@ -712,7 +705,6 @@ describe 'AdminService tests', ->
           assert.equal obj.x, toBeSaved[0].x
           assert.equal obj.y, toBeSaved[0].y
           assert.ok returned[1].equals obj
-          watcher.removeListener 'change', listener
           done()
 
   it 'should save fails on non fields array parameter', (done) ->
@@ -760,7 +752,6 @@ describe 'AdminService tests', ->
           assert.equal obj.x, toBeSaved[1].x
           assert.equal obj.y, toBeSaved[1].y
           assert.ok returned[0].equals obj
-          watcher.removeListener 'change', listener
           done()
 
   it 'should save do nothing on empty fields array', (done) ->
@@ -778,10 +769,10 @@ describe 'AdminService tests', ->
     toBeSaved = type: itemTypes[1].toJSON(), map: maps[0].toJSON(), x:0, y:0, strength:20
 
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Item'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'Item' and operation is 'creation'
       saved = instance
+    watcher.on 'change', listener
 
     # when saving the new item
     service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
@@ -807,16 +798,15 @@ describe 'AdminService tests', ->
     new Item(type: itemTypes[0], map: maps[0], x:0, y:0, strength:20).save (err, item) ->
       return done err if err?
 
-      awaited = false
       toBeSaved = item.toJSON()
       toBeSaved.strength = 50
 
       # then a update event was issued
-      watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Item'
-        assert.equal operation, 'update'
+      listener = (operation, className, instance)->
+        return unless className is 'Item' and operation is 'update'
         assert.ok item.equals instance
         awaited = true
+      watcher.on 'change', listener
 
       # when saving the existing item
       service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
@@ -842,10 +832,10 @@ describe 'AdminService tests', ->
     toBeSaved = type: eventTypes[1].toJSON(), content:'yaha'
 
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Event'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'Event' and operation is 'creation'
       saved = instance
+    watcher.on 'change', listener
 
     # when saving the new event
     service.save 'Event', toBeSaved, 'admin', (err, modelName, returned) ->
@@ -868,16 +858,15 @@ describe 'AdminService tests', ->
     new Event(type: eventTypes[1], content:'yaha').save (err, event) ->
       return done err if err?
 
-      awaited = false
       toBeSaved = event.toJSON()
       toBeSaved.content = 'hohoho'
 
       # then a update event was issued
-      watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'update'
+      listener = (operation, className, instance)->
+        return unless className is 'Event' and operation is 'update'
         assert.ok event.equals instance
         awaited = true
+      watcher.on 'change', listener
 
       # when saving the existing event
       service.save 'Event', toBeSaved, 'admin', (err, modelName, returned) ->
@@ -900,10 +889,10 @@ describe 'AdminService tests', ->
     toBeSaved = email: 'caracol', provider:'Google', isAdmin: true
 
     # then a creation event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Player'
-      assert.equal operation, 'creation'
+    listener = (operation, className, instance)->
+      return unless className is 'Player' and operation is 'creation'
       saved = instance
+    watcher.on 'change', listener
 
     # when saving the new player
     service.save 'Player', toBeSaved, 'admin', (err, modelName, returned) ->
@@ -927,17 +916,16 @@ describe 'AdminService tests', ->
     new Player(email: 'caracol', provider:'Google', isAdmin: true).save (err, player) ->
       return done err if err?
 
-      awaited = false
       toBeSaved = player.toJSON()
       toBeSaved.provider = null
       toBeSaved.password = 'toto'
 
       # then a update event was issued
-      watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Player'
-        assert.equal operation, 'update'
+      listener = (operation, className, instance)->
+        return unless className is 'Player' and operation is 'update'
         assert.ok player.equals instance
         awaited = true
+      watcher.on 'change', listener
 
       # when saving the existing player
       service.save 'Player', toBeSaved, 'admin', (err, modelName, returned) ->
@@ -960,7 +948,6 @@ describe 'AdminService tests', ->
     values = confs[1].toJSON()
     values.values.names.montain = 'montagne'
 
-    awaited = false
     # then a creation event was issued
     listener = (operation, className, instance) ->
       return unless className is 'ClientConf'
@@ -988,7 +975,6 @@ describe 'AdminService tests', ->
           return done "Can't find confs in db #{err}" if err?
           assert.equal list.length, 2
           assert.ok awaited, 'watcher wasn\'t invoked'
-          watcher.removeListener 'change', listener
           done()
 
   it 'should remove fails on unallowed model', (done) ->
@@ -1034,13 +1020,12 @@ describe 'AdminService tests', ->
       done()
 
   it 'should remove delete existing item type', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'ItemType'
-      assert.equal operation, 'deletion'
+    listener = (operation, className, instance)->
+      return unless className is 'ItemType' and operation is 'deletion'
       assert.ok itemTypes[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing item type
     service.remove 'ItemType', itemTypes[1], 'admin', (err, modelName, model) ->
@@ -1056,13 +1041,12 @@ describe 'AdminService tests', ->
         done()
 
   it 'should remove delete existing event type', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'EventType'
-      assert.equal operation, 'deletion'
+    listener = (operation, className, instance)->
+      return unless className is 'EventType' and operation is 'deletion'
       assert.ok eventTypes[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing item type
     service.remove 'EventType', eventTypes[1], 'admin', (err, modelName, model) ->
@@ -1078,13 +1062,12 @@ describe 'AdminService tests', ->
         done()
 
   it 'should remove delete existing field type', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'FieldType'
-      assert.equal operation, 'deletion'
+    listener = (operation, className, instance)->
+      return unless className is 'FieldType' and operation is 'deletion'
       assert.ok fieldTypes[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing field type
     service.remove 'FieldType', fieldTypes[1], 'admin', (err, modelName, model) ->
@@ -1100,13 +1083,12 @@ describe 'AdminService tests', ->
         done()
 
   it 'should remove delete existing executable', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Executable'
-      assert.equal operation, 'deletion'
-      assert.deepEqual executables[1], instance
+    listener = (operation, className, instance)->
+      return unless className is 'Executable' and operation is 'deletion'
+      assert.ok executables[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing executable
     service.remove 'Executable', executables[1], 'admin', (err, modelName, model) ->
@@ -1122,13 +1104,12 @@ describe 'AdminService tests', ->
         done()
 
   it 'should remove delete existing map', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Map'
-      assert.equal operation, 'deletion'
+    listener = (operation, className, instance)->
+      return unless className is 'Map' and operation is 'deletion'
       assert.ok maps[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing map
     service.remove 'Map', maps[1], 'admin', (err, modelName, model) ->
@@ -1177,21 +1158,19 @@ describe 'AdminService tests', ->
               assert.equal removed.length, 2, 'watcher was not as many times invoked as awaited'
               assert.ok returned[0].equals removed[0]
               assert.ok returned[1].equals removed[1]
-              watcher.removeListener 'change', listener
               done()
 
   it 'should remove delete existing item', (done) ->
     # given an existing item
     new Item(type: itemTypes[0], map: maps[0], x:0, y:0, strength:20).save (err, item) ->
       return done err if err?
-      awaited = false
     
       # then a deletion event was issued
-      watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Item'
-        assert.equal operation, 'deletion'
+      listener = (operation, className, instance)->
+        return unless className is 'Item' and operation is 'deletion'
         assert.ok item.equals instance
         awaited = true
+      watcher.on 'change', listener
 
       # when removing an existing item
       service.remove 'Item', item.toJSON(), 'admin', (err, modelName, returned) ->
@@ -1211,14 +1190,13 @@ describe 'AdminService tests', ->
     # given an existing event
     new Event(type: eventTypes[0], content: 'héhé').save (err, event) ->
       return done err if err?
-      awaited = false
     
       # then a deletion event was issued
-      watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'deletion'
+      listener = (operation, className, instance)->
+        return unless className is 'Event' and operation is 'deletion'
         assert.ok event.equals instance
         awaited = true
+      watcher.on 'change', listener
 
       # when removing an existing event
       service.remove 'Event', event.toJSON(), 'admin', (err, modelName, returned) ->
@@ -1238,7 +1216,6 @@ describe 'AdminService tests', ->
     # given an existing player
     new Player(email: 'jack', provider: null, password: 'yep').save (err, player) ->
       return done err if err?
-      awaited = false
     
       # then a deletion event was issued
       listener = (operation, className, instance)->
@@ -1254,7 +1231,6 @@ describe 'AdminService tests', ->
         # then the created values are returned
         assert.isNotNull returned, 'unexpected returned player'
         assert.ok awaited, 'watcher was not as many times invoked as awaited'
-        watcher.removeListener 'change', listener
         assert.ok returned.equals player
 
         # then the model exists in DB
@@ -1264,13 +1240,12 @@ describe 'AdminService tests', ->
           done()
 
   it 'should remove delete existing fsItem', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'FSItem'
-      assert.equal operation, 'deletion'
+    listener = (operation, className, instance)->
+      return unless className is 'FSItem' and operation is 'deletion'
       assert.ok fsItem.equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing fsItem
     service.remove 'FSItem', fsItem, 'admin', (err, modelName, model) ->
@@ -1327,7 +1302,6 @@ describe 'AdminService tests', ->
           # then the watcher was properly invoked
           assert.equal removed.length, 1, 'watcher was not as many times invoked as awaited'
           assert.ok returned[0].equals removed[0]
-          watcher.removeListener 'change', listener
           done()
 
   it 'should remove do nothing on empty array', (done) ->
@@ -1340,13 +1314,12 @@ describe 'AdminService tests', ->
       done()
 
   it 'should remove delete existing configuration', (done) ->
-    awaited = false
     # then a deletion event was issued
-    watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'ClientConf'
-      assert.equal operation, 'deletion'
+    listener = (operation, className, instance)->
+      return unless className is 'ClientConf' and operation is 'deletion'
       assert.ok confs[1].equals instance
       awaited = true
+    watcher.on 'change', listener
 
     # when removing existing field type
     service.remove 'ClientConf', confs[1], 'admin', (err, modelName, model) ->

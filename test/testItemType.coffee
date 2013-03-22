@@ -19,6 +19,7 @@
 
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
+ClientConf = require '../hyperion/src/model/ClientConf'
 typeFactory = require '../hyperion/src/model/typeFactory'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
@@ -67,6 +68,17 @@ describe 'ItemType tests', ->
     # given a new ItemType
     id = 'montain'
     type = new ItemType id:id
+    awaited = false
+    confChanged = false
+
+    # then a creation event was issued
+    listener = (operation, className, instance) ->
+      if operation is 'update' and className is 'ClientConf'
+        confChanged = true
+      else if operation is 'creation' and className is 'ItemType'
+        assert.ok type.equals instance
+        awaited = true
+    watcher.on 'change', listener
 
     # when saving it
     type.save (err, saved) ->
@@ -78,7 +90,14 @@ describe 'ItemType tests', ->
         assert.equal types.length, 1
         # then it's values were saved
         assert.equal types[0].id, id
-        done()
+        # then a new configuration key was added
+        ClientConf.findById 'default', (err, conf) ->
+          err = 'not found' unless err? or conf?
+          return done "Failed to get conf: #{err}" if err?
+          assert.equal conf.values?.names?[id], id
+          assert.isTrue awaited, 'watcher was\'nt invoked for new type'
+          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
+          done()
 
   it 'should date property always be stores as Date', (done) -> 
     # given a new ItemType with a null time property
@@ -170,6 +189,14 @@ describe 'ItemType tests', ->
           done()
 
     it 'should type properties be created', (done) ->
+      confChanged = false
+
+      # then a creation event was issued
+      listener = (operation, className, instance) ->
+        return unless operation is 'update' and className is 'ClientConf'
+        confChanged = true 
+      watcher.on 'change', listener
+
       # when adding a property
       type.setProperty 'depth', 'integer', 10
       type.save ->
@@ -182,6 +209,7 @@ describe 'ItemType tests', ->
           assert.ok 'depth' of types[0].properties, 'no depth in properties'
           assert.equal types[0].properties.depth?.type, 'integer'
           assert.equal types[0].properties.depth?.def, 10
+          assert.isFalse confChanged, 'watcher was invoked for client configuration'
           done()
 
     it 'should type properties be updated', (done) ->

@@ -336,3 +336,31 @@ module.exports =
     return false unless 'string' is utils.type id
     return false unless id.match /^[\w$-]+$/
     true
+
+  # Add a key inside the default configuration
+  # Does not generates any errors.
+  #
+  # @param key [String] the added key 
+  # @param parentKey [String] parent of the added key. Null to add under root.
+  # @param value [String] added value
+  # @param logger [Object] logger used to log errors
+  # @param callback [Function] end callback, always invoked without arguments
+  addConfKey: (key, parentKey, value, logger, callback) ->
+    # avoid circular dependency
+    require('../model/ClientConf').findCached ['default'], (err, confs) =>
+      # errors are not really crucial: just warn them
+      err = 'not found' unless err? or confs?.length isnt 0
+      if err? 
+        logger.error "failed to enrich default configuration: #{err}"
+        return callback()
+
+      parent = confs[0].values
+      if parentKey?
+        parent[parentKey] = {} unless 'object' is utils.type parent[parentKey]
+        parent = parent[parentKey]
+      # set the new value
+      parent[key] = value
+      # and save the configuration
+      confs[0].save (err, saved) =>
+        logger.error "failed to enrich default configuration: #{err}" if err?
+        callback()

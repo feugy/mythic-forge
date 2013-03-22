@@ -296,6 +296,19 @@ describe 'Utilities tests', ->
                 assert.deepEqual fileHistory[0], history[1]
                 done()
 
+    it 'should listRestorables returns nothing without deletion', (done) ->
+      # given a commited files
+      commit {file: file2, message: 'commit 1', content: 'v1'}, (err) ->
+        return done err if err?
+
+        # when listing restorable whithout deletion
+        versionUtils.listRestorables repo, (err, restorables) ->
+          return done err if err?
+
+          # then no results returned
+          assert.equal 0, restorables?.length
+          done()
+
     it 'should listRestorables returns deleted files', (done) ->
       # given two commited files
       commit {file: [file1, file2], message: 'commit 1', content: ['v1', 'v1']}, (err) ->
@@ -320,16 +333,3 @@ describe 'Utilities tests', ->
                 ids = _.pluck restorables, 'id'
                 assert.equal ids[0], ids[1]
                 done()
-
-    it 'should listRestorables returns nothing without deletion', (done) ->
-      # given a commited files
-      commit {file: file2, message: 'commit 1', content: 'v1'}, (err) ->
-        return done err if err?
-
-        # when listing restorable whithout deletion
-        versionUtils.listRestorables repo, (err, restorables) ->
-          return done err if err?
-
-          # then no results returned
-          assert.equal 0, restorables?.length
-          done()

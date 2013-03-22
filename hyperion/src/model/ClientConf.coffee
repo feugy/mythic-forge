@@ -20,6 +20,7 @@
 
 typeFactory = require './typeFactory'
 conn = require './connection'
+{type} = require '../util/common'
 
 # Define the schema for configuration values.
 # locale will be the id, other values will be stored arbitrary
@@ -29,3 +30,22 @@ module.exports = conn.model 'clientConf', typeFactory 'ClientConf',
   values:
     type: {}
     default: -> {} # use a function to force instance variable
+,
+  middlewares:
+
+    # Save original value for further comparisons.
+    init: (next, conf) ->
+      # store original value
+      conf.__origvalues = JSON.stringify conf.values or {}
+      next()
+
+    # Save middleware, to check that no injection is done through values
+    save: (next) ->
+      try
+        JSON.parse if 'string' is type @_doc.values then @_doc.values else JSON.stringify @_doc.values or {}
+        next()
+        # once saved, store new original value
+        @__origvalues = JSON.stringify @_doc.values or {}
+      catch err
+        # Not a valid JSON
+        next new Error "JSON syntax error for 'values': #{err}"

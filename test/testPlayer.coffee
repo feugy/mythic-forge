@@ -55,7 +55,7 @@ describe 'Player tests', ->
 
   it 'should player be created', (done) -> 
     # given a new Player
-    player = new Player {email:'Joe', characters:[item], password:'toto'}
+    player = new Player {email:'Joe', characters:[item], password:'toto', prefs: stuff: true}
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
@@ -82,8 +82,25 @@ describe 'Player tests', ->
         assert.isNotNull docs[0].password
         assert.isTrue player.checkPassword 'toto'
         assert.equal 1, docs[0].characters.length
+        assert.isTrue docs[0].prefs.stuff
         assert.ok item.equals docs[0].characters[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
+        done()
+
+  it 'should invalid json not be accepted in preferences', (done) ->
+    watcher.once 'change', (operation, className, instance) -> awaited = true
+    awaited = false
+    # when saving an invalid json preferences
+    new Player({email:'Joey', prefs:'(function(){console.log("hacked !")})()'}).save (err) ->
+      assert.isDefined err
+      assert.isNotNull err
+      assert.include err, 'syntax error'
+      # then it was not saved
+      Player.find {}, (err, docs) ->
+        return done "Can't find player: #{err}" if err?
+        # then no document found
+        assert.equal docs.length, 0
+        assert.isFalse awaited, 'watcher was invoked'
         done()
 
   describe 'given a Player', ->

@@ -21,6 +21,7 @@
 typeFactory = require './typeFactory'
 conn = require './connection'
 logger = require('../util/logger').getLogger 'model'
+modelUtils = require '../util/model'
 
 # Define the schema for map field types
 FieldType = typeFactory 'FieldType',
@@ -35,6 +36,12 @@ FieldType = typeFactory 'FieldType',
     default: -> []
 , 
   hasImages: true
+  middlewares:
+
+    # add a name key inside default configuration if type is new
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    save: (next) -> modelUtils.addConfKey @id, 'names', @id, logger, next
 
 # Export the Class.
 module.exports = conn.model 'fieldType', FieldType

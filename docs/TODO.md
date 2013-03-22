@@ -1,13 +1,10 @@
 # TODO
 
-
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
   - [!] documentation
   - Rule engine
-    - [!] i18n utilities for rules and parameters
-    - [!] modifiable unic system date: TODO test server, get initial date state
     - [!] reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
     - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
@@ -17,6 +14,9 @@
 
 - Rheia
   - Bugs
+    - [!!] configuration merge not displayed
+    - [!!] an actor rule can be created with a turn rule/script name and erase it 
+    - [!!] map navigation and zoom
     - [!] persistent change detection after saving a rule
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - [!] documentation
@@ -49,7 +49,8 @@
   - turn-rules ordering rank
   - Event type CRUD
   - Event CRUD with link to from, creation and update dates
-  - Logger refactoring, override console standard functions and send logs to admin clients 
+  - Logger refactoring, override console standard functions and send logs to admin clients
+  - Central configuration and i18n utility for clients (types, rules, others...)
   - Players 
     - CRUD with AdminService
     - password management and protection for manually provided accounts
@@ -141,6 +142,7 @@
     - asynchronous error handling
     - separated thread for turn rules and execution rules
     - update thread model caches on other thread updates
+    - modifiable, pausable and unic date system for rules
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation
@@ -303,3 +305,4 @@
   - live log displayal on Rheia
   - faster game client optimization process
   - game client files history, with possible rollback (even for removed/renamed files)
+  - a central configuration and i18n file for clients to store types names, rules results, and any labels

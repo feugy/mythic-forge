@@ -76,11 +76,11 @@ mongoose.Document.prototype._registerHooks = ->
   @_defineProperties()
   ret
 
-# Compares an array property with its original value.
+# Compares an array property to its original value.
 # The original value is searched inside the __origXXX attribute when XXX is the property name
 # Only ids (String version) are compared
 #
-# @param instance [Object] Mongoose instance which is analyzed and may be mark as modified
+# @param instance [Object] Mongoose instance which is analyzed and may be marked as modified
 # @param prop [String] name of the compared properties
 compareArrayProperty = (instance, prop) ->
   original = instance["__orig#{prop}"]
@@ -89,6 +89,17 @@ compareArrayProperty = (instance, prop) ->
   current = _.map instance[prop] or [], (linked) -> if 'object' is utils.type(linked) and linked?.id? then linked.id else linked
   # compare original value and current dynamic value and mark modified if necessary
   instance.markModified prop unless _.isEqual original, current
+
+# Compares an object property with arbitrary content to its original value.
+# The original value is searched inside the __origXXX attribute when XXX is the property name
+# The original value is intended to store a string representation of a value.
+#
+# @param instance [Object] Mongoose instance which is analyzed and may be marked as modified
+# @param prop [String] name of the compared properties
+compareObjProperty = (instance, prop) ->
+  original = instance["_orig#{prop}"]
+  current = JSON.stringify instance[prop] or {}
+  instance.markModified prop unless original is current
     
 originalIsModified = mongoose.Document.prototype.isModified
 mongoose.Document.prototype.isModified = (path) ->
@@ -97,8 +108,12 @@ mongoose.Document.prototype.isModified = (path) ->
     compareArrayProperty @, prop for prop, value of @type.properties when value.type is 'array'
 
   # detect modification on characters array
-  if Array.isArray @characters
-    compareArrayProperty @, 'characters'
+  if @_className is 'Player' 
+    compareArrayProperty @, 'characters' if Array.isArray @characters
+    compareObjProperty @, 'prefs'
+
+  # detect modifications on arbitrary objects (ClientConf and Players)
+  compareObjProperty @, 'values' if @_className is 'ClientConf'
 
   originalIsModified.apply @, arguments
 

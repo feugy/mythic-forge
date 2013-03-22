@@ -96,13 +96,21 @@ Player = typeFactory 'Player',
         player.characters = _.without player.characters, null, undefined
         # store original value
         player.__origcharacters = player.characters.concat() or []
+        player.__origprefs = JSON.stringify player.prefs or {}
         next()
 
     # For manually provided accounts, check password existence.
     # Manages also associated characters, to only store their ids inside Mongo.
+    # Also check that no injection is done through preferences
     #
     # @param next [Function] function that must be called to proceed with other middleware.
     save: (next) ->
+      try
+        JSON.parse if 'string' is utils.type @_doc.prefs then @_doc.prefs else JSON.stringify @_doc.prefs or {}
+      catch err
+        # Not a valid JSON
+        return next new Error "JSON syntax error for 'prefs': #{err}"
+
       process = =>
         # If clear password provided, encrypt it before storing it.
         if @password?
@@ -115,6 +123,7 @@ Player = typeFactory 'Player',
         next()
         # store new original value
         @__origcharacters = @_doc.characters.concat() or []
+        @__origprefs = JSON.stringify @_doc.prefs or {}
         # restore save to allow reference reuse.
         @_doc.characters = saveCharacters
 

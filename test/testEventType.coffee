@@ -19,6 +19,7 @@
 
 Event = require '../hyperion/src/model/Event'
 EventType = require '../hyperion/src/model/EventType'
+ClientConf = require '../hyperion/src/model/ClientConf'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
@@ -27,12 +28,18 @@ event1 = null
 event2 = null
 event3 = null
 type = null
+listener = null
 
 describe 'EventType tests', -> 
 
   beforeEach (done) ->
     # empty events and types.
     Event.collection.drop -> EventType.collection.drop -> Event.loadIdCache done
+
+  afterEach (done) ->
+    # remove all listeners
+    watcher.removeListener 'change', listener if listener?
+    done()
 
   it 'should type\'s properties be distinct', (done) ->
     # given a type with a property
@@ -62,6 +69,17 @@ describe 'EventType tests', ->
     # given a new EventType
     id = 'talk'
     type = new EventType id: id
+    awaited = false
+    confChanged = false
+
+    # then a creation event was issued
+    listener = (operation, className, instance)->
+      if operation is 'update' and className is 'ClientConf'
+        confChanged = true
+      else if operation is 'creation' and className is 'EventType'
+        assert.ok type.equals instance
+        awaited = true
+    watcher.on 'change', listener
 
     # when saving it
     type.save (err, saved) ->
@@ -73,8 +91,14 @@ describe 'EventType tests', ->
         assert.equal types.length, 1
         # then it's values were saved
         assert.equal types[0].id, id
-        done()
-
+        # then a new configuration key was added
+        ClientConf.findById 'default', (err, conf) ->
+          err = 'not found' unless err? or conf?
+          return done "Failed to get conf: #{err}" if err?
+          assert.equal conf.values?.names?[id], id
+          assert.isTrue awaited, 'watcher was\'nt invoked for new type'
+          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
+          done()
 
   describe 'given a type with a property', ->
     beforeEach (done) ->
@@ -115,6 +139,18 @@ describe 'EventType tests', ->
           done()
 
     it 'should type properties be updated', (done) ->
+      confChanged = false
+      awaited = false
+      
+      # then a modification event was issued
+      listener = (operation, className, instance) ->
+        if operation is 'update' and className is 'ClientConf'
+          confChanged = true 
+        else if operation is 'update' and className is 'EventType'
+          assert.ok type.equals instance
+          awaited = true
+      watcher.on 'change', listener
+
       assert.ok 'content' of type.properties, 'no content in properties'
       assert.equal type.properties.content?.type, 'string'
       assert.equal type.properties.content?.def, '---'
@@ -125,6 +161,8 @@ describe 'EventType tests', ->
         # then the property was updated
         assert.equal saved.properties.content?.type, 'integer'
         assert.equal saved.properties.content?.def, 10
+        assert.ok awaited, 'watcher wasn\'t invoked'
+        assert.isFalse confChanged, 'watcher was invoked for client configuration'
         done()
 
     it 'should type properties be removed', (done) ->
