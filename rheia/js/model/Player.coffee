@@ -124,7 +124,7 @@ define [
       return unless className is @_className
       
       # resolves characters object if possible
-      if 'characters' of model and Array.isArray changes.characters
+      if 'characters' of model and Array.isArray model.characters
         # calls inherited merhod
         enrichCharacters model, => super className, model
       else

@@ -98,7 +98,7 @@ define [
       else
         @$el.prepend "<img/>" if category in ['ItemType', 'EventType']
         if category in ['TurnRule', 'Rule']
-          @$el.addClass 'inactive'
+          @$el.addClass 'inactive' unless @options.model.active
           @bindTo @options.model, 'change:active', =>
             @$el.toggleClass 'inactive', !@options.model.active 
 

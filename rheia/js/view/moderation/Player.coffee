@@ -124,6 +124,10 @@ define [
       return @_emailWidget?.options.value or @model.email if confirm
       "#{_.truncate (@_emailWidget?.options.value or @model.email), 15}<div class='uid'>&nbsp;</div>"
 
+    # Called by the TabPerspective each time the view is showned.
+    shown: =>
+      @_prefsEditor?.resize()
+      
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>

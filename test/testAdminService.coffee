@@ -428,7 +428,7 @@ describe 'AdminService tests', ->
       awaited = true
     watcher.on 'change', listener
 
-    # when saving new item type
+    # when saving new client configuration
     service.save 'ClientConf', values, 'admin', (err, modelName, model) ->
       return done "Can't save conf: #{err}" if err?
       # then the created values are returned
@@ -956,7 +956,7 @@ describe 'AdminService tests', ->
       awaited = true
     watcher.on 'change', listener
 
-    # when saving existing item type
+    # when saving existing configuration
     service.save 'ClientConf', values, 'admin', (err, modelName, model) ->
       return done "Can't save conf: #{err}" if err?
 
@@ -1321,7 +1321,7 @@ describe 'AdminService tests', ->
       awaited = true
     watcher.on 'change', listener
 
-    # when removing existing field type
+    # when removing existing configuration
     service.remove 'ClientConf', confs[1], 'admin', (err, modelName, model) ->
       return done "Can't remove conf: #{err}" if err?
       # then the removed values are returned

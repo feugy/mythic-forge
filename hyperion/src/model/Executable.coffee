@@ -28,7 +28,7 @@ modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 utils = require '../util/common'
 modelUtils = require '../util/model'
-Item = require '../model/Item'
+Item = null
 
 root = path.resolve path.normalize utils.confKey 'executable.source'
 compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
@@ -185,8 +185,8 @@ class Executable
   # @param callback [Function] invoked when the reset is done.
   # @option callback err [String] an error callback. Null if no error occured.
   @resetAll: (clean, callback) ->
-    # indicates 
-    #modelWatcher.change 'deletion', 'Executable', executable for id, executable of executables
+    # to avoid circular dependency
+    Item = require '../model/Item'
     # clean local files, and compiled scripts
     cleanNodeCache()
     removed = _.keys executables
@@ -254,11 +254,14 @@ class Executable
   # Find existing executable by id, from the cache.
   #
   # @param ids [Array] the executable ids
-  # @param callback [Function] invoked when all executables were retrieved
+  # @param callback [Function] optionnal callback invoked when all executables were retrieved
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback executables [Executable] list of corresponding executable, may be empty
-  @findCached: (ids, callback) ->
-    callback null, (executables[id] for id in ids when id of executables)
+  # @return if no callback provided, list of corresponding executable, may be empty
+  @findCached: (ids, callback = null) ->
+    found = (executables[id] for id in ids when id of executables)
+    return found unless callback?
+    callback null, found
 
   # The unic file name of the executable, which is also its id.
   id: null

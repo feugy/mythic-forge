@@ -81,6 +81,10 @@ define [
       return false if @model.id is 'default'
       super()
 
+    # Called by the TabPerspective each time the view is showned.
+    shown: =>
+      @_editor?.resize()
+
     # **private**
     # Prepare data to be rendered into the template
     #
@@ -133,7 +137,7 @@ define [
 
       # merge values if necessary
       return unless @canSave()
-      @_mergedValues = _.extend {}, saved.values, JSON.parse @_editor.options.text
+      @_mergedValues = $.extend true, {}, saved.values, JSON.parse @_editor.options.text
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:

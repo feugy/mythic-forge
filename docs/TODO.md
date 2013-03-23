@@ -14,8 +14,6 @@
 
 - Rheia
   - Bugs
-    - [!!] configuration merge not displayed
-    - [!!] an actor rule can be created with a turn rule/script name and erase it 
     - [!!] map navigation and zoom
     - [!] persistent change detection after saving a rule
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
@@ -163,6 +161,8 @@
     - no map update when adding new content
     - fix shortcut handling when mulitple perspecitve are loaded
     - fix multiple events received after reloading
+    - configuration merge not displayed
+    - an actor rule can be created with a turn rule/script name and erase it 
   - handle rule requires
   - perspective loader
   - login page

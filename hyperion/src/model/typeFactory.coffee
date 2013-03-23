@@ -25,6 +25,7 @@ path = require 'path'
 async = require 'async'
 ObjectId = require('mongodb').BSONPure.ObjectID
 MongoClient = require('mongodb').MongoClient
+Executable = require '../model/Executable'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 utils = require '../util/common'
@@ -280,7 +281,8 @@ module.exports = (typeName, spec, options = {}) ->
   #
   # @param id [String] tested id
   # @return true if id is used
-  AbstractType.statics.isUsed = (id) -> id of idCache
+  AbstractType.statics.isUsed = (id) -> 
+    id of idCache or Executable.findCached([id]).length isnt 0
 
   # post-init middleware: populate the cache
   AbstractType.post 'init', ->
