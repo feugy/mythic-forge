@@ -129,14 +129,26 @@ class _RuleService
           content = content.toString()
           
           # rules specific behaviour
-          if -1 isnt content.indexOf '})(Rule);'
+          if -1 isnt content.indexOf 'model/Rule'
             # removes the executable part
             content = content.replace '\n    this.execute = __bind(this.execute, this);\n', '\n'
 
-            start = content.search /\s{2}.*\.prototype\.execute\s=\sfunction\(.*\)\s\{/i
+            start = content.search /^  .*\.prototype\.execute\s=\sfunction\(.*\)\s\{/im
             end = content.indexOf('\n  };', start)-1
 
-            content = content.substring(0, start)+content.substring end+6
+            content = content[0...start]+content[end+6..]
+          else
+            # script privacy enforcement
+            while true
+              start = content.search /^  _[^:]+: function/m
+              break if start is -1
+              end = start
+              for expr, i in [/^  \},$/m, /^  \}$/m, /^\};$/m]
+                end = content[start..].search expr
+                if end isnt -1
+                  end += start+4-i
+                  break
+              content = content[0...start]+content[end..]
 
           # gets the required dependencies
           deps = []
@@ -144,7 +156,7 @@ class _RuleService
           while -1 isnt content.search depReg
             # removes the require directive and extract relevant variable and path
             content = content.replace depReg, (str, variable, dep)->
-              deps.push dep.replace /^'\.\.\//, "'"
+              deps.push dep.replace /^'\.\.\//, "'hyperion/"
               vars.push variable
               return ''
 

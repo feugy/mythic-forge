@@ -46,6 +46,7 @@ requirejs.config
     'underscore': 'lib/underscore-1.4.3-min'
     'underscore.string': 'lib/underscore.string-2.3.0-min'
     'utf8': 'lib/utf8'
+    'hyperion': './'
     # shim for rules
     'mongodb': 'lib/shim/mongodb'
     

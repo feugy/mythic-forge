@@ -267,5 +267,43 @@ emitter.empty = (path, callback) ->
       _.defer -> 
         callback null
       , 50
+
+# Compute the relative path of a folder B from another one A
+#
+# @param aPath [String] absolute path of reference folder
+# @param bPath [String] absolute path of target folder
+# @eturn the relative path from A to reach B
+emitter.relativePath = (aPath, bPath) ->
+  aPath = pathUtils.normalize aPath
+  aPathSteps = aPath.split pathUtils.sep
+  aLength = aPathSteps.length
+  bPath = pathUtils.normalize bPath
+  bPathSteps = bPath.split pathUtils.sep
+  bLength = bPathSteps.length
   
+  suffix = ''
+  stepBack = 0
+
+  if 0 is aPath.indexOf bPath
+    # easy: a contains b. Just go a few steps back
+    stepBack = aLength-bLength
+  else
+    for i in [0..bLength-1]
+      # find the step where a and b differs
+      if aPathSteps[i] is bPathSteps[i]
+        # if reached a end, just add b remaining steps
+        continue unless i is aLength-1
+        suffix = ".#{pathUtils.sep}#{bPathSteps[i+1..bLength].join pathUtils.sep}"
+      else
+        # now go back of a remaining steps, and go forth of b remaining steps
+        stepBack = aLength-i
+        suffix = "#{pathUtils.sep}#{bPathSteps[i..bLength].join pathUtils.sep}" if i < bLength
+      break
+
+  path = ''
+  for i in [0...stepBack]
+    path += '..'
+    path += pathUtils.sep unless i is stepBack-1
+  "#{path}#{suffix}" 
+
 module.exports = emitter

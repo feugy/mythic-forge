@@ -5,7 +5,6 @@
   - test images for field types and event types
   - [!] documentation
   - Rule engine
-    - [!] reference dependencies as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
     - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
@@ -14,10 +13,11 @@
 
 - Rheia
   - Bugs
-    - [!!] map navigation and zoom
-    - [!] persistent change detection after saving a rule
+    - map navigation and zoom - NOT reproducted
+    - persistent change detection after saving a rule - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - [!] documentation
+  - [!!] load scripts before rules (script order?)
   - Authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -141,6 +141,7 @@
     - separated thread for turn rules and execution rules
     - update thread model caches on other thread updates
     - modifiable, pausable and unic date system for rules
+    - reference dependencies to hyperions modules as 'hyperion' instead of '../'
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

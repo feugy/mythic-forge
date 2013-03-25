@@ -34,6 +34,8 @@ root = path.resolve path.normalize utils.confKey 'executable.source'
 compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
 ext = utils.confKey 'executable.extension','.coffee'
+requirePrefix = 'hyperion'
+pathToHyperion = utils.relativePath compiledRoot, path.join(__dirname, '..').replace 'src', 'lib'
 
 utils.enforceFolderSync root, false, logger
 # check that is not sibling of game dev
@@ -76,7 +78,11 @@ cleanNodeCache = ->
 # @option callback executable [Executable] the compiled executable
 compileFile = (executable, silent, callback) ->
   try 
-    js = coffee.compile executable.content, {bare: true}
+    # replace requires with references to hyperion
+    js = coffee.compile(
+      executable.content.replace(new RegExp("([\"'])#{requirePrefix}", 'g'), "$1#{pathToHyperion}"), 
+      bare: true
+    )
   catch exc
     return callback "Error while compilling executable #{executable.id}: #{exc}"
   # Eventually, write a copy with a js extension

@@ -80,7 +80,7 @@ describe 'RuleService tests', ->
     # given a rule that need links resolution
     script = new Executable 
       id:'rule3', 
-      content: """Rule = require '../model/Rule'
+      content: """Rule = require 'hyperion/model/Rule'
         class DriveLeft extends Rule
           canExecute: (actor, target, callback) =>
             target.getLinked ->
@@ -135,8 +135,8 @@ describe 'RuleService tests', ->
     # given a rule that creates an object
     script = new Executable
       id:'rule4', 
-      content: """Rule = require '../model/Rule'
-        Item = require '../model/Item'
+      content: """Rule = require 'hyperion/model/Rule'
+        Item = require 'hyperion/model/Item'
         module.exports = new (class AddPart extends Rule
           canExecute: (actor, target, callback) =>
             callback null, if actor.stock.length is 0 then [] else null
@@ -184,7 +184,7 @@ describe 'RuleService tests', ->
     # given a rule that creates an object
     script = new Executable
       id:'rule5', 
-      content: """Rule = require '../model/Rule'
+      content: """Rule = require 'hyperion/model/Rule'
         module.exports = new (class RemovePart extends Rule
           canExecute: (actor, target, callback) =>
             callback null, []
@@ -246,24 +246,35 @@ describe 'RuleService tests', ->
 
     beforeEach (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 
+      new Executable(
         id:'rule0'
-        content:"""Rule = require '../model/Rule'
+        content:"""Rule = require 'hyperion/model/Rule'
           class MyRule extends Rule
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
-      script.save (err, saved) ->
-        # Creates a type
+      ).save (err, saved) ->
+        # Creates a player
         return done err if err?
         script = saved
         Player.collection.drop ->
           new Player({email: 'Loïc', password:'toto'}).save (err, saved) ->
             return done err if err?
             player = saved
-            done()
+            # Creates an arbitrary script
+            new Executable( 
+              id:'script1'
+              content:"""
+                _const = 10
+                module.exports = 
+                  const: _const
+                  _private: -> console.log 'not exported !'
+                  add: (a) -> module.exports.const + a
+                  _private2: -> # not exported too !
+              """
+            ).save done
 
     # Restore admin player for further tests
     after (done) ->
@@ -303,7 +314,7 @@ describe 'RuleService tests', ->
         rule = rules.rule0
 
         # then requires have been replaced by a single define
-        assert.equal 0, rule.indexOf('define(\'rule0\', [\'model/Rule\'], function(Rule){\n'), 'no define() call'
+        assert.equal 0, rule.indexOf('define(\'rule0\', [\'hyperion/model/Rule\'], function(Rule){\n'), 'no define() call'
         assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
         assert.equal -1, rule.indexOf('require'), 'still require() in rule'
         assert.equal -1, rule.indexOf(' Rule,'), 'still scope definition in rule'
@@ -314,6 +325,22 @@ describe 'RuleService tests', ->
         # then the execute() function isnt available
         assert.equal -1, rule.indexOf('execute'), 'still execute() in rule' 
         assert.equal -1, rule.indexOf('hello !'), 'still execute() code in rule'
+
+        assert.property rules, 'script1'
+        rule = rules.script1
+
+        # then requires have been replaced by a single define
+        assert.equal 0, rule.indexOf('define(\'script1\', [], function(){\n'), 'no define() call'
+        assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
+        assert.equal -1, rule.indexOf('require'), 'still require() in script'
+
+        # then module.exports was replaced by return
+        assert.equal -1, rule.indexOf('module.exports ='), 'still module.exports'
+        
+        # then the private code isnt available
+        assert.equal -1, rule.indexOf('_private'), 'still private code in script' 
+        assert.include rule, '_const = 10', 'missing arbitrary code in script'
+        assert.include rule, 'add', 'missing public method code in script'
         done()
 
     it 'should arbitrary script be exportable to client', (done) ->
@@ -376,7 +403,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be updated and modifications applicable', (done) ->
       # given a modification on rule content
-      script.content = """Rule = require '../model/Rule'
+      script.content = """Rule = require 'hyperion/model/Rule'
         class MyRule extends Rule
           canExecute: (actor, target, callback) =>
             callback null, []
@@ -403,7 +430,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         id:'rule1', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           class MyRule extends Rule
             canExecute: (actor, target, callback) =>
               callback null, []
@@ -591,7 +618,7 @@ describe 'RuleService tests', ->
       # given a rule that modified coordinates
       script = new Executable
         id:'rule2', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           class MoveRule extends Rule
             canExecute: (actor, target, callback) =>
               callback null, if target.x is 1 then [] else null
@@ -629,7 +656,7 @@ describe 'RuleService tests', ->
       # given a rule that modified dynamic attributes
       new Executable(
         id:'rule22'
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           class AssembleRule extends Rule
             canExecute: (actor, target, callback) =>
               callback null, if target.type.equals(actor.type) and !target.equals actor then [] else null
@@ -685,8 +712,8 @@ describe 'RuleService tests', ->
 
     it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
-      script = new Executable id:'rule6', content: """TurnRule = require '../model/TurnRule'
-          Item = require '../model/Item'
+      script = new Executable id:'rule6', content: """TurnRule = require 'hyperion/model/TurnRule'
+          Item = require 'hyperion/model/Item'
 
           module.exports = new (class Dumb extends TurnRule
             select: (callback) =>
@@ -714,8 +741,8 @@ describe 'RuleService tests', ->
     it 'should turn rule be executed in right order', (done) ->
       async.forEach [
         # given a first turn rule on lassie with rank 10
-        new Executable id:'rule7', content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+        new Executable id:'rule7', content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -729,8 +756,8 @@ describe 'RuleService tests', ->
             )()"""
       ,
         # given a another turn rule on lassie with rank 1
-        new Executable id:'rule8', content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+        new Executable id:'rule8', content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -775,8 +802,8 @@ describe 'RuleService tests', ->
         # given a turn rule with broken select 
         new Executable
           id:'rule12'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               select: (callback) =>
@@ -788,8 +815,8 @@ describe 'RuleService tests', ->
         # given a correct dumb rule on lassie
         new Executable
           id:'rule13'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -827,8 +854,8 @@ describe 'RuleService tests', ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
         id:'rule27', 
-        content: """TurnRule = require '../model/TurnRule'
-          Item = require '../model/Item'
+        content: """TurnRule = require 'hyperion/model/TurnRule'
+          Item = require 'hyperion/model/Item'
           _ = require 'underscore'
 
           module.exports = new (class Dumb extends TurnRule
@@ -860,8 +887,8 @@ describe 'RuleService tests', ->
         # given a turn rule with broken execute 
         new Executable
           id:'rule14'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               select: (callback) =>
@@ -873,8 +900,8 @@ describe 'RuleService tests', ->
         # given a correct dumb rule on lassie
         new Executable
           id:'rule15'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -913,8 +940,8 @@ describe 'RuleService tests', ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
         id:'rule28', 
-        content: """TurnRule = require '../model/TurnRule'
-          Item = require '../model/Item'
+        content: """TurnRule = require 'hyperion/model/TurnRule'
+          Item = require 'hyperion/model/Item'
           _ = require 'underscore'
 
           module.exports = new (class Dumb extends TurnRule
@@ -946,8 +973,8 @@ describe 'RuleService tests', ->
         # given a turn rule with broken update 
         new Executable
           id:'rule16'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               select: (callback) =>
@@ -961,8 +988,8 @@ describe 'RuleService tests', ->
         # given a correct dumb rule on lassie
         new Executable
           id:'rule17'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -1001,8 +1028,8 @@ describe 'RuleService tests', ->
         # given a turn rule with broken require
         new Executable
           id:'rule18'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../unknown'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/unknown'
 
             module.exports = new (class Dumb extends TurnRule
               select: (callback) =>
@@ -1014,8 +1041,8 @@ describe 'RuleService tests', ->
         # given a correct dumb rule on lassie
         new Executable
           id:'rule19'
-          content: """TurnRule = require '../model/TurnRule'
-            Item = require '../model/Item'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
 
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -1051,8 +1078,8 @@ describe 'RuleService tests', ->
       # given a disabled turn rule on lassie
       script = new Executable
         id:'rule9', 
-        content: """TurnRule = require '../model/TurnRule'
-          Item = require '../model/Item'
+        content: """TurnRule = require 'hyperion/model/TurnRule'
+          Item = require 'hyperion/model/Item'
 
           module.exports = new (class Dumb extends TurnRule
             constructor: ->
@@ -1079,7 +1106,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         id:'rule10', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           
           module.exports = new (class Dumb extends Rule
             constructor: ->
@@ -1104,7 +1131,7 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         id:'rule11', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           
           module.exports = new (class Dumb extends Rule
             constructor: ->
@@ -1136,8 +1163,8 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         id:'rule20', 
-        content: """Rule = require '../model/Rule'
-          require '../unknown'
+        content: """Rule = require 'hyperion/model/Rule'
+          require 'hyperion/unknown'
           
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
@@ -1159,7 +1186,7 @@ describe 'RuleService tests', ->
       # Creates a rule with an asynchronous error in canExecute
       script = new Executable 
         id:'rule25', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           _ = require 'underscore'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
@@ -1180,8 +1207,8 @@ describe 'RuleService tests', ->
       # Creates a dumb rule that always match
       script = new Executable 
         id:'rule21', 
-        content: """Rule = require '../model/Rule'
-          require '../unknown'
+        content: """Rule = require 'hyperion/model/Rule'
+          require 'hyperion/unknown'
           
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
@@ -1203,7 +1230,7 @@ describe 'RuleService tests', ->
       # Creates a rule with an asynchronous error in execute
       script = new Executable 
         id:'rule26', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           _ = require 'underscore'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
@@ -1224,7 +1251,7 @@ describe 'RuleService tests', ->
       # Creates a rule with invalid parameter
       script = new Executable 
         id:'rule23', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
               callback null, [
@@ -1248,7 +1275,7 @@ describe 'RuleService tests', ->
       # Creates a rule with valid parameter
       script = new Executable 
         id:'rule24', 
-        content: """Rule = require '../model/Rule'
+        content: """Rule = require 'hyperion/model/Rule'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
               callback null, [

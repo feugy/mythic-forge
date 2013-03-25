@@ -182,3 +182,18 @@ describe 'Executable tests', ->
           result = require pathUtils.relative __dirname, ex2.compiledPath
           assert.equal result, 30
           done()
+
+    it 'should dependencies to hyperion modules be replaced', (done) ->
+      # given another executable depending on the existing one
+      executable = new Executable 
+        id: 'test4'
+        content:"""
+          require('hyperion/util/logger').getLogger 'rule'
+          module.exports = require 'hyperion/model/Item'
+        """
+      executable.save (err) ->
+        return done err if err?
+        result = require pathUtils.relative __dirname, executable.compiledPath
+        assert.property result, 'findCached'
+        assert.equal new result()._className, 'Item'
+        done()

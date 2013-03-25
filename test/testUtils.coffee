@@ -50,6 +50,26 @@ commit = (spec, done) ->
 
 describe 'Utilities tests', -> 
 
+  it 'should path aside to another one be made relative to each other', ->
+    a = pathUtils.join 'folder1', 'folder2', 'compiled', 'rule'
+    b = pathUtils.join 'folder1', 'folder2', 'lib'
+    assert.equal utils.relativePath(a, b), pathUtils.join '..', '..', 'lib'
+
+  it 'should path above another one be made relative to each other', ->
+    a = pathUtils.join 'folder1', 'folder2', 'lib', 'compiled', 'rule'
+    b = pathUtils.join 'folder1', 'folder2', 'lib'
+    assert.equal utils.relativePath(a, b), pathUtils.join '..', '..'
+
+  it 'should path under another one be made relative to each other', ->
+    a = pathUtils.join 'folder1', 'folder2', 'lib'
+    b = pathUtils.join 'folder1', 'folder2', 'lib', 'compiled', 'rule'
+    assert.equal utils.relativePath(a, b), ".#{pathUtils.sep}#{pathUtils.join 'compiled', 'rule'}"
+
+  it 'should paths of another drive be made relative to each other', ->
+    a = pathUtils.join 'folder1', 'folder2', 'lib'
+    b = pathUtils.join 'root', 'lib'
+    assert.equal utils.relativePath(a, b), pathUtils.join '..', '..', '..', 'root', 'lib'
+
   it 'should fixed-length token be generated', (done) -> 
     # when generating tokens with fixed length, then length must be compliant
     assert.equal 10, utils.generateToken(10).length
