@@ -26,6 +26,47 @@ define [
   'model/Rule'
 ], (Base, coffee, utils, TurnRule, Rule) ->
 
+  # To handle inter-dependencies between executables, store the number
+  # of added executable at the same time
+  added = null
+  lastAdded = null
+
+  # Store arguments of compile method for each failing executable, and requirejs error at last
+  later = []
+
+  # To invoke when multiple executable where added (added isnt null) and one of them was compiled.
+  # Decrement added, and if added is zero, try to compile again all failing executable.
+  # If the previous compilation try returns the same number of failing executable, do not try again,
+  # and invoke the executable personnal error callback
+  executableAdded = ->
+    added--
+    return unless added is 0
+
+    # no more to add
+    added = null
+    return if later.length is 0
+
+    # we retried to compile executables, but the same number is failing
+    if lastAdded is later.length
+      for args in later
+        err = args[4]
+        executable = args[0]
+        # invoke callbacks with errors
+        unless args[2]
+          console.log executable.content
+          console.error err
+        executable.error = err
+        args[1] err, null
+      return later = []
+
+    # store number of failing executable
+    added = later.length
+    lastAdded = later.length
+    retry = later.concat()
+    later = []
+    # now retry to add failing executable
+    compile args[0], args[1], args[2] for args in retry
+
   # Compiles and requires the executable content.
   # First, NodeJS requires are transformed into their RequireJS equivalent,
   # then the CoffeeScript code is compiled,
@@ -76,16 +117,28 @@ define [
       # compiles and evaluates the resulting code
       eval coffee.compile content
 
-      requirejs.onError = (err) =>
+      onError = (err) =>
         delete requirejs.onError
+        if added?
+          # rule probably depends on another loading executable. retry later
+          later.push [executable, callback, silent, err]
+          # do not trigger error behaviour
+          return executableAdded()
+
         unless silent
           console.log content
           console.error err
+        executable.error = err
         callback err, null
+      requirejs.onError = onError
 
       # require the exported content
       require [executable.id], (exported) => 
+        # rule properly compiled
+        delete executable.error
+        executableAdded() if added?
         callback null, exported
+      , onError
 
     catch exc
       unless silent
@@ -99,6 +152,19 @@ define [
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Executable'
+
+    # **private**
+    # Return handler of `list` server method. 
+    # Store number of added executable to properly handle interdependencies
+    #
+    # @param err [String] error message. Null if no error occured
+    # @param modelName [String] reminds the listed class name.
+    # @param models [Array<Object>] raw models.
+    _onGetList: (err, modelName, models) =>
+      unless modelName isnt @_className or err?
+        added = models.length 
+        lastAdded = null
+      super err, modelName, models
 
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections Items instead

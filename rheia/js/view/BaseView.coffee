@@ -283,6 +283,8 @@ define [
     #
     # @param saved [Object] the saved model
     _onSaved: (saved) =>
+      console.log "TODO >>> received save for #{@model.id}"
+      console.dir saved
       # takes in account if we updated the edited objet
       return unless saved.id is @model.id
       # if it was a close save, trigger close once again
@@ -326,6 +328,8 @@ define [
       
       # the current operation failed
       if (details.id is @model.id) and (@_saveInProgress or @_removeInProgress)
+        console.log "TODO >>> received server error for #{@model.id}:", err
+        console.dir details
         # displays error.
         @_notifyServerError err
         @_saveInProgress = false

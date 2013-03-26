@@ -92,7 +92,6 @@ compileFile = (executable, silent, callback) ->
     # store it in local cache.
     executables[executable.id] = executable
     # clean require cache.
-    requireId = path.resolve path.normalize executable.compiledPath
     cleanNodeCache()
 
     process = ->
@@ -160,7 +159,7 @@ search = (query, all, _operator = null) ->
         candidates = all.map (candidate) -> 
           # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
           # and singleton (like ModuleWatcher) will be broken.
-          return require '.\\'+ path.relative module.filename, candidate.compiledPath
+          return require './'+ path.relative module.filename, candidate.compiledPath
       # matching candidates ids
       ids = []
       # this is a terminal term, validates value's type

@@ -17,7 +17,6 @@
     - persistent change detection after saving a rule - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - [!] documentation
-  - [!!] load scripts before rules (script order?)
   - Authoring perspective
     - multiple file search & replace
     - single file search & replace
@@ -231,6 +230,7 @@
       - rule body
       - rule CRUD
       - rule special behaviour when renaming
+      - try to reload executable when initializing executables on requirejs errors
     - TurnRule
     - Scripts
   - administration perspective
