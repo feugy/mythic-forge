@@ -26,7 +26,7 @@ FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 front = require '../hyperion/src/web/front'
-Browser = require 'zombie'
+Phantom = require 'phantom-proxy'
 git = require 'gift'
 assert = require('chai').assert
 service = require('../hyperion/src/service/DeployementService').get()
@@ -40,6 +40,7 @@ root = utils.confKey 'game.dev'
 repository = pathUtils.resolve pathUtils.dirname root
 repo = null
 notifications = []
+browser = null
 listener = null
 
 describe 'Deployement tests', -> 
@@ -62,6 +63,9 @@ describe 'Deployement tests', ->
 
   afterEach (done) ->
     notifier.removeListener notifier.NOTIFICATION, listener
+    if browser?
+      Phantom.end() 
+      browser = null
     done()
 
   version = '1.0.0'
@@ -241,14 +245,18 @@ describe 'Deployement tests', ->
           'DEPLOY_END'
         ]
         # then the client was deployed
-        browser = new Browser silent: true
-        browser.visit("#{rootUrl}/game/").then( ->
-          # then the resultant url is working, with template rendering and i18n usage
-          body = browser.text('body').trim()
-          assert.include body, version
-          assert.include body, 'Edition du monde'
-          done()
-        ).fail done
+        Phantom.create {}, (_browser) ->
+          browser = _browser.page
+          browser.on 'error', done
+          browser.open "#{rootUrl}/game/", ->
+            # then the resultant url is working, with template rendering and i18n usage
+            browser.waitForSelector 'body', ->
+              browser.evaluate ->
+                $('body').text().trim()
+              , (body) ->
+                assert.include body, version
+                assert.include body, 'Edition du monde'
+                done()
 
     it 'should deploy, save, remove, move and restoreVersion be disabled while deploying', (done) ->
       async.forEach [
@@ -349,16 +357,20 @@ describe 'Deployement tests', ->
           service.deploy version2, 'admin', (err) ->
             return done "Failed to deploy valid client: #{err}" if err?
             # then the client was deployed
-            browser = new Browser silent: true
-            browser.visit("#{rootUrl}/game/").then( ->
-              # then the resultant url is working, with template rendering and i18n usage
-              body = browser.body.textContent.trim()
-              assert.include body, version2
-              assert.include body, 'Edition du monde 2'
-              # then the deployement can be commited
-              notifications = []
-              service.commit 'admin', done
-            ).fail done
+            Phantom.create {}, (_browser) ->
+              browser = _browser.page
+              browser.on 'error', done
+              browser.open "#{rootUrl}/game/", ->
+                # then the resultant url is working, with template rendering and i18n usage
+                browser.waitForSelector 'body', ->
+                  browser.evaluate ->
+                    $('body').text().trim()
+                  , (body) ->
+                    assert.include body, version2
+                    assert.include body, 'Edition du monde 2'
+                    # then the deployement can be commited
+                    notifications = []
+                    service.commit 'admin', done
 
     it 'should state indicates no deployement from version 2.0.0', (done) ->
       service.deployementState (err, state) ->
@@ -468,15 +480,19 @@ describe 'Deployement tests', ->
                       fs.exists save, (exists) ->
                         assert.isFalse exists, "#{save} still exists"
 
-                        # then the previous client was deployed
-                        browser = new Browser silent: true
-                        browser.visit("#{rootUrl}/game/").then( ->
-                          # then the resultant url is working, with template rendering and i18n usage
-                          body = browser.body.textContent.trim()
-                          assert.include body, version2
-                          assert.include body, 'Edition du monde 2'
-                          done()
-                        ).fail done
+                        # then the client was deployed
+                        Phantom.create {}, (_browser) ->
+                          browser = _browser.page
+                          browser.on 'error', done
+                          browser.open "#{rootUrl}/game/", ->
+                            # then the resultant url is working, with template rendering and i18n usage
+                            browser.waitForSelector 'body', ->
+                              browser.evaluate ->
+                                $('body').text().trim()
+                              , (body) ->
+                                assert.include body, version2
+                                assert.include body, 'Edition du monde 2'
+                                done()
 
     it 'should version be created', (done) ->
       # when creating version 3
