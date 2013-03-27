@@ -24,6 +24,11 @@ Please follow [instruction](https://github.com/TooTallNate/node-gyp)
 
 For windows users, you'll need to install Python 2.7.3, and a free version of Microsoft Visual Studio Express (2010 for example)
 
+# Install phantomJS
+
+PhatomJS is a popular headless browser: a browser without UI. very handy for automated tests !
+Follow the [installation instructions](http://phantomjs.org/download.html) and be sure to have the phatomjs executable on your path.
+
 # Node global utilities
 
 Obviously, node is required and must be installed on your system.
