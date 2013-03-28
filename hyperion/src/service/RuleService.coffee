@@ -137,6 +137,15 @@ class _RuleService
             end = content.indexOf('\n  };', start)-1
 
             content = content[0...start]+content[end+6..]
+            try 
+              # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+              # and singleton (like ModuleWatcher) will be broken.
+              obj = require pathUtils.relative __dirname, executable.compiledPath
+              # inactive rule: do not export
+              return done() unless obj.active
+            catch err
+              # failing rule: do not export
+              return done()
           else
             # script privacy enforcement
             while true

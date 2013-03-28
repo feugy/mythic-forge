@@ -5,7 +5,6 @@
   - test images for field types and event types
   - [!] documentation
   - Rule engine
-    - do not exports inactive or turn rules to client
     - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
@@ -141,6 +140,7 @@
     - update thread model caches on other thread updates
     - modifiable, pausable and unic date system for rules
     - reference dependencies to hyperions modules as 'hyperion' instead of '../'
+    - do not exports inactive or turn rules to client
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

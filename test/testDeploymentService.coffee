@@ -63,10 +63,9 @@ describe 'Deployement tests', ->
 
   afterEach (done) ->
     notifier.removeListener notifier.NOTIFICATION, listener
-    if browser?
-      Phantom.end() 
-      browser = null
-    done()
+    return done() unless browser?
+    browser = null
+    Phantom.end -> done() 
 
   version = '1.0.0'
 
@@ -250,7 +249,7 @@ describe 'Deployement tests', ->
           browser.on 'error', done
           browser.open "#{rootUrl}/game/", ->
             # then the resultant url is working, with template rendering and i18n usage
-            browser.waitForSelector 'body', ->
+            browser.waitForSelector '.container', ->
               browser.evaluate ->
                 $('body').text().trim()
               , (body) ->
@@ -362,7 +361,7 @@ describe 'Deployement tests', ->
               browser.on 'error', done
               browser.open "#{rootUrl}/game/", ->
                 # then the resultant url is working, with template rendering and i18n usage
-                browser.waitForSelector 'body', ->
+                browser.waitForSelector '.container', ->
                   browser.evaluate ->
                     $('body').text().trim()
                   , (body) ->
@@ -486,7 +485,7 @@ describe 'Deployement tests', ->
                           browser.on 'error', done
                           browser.open "#{rootUrl}/game/", ->
                             # then the resultant url is working, with template rendering and i18n usage
-                            browser.waitForSelector 'body', ->
+                            browser.waitForSelector '.container', ->
                               browser.evaluate ->
                                 $('body').text().trim()
                               , (body) ->

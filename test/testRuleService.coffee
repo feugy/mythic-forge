@@ -1102,7 +1102,7 @@ describe 'RuleService tests', ->
             assert.equal 0, existing.fed, 'disabled rule was executed'
             done()
 
-    it 'should disabled rule not be resolved', (done) ->
+    it 'should disabled rule not be resolved nor exported', (done) ->
       # Creates a dumb rule that always match
       script = new Executable 
         id:'rule10', 
@@ -1124,8 +1124,12 @@ describe 'RuleService tests', ->
         service.resolve item1.id, item1.id, (err, results) ->
           return done "Unable to resolve rules: #{err}" if err?
           # then the rule was not resolved
-          assert.notProperty results, 'rule6', 'Disabled rule was resolved'
-          done()
+          assert.notProperty results, 'rule10', 'Disabled rule was resolved'
+          # then the rule is not exported
+          service.export (err, rules) ->
+            return done "Unable to export rules: #{err}" if err?
+            assert.notProperty rules, 'rule10', 'Disabled rule was exported'
+            done()
 
     it 'should disabled rule not be executed', (done) ->
       # Creates a dumb rule that always match

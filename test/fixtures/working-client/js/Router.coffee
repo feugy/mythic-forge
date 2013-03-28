@@ -49,13 +49,14 @@ define [
 
       super()
       rheia.router = @
-
+      console.log "client started"
       @route '*route', '_showTemplate'
 
       Backbone.history.start
         pushState: true
 
     _showTemplate: =>
+      console.log "display view: #{i18n.titles.editionPerspective}"
       $('body').append(template).find('h1').html i18n.titles.editionPerspective
 
   new Router()
