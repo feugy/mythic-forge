@@ -38,16 +38,16 @@ mongo:
 
 # Executable scripts
 executable:
-  source: ./hyperion/lib/game-test/rules
-  target: ./hyperion/lib/compiled-test
+  source: ../tmp/rules
+  target: ../tmp/compiled
 
 # Game client
 game:
   # Must not contains or be a sibling of other paths.
-  dev: ./hyperion/lib/game-test/source/client
-  optimized: ./hyperion/lib/game-test/optimized
-  production: ./hyperion/lib/game-test/final
-  save: ./hyperion/lib/game-test/previous
+  dev: ../tmp/source/client
+  optimized: ../tmp/optimized
+  production: ../tmp/final
+  save: ../tmp/previous
 
 # Turns execution settings. Frequency in seconds
 turn:
@@ -55,4 +55,4 @@ turn:
 
 # Images file storage
 images:
-  store: ./hyperion/lib/images-test
+  store: ../tmp/images

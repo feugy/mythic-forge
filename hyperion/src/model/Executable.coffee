@@ -35,7 +35,7 @@ compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
 ext = utils.confKey 'executable.extension','.coffee'
 requirePrefix = 'hyperion'
-pathToHyperion = utils.relativePath compiledRoot, path.join(__dirname, '..').replace 'src', 'lib'
+pathToHyperion = utils.relativePath(compiledRoot, path.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 
 utils.enforceFolderSync root, false, logger
 # check that is not sibling of game dev
@@ -159,7 +159,7 @@ search = (query, all, _operator = null) ->
         candidates = all.map (candidate) -> 
           # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
           # and singleton (like ModuleWatcher) will be broken.
-          return require './'+ path.relative module.filename, candidate.compiledPath
+          return require path.relative __dirname, candidate.compiledPath
       # matching candidates ids
       ids = []
       # this is a terminal term, validates value's type

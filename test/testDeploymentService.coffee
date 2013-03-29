@@ -29,15 +29,14 @@ front = require '../hyperion/src/web/front'
 Phantom = require 'phantom-proxy'
 git = require 'gift'
 assert = require('chai').assert
+logger = require('../hyperion/src/util/logger').getLogger 'test'
 service = require('../hyperion/src/service/DeployementService').get()
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
-logger = require('../hyperion/src/util/logger').getLogger 'test'
 
 port = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"
 root = utils.confKey 'game.dev'
-repository = pathUtils.resolve pathUtils.dirname root
 repo = null
 notifications = []
 browser = null
@@ -46,9 +45,9 @@ listener = null
 describe 'Deployement tests', -> 
 
   before (done) ->
-    # given a clean game source
-    utils.remove repository, (err) ->
-      return done err if err?
+    # reset game git repository
+    versionUtils.initGameRepo logger, true, (err) ->
+      return done "cannot reset game repo: #{err}" if err?
       fs.mkdirs root, done
 
   beforeEach (done) ->
@@ -157,8 +156,7 @@ describe 'Deployement tests', ->
           ]
           done()
 
-    it.skip 'TODO (NodeJS version regression) should requirejs optimization error be detected', (done) ->
-
+    it 'should requirejs optimization error be detected', (done) ->
       # given a requirejs entry file without error
       fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?

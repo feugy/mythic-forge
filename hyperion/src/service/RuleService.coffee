@@ -35,6 +35,8 @@ loggerWorker = LoggerFactory.getLogger 'worker'
   
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
+compiledRoot = pathUtils.resolve pathUtils.normalize utils.confKey 'executable.target'
+pathToHyperion = utils.relativePath(compiledRoot, pathUtils.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 
 # Pool of workers.
 pool = []
@@ -165,7 +167,7 @@ class _RuleService
           while -1 isnt content.search depReg
             # removes the require directive and extract relevant variable and path
             content = content.replace depReg, (str, variable, dep)->
-              deps.push dep.replace /^'\.\.\//, "'hyperion/"
+              deps.push dep.replace "'#{pathToHyperion}", "'hyperion"
               vars.push variable
               return ''
 

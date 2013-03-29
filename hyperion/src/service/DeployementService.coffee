@@ -478,11 +478,13 @@ optimize = (folder, callback) ->
         # at least, performs optimization
         start = new Date().getTime()
         logger.debug "start optimization..."
-        requirejs.optimize config, (result) =>
-          return callback result.message if utils.isA(result, Error)
+        requirejs.optimize config, (result) ->
+          return callback result.message if utils.isA result, Error
           logger.debug "optimization succeeded in #{(new Date().getTime() - start)/1000}s"
           logger.debug result
           callback null, main, folderOut
+        , (err) ->
+          callback err.message
 
 # Moves game files from optimized folder to production folder.
 # Creates a folder for static assets (every files) named with current timestamp, 

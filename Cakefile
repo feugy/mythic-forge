@@ -20,7 +20,9 @@ task 'build', 'compile Hyperion\'s coffee-script source files', ->
 
 
 task 'test', 'run tests with mocha', -> 
-  _launch 'mocha', [], {NODE_ENV: 'test'}
+  _launch 'mocha', [], {NODE_ENV: 'test'}, -> 
+    # test success, clean test folder
+    _remove join '..', 'tmp'
 
 task 'clean', 'removes hyperion/lib folder', -> 
   _remove join('hyperion', 'lib'), (err) -> 

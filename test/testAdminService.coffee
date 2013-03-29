@@ -51,22 +51,6 @@ listener = null
 awaited = false
 gameClientRoot = utils.confKey 'game.dev'
 
-# CLean FSItem root and reinit authoring service
-initializedFSRoot = (callback) ->
-  utils.remove pathUtils.dirname(gameClientRoot), (err) -> 
-    return callback err if err?
-    authoringService.init (err) ->
-      return callback err if err?
-      # creates a single fsItem
-      authoringService.save 
-        path: 'folder/test.txt'
-        isFolder: false
-        content: new Buffer('Hi !').toString 'base64'
-      , 'admin', (err, result) ->
-        return callback err if err?
-        fsItem = result
-        callback()
-
 describe 'AdminService tests', -> 
 
   beforeEach (done) ->
@@ -206,22 +190,32 @@ describe 'AdminService tests', ->
 
   it 'should list returns fsItems in root', (done) ->
     # given a clean empty folder root
-    initializedFSRoot (err)->
+    utils.remove pathUtils.dirname(gameClientRoot), (err) -> 
       return done err if err?
-      
-      # when reading the root
-      authoringService.readRoot (err, expected) ->
+      authoringService.init (err) ->
         return done err if err?
+        # creates a single fsItem
+        authoringService.save 
+          path: 'folder/test.txt'
+          isFolder: false
+          content: new Buffer('Hi !').toString 'base64'
+        , 'admin', (err, result) ->
+          return callback err if err?
+          fsItem = result
+          
+          # when reading the root
+          authoringService.readRoot (err, expected) ->
+            return done err if err?
 
-        # when listing all fs items
-        service.list 'FSItem', (err, modelName, list) ->
-          return done "Can't list root FSItems: #{err}" if err?
-          # then the authoring service result were returned
-          assert.equal modelName, 'FSItem'
-          assert.equal list.length, expected.content.length
-          for item, i in expected.content
-            assert.ok item.equals list[i]
-          done()
+            # when listing all fs items
+            service.list 'FSItem', (err, modelName, list) ->
+              return done "Can't list root FSItems: #{err}" if err?
+              # then the authoring service result were returned
+              assert.equal modelName, 'FSItem'
+              assert.equal list.length, expected.content.length
+              for item, i in expected.content
+                assert.ok item.equals list[i]
+              done()
 
   it 'should save fails on unallowed model', (done) ->
     unknownModelName = 'toto'

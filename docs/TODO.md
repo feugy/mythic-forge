@@ -9,6 +9,7 @@
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
+    - [!!] fix logged-in user tests
 
 - Rheia
   - Bugs

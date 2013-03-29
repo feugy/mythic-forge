@@ -43,7 +43,7 @@ mongo:
 # Executable scripts
 executable:
   source: /home/damien/workspace/mythic-forge/game/rules
-  target: /home/damien/workspace/mythic-forge/hyperion/lib/compiled
+  target: /home/damien/workspace/mythic-forge/game/compiled
 
 # Game client
 game:

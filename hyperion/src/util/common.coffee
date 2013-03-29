@@ -227,6 +227,28 @@ _processOp = (path, err, callback) ->
     else
       callback new Error "failed to remove #{path}: #{err}"
 
+# files/folders common behaviour: handle different error codes and retry if possible
+#
+# @param path [String] removed folder or file
+# @param err [Object] underlying error, or null if removal succeeded
+_processOpSync = (path, err) ->
+  return unless err?
+  switch err.code 
+    when 'EPERM'
+      # removal not allowed: try to change permissions
+      try
+        fs.chmodSync path, '755'
+        emitter.removeSync path
+      catch err
+        throw new Error "failed to change #{path} permission before removal: #{err}"
+    when 'ENOTEMPTY', 'EBUSY'
+      # not empty folder: just retry
+      emitter.removeSync path
+    when 'ENOENT'
+      return
+    else
+      throw new Error "failed to remove #{path}: #{err}"
+
 # rimraf's remove (used in fs-extra) have many problems on windows: provide a custom naive implementation.
 #
 # @param path removed file of folder
@@ -248,6 +270,31 @@ emitter.remove = (path, callback) ->
           return callback err if err?
           # remove folder once empty
           fs.rmdir path, (err) -> _processOp path, err, callback
+
+# rimraf's removeSync (used in fs-extra) have many problems on windows: provide a custom naive implementation.
+#
+# @param path removed file of folder
+# @throws err if the removal failed
+emitter.removeSync = (path) ->
+  try 
+    stats = fs.statSync path
+    # a file: unlink it
+    if stats.isFile()
+      try
+        fs.unlinkSync path
+      catch err
+        _processOpSync path, err
+    else
+      # a folder, recurse with async
+      contents = (pathUtils.join path, content for content in fs.readdirSync path)
+      emitter.removeSync content for content in contents
+      # remove folder once empty
+      try 
+        fs.rmdirSync path
+      catch err
+        _processOpSync path, err
+  catch err
+    _processOpSync path, err
 
 # Remove everything inside the specified folder, but does not removes the folder itself.
 # Recurse inside sub-folders, using remove() method.

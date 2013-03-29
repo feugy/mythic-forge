@@ -24,22 +24,23 @@ fs = require 'fs-extra'
 gift = require 'gift'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
+versionUtils = require '../hyperion/src/util/versionning'
 service = require('../hyperion/src/service/AuthoringService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
+logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
 root = utils.confKey 'game.dev'
-repo = pathUtils.resolve pathUtils.dirname root
+git = gift pathUtils.dirname root
 gitRoot = pathUtils.basename root
-git = gift repo
 notifications = []
         
 describe 'AuthoringService tests', -> 
 
   before (done) ->
-    utils.remove repo, (err) ->
-      return done err if err?
-      service.init done
+    @timeout 3000
+    # re-initialize game repository
+    versionUtils.initGameRepo logger, true, done
 
   notifListener = (event, args...) ->
     notifications.push args if event is 'authoring'
@@ -140,18 +141,17 @@ describe 'AuthoringService tests', ->
     oldPath = null
 
     before (done) ->
-      utils.remove repo, (err) ->
+      # re-initialize game repository
+      versionUtils.initGameRepo logger, true, (err) ->
         return done err if err?
-        service.init (err) ->
+        fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
           return done err if err?
-          fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
+          file = new FSItem 'folder/image1.png', false
+          file.content = data
+          service.save file, 'admin', (err, saved) ->
             return done err if err?
-            file = new FSItem 'folder/image1.png', false
-            file.content = data
-            service.save file, 'admin', (err, saved) ->
-              return done err if err?
-              file = saved
-              done()
+            file = saved
+            done()
 
     it 'should file content be read', (done) -> 
       file.content = null

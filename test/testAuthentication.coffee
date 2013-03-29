@@ -175,7 +175,8 @@ describe 'Authentication tests', ->
                     assert.isNotNull saved.lastConnection
                     assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
                     done()
-    describe.skip 'TODO given a Google account', ->
+
+    describe 'given a Google account', ->
 
       googleUser = "mythic.forge.test@gmail.com"
       googlePassword = "toto1818"
@@ -248,7 +249,7 @@ describe 'Authentication tests', ->
                   lastConnection = saved.lastConnection
                   done()     
 
-      it 'should existing logged-in Google user be immediately authenticated', (done) ->
+      it.skip 'TODO should existing logged-in Google user be immediately authenticated', (done) ->
         @timeout 10000
 
         # when requesting the google authentication page while a google user is already logged-in

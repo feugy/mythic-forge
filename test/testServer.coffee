@@ -28,9 +28,11 @@ EventType = require '../hyperion/src/model/EventType'
 Executable = require '../hyperion/src/model/Executable'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
+versionUtils = require '../hyperion/src/util/versionning'
 request = require 'request'
 fs = require 'fs-extra'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
+logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
 port = 9090
@@ -73,9 +75,8 @@ describe 'server tests', ->
       # given a file with binary content
       fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, imgData) ->
         return done err if err?
-        root = utils.confKey 'game.dev'
         # given a clean root
-        utils.remove pathUtils.dirname(root), (err) ->
+        versionUtils.initGameRepo logger, true, (err) ->
           return done err if err?
           authoringService.init (err) ->
             return done err if err?
@@ -283,8 +284,8 @@ describe 'server tests', ->
               return done err if err?
               script = new Executable 
                 id:'rename', 
-                content: """Rule = require '../model/Rule'
-                  Item = require '../model/Item'
+                content: """Rule = require 'hyperion/model/Rule'
+                  Item = require 'hyperion/model/Item'
 
                   module.exports = new (class RenameRule extends Rule
                     canExecute: (actor, target, callback) =>

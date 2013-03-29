@@ -39,7 +39,7 @@ mongo:
 # Executable scripts
 executable:
   source: /home/feugy/demo/rules
-  target: /home/feugy/mythic-forge/hyperion/lib/compiled
+  target: /home/feugy/demo/compiled
 
 # Game client
 game:

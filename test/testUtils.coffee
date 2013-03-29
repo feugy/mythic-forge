@@ -152,22 +152,18 @@ describe 'Utilities tests', ->
       , 3100
       
   describe 'given an initialized git repository', ->
+    @timeout 5000
 
     tag1 = 'tag1'
     tag2 = 'tag2'
 
     before (done) ->
-      utils.remove pathUtils.dirname(repository), (err) ->
+      versionUtils.initGameRepo logger, true, (err, root, rep) ->
         return done err if err?
-        _.delay ->
-          versionUtils.initGameRepo logger, (err, root, rep) ->
-            return done err if err?
-            repo = rep
-            done()
-        , 300
+        repo = rep
+        done()
 
     it 'should history be collapse from begining', (done) ->
-      @timeout 5000
 
       # given three commits
       async.forEachSeries [
@@ -199,7 +195,6 @@ describe 'Utilities tests', ->
                 done()
 
     it 'should history be collapse from previous tag', (done) ->
-      @timeout 5000
 
       # given three commits
       async.forEachSeries [
@@ -242,16 +237,14 @@ describe 'Utilities tests', ->
         done()
 
   describe 'given an initialized git repository', ->
+    @timeout 5000
 
     beforeEach (done) ->
-      utils.remove pathUtils.dirname(repository), (err) ->
+      versionUtils.initGameRepo logger, true, (err, root, rep) ->
         return done err if err?
-        _.delay ->
-          versionUtils.initGameRepo logger, (err, root, rep) ->
-            return done err if err?
-            repo = rep
-            done()
-        , 300
+        repo = rep
+        # to avoid too quick access on repository
+        _.delay done, 100
 
     it 'should quickTags returns nothing', (done) ->
       versionUtils.quickTags repo, (err, tags) ->
@@ -332,19 +325,19 @@ describe 'Utilities tests', ->
     it 'should listRestorables returns deleted files', (done) ->
       # given two commited files
       commit {file: [file1, file2], message: 'commit 1', content: ['v1', 'v1']}, (err) ->
-        return done err if err?
+        return done "Failed on first commit: #{err}" if err?
         # given another commit on first file
         commit {file: file1, message: 'commit 2', content: 'v2'}, (err) ->
-          return done err if err?
+          return done "Failed on second commit: #{err}" if err?
           # given those files removed and commited
           async.forEach [file1, file2], utils.remove, (err) ->
-            return done err if err?
+            return done "Failed on removal #{err}" if err?
             repo.commit 'commit 3', all:true, (err) ->
-              return done err if err?
+              return done "Failed on third commit: #{err}" if err?
 
               # when listing restorables
               versionUtils.listRestorables repo, (err, restorables) ->
-                return done err if err?
+                return done "Cannot list restorable: #{err}" if err?
                 # then both files are presents
                 assert.equal 2, restorables?.length
                 paths = _.pluck restorables, 'path'

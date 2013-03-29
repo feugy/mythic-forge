@@ -90,38 +90,56 @@ module.exports =
   # @option callback err [String] and error message, or null if no error occured
   # @option callback root [String] absolute path of the game source folder
   # @option callback repo [Object] git repository utility fully initialized
-  initGameRepo: (logger, callback) ->
+  # 
+  # @overload initGameRepo(logger, reset, callback)
+  #   Init game repo, but removes existing on if reset is true
+  #   @param reset [Boolean] true to remove existing repository
+  initGameRepo: (logger, reset, callback) ->
+    [callback, reset] = [reset, false] if _.isFunction reset
+    
     # in case of current initialization, retry 250ms later
     if repoInit
       return _.delay -> 
-        module.exports.initGameRepo logger, callback
-      , 250
+          module.exports.initGameRepo logger, reset, callback
+        , 250
 
     root = pathUtil.resolve pathUtil.normalize utils.confKey 'game.dev'
+    repository = pathUtil.dirname root
           
     # enforce folders existence at startup, synchronously!
     try 
       repoInit = true
-      utils.enforceFolderSync root, false, logger
-      repository = pathUtil.dirname root
+      # force Removal if specified
+      if reset and fs.existsSync repository
+        try
+          utils.removeSync repository 
+          logger.debug "previous git repository removed..."
+        catch err
+          repoInit = false
+          return callback err
 
+      utils.enforceFolderSync root, false, logger
+      
       finished = (err) ->
         if err
           repoInit = false
           return callback err
+
         # creates also the git repository
         repo = git repository
-        repo.git 'config', {}, ['user.name', 'mythic-forge'], (err) ->
+        repo.git 'config', {}, ['--file', pathUtil.join(repository, '.git', 'config'), 'user.name', 'mythic-forge'], (err) ->
+          if err
+            console.log 'failed 1'
+            repoInit = false
+            return callback err
+          repo.git 'config', {}, ['--file', pathUtil.join(repository, '.git', 'config'), 'user.email', 'mythic.forge.adm@gmail.com'], (err) ->
             if err
+              console.log 'failed 2'
               repoInit = false
               return callback err
-            repo.git 'config', {}, ['user.email', 'mythic.forge.adm@gmail.com'], (err) ->
-              if err
-                repoInit = false
-                return callback err
-              logger.debug "git repository initialized !"
-              repoInit = false
-              callback null, root, repo
+            logger.debug "git repository initialized !"
+            repoInit = false
+            callback null, root, repo
 
       # Performs a 'git init' if git repository do not exists
       unless fs.existsSync pathUtil.join repository, '.git'

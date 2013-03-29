@@ -43,7 +43,7 @@ mongo:
 # Executable scripts
 executable:
   source: ../proto-game/rules
-  target: ./hyperion/lib/compiled
+  target: ../proto-game/compiled
 
 # Game client
 game:

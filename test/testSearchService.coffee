@@ -445,7 +445,7 @@ describe 'SearchService tests', ->
                     clazz: Executable
                     args: 
                       id: 'move'
-                      content:"""Rule = require '../model/Rule'
+                      content:"""Rule = require 'hyperion/model/Rule'
                         module.exports = new (class Move extends Rule
                           constructor: ->
                             @category= 'map'
@@ -459,7 +459,7 @@ describe 'SearchService tests', ->
                     clazz: Executable
                     args:
                       id: 'attack'
-                      content:"""Rule = require '../model/Rule'
+                      content:"""Rule = require 'hyperion/model/Rule'
                         module.exports = new (class Attack extends Rule
                           constructor: ->
                             @active= false
@@ -473,7 +473,7 @@ describe 'SearchService tests', ->
                     clazz: Executable
                     args:
                       id: 'sell'
-                      content:"""TurnRule = require '../model/TurnRule'
+                      content:"""TurnRule = require 'hyperion/model/TurnRule'
                         module.exports = new (class Sell extends TurnRule
                           constructor: ->
                             @rank= 3
@@ -488,7 +488,7 @@ describe 'SearchService tests', ->
                     clazz: Executable
                     args:
                       id: 'monsters'
-                      content:"""TurnRule = require '../model/TurnRule'
+                      content:"""TurnRule = require 'hyperion/model/TurnRule'
                         module.exports = new (class Monsters extends TurnRule
                           constructor: ->
                             @rank= 10

@@ -69,7 +69,10 @@ describe 'RuleService tests', ->
                 map2 = new Map {id: 'map-Test-2'}
                 map2.save (err) ->
                   return done err if err?
-                  Executable.resetAll true, done
+                  Executable.resetAll true, (err) ->
+                    return done err if err?
+                    # let workers initialize themselves
+                    _.delay done, 100
 
   afterEach (done) ->
     # remove notifier listeners
@@ -856,11 +859,12 @@ describe 'RuleService tests', ->
         id:'rule27', 
         content: """TurnRule = require 'hyperion/model/TurnRule'
           Item = require 'hyperion/model/Item'
-          _ = require 'underscore'
 
           module.exports = new (class Dumb extends TurnRule
             select: (callback) =>
-              _.defer => throw new Error @id+' throw error'
+              setTimeout => 
+                throw new Error @id+' throw error'
+              , 0
             execute: (target, callback) =>
               callback null
           )()"""
@@ -942,13 +946,14 @@ describe 'RuleService tests', ->
         id:'rule28', 
         content: """TurnRule = require 'hyperion/model/TurnRule'
           Item = require 'hyperion/model/Item'
-          _ = require 'underscore'
 
           module.exports = new (class Dumb extends TurnRule
             select: (callback) =>
               Item.find {name: 'lassie'}, callback
             execute: (target, callback) =>
-              _.defer => throw new Error @id+' throw error'
+              setTimeout => 
+                throw new Error @id+' throw error'
+              , 0
           )()"""
       script.save (err) ->
         return done err if err?
@@ -1191,10 +1196,12 @@ describe 'RuleService tests', ->
       script = new Executable 
         id:'rule25', 
         content: """Rule = require 'hyperion/model/Rule'
-          _ = require 'underscore'
+          
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
-              _.defer => throw new Error @id+' throw error'
+              setTimeout => 
+                throw new Error @id+' throw error'
+              , 0
             execute: (actor, target, params, callback) =>
               callback null, null
           )()"""
@@ -1235,12 +1242,14 @@ describe 'RuleService tests', ->
       script = new Executable 
         id:'rule26', 
         content: """Rule = require 'hyperion/model/Rule'
-          _ = require 'underscore'
+          
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
-              _.defer => throw new Error @id+' throw error'
+              setTimeout => 
+                throw new Error @id+' throw error'
+              , 0
           )()"""
       script.save (err) ->
         return done err if err?
