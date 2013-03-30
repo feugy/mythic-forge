@@ -157,6 +157,8 @@ describe 'Deployement tests', ->
           done()
 
     it 'should requirejs optimization error be detected', (done) ->
+      @timeout 5000
+      
       # given a requirejs entry file without error
       fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
         return done err if err?
