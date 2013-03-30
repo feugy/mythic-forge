@@ -1,4 +1,4 @@
 --bail
---reporter spec
+--reporter progress
 --compilers coffee:coffee-script
 --colors

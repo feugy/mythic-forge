@@ -69,7 +69,6 @@ describe 'Authentication tests', ->
             'session[password]': twitterPassword
             authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
             oauth_token: body.match(/name\s*=\s*"oauth_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
-            force_login: 1
 
           # when registering with test account
           request 
@@ -98,26 +97,34 @@ describe 'Authentication tests', ->
                 lastConnection = saved.lastConnection
                 done()   
 
-      it.skip 'TODO should existing logged-in Twitter user be immediately authenticated', (done) ->
+      it 'should existing logged-in Twitter user be immediately authenticated', (done) ->
         @timeout 10000
 
         # when requesting the twitter authentication page while a twitter user is already logged-in
         request "#{rootUrl}/auth/twitter", (err, res, body) ->
-          return done err if err?
+          return done "Failed to be redirected on twitter page: #{err}" if err?
+          # then the twitter temporary page is displayed
+          assert.equal 'api.twitter.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
+          assert.include body, 'auth/twitter/callback?oauth_token', "Twitter user is not logged-in"
 
-          # then the success page is displayed
-          assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-          token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-          assert.isNotNull token2
-          assert.notEqual token2, token
-          token = token2
-          # then account has been updated with new token
-          Player.findOne {email:twitterUser}, (err, saved) ->
-            return done "Failed to find created account in db: #{err}" if err?
-            assert.equal saved.token, token2
-            assert.isNotNull saved.lastConnection
-            assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
-            done()    
+          # manually follow redirection to localhost
+          redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
+          request redirect, (err, res, body) ->
+            return done "Failed to be redirected on localhost target page: #{err}" if err?
+
+            # then the success page is displayed
+            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+            assert.isNotNull token2
+            assert.notEqual token2, token
+            token = token2
+            # then account has been updated with new token
+            Player.findOne {email:twitterUser}, (err, saved) ->
+              return done "Failed to find created account in db: #{err}" if err?
+              assert.equal saved.token, token2
+              assert.isNotNull saved.lastConnection
+              assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+              done()    
 
       it 'should existing Twitter user be authenticated after log-in', (done) ->
         @timeout 20000
@@ -233,8 +240,6 @@ describe 'Authentication tests', ->
                     submit_access: true
 
                 , (err, res, body) ->
-                  # TODO problem with node 0.9.6
-                  # when passport ask token from google, google never respond.
                   return done err if err?
 
                   # then the success page is displayed
@@ -246,12 +251,12 @@ describe 'Authentication tests', ->
                     return done "Failed to find created account in db: #{err}" if err? or saved is null
                     assert.equal saved.firstName, 'John'
                     assert.equal saved.lastName, 'Doe'
-                    assert.equal saved.token, token
+                    assert.equal saved.token, token, 'wrong token'
                     assert.isNotNull saved.lastConnection
                     lastConnection = saved.lastConnection
                     done()     
 
-        it.skip 'TODO should existing logged-in Google user be immediately authenticated', (done) ->
+        it 'should existing logged-in Google user be immediately authenticated', (done) ->
           @timeout 10000
 
           # when requesting the google authentication page while a google user is already logged-in
@@ -259,6 +264,7 @@ describe 'Authentication tests', ->
             return done err if err?
             # then the success page is displayed
             assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            assert.equal -1, JSON.stringify(body).indexOf('Invalid Credentials'), "Wrong credentials during authentication"
             token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
             assert.isNotNull token2
             assert.notEqual token2, token
@@ -266,7 +272,7 @@ describe 'Authentication tests', ->
             # then account has been updated with new token
             Player.findOne {email:googleUser}, (err, saved) ->
               return done "Failed to find created account in db: #{err}" if err?
-              assert.equal saved.token, token2
+              assert.equal saved.token, token2, 'wrong token'
               assert.isNotNull saved.lastConnection
               assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
               done()    

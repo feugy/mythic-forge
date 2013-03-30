@@ -237,10 +237,11 @@ define [
       # update view title
       @$el.find('> h1').html @_getRenderData().title
 
+      console.log @model.provider, @model.password
+
       @_passwordChanged = @_isNew
       @_charactersWidget.setOption 'value', @model.characters?.concat() or []
       @_providerWidget.val @model.provider
-      @_passwordWidget.setOption 'value', unless @model.provider? then '' else @model.password
       @_isAdminCheckbox.attr 'checked', @model.isAdmin
       @_emailWidget.setOption 'value', @model.email or ''
       @_firstNameWidget.setOption 'value', @model.firstName or ''
@@ -248,6 +249,11 @@ define [
       @_lastConnectionWidget.setOption 'value', @model.lastConnection
       @_prefsEditor.setOption 'text', JSON.stringify @model.prefs or {}, null, '\t'
 
+      # Hide password if provider exists
+      @$el.find('.password').toggle !(@model.provider?)
+      # never display password value/hash
+      @_passwordWidget.setOption 'value', ''
+      
       # superclass handles description email and trigger _onChange
       super()
 
