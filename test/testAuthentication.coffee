@@ -176,114 +176,24 @@ describe 'Authentication tests', ->
                     assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
                     done()
 
-    describe 'given a Google account', ->
+    # Do not test on Travis, because Google get's mad on VM's Ip
+    unless process.env.TRAVIS
+      describe 'given a Google account', ->
 
-      googleUser = "mythic.forge.test@gmail.com"
-      googlePassword = "toto1818"
+        googleUser = "mythic.forge.test@gmail.com"
+        googlePassword = "toto1818"
 
-      it 'should Google user be enrolled', (done) ->
-        @timeout 20000
-
-        # when requesting the google authentication page
-        request "#{rootUrl}/auth/google", (err, res, body) ->
-          return done err if err?
-
-          # then the google authentication page is displayed
-          assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
-          assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
-          assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
-          # forge form to log-in
-          form = 
-            Email: googleUser
-            GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
-            Passwd: googlePassword
-            checkConnection: 'youtube:248:1'
-            checkedDomains: 'youtube'
-            continue: body.match(/id\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
-            pstMsg: 1
-            scc: 1
-            service: 'lso'
-
-          # when registering with test account
-          request 
-            uri: 'https://accounts.google.com/ServiceLoginAuth'
-            method: 'POST'
-            form: form
-          , (err, res, body) ->
-            return done err if err?
-
-            # manually follw redirection
-            return done "Failed to login with google account because Google want your phone !" if -1 is body.indexOf 'window.__CONTINUE_URL'
-            redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
-            #redirect = body.match(/<a\s+href\s*=\s*"([^"]*)"/i)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
-
-            request redirect, (err, res, body) ->
-              return done err if err?
-
-              # accepts to give access to account informations
-              request 
-                uri: body.match(/<form\s+.*action="([^"]*)"/)[1].replace(/&amp;/g, '&')
-                method: 'POST'
-                followAllRedirects: true
-                form: 
-                  _utf8: body.match(/name\s*=\s*"_utf8"\s+value\s*=\s*"([^"]*)"/)[1]
-                  state_wrapper: body.match(/name\s*=\s*"state_wrapper"\s+value\s*=\s*"([^"]*)"/)[1]
-                  submit_access: true
-
-              , (err, res, body) ->
-                # TODO problem with node 0.9.6
-                # when passport ask token from google, google never respond.
-                return done err if err?
-
-                # then the success page is displayed
-                assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-                token = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                assert.isNotNull token
-                # then account has been created and populated
-                Player.findOne {email:googleUser}, (err, saved) ->
-                  return done "Failed to find created account in db: #{err}" if err? or saved is null
-                  assert.equal saved.firstName, 'John'
-                  assert.equal saved.lastName, 'Doe'
-                  assert.equal saved.token, token
-                  assert.isNotNull saved.lastConnection
-                  lastConnection = saved.lastConnection
-                  done()     
-
-      it.skip 'TODO should existing logged-in Google user be immediately authenticated', (done) ->
-        @timeout 10000
-
-        # when requesting the google authentication page while a google user is already logged-in
-        request "#{rootUrl}/auth/google", (err, res, body) ->
-          return done err if err?
-          # then the success page is displayed
-          assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-          token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-          assert.isNotNull token2
-          assert.notEqual token2, token
-          token = token2
-          # then account has been updated with new token
-          Player.findOne {email:googleUser}, (err, saved) ->
-            return done "Failed to find created account in db: #{err}" if err?
-            assert.equal saved.token, token2
-            assert.isNotNull saved.lastConnection
-            assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
-            done()    
-
-      it 'should existing Google user be authenticated after log-in', (done) ->
-        @timeout 20000
-
-        # given an existing but not logged in Google account
-        request "https://code.google.com/apis/console/logout", (err, res, body) ->
-          return done err if err?
+        it 'should Google user be enrolled', (done) ->
+          @timeout 20000
 
           # when requesting the google authentication page
           request "#{rootUrl}/auth/google", (err, res, body) ->
             return done err if err?
+
             # then the google authentication page is displayed
             assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
             assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
             assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
-
             # forge form to log-in
             form = 
               Email: googleUser
@@ -305,22 +215,114 @@ describe 'Authentication tests', ->
               return done err if err?
 
               # manually follw redirection
+              return done "Failed to login with google account because Google want your phone !" if -1 is body.indexOf 'window.__CONTINUE_URL'
               redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
+              #redirect = body.match(/<a\s+href\s*=\s*"([^"]*)"/i)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
+
               request redirect, (err, res, body) ->
                 return done err if err?
 
-                # then the success page is displayed
-                assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-                token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                assert.isNotNull token2
-                assert.notEqual token2, token
-                # then account has been updated with new token
-                Player.findOne {email:googleUser}, (err, saved) ->
-                  return done "Failed to find created account in db: #{err}" if err?
-                  assert.equal saved.token, token2
-                  assert.isNotNull saved.lastConnection
-                  assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
-                  done()
+                # accepts to give access to account informations
+                request 
+                  uri: body.match(/<form\s+.*action="([^"]*)"/)[1].replace(/&amp;/g, '&')
+                  method: 'POST'
+                  followAllRedirects: true
+                  form: 
+                    _utf8: body.match(/name\s*=\s*"_utf8"\s+value\s*=\s*"([^"]*)"/)[1]
+                    state_wrapper: body.match(/name\s*=\s*"state_wrapper"\s+value\s*=\s*"([^"]*)"/)[1]
+                    submit_access: true
+
+                , (err, res, body) ->
+                  # TODO problem with node 0.9.6
+                  # when passport ask token from google, google never respond.
+                  return done err if err?
+
+                  # then the success page is displayed
+                  assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                  token = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                  assert.isNotNull token
+                  # then account has been created and populated
+                  Player.findOne {email:googleUser}, (err, saved) ->
+                    return done "Failed to find created account in db: #{err}" if err? or saved is null
+                    assert.equal saved.firstName, 'John'
+                    assert.equal saved.lastName, 'Doe'
+                    assert.equal saved.token, token
+                    assert.isNotNull saved.lastConnection
+                    lastConnection = saved.lastConnection
+                    done()     
+
+        it.skip 'TODO should existing logged-in Google user be immediately authenticated', (done) ->
+          @timeout 10000
+
+          # when requesting the google authentication page while a google user is already logged-in
+          request "#{rootUrl}/auth/google", (err, res, body) ->
+            return done err if err?
+            # then the success page is displayed
+            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+            assert.isNotNull token2
+            assert.notEqual token2, token
+            token = token2
+            # then account has been updated with new token
+            Player.findOne {email:googleUser}, (err, saved) ->
+              return done "Failed to find created account in db: #{err}" if err?
+              assert.equal saved.token, token2
+              assert.isNotNull saved.lastConnection
+              assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+              done()    
+
+        it 'should existing Google user be authenticated after log-in', (done) ->
+          @timeout 20000
+
+          # given an existing but not logged in Google account
+          request "https://code.google.com/apis/console/logout", (err, res, body) ->
+            return done err if err?
+
+            # when requesting the google authentication page
+            request "#{rootUrl}/auth/google", (err, res, body) ->
+              return done err if err?
+              # then the google authentication page is displayed
+              assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
+              assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
+              assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
+
+              # forge form to log-in
+              form = 
+                Email: googleUser
+                GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
+                Passwd: googlePassword
+                checkConnection: 'youtube:248:1'
+                checkedDomains: 'youtube'
+                continue: body.match(/id\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
+                pstMsg: 1
+                scc: 1
+                service: 'lso'
+
+              # when registering with test account
+              request 
+                uri: 'https://accounts.google.com/ServiceLoginAuth'
+                method: 'POST'
+                form: form
+              , (err, res, body) ->
+                return done err if err?
+
+                # manually follw redirection
+                redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
+                request redirect, (err, res, body) ->
+                  return done err if err?
+
+                  # then the success page is displayed
+                  assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                  token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                  assert.isNotNull token2
+                  assert.notEqual token2, token
+                  # then account has been updated with new token
+                  Player.findOne {email:googleUser}, (err, saved) ->
+                    return done "Failed to find created account in db: #{err}" if err?
+                    assert.equal saved.token, token2
+                    assert.isNotNull saved.lastConnection
+                    assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                    done()
 
     describe 'given a manually created player', ->
 
