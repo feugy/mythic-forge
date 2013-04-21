@@ -17,6 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+_ = require 'underscore'
 middle = require '../hyperion/src/web/middle'
 front = require '../hyperion/src/web/front'
 Player = require '../hyperion/src/model/Player'
@@ -258,24 +259,26 @@ describe 'Authentication tests', ->
 
         it 'should existing logged-in Google user be immediately authenticated', (done) ->
           @timeout 10000
-
-          # when requesting the google authentication page while a google user is already logged-in
-          request "#{rootUrl}/auth/google", (err, res, body) ->
-            return done err if err?
-            # then the success page is displayed
-            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-            assert.equal -1, JSON.stringify(body).indexOf('Invalid Credentials'), "Wrong credentials during authentication"
-            token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-            assert.isNotNull token2
-            assert.notEqual token2, token
-            token = token2
-            # then account has been updated with new token
-            Player.findOne {email:googleUser}, (err, saved) ->
-              return done "Failed to find created account in db: #{err}" if err?
-              assert.equal saved.token, token2, 'wrong token'
-              assert.isNotNull saved.lastConnection
-              assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
-              done()    
+          # give Google some time to update its state before retrying
+          _.delay ->
+            # when requesting the google authentication page while a google user is already logged-in
+            request "#{rootUrl}/auth/google", (err, res, body) ->
+              return done err if err?
+              # then the success page is displayed
+              assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+              assert.ok -1 is JSON.stringify(body).indexOf('Invalid Credentials'), "Wrong credentials during authentication"
+              token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+              assert.isNotNull token2
+              assert.notEqual token2, token
+              token = token2
+              # then account has been updated with new token
+              Player.findOne {email:googleUser}, (err, saved) ->
+                return done "Failed to find created account in db: #{err}" if err?
+                assert.equal saved.token, token2, 'wrong token'
+                assert.isNotNull saved.lastConnection
+                assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                done()  
+          , 500  
 
         it 'should existing Google user be authenticated after log-in', (done) ->
           @timeout 20000

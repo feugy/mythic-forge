@@ -20,7 +20,7 @@
 _ = require 'underscore'
 fs = require 'fs-extra'
 async = require 'async'
-pathUtils = require 'path'
+{join, sep, normalize, resolve} = require 'path'
 git = require 'gift'
 moment = require 'moment'
 utils = require '../hyperion/src/util/common'
@@ -29,17 +29,17 @@ ruleUtils = require '../hyperion/src/util/rule'
 logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
-repository = pathUtils.normalize utils.confKey 'game.dev'
+repository = normalize utils.confKey 'game.dev'
 repo = null
-file1 = pathUtils.join repository, 'file1.txt'
-file2 = pathUtils.join repository, 'file2.txt'
+file1 = join repository, 'file1.txt'
+file2 = join repository, 'file2.txt'
 
 # The commit utility change file content, adds it and commit it
 commit = (spec, done) ->
   spec.file = [spec.file] unless Array.isArray spec.file
   spec.content = [spec.content] unless Array.isArray spec.content
-
-  async.forEach _.zip(spec.file, spec.content), (fileAndContent, next) ->
+  # Proceed in series, to avoid concurrent access to git repo
+  async.forEachSeries _.zip(spec.file, spec.content), (fileAndContent, next) ->
     fs.writeFile fileAndContent[0], fileAndContent[1], (err) ->
       return next err if err?
       repo.add fileAndContent[0].replace(repository, './client'), (err) ->
@@ -51,24 +51,24 @@ commit = (spec, done) ->
 describe 'Utilities tests', -> 
 
   it 'should path aside to another one be made relative to each other', ->
-    a = pathUtils.join 'folder1', 'folder2', 'compiled', 'rule'
-    b = pathUtils.join 'folder1', 'folder2', 'lib'
-    assert.equal utils.relativePath(a, b), pathUtils.join '..', '..', 'lib'
+    a = join 'folder1', 'folder2', 'compiled', 'rule'
+    b = join 'folder1', 'folder2', 'lib'
+    assert.equal utils.relativePath(a, b), join '..', '..', 'lib'
 
   it 'should path above another one be made relative to each other', ->
-    a = pathUtils.join 'folder1', 'folder2', 'lib', 'compiled', 'rule'
-    b = pathUtils.join 'folder1', 'folder2', 'lib'
-    assert.equal utils.relativePath(a, b), pathUtils.join '..', '..'
+    a = join 'folder1', 'folder2', 'lib', 'compiled', 'rule'
+    b = join 'folder1', 'folder2', 'lib'
+    assert.equal utils.relativePath(a, b), join '..', '..'
 
   it 'should path under another one be made relative to each other', ->
-    a = pathUtils.join 'folder1', 'folder2', 'lib'
-    b = pathUtils.join 'folder1', 'folder2', 'lib', 'compiled', 'rule'
-    assert.equal utils.relativePath(a, b), ".#{pathUtils.sep}#{pathUtils.join 'compiled', 'rule'}"
+    a = join 'folder1', 'folder2', 'lib'
+    b = join 'folder1', 'folder2', 'lib', 'compiled', 'rule'
+    assert.equal utils.relativePath(a, b), ".#{sep}#{join 'compiled', 'rule'}"
 
   it 'should paths of another drive be made relative to each other', ->
-    a = pathUtils.join 'folder1', 'folder2', 'lib'
-    b = pathUtils.join 'root', 'lib'
-    assert.equal utils.relativePath(a, b), pathUtils.join '..', '..', '..', 'root', 'lib'
+    a = join 'folder1', 'folder2', 'lib'
+    b = join 'root', 'lib'
+    assert.equal utils.relativePath(a, b), join '..', '..', '..', 'root', 'lib'
 
   it 'should fixed-length token be generated', (done) -> 
     # when generating tokens with fixed length, then length must be compliant
@@ -334,7 +334,6 @@ describe 'Utilities tests', ->
             return done "Failed on removal #{err}" if err?
             repo.commit 'commit 3', all:true, (err) ->
               return done "Failed on third commit: #{err}" if err?
-
               # when listing restorables
               versionUtils.listRestorables repo, (err, restorables) ->
                 return done "Cannot list restorable: #{err}" if err?
