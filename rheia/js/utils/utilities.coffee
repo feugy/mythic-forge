@@ -36,6 +36,9 @@ define [
     instance?.name or instance?.type?.id
 
   {
+    # Generate a unic id for request
+    # @return a generated id
+    rid: -> "req#{_.lpad Math.floor(Math.random()*10000), 5, 0}"
 
     # Used to execute some behaviour when router is fully operationnal.
     # A must used when dealing with sockets. It guarantees that sockets are wired

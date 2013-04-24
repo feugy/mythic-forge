@@ -9,10 +9,11 @@
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
-    - [!!] fix logged-in user tests
 
 - Rheia
   - Bugs
+    - [!!] FSItem move popup does not close on ok
+    - [!!] After version change, version list is empty
     - map navigation and zoom - NOT reproducted
     - persistent change detection after saving a rule - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
@@ -22,7 +23,10 @@
     - single file search & replace
 
 - Atlas
-  - created and automate tests
+  - [!!!] Implement Fields
+  - [!!!] Implement Rule service
+  - [!!!] Manage labels in clientConf
+  - [!!!] Provide widget library with Image service
   - [!] package as library
   - [!] documentation
 
@@ -278,6 +282,7 @@
       - contextual menu in search results
 
 - Atlas
+  - create and automate tests
   - map displayal
   - rules resolution
   - application of map items modifications 

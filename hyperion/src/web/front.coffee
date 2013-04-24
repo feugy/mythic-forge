@@ -109,7 +109,7 @@ module.exports = (app = null) ->
             res.send coffee.compile content.toString()
           catch exc
             logger.error "Failed to compile #{file}: #{exc}"
-            res.send exc, 500
+            res.send exc.message, 500
 
       # on-the-fly stylus compilation. Must be after static configuration to avoid compiling js external libraries
       app.get new RegExp("^#{base}/(.*)\.css$") , (req, res, next) ->
@@ -153,7 +153,7 @@ module.exports = (app = null) ->
   
   # configure a game RIA and the administration RIA 
   configureRIA '/game', utils.confKey('game.production'), true
-  configureRIA '/dev', utils.confKey('game.dev'), false, '/rheia/login'
+  configureRIA '/dev', utils.confKey('game.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
 
   if process.env.NODE_ENV in ['buyvm', 'simons']
     configureRIA '/rheia', './rheia-min', true

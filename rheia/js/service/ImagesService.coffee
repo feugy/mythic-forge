@@ -96,7 +96,7 @@ define [
         delete @_timestamps[src]
 
         # wait for server response
-        app.sockets.admin.on 'uploadImage-resp', (err, saved) =>
+        app.sockets.admin.on 'uploadImage-resp', (reqId, err, saved) =>
           throw new Error "Failed to upload image for model #{modelName} #{id}: #{err}" if err?
           # populate cache
           @load src
@@ -109,10 +109,10 @@ define [
         # upload data to server
         if idx?
           console.log "upload image ##{idx} of type #{modelName} #{id}"
-          app.sockets.admin.emit 'uploadImage', modelName, id, ext, data, idx
+          app.sockets.admin.emit 'uploadImage', utils.rid(), modelName, id, ext, data, idx
         else 
           console.log "upload type image of type #{modelName} #{id}"
-          app.sockets.admin.emit 'uploadImage', modelName, id, ext, data
+          app.sockets.admin.emit 'uploadImage', utils.rid(), modelName, id, ext, data
 
       # read data from file
       reader.readAsDataURL file
@@ -131,18 +131,22 @@ define [
       delete @_cache[src]
 
       # wait for server response
-      app.sockets.admin.once 'removeImage-resp', (err, saved) =>
+      rid = utils.rid()
+      listener = (reqId, err, saved) =>
+        return unless reqId is rid
+        app.sockets.admin.on 'removeImage-resp', listener
         throw new Error "Failed to remove image for model #{modelName} #{id}: #{err}" if err?
         console.log "image #{src} removed"
         # trigger end of upload
         app.router.trigger 'imageRemoved', saved.id, src
+      app.sockets.admin.on 'removeImage-resp', listener
 
       console.log "removes new image #{src}..."
       # remove image from server
       if idx?
-        app.sockets.admin.emit 'removeImage', modelName, id, idx
+        app.sockets.admin.emit 'removeImage', rid, modelName, id, idx
       else 
-        app.sockets.admin.emit 'removeImage', modelName, id
+        app.sockets.admin.emit 'removeImage', rid, modelName, id
 
     # **private**
     # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 

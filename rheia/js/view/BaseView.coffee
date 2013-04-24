@@ -143,6 +143,7 @@ define [
     #
     # @param event [event] optionnal click event on the save button
     saveModel: (event = null) =>
+      console.log ">> try to save #{@model.id}", @model, @_canSave, @_isNew
       return unless @canSave()
       console.log "save asked for #{@model.id}"
       event?.preventDefault()

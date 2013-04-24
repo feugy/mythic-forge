@@ -146,7 +146,10 @@ define [
             return false unless validator.errors.length is 0
             id = input.val()
             # ask server if id is free
-            app.sockets.admin.once 'isIdValid-resp', (err) =>
+            rid = utils.rid()
+            listener = (reqId, err) =>
+              return unless rid is reqId
+              app.sockets.admin.removeListener 'isIdValid-resp', listener
               if err
                 console.log err
                 return popup.find('.errors').empty().append i18n.msgs.alreadyUsedId 
@@ -154,7 +157,9 @@ define [
               # now we can opens the view tab
               popup.dialog 'close'
               @_onOpenElement type, id
-            app.sockets.admin.emit 'isIdValid', id
+              
+            app.sockets.admin.on 'isIdValid-resp', listener
+            app.sockets.admin.emit 'isIdValid', rid, id
             false
         ,
           text: i18n.buttons.cancel

@@ -80,7 +80,6 @@ define [
   compile = (executable, callback, silent=true) ->
     # first, uncache the previous executable content.
     require.undef executable.id
-
     try 
       # then, modifies NodeJS's require into RequireJS dependencies
       content = executable.content
@@ -157,14 +156,15 @@ define [
     # Return handler of `list` server method. 
     # Store number of added executable to properly handle interdependencies
     #
+    # @param reqId [String] client request id
     # @param err [String] error message. Null if no error occured
     # @param modelName [String] reminds the listed class name.
     # @param models [Array<Object>] raw models.
-    _onGetList: (err, modelName, models) =>
+    _onGetList: (reqId, err, modelName, models) =>
       unless modelName isnt @_className or err?
         added = models.length 
         lastAdded = null
-      super err, modelName, models
+      super reqId, err, modelName, models
 
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections Items instead
@@ -254,6 +254,6 @@ define [
       # invoked superclass
       switch key
         when 'category' then @exported?.category
-        when 'rank' then @exported?.rank
-        when 'active' then @exported?.active
+        when 'rank' then @exported?.rank or 0
+        when 'active' then @exported?.active or true
         else super key

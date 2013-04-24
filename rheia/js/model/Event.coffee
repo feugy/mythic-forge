@@ -42,12 +42,15 @@ define [
         Item.collection.add model.from
         callback()
       else
+        rid = utils.rid()
         # load missing from
-        processFrom = (err, froms) =>
+        processFrom = (reqId, err, froms) =>
+          return unless reqId is rid
+          app.sockets.game.removeListener 'getItems-resp', processFrom
+
           return callback() if err?
           raw = _.find(froms, (from) -> from.id is id)
           return callback() unless raw?
-          app.sockets.game.removeListener 'getItems-resp', processFrom
 
           existing = Item.collection.get raw.id
           if existing?
@@ -61,7 +64,7 @@ define [
           callback()
 
         app.sockets.game.on 'getItems-resp', processFrom
-        app.sockets.game.emit 'getItems', [id]
+        app.sockets.game.emit 'getItems', rid, [id]
 
   # Client cache of events.
   class _Events extends Base.LinkedCollection

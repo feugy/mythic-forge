@@ -50,7 +50,7 @@ define [
       utils.onRouterReady =>
         # bind _onGetList response
         app.sockets.admin.on 'list-resp', @_onGetList
-        app.sockets.game.on 'getTypes-resp', (err, types) =>
+        app.sockets.game.on 'getTypes-resp', (reqId, err, types) =>
           # ignore errors
           unless err?
             # add returned models of the current class
@@ -69,15 +69,16 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       throw new Error "Unsupported #{method} operation on #{@_className}" unless method is 'read'
-      app.sockets.admin.emit 'list', @_className
+      app.sockets.admin.emit 'list', utils.rid(), @_className
 
     # **private**
     # Return handler of `list` server method.
     #
+    # @param reqId [String] client request id
     # @param err [String] error message. Null if no error occured
     # @param modelName [String] reminds the listed class name.
     # @param models [Array<Object>] raw models.
-    _onGetList: (err, modelName, models) =>
+    _onGetList: (reqId, err, modelName, models) =>
       return unless modelName is @_className
       return app.router.trigger 'serverError', err, method:"#{@_className}.collection.sync", details:'read' if err?
       # add returned types in current collection
@@ -262,19 +263,26 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, collection, args) =>
+      rid = utils.rid();
       switch method 
         when 'create', 'update' 
           # add object if creation
           @constructor.collection.add @ if 'create'
-          app.sockets.admin.once 'save-resp', (err) =>
+          listener = (reqId, err) =>
+            return unless rid is reqId
+            app.sockets.admin.removeListener 'save-resp', listener
             app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          app.sockets.admin.emit 'save', @_className, @_serialize()
+          app.sockets.admin.on 'save-resp', listener
+          app.sockets.admin.emit 'save', rid, @_className, @_serialize()
         when 'delete' 
-          app.sockets.admin.once 'remove-resp', (err) =>
+          listener = (reqId, err) =>
+            return unless rid is reqId
+            app.sockets.admin.removeListener 'remove-resp', listener
             app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          app.sockets.admin.emit 'remove', @_className, @_serialize()
+          app.sockets.admin.on 'remove-resp', listener
+          app.sockets.admin.emit 'remove', rid, @_className, @_serialize()
         when 'read'
-          app.sockets.game.emit 'getTypes', [@[@idAttribute]]
+          app.sockets.game.emit 'getTypes', rid, [@[@idAttribute]]
 
     # Enhance destroy method to force server response before triggering `destroy` event
     destroy: (options) =>
@@ -491,13 +499,13 @@ define [
           callback null, @ 
 
       # process response
-      process = (err, instances) =>
-        return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
-        instance = instances[0]
-        # only for our own request
-        return unless instances.length is 1 and instances[0][@idAttribute] is @[@idAttribute]
+      rid = utils.rid()
+      process = (reqId, err, instances) =>
+        return unless rid is reqId
         app.sockets.game.removeListener "get#{@_className}s-resp", process
 
+        return callback "Unable to resolve linked on #{@id}. Error while retrieving linked: #{err}" if err?
+        instance = instances[0]
         # update each properties
         properties = @type.properties
         for prop, def of properties
@@ -533,7 +541,7 @@ define [
 
       # now that we have the linked ids, get the corresponding instances.
       app.sockets.game.on "get#{@_className}s-resp", process
-      app.sockets.game.emit "get#{@_className}s", [@id]
+      app.sockets.game.emit "get#{@_className}s", rid, [@id]
 
     # **private** 
     # Method used to serialize a model when saving and removing it

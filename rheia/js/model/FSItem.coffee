@@ -48,21 +48,14 @@ define [
       utils.onRouterReady =>
         # bind consultation response
         app.sockets.admin.on 'read-resp', @_onRead
-        app.sockets.admin.on 'move-resp', (err) =>
+        app.sockets.admin.on 'move-resp', (reqId, err) =>
           return app.router.trigger 'serverError', err, method:'FSItem.sync', details:'move' if err? 
           @moveInProgress = false
 
         # history() and readVersion() handlers
         app.sockets.admin.on 'history-resp', @_onHistory
         app.sockets.admin.on 'readVersion-resp', @_onReadVersion
-        app.sockets.admin.on 'authoring', @_onNewVersion
-
-        app.sockets.admin.on 'deployement', (state) =>
-          return unless state is 'VERSION_RESTORED'
-          # totally clean collection 
-          @fetch()
-
-        app.sockets.admin.on 'restorables-resp', (err, restorables) =>
+        app.sockets.admin.on 'restorables-resp', (reqId, err, restorables) =>
           if err?
             app.router.trigger 'serverError', err, method:'FSItem.restorables' 
             restorables = []
@@ -73,6 +66,12 @@ define [
           # invoke all registered callbacks
           callback restorables for callback in @_restorablesCallback
           @_restorablesCallback = []
+
+        app.sockets.admin.on 'authoring', @_onNewVersion
+        app.sockets.admin.on 'deployement', (state) =>
+          return unless state is 'VERSION_RESTORED'
+          # totally clean collection 
+          @fetch()
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -85,9 +84,9 @@ define [
       throw new Error "Unsupported #{method} operation on Items" unless 'read' is method
       item = args?.item
       # Ask for the root content if no item specified
-      return app.sockets.admin.emit 'list', 'FSItem' unless item?
+      return app.sockets.admin.emit 'list', utils.rid(), 'FSItem' unless item?
       # Or read the item
-      return app.sockets.admin.emit 'read', item._serialize()
+      return app.sockets.admin.emit 'read', utils.rid(), item._serialize()
 
     # List all restorables files
     #
@@ -96,28 +95,7 @@ define [
     restorables: (callback) =>
       # stores callback and ask to server if we have one callback. 
       @_restorablesCallback.push callback
-      app.sockets.admin.emit 'restorables' if @_restorablesCallback.length is 1
-
-    # **private**
-    # End of a FSItem content retrieval. For a folder, adds its content. For a file, triggers an update.
-    #
-    # @param err [String] an error message, or null if no error occured
-    # @param rawItem [Object] the raw FSItem, populated with its content
-    _onRead: (err, rawItem) =>
-      return app.router.trigger 'serverError', err, method:"FSItem.collection.sync", details:'read' if err?
-      if rawItem.isFolder
-        # add all folder content inside collection
-        @add rawItem.content
-        
-        # replace raw content by models
-        rawItem.content[i] = @get subItem.path for subItem, i in rawItem.content
-
-        # insert folder to allow further update
-        item = @get rawItem.path
-        @add rawItem unless item?
-
-      # trigger update 
-      @_onUpdate 'FSItem', rawItem
+      app.sockets.admin.emit 'restorables', utils.rid() if @_restorablesCallback.length is 1
 
     # **private**
     # Enhanced to dencode file content from base64.
@@ -176,6 +154,28 @@ define [
       super className, model, options
 
     # **private**
+    # End of a FSItem content retrieval. For a folder, adds its content. For a file, triggers an update.
+    #
+    # @param reqId [String] client request id
+    # @param err [String] an error message, or null if no error occured
+    # @param rawItem [Object] the raw FSItem, populated with its content
+    _onRead: (reqId, err, rawItem) =>
+      return app.router.trigger 'serverError', err, method:"FSItem.collection.sync", details:'read' if err?
+      if rawItem.isFolder
+        # add all folder content inside collection
+        @add rawItem.content
+        
+        # replace raw content by models
+        rawItem.content[i] = @get subItem.path for subItem, i in rawItem.content
+
+        # insert folder to allow further update
+        item = @get rawItem.path
+        @add rawItem unless item?
+
+      # trigger update 
+      @_onUpdate 'FSItem', rawItem
+
+    # **private**
     # Invoked when a message of a new commit is received.
     # Update the corresponding FSItem if found, and triggers its `history` event.
     #
@@ -196,10 +196,11 @@ define [
     # Triggers an 'history' event on the concerned FSItem after having filled its history attribute
     # Wired on collection to avoid multiple listeners. 
     #
+    # @param reqId [String] client request id
     # @param err [String] error string, or null if no error occured
     # @param item [FSItem] raw concerned FSItem
     # @param history [Array] array of commits, containing `author`, `date`, `id` and `message` attributes
-    _onHistory: (err, item, history) =>
+    _onHistory: (reqId, err, item, history) =>
       return app.router.trigger 'serverError', err, method:"FSItem.fetchHistory" if err? 
       item = @get item.path
       if item?
@@ -213,10 +214,11 @@ define [
     # Triggers an 'version' event on the concerned FSItem with its content as parameter
     # Wired on collection to avoid multiple listeners. 
     #
+    # @param reqId [String] client request id
     # @param err [String] error string, or null if no error occured
     # @param item [FSItem] raw concerned FSItem
     # @param content [String] utf8 encoded file content
-    _onReadVersion: (err, item, content) =>
+    _onReadVersion: (reqId, err, item, content) =>
       return app.router.trigger 'serverError', err, method:"FSItem.fetchVersion" if err? 
       item = @get(item.path)
       if item?
@@ -263,14 +265,14 @@ define [
     move: (newPath) =>
       newPath = newPath.replace( /\\/g, conf.separator).replace /\//g, conf.separator
       FSItem.collection.moveInProgress = true
-      app.sockets.admin.emit 'move', @_serialize(), newPath
+      app.sockets.admin.emit 'move', utils.rid(), @_serialize(), newPath
 
     # fetch history on server, only for files
     # an `history` event will be triggered on model once retrieved
     fetchHistory: =>
       return if @get 'isFolder'
       console.debug "fetch history for #{@id}"
-      app.sockets.admin.emit 'history', @_serialize()
+      app.sockets.admin.emit 'history', utils.rid(), @_serialize()
 
     # fetch a given version on server, only for files.
     # an `version` event will be triggered on model once retrieved
@@ -279,7 +281,7 @@ define [
     fetchVersion: (version) =>
       return if @get 'isFolder'
       console.debug "fetch version #{version} for #{@id}"
-      app.sockets.admin.emit 'readVersion', @_serialize(), version
+      app.sockets.admin.emit 'readVersion', utils.rid(), @_serialize(), version
 
     # **private** 
     # Method used to serialize a model when saving and removing it

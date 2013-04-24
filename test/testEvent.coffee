@@ -119,7 +119,7 @@ describe 'Event tests', ->
         assert.equal className, 'Event'
         assert.equal operation, 'update'
         assert.ok event.equals instance
-        assert.isUndefined instance.from
+        assert.isNull instance.from
         awaited = true
 
       # when removing an event

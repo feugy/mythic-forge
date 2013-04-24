@@ -239,7 +239,7 @@ describe 'EventType tests', ->
         return if className isnt 'Event'
         assert.equal operation, 'update'
         updates.push instance.id
-        assert.ok instance.content is undefined
+        assert.isNull instance.content
 
       # when setting a property to a type
       type.unsetProperty 'content'
@@ -247,7 +247,7 @@ describe 'EventType tests', ->
         block = ->
           Event.find {type: type.id}, (err, events) ->
             for event in events
-              assert.ok undefined is event.content, 'content still present'
+              assert.isUndefined event.content, 'content still present'
               assert.ok event.id in updates
             watcher.removeListener 'change', listener
             done()

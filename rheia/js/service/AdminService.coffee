@@ -20,7 +20,8 @@
 
 define [
   'backbone'
-], (Backbone) ->
+  'utils/utilities'
+], (Backbone, utils) ->
 
   # The administration service is wired to server features not related to a model.
   # For example, it triggers game client deployement
@@ -56,10 +57,10 @@ define [
     # Service constructor
     constructor: ->
       # first, ask for deployement state
-      app.sockets.admin.emit 'deployementState'
+      app.sockets.admin.emit 'deployementState', utils.rid()
       app.sockets.admin.on 'deployement', @_onDeployementState
 
-      app.sockets.admin.on 'deployementState-resp',  (err, state) =>
+      app.sockets.admin.on 'deployementState-resp', (reqId, err, state) =>
         return app.router.trigger 'serverError', err, method:"AdminService.deployementState" if err?
         @_state = state
         @initialized = true
@@ -69,11 +70,11 @@ define [
         # registers the method to invoke corresponding server function
         AdminService::[method] = (args...) =>
           console.info "#{method} #{args.join ' '}..."
-          args.splice 0, 0, method
+          args.splice 0, 0, method, utils.rid()
           app.sockets.admin.emit.apply app.sockets.admin, args
 
         # register an error callback
-        app.sockets.admin.on "#{method}-resp", (err) =>
+        app.sockets.admin.on "#{method}-resp", (reqId, err) =>
           app.router.trigger 'serverError', err, method:"AdminService.#{method}" if err?
 
       proxyMethod method for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']

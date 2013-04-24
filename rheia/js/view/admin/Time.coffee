@@ -98,7 +98,7 @@ define [
       # unfortunately, moment and jquery datetimepiker do not share their formats...
       newTime = moment(@_time.val(), "#{i18n.constants.dateFormat.replace 'YY', 'YYYY'} #{i18n.constants.timeFormat}").valueOf()
       # send to server
-      app.sockets.admin.emit 'setTime', newTime
+      app.sockets.admin.emit 'setTime', utils.rid(), newTime
 
     # **private**
     # Toggle the paused state.
@@ -112,4 +112,4 @@ define [
         icons: 
           primary: if @_paused then 'ui-icon-play small' else 'ui-icon-pause small'
         label: if @_paused then i18n.buttons.playTime else i18n.buttons.pauseTime
-      app.sockets.admin.emit 'pauseTime', @_paused
+      app.sockets.admin.emit 'pauseTime', utils.rid(), @_paused

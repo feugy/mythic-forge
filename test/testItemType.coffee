@@ -297,7 +297,7 @@ describe 'ItemType tests', ->
         return if className isnt 'Item'
         assert.equal operation, 'update'
         updates.push instance.id
-        assert.ok instance.color is undefined
+        assert.isNull instance.color
 
       # when setting a property to a type
       defaultDepth = 30
@@ -308,7 +308,7 @@ describe 'ItemType tests', ->
           Item.find {type: type.id}, (err, items) ->
             return done err if err?
             for item in items
-              assert.ok undefined is item.color, 'color still present'
+              assert.isUndefined item.color, 'color still present'
               assert.ok item.id in updates
             done()
         setTimeout next, 50

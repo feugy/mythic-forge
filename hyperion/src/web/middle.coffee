@@ -27,6 +27,7 @@ fs = require 'fs'
 passport = require 'passport'
 moment = require 'moment'
 urlParse = require('url').parse
+corser = require 'corser'
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 TwitterStrategy = require('passport-twitter').Strategy
 LocalStrategy = require('passport-local').Strategy
@@ -58,6 +59,12 @@ noSecurity = process.env.NODE_ENV is 'test'
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.bodyParser()
 app.use express.methodOverride()
+app.use corser.create
+  origins:[
+    "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.staticPort', ''}"
+    "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', ''}"
+  ]
+  methods: ['GET', 'HEAD', 'POST', 'DELETE', 'PUT']
 app.use express.session secret: 'mythic-forge' # mandatory for OAuth providers
 app.use passport.initialize()
 app.use passport.session()
@@ -113,6 +120,7 @@ addCookie = (res, cookie) ->
     expires: new moment().add('days', 1).toDate()
 
 # This methods exposes all service methods in a given namespace.
+# The first parameter of all mehods is interpreted as a request id, used inside response to allow client to distinguish calls.
 #
 # @param service [Object] the service instance which is exposed.
 # @param socket [Object] the socket namespace that will expose service methods.
@@ -131,7 +139,8 @@ exposeMethods = (service, socket, connected = [], except = []) ->
             # reset inactivity
             playerService.activity email
             originalArgs = Array.prototype.slice.call arguments
-            args = originalArgs.concat()
+            args = originalArgs.slice 1
+            reqId = originalArgs[0]
             
             # add connected email for those who need it.
             args.push email if method in connected
@@ -141,9 +150,9 @@ exposeMethods = (service, socket, connected = [], except = []) ->
               logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
               # returns the callback arguments
               returnArgs = Array.prototype.slice.call arguments
-              returnArgs.splice 0, 0, "#{method}-resp"
+              returnArgs.splice 0, 0, "#{method}-resp", reqId
               # expand errors
-              returnArgs[1] = returnArgs[1].message if utils.isA returnArgs?[1], Error
+              returnArgs[2] = returnArgs[2].message if utils.isA returnArgs?[2], Error
               socket.emit.apply socket, returnArgs
 
             # invoke the service layer with arguments 
@@ -234,6 +243,60 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
       req.session.destroy()
     ) req, res, next
 
+# Authorization (disabled for tests):
+# Once authenticated, a user has been returned a authorization token.
+# this token is used to allow to connect with socket.io. 
+# For administraction namespaces, the user rights are to be checked also.
+
+io.configure -> io.set 'authorization', (handshakeData, callback) ->
+  # allways allo access without security
+  return callback null, true if noSecurity
+  # check if a token has been sent
+  token = handshakeData.query.token
+  return callback 'No token provided' if 'string' isnt utils.type(token) or token.length is 0
+
+  # then identifies player with this token
+  playerService.getByToken token, (err, player) ->
+    return callback err if err?
+    # if player exists, authorization awarded !
+    if player?
+      logger.info "Player #{player.email} connected with token #{token}"
+      # this will allow to store connected player into the socket details
+      handshakeData.playerEmail = player.email
+    callback null, player?
+
+# When a client connects, returns it immediately its token
+io.on 'connection', (socket) ->
+  email = socket.manager.handshaken[socket.id]?.playerEmail
+  # always use admin without security
+  email = 'admin' if noSecurity
+
+  # set inactivity
+  playerService.activity email
+
+  # retrieve the player email set during autorization phase, and stores it.
+  socket.set 'email', email
+
+  # set socket id to player
+  playerService.getByEmail email, false, (err, player) ->
+    return logger.warn "Failed to retrieve player #{email} to set its socket id: #{err or 'no player found'}" if err? or player is null
+    player.socketId = socket.id
+    player.save (err) ->
+      return logger.warn "Failed to set socket id of player #{email}: #{err}" if err?
+      connectedList.push email unless email in connectedList
+
+  # message to get connected player
+  socket.on 'getConnected', (callback) ->
+    socket.get 'email', (err, value) ->
+      return callback err if err?
+      playerService.getByEmail value, false, callback
+
+  # message to manually logout the connected player
+  socket.on 'logout', ->
+    socket.get 'email', (err, value) ->
+      return callback err if err?
+      playerService.disconnect value, 'logout', ->
+
 # socket.io `game` namespace 
 #
 # 'game' namespace exposes all method of GameService, plus a special 'currentPlayer' method.
@@ -262,25 +325,8 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
     playerService.disconnect email, 'kicked', ->
 
   # add a message to returns connected list
-  socket.on 'connectedList', ->
-    socket.emit 'connectedList-resp', connectedList
-
-notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
-  if event is 'disconnect'
-    # close socket of disconnected user.
-    closeSocket details[0].socketId, details[0].email, details[1] 
-  if scope is 'time' 
-    updateNS.emit 'change', 'time', details[0] 
-  else
-    adminNS.emit.apply adminNS, [scope, event].concat details
-
-# send all log within admin namespace
-LoggerFactory.on 'log', (details) ->
-  try
-    adminNS.emit 'log', details
-  catch err
-    # avoid crashing server if a log message cannot be sent
-    process.stderr.write "failed to send log to client: #{err}"
+  socket.on 'connectedList', (reqId) ->
+    socket.emit 'connectedList-resp', reqId, connectedList
 
 # socket.io `updates` namespace 
 #
@@ -295,12 +341,31 @@ watcher.on 'change', (operation, className, instance) ->
   logger.debug "broadcast of #{operation} on #{instance.id} (#{className})"
   updateNS.emit operation, className, instance
 
+notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
+  if event is 'disconnect'
+    # close socket of disconnected user.
+    closeSocket details[0].socketId, details[0].email, details[1] 
+  if scope is 'time' 
+    updateNS?.emit 'change', 'time', details[0] 
+  else
+    adminNS?.emit.apply adminNS, [scope, event].concat details
+
+# send all log within admin namespace
+LoggerFactory.on 'log', (details) ->
+  try
+    adminNS?.emit 'log', details
+  catch err
+    # avoid crashing server if a log message cannot be sent
+    process.stderr.write "failed to send log to client: #{err}"
+
 # Authentication: 
 # Configure a passport strategy to use Google and Twitter Oauth2 mechanism.
 # Configure also a strategy for manually created accounts.
 # Browser will be redirected to success Url with a `token` parameter in case of success 
 # Browser will be redirected to success Url with a `err` parameter in case of failure
 passport.use new LocalStrategy playerService.authenticate
+registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
+registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
 
 # `POST /auth/login`
 #
@@ -310,67 +375,26 @@ passport.use new LocalStrategy playerService.authenticate
 app.post '/auth/login', (req, res, next) ->
   passport.authenticate('local', (err, token, details) ->
     # authentication failed
-    return res.redirect "#{getRedirect req}?error=#{err}" if err?
-    return res.redirect "#{getRedirect req}?error=#{details.message}" if token is false
-    if details?.isAdmin
-      # before redirecting, set a cookie to allow access to gamedev
-      addCookie res, token
-    res.redirect "#{getRedirect req}?token=#{token}"
+    err = details.message if token is false
+    unless err?
+      if details?.isAdmin
+        # before redirecting, set a cookie to allow access to gamedev
+        addCookie res, token
+
+    # depending on the requested result, redirect or send redirection in json
+    res.format
+      html: ->
+        res.redirect "#{getRedirect req}?#{if err? then "error=#{err}" else "token=#{token}"}"
+      
+      json: ->
+        result = redirect: getRedirect req
+        if err?
+          result.error = err
+        else
+          result.token = token
+        res.json result
+    
   ) req, res, next
-
-registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
-registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
- 
-# Authorization (disabled for tests):
-# Once authenticated, a user has been returned a authorization token.
-# this token is used to allow to connect with socket.io. 
-# For administraction namespaces, the user rights are to be checked also.
-unless noSecurity
-
-  io.configure -> io.set 'authorization', (handshakeData, callback) ->
-    # check if a token has been sent
-    token = handshakeData.query.token
-    return callback 'No token provided' if 'string' isnt utils.type(token) or token.length is 0
-
-    # then identifies player with this token
-    playerService.getByToken token, (err, player) ->
-      return callback err if err?
-      # if player exists, authorization awarded !
-      if player?
-        logger.info "Player #{player.email} connected with token #{token}"
-        # this will allow to store connected player into the socket details
-        handshakeData.playerEmail = player.email
-      callback null, player?
-
-  # When a client connects, returns it immediately its token
-  io.on 'connection', (socket) ->
-    email = socket.manager.handshaken[socket.id]?.playerEmail
-
-    # set inactivity
-    playerService.activity email
-
-    # retrieve the player email set during autorization phase, and stores it.
-    socket.set 'email', email
-
-    # set socket id to player
-    playerService.getByEmail email, false, (err, player) ->
-      return logger.warn "Failed to retrieve player #{email} to set its socket id: #{err or 'no player found'}" if err? or player is null
-      player.socketId = socket.id
-      player.save (err) ->
-        return logger.warn "Failed to set socket id of player #{email}: #{err}" if err?
-        connectedList.push email unless email in connectedList
-
-    # message to get connected player
-    socket.on 'getConnected', (callback) ->
-      socket.get 'email', (err, value) ->
-        return callback err if err?
-        playerService.getByEmail value, false, callback
-
-    # message to manually logout the connected player
-    socket.on 'logout', ->
-      socket.get 'email', (err, value) ->
-        return callback err if err?
-        playerService.disconnect value, 'logout', ->
 
 # `GET /konami`
 #

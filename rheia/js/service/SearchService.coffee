@@ -77,7 +77,7 @@ define [
       parseQuery query
       query = JSON.stringify query
       console.log "triggers new search on type with query: #{query}"
-      app.sockets.admin.emit 'searchTypes', query
+      app.sockets.admin.emit 'searchTypes', utils.rid(), query
     
     # Performs an instance search. At the end, triggers a `searchResults` event with error and results in parameter
     # (and true as `instances` second parameter).
@@ -88,16 +88,17 @@ define [
       parseQuery query
       query = JSON.stringify query
       console.log "triggers new search on instances with query: #{query}"
-      app.sockets.admin.emit 'searchInstances', query
+      app.sockets.admin.emit 'searchInstances', utils.rid(), query
 
     # **private**
     # Type search results handler. 
     # Parse returned types, dispatch them to their corresponding collection, and trigger the
     # `searchResults` event with parsed models (and false as `instances` second parameter).
     #
+    # @param reqId [String] client request id
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched types
-    _onSearchTypesResults: (err, results) =>
+    _onSearchTypesResults: (reqId, err, results) =>
       return app.router.trigger 'searchResults', err, false, [] if err?
 
       models = []
@@ -116,9 +117,10 @@ define [
     # Parse returned instance, dispatch them to their corresponding collection, and trigger the
     # `searchResults` event with parsed models (and false as `instances` second parameter).
     #
+    # @param reqId [String] client request id
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched instances
-    _onSearchInstancesResults: (err, results) =>
+    _onSearchInstancesResults: (reqId, err, results) =>
       return app.router.trigger 'searchResults', err, true, [] if err?
 
       models = []

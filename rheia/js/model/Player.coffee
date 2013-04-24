@@ -50,28 +50,29 @@ define [
       model.characters.push character
     
     if doLoad
+      rid = utils.rid()
       # load missing characters
-      processItems = (err, items) =>
-        unless err? or null is _.find(items, (item) -> item.id is loaded[0])
-          app.sockets.game.removeListener 'getItems-resp', processItems
-          model.characters = []
-          # immediately add enriched characters
-          for raw in items
-            existing = Item.collection.get raw.id
-            if existing?
-              model.characters.push existing
-              # reuse existing but merge its values
-              Item.collection.add raw
-            else
-              # add new character
-              character = new Item raw
-              Item.collection.add character
-              model.characters.push character
+      processItems = (reqId, err, items) =>
+        return unless reqId is rid
+        app.sockets.game.removeListener 'getItems-resp', processItems
+        model.characters = []
+        # immediately add enriched characters
+        for raw in items
+          existing = Item.collection.get raw.id
+          if existing?
+            model.characters.push existing
+            # reuse existing but merge its values
+            Item.collection.add raw
+          else
+            # add new character
+            character = new Item raw
+            Item.collection.add character
+            model.characters.push character
 
-          callback()
+        callback()
 
       app.sockets.game.on 'getItems-resp', processItems
-      app.sockets.game.emit 'getItems', loaded
+      app.sockets.game.emit 'getItems', rid, loaded
     else
       callback()
 
@@ -101,17 +102,17 @@ define [
         app.sockets.admin.on 'players', @_onPlayerEvent
 
         # initialize the connected list
-        app.sockets.admin.once 'connectedList-resp', (list) =>
+        app.sockets.admin.on 'connectedList-resp', (reqId, list) =>
           @connected = list
           @trigger 'connectedPlayersChanged', @connected, []
-        app.sockets.admin.emit 'connectedList'
+        app.sockets.admin.emit 'connectedList', utils.rid()
 
     # Method to arbitrary kick a user. 
     # No callback, but an event will be received if kick was effective, and the list of connected players will be updated
     #
     # @param email [String] email of kicked player
     kick: (email) =>
-      app.sockets.admin.emit 'kick', email
+      app.sockets.admin.emit 'kick', utils.rid(), email
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -212,4 +213,5 @@ define [
       attrs = super()
       if Array.isArray attrs.characters
         attrs.characters = _.map attrs.characters, (character) -> character?.id
+      console.log attrs
       attrs

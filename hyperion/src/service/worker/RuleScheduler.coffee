@@ -144,6 +144,7 @@ trigger = (callback, _auto = false) ->
 
         unless Array.isArray(targets)
           process.removeListener 'uncaughtException', error
+          notifier.notify 'turns', 'success', rule.id
           return end() 
 
         logger.debug "rule #{rule.id} selected #{targets.length} target(s)"

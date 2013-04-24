@@ -74,15 +74,16 @@ define [
       @_consultRunning = true
       console.log "Consult map #{@id} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
       # emit the message on the socket.
-      app.sockets.game.emit 'consultMap', @id, low.x, low.y, up.x, up.y
+      app.sockets.game.emit 'consultMap', utils.rid(), @id, low.x, low.y, up.x, up.y
 
     # **private**
     # Return callback of consultMap server operation.
     #
+    # @param reqId [String] client request id
     # @param err [String] error string. null if no error occured
     # @param items [Array<Item>] array (may be empty) of concerned items.
     # @param fields [Array<Field>] array (may be empty) of concerned fields.
-    _onConsult: (err, items, fields) =>
+    _onConsult: (reqId, err, items, fields) =>
       if @_consultRunning
         @_consultRunning = false
         return console.error "Fail to retrieve map content: #{err}" if err?

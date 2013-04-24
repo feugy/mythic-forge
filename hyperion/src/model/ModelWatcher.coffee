@@ -64,14 +64,14 @@ class _ModelWatcher extends EventEmitter
 
     if modified and 'map' in modified and (className is 'Item' or className is 'Field')
       # but send the map if it changed
-      changes.map = changes.map?.id if 'object' is utils.type changes.map and changes.map.id
+      changes.map = if 'object' is utils.type changes.map then changes.map.id else null
 
     if operation is 'update'
       if className isnt 'Executable' and className isnt 'FSItem'
         # for update, only emit modified datas
         changes = 
           id: instance.id
-        changes[path] = instance.get path for path in modified
+        changes[path] = instance.get(path) or null for path in modified
 
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{changes.id or changes.path}}"

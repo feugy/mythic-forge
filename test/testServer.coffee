@@ -17,6 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+_ = require 'underscore'
 pathUtils = require 'path'
 server = require('../hyperion/src/web/middle').server
 socketClient = require 'socket.io-client'
@@ -45,6 +46,11 @@ map = null
 life = null
 birth = null
 death = null
+rid = null
+
+# Generate a unic id for request
+# @return a generated id
+generateId = -> "req#{Math.floor Math.random()*10000}"
 
 describe 'server tests', ->
 
@@ -89,7 +95,8 @@ describe 'server tests', ->
             newPath = pathUtils.join 'images', 'image2.png'
             
             # then the saved fsItem is returned
-            socket.once 'save-resp', (err, modelName, saved) ->
+            socket.once 'save-resp', (reqId, err, modelName, saved) ->
+              assert.equal rid, reqId
               return done err if err?
               assert.equal modelName, 'FSItem'
               assert.isNotNull saved
@@ -98,7 +105,8 @@ describe 'server tests', ->
               assert.equal saved.content, file.content
 
               # then the read fsItem is returned with valid content
-              socket.once 'read-resp', (err, read) ->
+              socket.once 'read-resp', (reqId, err, read) ->
+                assert.equal rid, reqId
                 return done err if err?
                 assert.isNotNull read
                 assert.isFalse read.isFolder
@@ -106,7 +114,8 @@ describe 'server tests', ->
                 assert.equal read.content, imgData.toString('base64')
 
                 # then the moved fsItem is returned with valid content
-                socket.once 'move-resp', (err, moved) ->
+                socket.once 'move-resp', (reqId, err, moved) ->
+                  assert.equal rid, reqId
                   return done err if err?
                   assert.isNotNull moved
                   assert.isFalse moved.isFolder
@@ -114,7 +123,8 @@ describe 'server tests', ->
                   assert.isNull moved.content
 
                   # then the fsItem was removed
-                  socket.once 'remove-resp', (err, modelName, removed) ->
+                  socket.once 'remove-resp', (reqId, err, modelName, removed) ->
+                    assert.equal rid, reqId
                     return done err if err?
                     assert.equal modelName, 'FSItem'
                     assert.isNotNull removed
@@ -123,17 +133,21 @@ describe 'server tests', ->
                     done()
 
                   # when removing it
-                  socket.emit 'remove', 'FSItem', moved
+                  rid = generateId()
+                  socket.emit 'remove', rid, 'FSItem', moved
 
                 # when moving it
-                socket.emit 'move', file, newPath
+                rid = generateId()
+                socket.emit 'move', rid, file, newPath
 
               # when reading its content
               file.content = null
-              socket.emit 'read', file
+              rid = generateId()
+              socket.emit 'read', rid, file
 
             # when saving a new file
-            socket.emit 'save', 'FSItem', file
+            rid = generateId()
+            socket.emit 'save', rid, 'FSItem', file
 
     describe 'given a map, an item type, two characters, an event type and two events', ->
       @bail true
@@ -176,7 +190,8 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then john and jack are returned
-        socket.once 'consultMap-resp', (err, items, fields) ->
+        socket.once 'consultMap-resp', (reqId, err, items, fields) ->
+          assert.equal rid, reqId
           return done err if err?
           assert.equal items.length, 2
           assert.ok jack.equals items[0]
@@ -186,14 +201,16 @@ describe 'server tests', ->
           done()
 
         # when consulting the map
-        socket.emit 'consultMap', map.id, 0, 0, 10, 10
+        rid = generateId()
+        socket.emit 'consultMap', rid, map.id, 0, 0, 10, 10
 
       it 'should types be retrieved', (done) ->
         # given a connected socket.io client
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then the character type is retrieved
-        socket.once 'getTypes-resp', (err, types) ->
+        socket.once 'getTypes-resp', (reqId, err, types) ->
+          assert.equal rid, reqId
           return done err if err?
           assert.equal types.length, 2
           for type in types
@@ -212,14 +229,16 @@ describe 'server tests', ->
           done()
 
         # when retrieving types by ids
-        socket.emit 'getTypes', [character.id, life.id]
+        rid = generateId()
+        socket.emit 'getTypes', rid, [character.id, life.id]
 
       it 'should items be retrieved', (done) ->
         # given a connected socket.io client
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then the items are retrieved with their types
-        socket.once 'getItems-resp', (err, items) ->
+        socket.once 'getItems-resp', (reqId, err, items) ->
+          assert.equal rid, reqId
           return done err if err?
           assert.equal items.length, 2
           assert.ok jack.equals items[0]
@@ -238,14 +257,16 @@ describe 'server tests', ->
           # TODO tests link resolution
 
         # when retrieving items by ids
-        socket.emit 'getItems', [jack.id, john.id]
+        rid = generateId()
+        socket.emit 'getItems', rid, [jack.id, john.id]
 
       it 'should events be retrieved', (done) ->
         # given a connected socket.io client
         socket = socketClient.connect "#{rootUrl}/game"
 
         # then the events are retrieved with their types
-        socket.once 'getEvents-resp', (err, events) ->
+        socket.once 'getEvents-resp', (reqId, err, events) ->
+          assert.equal rid, reqId
           return done err if err?
           assert.equal events.length, 2
           assert.ok birth.equals events[0]
@@ -272,7 +293,8 @@ describe 'server tests', ->
           done()
 
         # when retrieving events by ids
-        socket.emit 'getEvents', [birth.id, death.id]
+        rid = generateId()
+        socket.emit 'getEvents', rid, [birth.id, death.id]
 
       describe 'given a rule', ->
         @bail true
@@ -306,7 +328,8 @@ describe 'server tests', ->
           socket = socketClient.connect "#{rootUrl}/admin"
 
           # then the item type and rule were found
-          socket.once 'searchTypes-resp', (err, results) ->
+          socket.once 'searchTypes-resp', (reqId, err, results) ->
+            assert.equal rid, reqId
             return done err if err?
             assert.equal results.length, 2
             tmp = results.filter (obj) -> map.equals obj
@@ -316,14 +339,16 @@ describe 'server tests', ->
             done()
 
           # when searching all types
-          socket.emit 'searchTypes', '{"or": [{"id": "/'+map.id+'/i"}, {"id": "'+character.id+'"}]}'
+          rid = generateId()
+          socket.emit 'searchTypes', rid, '{"or": [{"id": "/'+map.id+'/i"}, {"id": "'+character.id+'"}]}'
 
         it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client
           socket = socketClient.connect "#{rootUrl}/game"
 
           # then the items are retrieved with their types
-          socket.once 'getExecutables-resp', (err, executables) ->
+          socket.once 'getExecutables-resp', (reqId, err, executables) ->
+            assert.equal rid, reqId
             return done err if err?
             assert.equal executables.length, 1
             assert.equal executables[0].id, script.id
@@ -331,7 +356,8 @@ describe 'server tests', ->
             done()
 
           # when retrieving executables
-          socket.emit 'getExecutables'       
+          rid = generateId()
+          socket.emit 'getExecutables', rid
 
         it 'should rule be resolved and executed, and modification propagated', (done) ->
           # given several connected socket.io clients
@@ -339,7 +365,8 @@ describe 'server tests', ->
           socket2 = socketClient.connect "#{rootUrl}/updates"
 
           # then the rename rule is returned
-          socket.once 'resolveRules-resp', (err, results) ->
+          socket.once 'resolveRules-resp', (reqId, err, results) ->
+            assert.equal rid, reqId
             return done err if err?
             assert.property results, 'rename'
             match = (res for res in results when jack.equals res.target)?[0]
@@ -349,7 +376,8 @@ describe 'server tests', ->
             created = false
             updated = false
             # then john is renamed in joe
-            socket.once 'executeRule-resp', (err, result) ->
+            socket.once 'executeRule-resp', (reqId, err, result) ->
+              assert.equal rid, reqId
               return done err if err?
               assert.equal result, 'target renamed'
               setTimeout ->
@@ -379,10 +407,12 @@ describe 'server tests', ->
               updated = true
 
             # when executing the rename rule for john on jack
-            socket.emit 'executeRule', 'rename', john.id, jack.id, []
+            rid = generateId()
+            socket.emit 'executeRule', rid, 'rename', john.id, jack.id, []
 
           # when resolving rules for john on jack
-          socket.emit 'resolveRules', john.id, jack.id
+          rid = generateId()
+          socket.emit 'resolveRules', rid, john.id, jack.id
 
     describe 'given a type', ->
       @bail true
@@ -399,7 +429,8 @@ describe 'server tests', ->
         socket = socketClient.connect "#{rootUrl}/admin"
 
         # then john and jack are returned
-        socket.once 'list-resp', (err, modelName, list) ->
+        socket.once 'list-resp', (reqId, err, modelName, list) ->
+          assert.equal rid, reqId
           return done err if err?
           assert.equal list.length, 1
           assert.equal modelName, 'ItemType'
@@ -407,7 +438,8 @@ describe 'server tests', ->
           done()
 
         # when consulting the map
-        socket.emit 'list', 'ItemType'
+          rid = generateId()
+        socket.emit 'list', rid, 'ItemType'
 
       it 'should type image be uploaded and removed', (done) ->
         # given several connected socket.io clients
@@ -418,7 +450,8 @@ describe 'server tests', ->
           return done err if err?
 
           # then the character type was updated
-          socket.once 'uploadImage-resp', (err, saved) ->
+          socket.once 'uploadImage-resp', (reqId, err, saved) ->
+            assert.equal rid, reqId
             return done err if err?
             # then the description image is updated in model
             assert.equal saved.descImage, "#{character.id}-type.png"
@@ -428,7 +461,8 @@ describe 'server tests', ->
             assert.equal fs.readFileSync(file).toString(), data.toString()
 
             # then the character type was updated
-            socket.once 'removeImage-resp', (err, saved) ->
+            socket.once 'removeImage-resp', (reqId, err, saved) ->
+              assert.equal rid, reqId
               return done err if err?
               # then the type image is updated in model
               assert.equal saved.descImage, null
@@ -436,10 +470,12 @@ describe 'server tests', ->
               assert.ok !(fs.existsSync(file))
               done()
 
-            socket.emit 'removeImage', 'ItemType', character.id
+            rid = generateId()
+            socket.emit 'removeImage', rid, 'ItemType', character.id
 
           # when saving the type image
-          socket.emit 'uploadImage', 'ItemType', character.id, 'png', data.toString('base64')
+          rid = generateId()
+          socket.emit 'uploadImage', rid, 'ItemType', character.id, 'png', data.toString('base64')
 
 
       it 'should instance image be uploaded and removed', (done) ->
@@ -451,7 +487,8 @@ describe 'server tests', ->
           return done err if err?
 
           # then the character type was updated
-          socket.once 'uploadImage-resp', (err, saved) ->
+          socket.once 'uploadImage-resp', (reqId, err, saved) ->
+            assert.equal rid, reqId
             return done err if err?
             # then the instance image is updated in model for rank 0
             assert.equal saved.images.length, 1
@@ -464,7 +501,8 @@ describe 'server tests', ->
             assert.equal fs.readFileSync(file).toString(), data.toString()
 
             # then the character type was updated
-            socket.once 'removeImage-resp', (err, saved) ->
+            socket.once 'removeImage-resp', (reqId, err, saved) ->
+              assert.equal rid, reqId
               return done err if err?
               # then the instance image is updated in model for rank 0
               assert.equal saved.images.length, 0
@@ -472,7 +510,9 @@ describe 'server tests', ->
               assert.ok !(fs.existsSync(file))
               done()
 
-            socket.emit 'removeImage', 'ItemType', character.id, 0
+            rid = generateId()
+            socket.emit 'removeImage', rid, 'ItemType', character.id, 0
 
           # when saving the instance image #0
-          socket.emit 'uploadImage', 'ItemType', character.id, 'png', data.toString('base64'), 0
+          rid = generateId()
+          socket.emit 'uploadImage', rid, 'ItemType', character.id, 'png', data.toString('base64'), 0

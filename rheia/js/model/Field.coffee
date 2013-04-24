@@ -44,19 +44,27 @@ define [
     #
     # @param fields [Array<Field>] saved fields
     save: (fields) =>
-      app.sockets.admin.once 'save-resp', (err) =>
+      rid = utils.rid()
+      listener = (reqId, err) =>
+        return unless rid is reqId
+        app.sockets.admin.removeListener 'save-resp', listener
         app.router.trigger 'serverError', err, method:'Fields.save', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      app.sockets.admin.emit 'save', 'Field', fields
+      app.sockets.admin.on 'save-resp', listener
+      app.sockets.admin.emit 'save', rid, 'Field', fields
 
     # Allow multiple removes on fields
     #
     # @param fields [Array<Field>] removed fields
     destroy: (fields) =>
-      app.sockets.admin.once 'remove-resp', (err) =>
+      rid = utils.rid()
+      listener = (reqId, err) =>
+        return unless rid is reqId
+        app.sockets.admin.removeListener 'remove-resp', listener
         app.router.trigger 'serverError', err, method:'Fields.remove', arg:fields if err?
       fields[i] = field.toJSON() for field, i in fields
-      app.sockets.admin.emit 'remove', 'Field', fields
+      app.sockets.admin.on 'remove-resp', listener
+      app.sockets.admin.emit 'remove', rid, 'Field', fields
 
     # Provide a custom sync method to wire model to the server.
     # No operation supported.
