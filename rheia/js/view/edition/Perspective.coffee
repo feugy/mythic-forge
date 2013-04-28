@@ -133,8 +133,7 @@ define [
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
       return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Map', 'ClientConf']
-      # creates the relevant view
-      view = null
+      
       unless id?
         # choose an id within a popup
         popup = utils.popup((if type is 'ClientConf' then i18n.titles.chooseLocale else i18n.titles.chooseId), (if type is 'ClientConf' then i18n.msgs.chooseLocale else i18n.msgs.chooseId), 'question', [
@@ -195,13 +194,13 @@ define [
         return null
 
       # id is known, opens it
-      switch type
-        when 'FieldType' then view = new FieldTypeView id
-        when 'ItemType' then view = new ItemTypeView id
-        when 'EventType' then view = new EventTypeView id
-        when 'Rule' then view = new RuleView id
-        when 'TurnRule' then view = new TurnRuleView id
-        when 'Script' then view = new ScriptView id
-        when 'Map' then view = new MapView id
-        when 'ClientConf' then view = new ClientConfView id
-      view
+      return switch type
+        when 'FieldType' then new FieldTypeView id
+        when 'ItemType' then new ItemTypeView id
+        when 'EventType' then new EventTypeView id
+        when 'Rule' then new RuleView id
+        when 'TurnRule' then new TurnRuleView id
+        when 'Script' then new ScriptView id
+        when 'Map' then new MapView id
+        when 'ClientConf' then new ClientConfView id
+        else null

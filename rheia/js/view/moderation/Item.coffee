@@ -255,9 +255,9 @@ define [
     _onMapListRetrieved: =>
       maps = "<option value='none'>#{i18n.labels.noMap}</option>"
       maps += "<option value='#{map.id}'>#{map.id}</option>" for map in Map.collection.models   
-      @_mapList.empty().append maps      
+      @_mapList?.empty().append maps      
 
-      @_mapList.find("[value='#{@model.map?.id}']").attr 'selected', 'selected' if @model?.map?
+      @_mapList?.find("[value='#{@model.map?.id}']").attr 'selected', 'selected' if @model?.map?
 
 
     # **private**

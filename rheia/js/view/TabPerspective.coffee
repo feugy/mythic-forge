@@ -182,10 +182,11 @@ define [
         idx = @_indexOfView id
         return @_views[idx].removeModel() unless idx is -1
 
-      # constructs a temporary view to immediatly removes its model
+      # constructs a temporary view to immediatly removes its model (only if construcView supports it)
       view = @_constructView type, id
-      return unless view?
-      view.removeModel()
+      view?.removeModel()
+      # don't forget to dispose view, or some events will be processed multiple times !
+      view?.dispose()
 
     # **private**
     # Handler invoked when a tab was added to the widget. Render the view inside the tab.
