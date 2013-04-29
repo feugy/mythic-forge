@@ -140,6 +140,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
             playerService.activity email
             originalArgs = Array.prototype.slice.call arguments
             args = originalArgs.slice 1
+            # first parameter is always request id
             reqId = originalArgs[0]
             
             # add connected email for those who need it.
@@ -150,6 +151,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
               logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
               # returns the callback arguments
               returnArgs = Array.prototype.slice.call arguments
+              # first response parameters are always method name and request id
               returnArgs.splice 0, 0, "#{method}-resp", reqId
               # expand errors
               returnArgs[2] = returnArgs[2].message if utils.isA returnArgs?[2], Error

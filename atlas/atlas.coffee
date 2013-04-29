@@ -6,7 +6,6 @@
   # - jquery@2.0.0
   # - socket.io@0.9.10
   # - underscore@1.4.4
-  # - underscore.string@2.3.0
   #
   # Atlas needs an event bus to propagate changes on models
   # This event bus may be passed as argument of the factory, and must contain the following methods
@@ -160,7 +159,7 @@
             , end
         ], (err) ->
           connecting = false
-          connected = err?
+          connected = !err?
           return callback err if err?
           # enrich player before sending him
           player = new Atlas.Player raw, (err) ->
@@ -188,6 +187,7 @@
       Event: {}
       EventType: {}
       Map: {}
+      FieldType: {}
 
     # bounds to server updates
     eventEmitter.on 'connected', ->
@@ -202,10 +202,13 @@
     # @param  callback [Function] construction end callback, invoked with argument:
     # @option callback error [Error] an Error object, or null if no error occured
     onModelCreation = (className, model, callback = ->) ->
-      return callback null unless className of models
+      return callback null unless className is 'Field' or className of models
       # build a new model
       options.debug and console.log "create new instance #{className} #{model.id}"
-      new Atlas[className] model, callback
+      new Atlas[className] model, (err, model) ->
+        # manually send event for new fields
+        eventEmitter.emit 'modelChanged', 'creation', model if className is 'Field' and !err?
+        callback err
 
     # Update cached model with incoming changes
     # May enrich players new characters
@@ -259,6 +262,9 @@
     # @param  callback [Function] construction end callback, invoked with argument:
     # @option callback error [Error] an Error object, or null if no error occured
     onModelDeletion = (className, model, callback = ->) ->
+      # manage field deletion first
+      return eventEmitter.emit 'modelChanged', 'deletion', new Atlas.Field(model, callback) if className is 'Field'
+      # other models deletion
       return callback null unless className of models
       removed = models[className][model.id]
       # quit if not cached
@@ -301,12 +307,51 @@
       callback null 
 
     # Models locally represents object within Mythic-forge.
-    # They are automatically wired to server once fetched. 
+    # This class provide simple mechanisms to load a model from JSON representation
+    class Model
+
+      # **private**
+      # Class name of the managed model, for wiring to server and debugging purposes
+      # **Must be defined by subclasses**
+      @_className: null
+
+      # **private**
+      # List of properties that must be defined in this instance.
+      # **May be defined by subclasses**
+      @_fixedAttributes: []
+
+      # Model constructor: load the model from raw JSON
+      #
+      # @param raw [Object] raw attributes
+      # @param callback [Function] loading end callback, invoked with arguments:
+      # @option err [Error] an Error object or null if no error occured
+      # @option model [Model] the built model
+      constructor: (raw, callback = ->) ->
+        # affect id
+        @id = raw?.id
+        throw new Error "cannot create #{@constructor._className} without id" unless @id?
+        @_load raw, => _.defer => callback null, @
+
+      # **private**
+      # Load the model values from raw JSON
+      # Ensure the existence of fixed attributes
+      # 
+      # @param raw [Object] raw attributes
+      # @param callback [Function] optionnal loading end callback. invoked with arguments:
+      # @option callback error [Error] an Error object, or null if no error occured
+      _load: (raw, callback = ->) =>
+        # copy raw attributes into current model, only keeping declared attributes
+        for attr in @constructor._fixedAttributes
+          unless attr is 'id'
+            @[attr] = if attr of raw then raw[attr] else null
+        callback null
+
+    # Cached models are automatically wired to server once fetched. 
     # Any modification from server will be propagated: models are always up to date.
     # they are read-only: creation, modification and deletion are server privileges. 
     #
     # Models maintains a per-class local cache: once wired, they are stored for further use.
-    class Model
+    class CachedModel extends Model
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -413,27 +458,14 @@
       # @param raw [Object] raw attributes
       # @param callback [Function] loading end callback, invoked with arguments:
       # @option err [Error] an Error object or null if no error occured
+      # @option model [Model] the built model
       constructor: (raw, callback = ->) ->
-        # affect id
-        @id = raw?.id
-        throw new Error "cannot create #{@constructor._className} without id" unless @id?
-        @_load raw, =>
+        super raw, (err) =>
+          return callback err if err?
           # store inside models
           models[@constructor._className][@id] = @
           eventEmitter.emit 'modelChanged', 'creation', @
-          _.defer => callback null
-
-      # **private**
-      # Load the model values from raw JSON
-      # Ensure the existence of fixed attributes
-      # 
-      # @param raw [Object] raw attributes
-      # @param callback [Function] optionnal loading end callback. invoked with arguments:
-      # @option callback error [Error] an Error object, or null if no error occured
-      _load: (raw, callback = ->) =>
-        # copy raw attributes into current model, only keeping declared attributes
-        @[attr] = raw[attr] or null for attr in @constructor._fixedAttributes unless attr is 'id'
-        callback null
+          callback null, @
     
     #-----------------------------------------------------------------------------
     # Model enrichment methods
@@ -609,7 +641,7 @@
 
     # A map contains Fields, and may host several Items
     # Provide a special method `consult()` to get load map content
-    class Atlas.Map extends Model
+    class Atlas.Map extends CachedModel
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -623,18 +655,26 @@
       # request identifier to avoid multiple concurrent server call.
       _rid: null
 
+      # **private**
+      # callback used to notify consult caller from results
+      _consultCallback: null
+
       # Map constructor: load the model from raw JSON, and wire to server consult responses
       #
       # @param raw [Object] raw attributes
       # @param callback [Function] loading end callback, invoked with arguments:
       # @option err [Error] an Error object or null if no error occured
       constructor: (raw, callback) ->
-        eventEmitter.on 'connected', =>
-          Atlas.updateNS.on 'consultMap-resp', @_onConsult
+        eventEmitter.on 'connected', doConnect = =>
+          Atlas.gameNS.on 'consultMap-resp', @_onConsult
+        doConnect() if connected
         @_rid = null
         super raw, callback
 
       # Allows to retrieve items and fields on this map by coordinates, in a given rectangle.
+      # Fields and items are retrived, triggering `modelChanged` event when enrich into their corresponding models.
+      # Those models are returned to caller through the callback parameters.
+      # Only one consultation at time is allowed.
       #
       # @param low [Object] lower-left coordinates of the rectangle
       # @option args low x [Number] abscissa lower bound (included)
@@ -642,12 +682,17 @@
       # @param up [Object] upper-right coordinates of the rectangle
       # @option args up x [Number] abscissa upper bound (included)
       # @option args up y [Number] ordinate upper bound (included)  
-      consult: (low, up) =>
-        return if @_rid?
+      # @param callback [Function] consultation end callback, invoked with arguments:
+      # @option callback error [Error] an Error object, or null if no error occured
+      # @option callback fields [Array<Field>] array of retrieved fields (may be empty)
+      # @option callback items [Array<Item>] array of retrieved items (may be empty)
+      consult: (low, up, callback = ->) =>
+        return callback new Error "consult() already in progress" if @_rid?
         @_rid = utils.rid()
+        @_consultCallback = callback
         options.debug and console.log "Consult map #{@id} between #{low.x}:#{low.y} and #{up.x}:#{up.y}"
         # emit the message on the socket.
-        Atlas.gameNS.emit 'consultMap', rid, @id, low.x, low.y, up.x, up.y
+        Atlas.gameNS.emit 'consultMap', @_rid, @id, low.x, low.y, up.x, up.y
 
       # **private**
       # Return callback of consultMap server operation.
@@ -659,17 +704,54 @@
       _onConsult: (reqId, err, items, fields) =>
         return unless @_rid is reqId
         @_rid = null
-        return console.error "Fail to retrieve map content: #{err}" if err?
-        # add retrieved models to cache
-        options.debug and console.log "#{items.length} map item(s) received #{@id}"
-        new Atlas.Item raw for raw in items
-        # TODO console.log "#{fields.length} map field(s) received on #{@id}"
+        if err?
+          options.debug and console.error "Fail to retrieve map content: #{err}" 
+          return @_consultCallback new Error err
+        options.debug and console.log "#{items.length} item(s) and {fields.length} field(s) received for map #{@id}"
+        # enrich returned models: items will be cached, not fields, but all will trigger events
+        async.map items, (raw, next) ->
+          Atlas.Item.findById raw.id, (err, item) -> 
+            return next err if err?
+            return next null, item if item?
+            new Atlas.Item raw, next
+        , (err, items) =>
+          @_consultCallback err, (new Atlas.Field raw for raw in fields), items
+
+    #-----------------------------------------------------------------------------
+    # Field and FieldType models
+
+    # An FieldType defines field's images
+    class Atlas.FieldType extends CachedModel
+
+      # **private**
+      # Class name of the managed model, for wiring to server and debugging purposes
+      @_className: 'FieldType'
+
+      # **private**
+      # Contains the server method used to fetch models.
+      @_fetchMethod: 'getTypes'
+
+      # **private**
+      # List of properties that must be defined in this instance.
+      @_fixedAttributes: ['descImage', 'images']
+
+    # Field modelize field tiles on map (one field par tile).
+    # Field are the only models that are not cached on client side, to avoid memory waste
+    class Atlas.Field extends Model
+
+      # **private**
+      # Class name of the managed model, for wiring to server and debugging purposes
+      @_className: 'Field'
+
+      # **private**
+      # List of properties that must be defined in this instance.
+      @_fixedAttributes: ['mapId', 'typeId', 'num', 'x', 'y']
 
     #-----------------------------------------------------------------------------
     # Item and ItemType models
 
     # An ItemType defines dynamic properties of a given Item
-    class Atlas.ItemType extends Model
+    class Atlas.ItemType extends CachedModel
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -687,7 +769,7 @@
     # An item always have a type, which is systematically populated from cache or server during initialization.
     # Links to other items and event are resolved locally from cache. 
     # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetchinf the item.
-    class Atlas.Item extends Model
+    class Atlas.Item extends CachedModel
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -729,7 +811,7 @@
     # Event and EventType models
 
     # An EventType defines dynamic properties of a given Event
-    class Atlas.EventType extends Model
+    class Atlas.EventType extends CachedModel
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -747,7 +829,7 @@
     # An event always have a type and a from item, which are systematically populated from cache or server during initialization.
     # Links to other items and event are resolved locally from cache. 
     # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetchinf the event.
-    class Atlas.Event extends Model
+    class Atlas.Event extends CachedModel
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -790,7 +872,7 @@
 
     # Player modelize the human (or bot) player acccount, with it email, infos, preferences and avatars (characters)
     # Player's characters are systematically populated from cache or server during initialization.
-    class Atlas.Player extends Model
+    class Atlas.Player extends CachedModel
 
       # **private**
       # Class name of the managed model, for wiring to server and debugging purposes
@@ -813,6 +895,171 @@
           return callback err if err?
           # constructs Items for the corresponding characters
           enrichCharacters @, callback
+
+    #-----------------------------------------------------------------------------
+    # Rule Service
+
+    # The rule service is responsible for resolving and executing rules.
+    # It send relevant instruction to server to performs those tasks.
+    class RuleService
+
+      # **private**
+      # Object that store resolution original parameters. Also avoid multiple concurrent server call.
+      _resolveArgs: null
+
+      # **private**
+      # Object that store execution original parameters. Also avoid multiple concurrent server call.
+      _executeArgs: null
+      
+      # Constructor: import rules
+      constructor: ->
+        eventEmitter.on 'connected', connectedCb = =>
+          # bind operation responses
+          Atlas.gameNS.on 'resolveRules-resp', @_onResolveRules
+        connectedCb() if connected
+
+      # Triggers rules resolution for a given actor, **on server side**.
+      #
+      # @param callback [Function] resolution end callback, invoked with arguments
+      # @option callback err [Error] an Error object, or null if no error occured
+      # @option callback results [Object] applicable rules in an associative array, where rule id is key, 
+      # and value an array of applicable targets :
+      # - params [Array] awaited parameters (may be empty)
+      # - category [String] rule category
+      # - target [Model] applicable target (enriched model)
+      # 
+      # @overload resolve(playerId, callback)
+      #   Resolves applicable rules for a spacific player
+      #   @param player [Player|String] the player or its id
+      #
+      # @overload resolve(actorId, x, y, callback)
+      #   Resolves applicable rules at a specified coordinate
+      #   @param actor [Item|String] the actor item or its id
+      #   @param x [Number] the targeted x coordinate
+      #   @param y [Number] the targeted y coordinate
+      #
+      # @overload resolve(actorId, targetId, callback)
+      #   Resolves applicable rules at for a specific target
+      #   @param actor [Item|String] the actor item or its id
+      #   @param target [Item|String] the targeted item or its id
+      resolve: (args..., callback) =>
+        # do not allow multiple resolution
+        return callback new Error "resolution allready in progress" if @_resolveArgs?
+        @_resolveArgs =
+          rid: utils.rid()
+          callback: callback
+
+        actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
+            
+        if args.length is 1
+          # resolve for player
+          options.debug and console.log "resolve rules for player #{actorId}"
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId
+        else if args.length is 2
+          # resolve for actor over a target
+          targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
+          options.debug and console.log "resolve rules for #{actorId} and target #{targetId}"
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, targetId
+        else if args.length is 3
+          # resolve for actor over a tile
+          x = args[1]
+          y = args[2]
+          options.debug and console.log "resolve rules for #{actorId} at #{x}:#{y}"
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, x, y
+        else 
+          return callback new Error "Can't resolve rules with arguments #{arguments}"
+
+      # Triggers a specific rule execution for a given actor on a target
+      #
+      # @param ruleName [String] the rule name
+      # @overload execute(ruleName, playerId, params)
+      #   Executes rule for a player
+      #   @param playerId [String] the concerned player Id
+      #
+      # @overload execute(ruleName, actorId, targetId, params)
+      #   Executes rule for an actor and a target
+      #   @param actorId [ObjectId] the concerned actor Id
+      #   @param targetId [ObjectId] the targeted item's id
+      # @param praams [Object] the rule parameters
+      ###execute: (ruleName, args..., params) =>
+        return if @_executeArgs?
+        if args.length is 1
+          @_executeArgs = 
+            ruleName: ruleName
+            playerId: args[0]
+
+          console.log "execute rule #{ruleName} for player #{@_executeArgs.playerId}"
+          sockets.game.emit 'executeRule', ruleName, @_executeArgs.playerId, params
+
+        else if args.length is 2
+          @_executeArgs = 
+            ruleName: ruleName
+            actorId: args[0]
+            targetId: args[1]
+        
+          console.log "execute rule #{ruleName} for #{@_executeArgs.actorId} and target #{@_executeArgs.targetId}"
+          sockets.game.emit 'executeRule', ruleName, @_executeArgs.actorId, @_executeArgs.targetId, params
+        
+        else 
+          throw new Error "Cant't execute rule with arguments #{arguments}"###
+
+      # **private**
+      # Rules resolution handler. 
+      # Enrich results with models and invoke original callbacl
+      #
+      # @param err [String] an error string, or null if no error occured
+      # @param results [Object] applicable rules, where rule id is key, 
+      # and value an array of object targets with params array (may be empty), category and applicable target
+      _onResolveRules: (reqId, err, results) =>
+        return unless reqId is @_resolveArgs?.rid
+        callback = @_resolveArgs.callback
+        # reset to allow further calls.
+        @_resolveArgs = null
+
+        if err?
+          options.debug and console.error "Fail to resolve rules: #{err}" 
+          return callback new Error "Fail to resolve rules: #{err}" 
+
+        # enrich targets with models
+        async.each _.keys(results), (ruleId, next) ->
+          async.each results[ruleId], (appliance, next) ->
+            # players, items and events will have _className, fields not
+            target = appliance.target
+            if target._className?
+              ModelClass = Atlas[target._className]
+              # get the existing model from the collection
+              ModelClass.findById target.id, (err, model) =>
+                return next err if err?
+                if model?
+                  appliance.target = model
+                  return next null
+                # not existing ? adds it
+                appliance.target = new ModelClass target, next
+            else
+              appliance.target = new Atlas.Field target, next
+          , next
+        , (err) ->
+          results = undefined if err?
+          callback err, results
+
+      # Rules execution handler. 
+      # trigger an event `rulesExecuted` on the router if success.
+      #
+      # @param err [String] an error string, or null if no error occured
+      # @param result [Object] the rule final result. Depends on the rule.
+      ###
+      _onExecuteRule: (err, result) =>
+        if @_executeArgs?
+          if err?
+            @_executeArgs = null
+            return console.error "Fail to execute rule: #{err}" 
+          console.log "rule #{@_executeArgs.ruleName} successfully executed for actor #{@_executeArgs.actorId} and target #{@_executeArgs.targetId}"
+          app.router.trigger 'rulesExecuted', @_executeArgs, result
+          # reset to allow further calls.
+          @_executeArgs = null###
+
+    # Only provide a singleton of RuleService
+    Atlas.ruleService = new RuleService()
 
     # return created namespace
     Atlas

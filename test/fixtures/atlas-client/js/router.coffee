@@ -49,15 +49,14 @@ require [
     mocha.run ->
       # parse results
       results = []
-      $('.suite').each (i, elem) ->
-        suite = $(elem).find('h1').text()
-        $(elem).find('li').each (i, elem) ->
-          test = $(elem).find('h2').clone().children().remove().end().text()
-          state = $(elem).attr('class').replace('test ', '').split(' ') or []
-          unless 'suite' in state
-            results.push
-              name: "#{suite} #{test}"
-              state: state
-              error: $(elem).find('.error').text()
+      $('.test').each ->
+        elem = $(@)
+        suites = []
+        elem.parents('.suite').find('> h1').each ->
+          suites.push "#{$(@).text()}, "
+        results.push
+          name: "#{suites.join ''} #{elem.find('> h2').clone().children().remove().end().text()}"
+          state: elem.attr('class').replace('test ', '').split(' ') or []
+          error: elem.find('.error').text()
 
       $('body').append("<div id='mocha-results'>#{JSON.stringify results}</div>")

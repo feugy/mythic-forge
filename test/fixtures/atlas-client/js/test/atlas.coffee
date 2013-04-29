@@ -7,6 +7,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
   adminNS = null
   types = {}
   models = {}
+  rules = {}
 
   makeRid = -> 
     "req#{Math.random()*10000}"
@@ -17,8 +18,9 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
     adminNS.on 'save-resp', callback = (reqId, err, className, model) ->
       return unless reqId is rid
       adminNS.removeListener 'save-resp', callback
-      return end err if err?
-      spec.container[model.id] = model
+      return end JSON.stringify err if err?
+      # do not store fields
+      spec.container[model.id] = model unless className is 'Field'
       end()
 
   emitter = new (class EventEmitter
@@ -85,13 +87,40 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             adminNS = Atlas.socket.of "/admin"
             adminNS.on 'connect', done
 
-    describe 'given some models and types', ->
+    describe 'given some types, models and rules', ->
 
       before (done) ->
         # create types
         async.each [
+          {className: 'Executable', container: rules, obj: id: 'testRule1', content: """Rule = require 'hyperion/model/Rule'
+              module.exports = new (class CustomRule extends Rule
+                canExecute: (actor, target, callback) =>
+                  callback null, if target.strength? then [] else null
+                execute: (actor, target, params, callback) =>
+                  target.strength++
+                  callback null, 'target strengthened'
+              )()"""}
+          {className: 'Executable', container: rules, obj: id: 'testRule2', content: """Rule = require 'hyperion/model/Rule'
+              module.exports = new (class CustomRule extends Rule
+                canExecute: (actor, target, callback) =>
+                  callback null, if target?.typeId? and target?.mapId? then [] else null
+                execute: (actor, target, params, callback) =>
+                  actor.x = target.x
+                  actor.y = target.y
+                  callback null, 'actor moved'
+              )()"""}
+          {className: 'Executable', container: rules, obj: id: 'testRule3', content: """Rule = require 'hyperion/model/Rule'
+              module.exports = new (class CustomRule extends Rule
+                canExecute: (actor, target, callback) =>
+                  callback null, if target?._className is 'Player' then [] else null
+                execute: (actor, target, params, callback) =>
+                  for character in actor.characters
+                    character.strength = 10
+                  callback null, 'player characters strength reseted'
+              )()"""}
           {className: 'ItemType', container: types, obj: id: 'testCharacter', quantifiable: false, properties: strength:{type: 'integer', def:10}, linked:{type: 'array', def:'any'}}
           {className: 'EventType', container: types, obj: id: 'testTalk', properties: content:{type: 'text', def:'s.o.s.'}, to:{type: 'object', def: 'item'}}
+          {className: 'FieldType', container: types, obj: id: 'testPlain'}
           {className: 'Map', container: models, obj: id: 'testMap1', kind: 'square'}
         ], create, (err) ->
           return done err if err?
@@ -99,6 +128,12 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           async.each [
             {className: 'Item', container: models, obj: id: 'john', strength: 20, type: id: 'testCharacter'}
             {className: 'Item', container: models, obj: id: 'bob', type: id: 'testCharacter'}
+            {className: 'Field', container: models, obj: [
+              {mapId: 'testMap1', x:0, y:0, typeId: 'testPlain'}
+              {mapId: 'testMap1', x:-5, y:0, typeId: 'testPlain'}
+              {mapId: 'testMap1', x:5, y:2, typeId: 'testPlain'}
+              {mapId: 'testMap1', x:2, y:-5, typeId: 'testPlain'}
+            ]}
           ], create, (err) ->
             return done err if err?
             async.each [
@@ -108,9 +143,9 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
 
       after (done) ->
         # remove elements
-        async.each _.values(models).concat(_.values types), (obj, next) ->
+        async.each _.values(rules).concat(_.values(models), _.values types), (obj, next) ->
           rid = makeRid()
-          adminNS.emit 'remove', rid, obj._className, obj
+          adminNS.emit 'remove', rid, obj._className or 'Executable', obj
           adminNS.on 'remove-resp', callback = (reqId, err) ->
             return unless reqId is rid
             adminNS.removeListener 'remove-resp', callback
@@ -148,7 +183,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           # when adding the character to the map
           models.john.map = models.testMap1
           models.john.x = 5
-          models.john.y = -2
+          models.john.y = 2
           adminNS.emit 'save', makeRid(), 'Item', models.john
           adminNS.once 'save-resp', (reqId, err) ->
             return done "Failed to save character: #{err}" if err?
@@ -157,7 +192,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(character.map).to.have.property 'id', 'testMap1'
             expect(character.map).to.be.deep.equal player.characters[0].map
             expect(character.x).to.be.equal 5
-            expect(character.y).to.be.equal -2
+            expect(character.y).to.be.equal 2
             # then a modelChanged event was issued
             expect(emitter.emitted).to.have.length 1
             expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
@@ -265,6 +300,151 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(item.linked[1]).to.have.property 'to'
             expect(item.linked[1].to).to.be.an.instanceOf Atlas.Item
             expect(item.linked[1].to).to.have.property 'id', 'bob'
+            done()
+
+      it 'should map fields and items be consulted', (done) ->
+        # given the enriched character model
+        Atlas.Item.findById 'john', (err, character) ->
+          return done "Failed to select character: #{err}" if err?
+          # given an enriched map
+          Atlas.Map.findById 'testMap1', (err, map) ->
+            return done "Failed to select map: #{err}" if err?
+            # when consulting the map content
+            map.consult {x:0, y:0}, {x:5, y:5}, (err, fields, items) ->
+              return done "Failed to consult map: #{err}" if err?
+              expect(emitter.emitted).to.have.length 0
+              # then contained fields are returned
+              expect(fields).to.have.length 2
+              fields.sort (f1, f2) -> (f1.x or 0) - (f2.x or 0)
+              expect(fields[0]).to.be.an.instanceOf Atlas.Field
+              expect(fields[0]).to.have.property 'x', 0
+              expect(fields[0]).to.have.property 'y', 0
+              expect(fields[0]).to.have.property 'typeId', 'testPlain'
+              expect(fields[1]).to.be.an.instanceOf Atlas.Field
+              expect(fields[1]).to.have.property 'x', 5
+              expect(fields[1]).to.have.property 'y', 2
+              expect(fields[1]).to.have.property 'typeId', 'testPlain'
+              # then contained items are returned
+              expect(items).to.have.length 1
+              expect(items[0]).to.be.an.instanceOf Atlas.Item
+              expect(items[0]).to.deep.equal character
+              done()
+
+      it 'should field creation and removal triggers updates', (done) ->
+        # when adding a field
+        create {className: 'Field', container: models, obj: [mapId: 'testMap1', x:2, y:3, typeId: 'testPlain']}, (err) ->
+          return done "Failed to create field: #{err}" if err?
+          # then a creation event was emitted for this field
+          _.defer ->
+            expect(emitter.emitted).to.have.length 1
+            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
+            expect(emitter.emitted[0].args[0]).to.equal 'creation'
+            expect(emitter.emitted[0].args[1]).to.be.an.instanceOf Atlas.Field
+            expect(emitter.emitted[0].args[1]).to.be.have.property 'x', 2
+            expect(emitter.emitted[0].args[1]).to.be.have.property 'y', 3
+            expect(emitter.emitted[0].args[1]).to.be.have.property 'typeId', 'testPlain'
+            expect(emitter.emitted[0].args[1]).to.be.have.property 'mapId', 'testMap1'
+            fieldId = emitter.emitted[0].args[1].id
+            emitter.emitted = []
+            # when removing this field
+            rid = makeRid()
+            adminNS.emit 'remove', rid, 'Field', [id: fieldId]
+            adminNS.on 'remove-resp', callback = (reqId, err) ->
+              return unless reqId is rid
+              adminNS.removeListener 'remove-resp', callback
+              return done "Failed to remove field: #{err}" if err?
+              _.defer ->
+                # then a creation event was emitted for this field
+                expect(emitter.emitted).to.have.length 1
+                expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
+                expect(emitter.emitted[0].args[0]).to.equal 'deletion'
+                expect(emitter.emitted[0].args[1]).to.be.an.instanceOf Atlas.Field
+                expect(emitter.emitted[0].args[1]).to.be.have.property 'id', fieldId
+                expect(emitter.emitted[0].args[1]).to.be.have.property 'x', 2
+                expect(emitter.emitted[0].args[1]).to.be.have.property 'y', 3
+                expect(emitter.emitted[0].args[1]).to.be.have.property 'typeId', 'testPlain'
+                expect(emitter.emitted[0].args[1]).to.be.have.property 'mapId', 'testMap1'
+                done()
+
+      it 'should rule be resolved for a target', (done) ->
+        # given the enriched character model
+        Atlas.Item.findById 'john', (err, character) ->
+          return done "Failed to select character: #{err}" if err?
+          # when resolving rules for this model
+          Atlas.ruleService.resolve character, character, (err, results) ->
+            return done "Failed to resolve rules over target: #{err}" if err?
+            expect(results).not.to.have.property 'testRule3'
+            expect(results).not.to.have.property 'testRule2'
+            # then the first rule is appliable
+            expect(results).to.have.property 'testRule1'
+            expect(results.testRule1).to.have.length 1
+            expect(results.testRule1[0].target).to.be.an.instanceOf Atlas.Item
+            expect(results.testRule1[0].target).to.deep.equal character
+            done()
+
+      it 'should rule be resolved for a tile', (done) ->
+        # given the enriched character model
+        Atlas.Item.findById 'john', (err, character) ->
+          return done "Failed to select character: #{err}" if err?
+          # when resolving rules for a tile
+          Atlas.ruleService.resolve character, 5, 2, (err, results) ->
+            return done "Failed to resolve rules over tile: #{err}" if err?
+            expect(results).not.to.have.property 'testRule3'
+            # then the item rule is appliable
+            expect(results).to.have.property 'testRule1'
+            expect(results.testRule1).to.have.length 1
+            expect(results.testRule1[0].target).to.be.an.instanceOf Atlas.Item
+            expect(results.testRule1[0].target).to.deep.equal character
+            # then the field rule is appliable
+            expect(results).to.have.property 'testRule2'
+            expect(results.testRule2).to.have.length 1
+            expect(results.testRule2[0].target).to.be.an.instanceOf Atlas.Field
+            expect(results.testRule2[0].target).to.have.property 'x', 5
+            expect(results.testRule2[0].target).to.have.property 'y', 2
+            done()
+
+      it 'should rule be resolved for a player', (done) ->
+        # when resolving rules for current player
+        Atlas.ruleService.resolve player, (err, results) ->
+          return done "Failed to resolve rules over player: #{err}" if err?
+          # then the player rule is appliable
+          expect(results).not.to.have.property 'testRule1'
+          expect(results).not.to.have.property 'testRule2'
+          expect(results).to.have.property 'testRule3'
+          expect(results.testRule3).to.have.length 1
+          expect(results.testRule3[0].target).to.be.an.instanceOf Atlas.Player
+          expect(results.testRule3[0].target).to.deep.equal player
+          done()
+
+      it 'should rule resolution error be handled', (done) ->
+        # given the enriched character model
+        Atlas.Item.findById 'john', (err, character) ->
+          return done "Failed to select character: #{err}" if err?
+          # when resolving rules for this item only
+          Atlas.ruleService.resolve character, (err, results) ->
+            expect(err).to.exist
+            expect(err.message).to.include 'No player with id john'
+            expect(results).not.to.exists
+            done()
+
+      it 'should rule resolution not be ran in parallel', (done) ->
+        # given a rule resolution in progress
+        Atlas.ruleService.resolve player, done
+        # when resolving rules in parrallel
+        Atlas.ruleService.resolve player, (err, results) ->
+          expect(err).to.exist
+          expect(err.message).to.include 'resolution allready in progress'
+          expect(results).not.to.exists
+
+      it 'should rule resolution return no results', (done) ->
+        # given the enriched character model
+        Atlas.Item.findById 'john', (err, character) ->
+          return done "Failed to select character: #{err}" if err?
+          # when resolving rules over an empty tile
+          Atlas.ruleService.resolve character, -5, -5, (err, results) ->
+            return done "Failed to resolve rules over tile: #{err}" if err?
+            # then the player rule is appliable
+            expect(_.keys results).to.have.length 0
             done()
 
       it 'should character be removed from a map', (done) -> 
