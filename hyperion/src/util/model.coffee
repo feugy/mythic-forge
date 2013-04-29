@@ -126,6 +126,10 @@ filterModified = (obj, modified) ->
   return if obj in modified 
   # will be save if at least one path is modified
   modified.push obj if obj?.isModified()
+  if obj?._className is 'Player'
+    # recurse if needed on characters
+    filterModified value, modified for value in obj.characters when value? and 'string' isnt utils.type value
+    return 
   # do not go further if not an obj
   return unless obj?._className is 'Item' or obj?._className is 'Event'
   properties = obj.type.properties
@@ -137,9 +141,8 @@ filterModified = (obj, modified) ->
     else if def.type is 'array'
       values = obj[prop]
       if values
-        for value, i in values
-          # recurse if needed on linked object that are resolved
-          filterModified(value, modified) if value? and 'string' isnt utils.type value
+        # recurse if needed on linked object that are resolved
+        filterModified value, modified for value in values when value? and 'string' isnt utils.type value
 
 module.exports =
 

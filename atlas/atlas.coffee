@@ -916,9 +916,25 @@
         eventEmitter.on 'connected', connectedCb = =>
           # bind operation responses
           Atlas.gameNS.on 'resolveRules-resp', @_onResolveRules
+          Atlas.gameNS.on 'executeRule-resp', @_onExecuteRule
         connectedCb() if connected
 
       # Triggers rules resolution for a given actor, **on server side**.
+      # 
+      # @overload resolve(player, callback)
+      #   Resolves applicable rules for a spacific player
+      #   @param player [Player|String] the player or its id
+      #
+      # @overload resolve(actor, x, y, callback)
+      #   Resolves applicable rules at a specified coordinate
+      #   @param actor [Item|String] the actor item or its id
+      #   @param x [Number] the targeted x coordinate
+      #   @param y [Number] the targeted y coordinate
+      #
+      # @overload resolve(actor, target, callback)
+      #   Resolves applicable rules at for a specific target
+      #   @param actor [Item|String] the actor item or its id
+      #   @param target [Item|String] the targeted item or its id
       #
       # @param callback [Function] resolution end callback, invoked with arguments
       # @option callback err [Error] an Error object, or null if no error occured
@@ -927,28 +943,12 @@
       # - params [Array] awaited parameters (may be empty)
       # - category [String] rule category
       # - target [Model] applicable target (enriched model)
-      # 
-      # @overload resolve(playerId, callback)
-      #   Resolves applicable rules for a spacific player
-      #   @param player [Player|String] the player or its id
-      #
-      # @overload resolve(actorId, x, y, callback)
-      #   Resolves applicable rules at a specified coordinate
-      #   @param actor [Item|String] the actor item or its id
-      #   @param x [Number] the targeted x coordinate
-      #   @param y [Number] the targeted y coordinate
-      #
-      # @overload resolve(actorId, targetId, callback)
-      #   Resolves applicable rules at for a specific target
-      #   @param actor [Item|String] the actor item or its id
-      #   @param target [Item|String] the targeted item or its id
-      resolve: (args..., callback) =>
+      resolve: (args..., callback = ->) =>
         # do not allow multiple resolution
-        return callback new Error "resolution allready in progress" if @_resolveArgs?
+        return callback new Error "resolution already in progress" if @_resolveArgs?
         @_resolveArgs =
           rid: utils.rid()
           callback: callback
-
         actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
             
         if args.length is 1
@@ -972,41 +972,43 @@
       # Triggers a specific rule execution for a given actor on a target
       #
       # @param ruleName [String] the rule name
-      # @overload execute(ruleName, playerId, params)
+      # @overload execute(ruleName, player, params)
       #   Executes rule for a player
-      #   @param playerId [String] the concerned player Id
+      #   @param player [String] the concerned player Id
       #
-      # @overload execute(ruleName, actorId, targetId, params)
+      # @overload execute(ruleName, actor, target, params)
       #   Executes rule for an actor and a target
-      #   @param actorId [ObjectId] the concerned actor Id
-      #   @param targetId [ObjectId] the targeted item's id
-      # @param praams [Object] the rule parameters
-      ###execute: (ruleName, args..., params) =>
-        return if @_executeArgs?
+      #   @param actor [ObjectId] the concerned actor Id
+      #   @param target  [ObjectId] the targeted item's id
+      #
+      # @param params [Object] the rule parameters
+      # @param callback [Function] resolution end callback, invoked with arguments
+      # @option callback err [Error] an Error object, or null if no error occured
+      # @option callback result [Object] arbitrary rule results.
+      execute: (ruleName, args..., params, callback = ->) =>
+        # do not allow multiple resolution
+        return callback new Error "execution already in progress" if @_executeArgs?
+        @_executeArgs =
+          rid: utils.rid()
+          callback: callback
+        actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
+
         if args.length is 1
-          @_executeArgs = 
-            ruleName: ruleName
-            playerId: args[0]
-
-          console.log "execute rule #{ruleName} for player #{@_executeArgs.playerId}"
-          sockets.game.emit 'executeRule', ruleName, @_executeArgs.playerId, params
-
+          # execute over a player
+          options.debug and console.log "execute rule #{ruleName} for player #{actorId}"
+          Atlas.gameNS.emit 'executeRule', @_executeArgs.rid, ruleName, actorId, params
         else if args.length is 2
-          @_executeArgs = 
-            ruleName: ruleName
-            actorId: args[0]
-            targetId: args[1]
-        
-          console.log "execute rule #{ruleName} for #{@_executeArgs.actorId} and target #{@_executeArgs.targetId}"
-          sockets.game.emit 'executeRule', ruleName, @_executeArgs.actorId, @_executeArgs.targetId, params
-        
+          # execute for actor over a target
+          targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
+          options.debug and console.log "execute rule #{ruleName} for #{actor} and target #{target}"
+          Atlas.gameNS.emit 'executeRule', @_executeArgs.rid, ruleName, actorId, targetId, params
         else 
-          throw new Error "Cant't execute rule with arguments #{arguments}"###
+          return callback new Error "Can't execute rules with arguments #{arguments}"
 
       # **private**
-      # Rules resolution handler. 
-      # Enrich results with models and invoke original callbacl
+      # Rules resolution handler: enrich results with models and invoke original callback.
       #
+      # @param reqId [String] the request unic identifier
       # @param err [String] an error string, or null if no error occured
       # @param results [Object] applicable rules, where rule id is key, 
       # and value an array of object targets with params array (may be empty), category and applicable target
@@ -1042,21 +1044,21 @@
           results = undefined if err?
           callback err, results
 
-      # Rules execution handler. 
-      # trigger an event `rulesExecuted` on the router if success.
+      # **private**
+      # Rules execution handler: invoke original callback with rule results.
       #
+      # @param reqId [String] the request unic identifier
       # @param err [String] an error string, or null if no error occured
       # @param result [Object] the rule final result. Depends on the rule.
-      ###
-      _onExecuteRule: (err, result) =>
-        if @_executeArgs?
-          if err?
-            @_executeArgs = null
-            return console.error "Fail to execute rule: #{err}" 
-          console.log "rule #{@_executeArgs.ruleName} successfully executed for actor #{@_executeArgs.actorId} and target #{@_executeArgs.targetId}"
-          app.router.trigger 'rulesExecuted', @_executeArgs, result
-          # reset to allow further calls.
-          @_executeArgs = null###
+      _onExecuteRule: (reqId, err, result) =>
+        return unless reqId is @_executeArgs?.rid
+        callback = @_executeArgs.callback
+        # reset to allow further calls.
+        @_executeArgs = null
+
+        return callback null, result unless err?
+        options.debug and console.error "Fail to execute rule: #{err}" 
+        return callback new Error "Fail to execute rule: #{err}" 
 
     # Only provide a singleton of RuleService
     Atlas.ruleService = new RuleService()

@@ -118,6 +118,13 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
                     character.strength = 10
                   callback null, 'player characters strength reseted'
               )()"""}
+          {className: 'Executable', container: rules, obj: id: 'testRule4', content: """Rule = require 'hyperion/model/Rule'
+              module.exports = new (class CustomRule extends Rule
+                canExecute: (actor, target, callback) =>
+                  callback null, if target?._className is 'Player' then [] else null
+                execute: (actor, target, params, callback) =>
+                  callback null
+              )()"""}
           {className: 'ItemType', container: types, obj: id: 'testCharacter', quantifiable: false, properties: strength:{type: 'integer', def:10}, linked:{type: 'array', def:'any'}}
           {className: 'EventType', container: types, obj: id: 'testTalk', properties: content:{type: 'text', def:'s.o.s.'}, to:{type: 'object', def: 'item'}}
           {className: 'FieldType', container: types, obj: id: 'testPlain'}
@@ -126,8 +133,8 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           return done err if err?
           # then create instances
           async.each [
-            {className: 'Item', container: models, obj: id: 'john', strength: 20, type: id: 'testCharacter'}
-            {className: 'Item', container: models, obj: id: 'bob', type: id: 'testCharacter'}
+            {className: 'Item', container: models, obj: id: 'john', strength: 20, linked: [], type: id: 'testCharacter'}
+            {className: 'Item', container: models, obj: id: 'bob', linked: [], type: id: 'testCharacter'}
             {className: 'Field', container: models, obj: [
               {mapId: 'testMap1', x:0, y:0, typeId: 'testPlain'}
               {mapId: 'testMap1', x:-5, y:0, typeId: 'testPlain'}
@@ -366,15 +373,16 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
                 expect(emitter.emitted[0].args[1]).to.be.have.property 'mapId', 'testMap1'
                 done()
 
-      it 'should rule be resolved for a target', (done) ->
+      it 'should rules be resolved for a target', (done) ->
         # given the enriched character model
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
           # when resolving rules for this model
           Atlas.ruleService.resolve character, character, (err, results) ->
             return done "Failed to resolve rules over target: #{err}" if err?
-            expect(results).not.to.have.property 'testRule3'
             expect(results).not.to.have.property 'testRule2'
+            expect(results).not.to.have.property 'testRule3'
+            expect(results).not.to.have.property 'testRule4'
             # then the first rule is appliable
             expect(results).to.have.property 'testRule1'
             expect(results.testRule1).to.have.length 1
@@ -382,7 +390,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(results.testRule1[0].target).to.deep.equal character
             done()
 
-      it 'should rule be resolved for a tile', (done) ->
+      it 'should rules be resolved for a tile', (done) ->
         # given the enriched character model
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
@@ -390,6 +398,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           Atlas.ruleService.resolve character, 5, 2, (err, results) ->
             return done "Failed to resolve rules over tile: #{err}" if err?
             expect(results).not.to.have.property 'testRule3'
+            expect(results).not.to.have.property 'testRule4'
             # then the item rule is appliable
             expect(results).to.have.property 'testRule1'
             expect(results.testRule1).to.have.length 1
@@ -403,7 +412,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(results.testRule2[0].target).to.have.property 'y', 2
             done()
 
-      it 'should rule be resolved for a player', (done) ->
+      it 'should rules be resolved for a player', (done) ->
         # when resolving rules for current player
         Atlas.ruleService.resolve player, (err, results) ->
           return done "Failed to resolve rules over player: #{err}" if err?
@@ -414,9 +423,13 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           expect(results.testRule3).to.have.length 1
           expect(results.testRule3[0].target).to.be.an.instanceOf Atlas.Player
           expect(results.testRule3[0].target).to.deep.equal player
+          expect(results).to.have.property 'testRule4'
+          expect(results.testRule4).to.have.length 1
+          expect(results.testRule4[0].target).to.be.an.instanceOf Atlas.Player
+          expect(results.testRule4[0].target).to.deep.equal player
           done()
 
-      it 'should rule resolution error be handled', (done) ->
+      it 'should rules resolution error be handled', (done) ->
         # given the enriched character model
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
@@ -427,16 +440,16 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(results).not.to.exists
             done()
 
-      it 'should rule resolution not be ran in parallel', (done) ->
+      it 'should rules resolution not be ran in parallel', (done) ->
         # given a rule resolution in progress
         Atlas.ruleService.resolve player, done
         # when resolving rules in parrallel
         Atlas.ruleService.resolve player, (err, results) ->
           expect(err).to.exist
-          expect(err.message).to.include 'resolution allready in progress'
+          expect(err.message).to.include 'resolution already in progress'
           expect(results).not.to.exists
 
-      it 'should rule resolution return no results', (done) ->
+      it 'should rules resolution return no results', (done) ->
         # given the enriched character model
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
@@ -446,6 +459,72 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             # then the player rule is appliable
             expect(_.keys results).to.have.length 0
             done()
+
+      it 'should rule be executed for a target', (done) ->
+        # given the enriched character model
+        Atlas.Item.findById 'john', (err, character) ->
+          return done "Failed to select character: #{err}" if err?
+          # when executing a rule for this model
+          Atlas.ruleService.execute 'testRule1', character, character, [], (err, result) ->
+            return done "Failed to execute rule over target: #{err}" if err?
+            # then a modelChanged event was issued
+            expect(emitter.emitted).to.have.length 1
+            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
+            expect(emitter.emitted[0].args[0]).to.equal 'update'
+            expect(emitter.emitted[0].args[1]).to.deep.equal character
+            expect(emitter.emitted[0].args[2]).to.deep.equal ['strength']
+            # then the character strength has been modified
+            expect(character).to.have.property 'strength', 21
+            # then rule results was returned
+            expect(result).to.include 'strengthened'
+            # update raw model that have not been modified
+            models.john.strength = character.strength
+            done()
+
+      it 'should rule be executed for a player', (done) ->
+        # when executing a rule for player
+        Atlas.ruleService.execute 'testRule3', player, [], (err, result) ->
+          return done "Failed to execute rule over player: #{err}" if err?
+          # then a modelChanged event was issued
+          expect(emitter.emitted).to.have.length 2
+          expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
+          expect(emitter.emitted[0].args[0]).to.equal 'update'
+          expect(emitter.emitted[0].args[1]).to.deep.equal player
+          expect(emitter.emitted[0].args[2]).to.deep.equal ['prefs']
+          expect(emitter.emitted[1].type).to.be.equal 'modelChanged'
+          expect(emitter.emitted[1].args[0]).to.equal 'update'
+          expect(emitter.emitted[1].args[1]).to.deep.equal player.characters[0]
+          expect(emitter.emitted[1].args[2]).to.deep.equal ['strength']
+          # then the character strength has been reseted
+          expect(player.characters[0]).to.have.property 'strength', 10
+          # then rule results was returned
+          expect(result).to.include 'reseted'
+          # update raw model that have not been modified
+          models.john.strength = player.characters[0].strength
+          done()
+
+      it 'should rule execution error be handled', (done) ->
+        # when executing rule that does not apply to player
+        Atlas.ruleService.execute 'testRule1', player, [], (err, result) ->
+          expect(err).to.exist
+          expect(err.message).to.include 'does not apply any more'
+          expect(result).not.to.exists
+          done()
+
+      it 'should rule execution not be ran in parallel', (done) ->
+        # given a rule resolution in progress
+        Atlas.ruleService.execute 'testRule4', player, [], done
+        # when resolving rules in parrallel
+        Atlas.ruleService.execute 'testRule4', player, [], (err, result) ->
+          expect(err).to.exist
+          expect(err.message).to.include 'execution already in progress'
+          expect(result).not.to.exists
+
+      it 'should rule execution return no result', (done) ->
+        Atlas.ruleService.execute 'testRule4', player, [], (err, result) ->
+          return done "Failed to execute rule over player: #{err}" if err?
+          expect(result).not.to.exists
+          done()
 
       it 'should character be removed from a map', (done) -> 
         # given the enriched character model
@@ -465,7 +544,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
             expect(emitter.emitted[0].args[0]).to.equal 'update'
             expect(emitter.emitted[0].args[1]).to.deep.equal character
-            expect(emitter.emitted[0].args[2]).to.deep.equal ['map', 'linked']
+            expect(emitter.emitted[0].args[2]).to.deep.equal ['map']
             done()
 
       it 'should character be removed', (done) ->
