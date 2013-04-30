@@ -157,28 +157,28 @@ describe 'Deployement tests', ->
           done()
 
     # Do not test on Travis: callback is never called ?
-    #unless process.env.TRAVIS
-    it 'should requirejs optimization error be detected', (done) ->
-      @timeout 15000
-      
-      # given a requirejs entry file without error
-      fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
-        return done err if err?
+    unless process.env.TRAVIS
+      it 'should requirejs optimization error be detected', (done) ->
+        @timeout 5000
+        
+        # given a requirejs entry file without error
+        fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
+          return done err if err?
 
-        # when optimizing the game client
-        service.deploy version, 'admin', (err) ->
-          # then an error is reported
-          assert.isNotNull err
-          assert.include err, 'optimized.out\\js\\backbone.js', "Unexpected error: #{err}"
-          # then notifications were properly received
-          assert.deepEqual notifications, [
-            'DEPLOY_START'
-            'COMPILE_STYLUS'
-            'COMPILE_COFFEE'
-            'OPTIMIZE_JS'
-            'DEPLOY_FAILED'
-          ]
-          done()
+          # when optimizing the game client
+          service.deploy version, 'admin', (err) ->
+            # then an error is reported
+            assert.isNotNull err
+            assert.include err, 'optimized.out\\js\\backbone.js', "Unexpected error: #{err}"
+            # then notifications were properly received
+            assert.deepEqual notifications, [
+              'DEPLOY_START'
+              'COMPILE_STYLUS'
+              'COMPILE_COFFEE'
+              'OPTIMIZE_JS'
+              'DEPLOY_FAILED'
+            ]
+            done()
 
     it 'should no requirejs configuration be detected', (done) ->
       # given a requirejs entry file without configuration
