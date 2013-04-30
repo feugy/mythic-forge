@@ -156,8 +156,10 @@ describe 'Deployement tests', ->
           ]
           done()
 
+    # Do not test on Travis: callback is never called ?
+    #unless process.env.TRAVIS
     it 'should requirejs optimization error be detected', (done) ->
-      @timeout 5000
+      @timeout 15000
       
       # given a requirejs entry file without error
       fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
