@@ -268,18 +268,16 @@ define [
         when 'create', 'update' 
           # add object if creation
           @constructor.collection.add @ if 'create'
-          listener = (reqId, err) =>
+          app.sockets.admin.on 'save-resp', listener = (reqId, err) =>
             return unless rid is reqId
             app.sockets.admin.removeListener 'save-resp', listener
             app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          app.sockets.admin.on 'save-resp', listener
           app.sockets.admin.emit 'save', rid, @_className, @_serialize()
         when 'delete' 
-          listener = (reqId, err) =>
+          app.sockets.admin.on 'remove-resp', listener = (reqId, err) =>
             return unless rid is reqId
             app.sockets.admin.removeListener 'remove-resp', listener
             app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
-          app.sockets.admin.on 'remove-resp', listener
           app.sockets.admin.emit 'remove', rid, @_className, @_serialize()
         when 'read'
           app.sockets.game.emit 'getTypes', rid, [@[@idAttribute]]

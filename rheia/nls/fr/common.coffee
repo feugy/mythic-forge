@@ -92,6 +92,7 @@ define
     searchFailed: 'La recherche à échouée :<br/><br/>%s'
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2012 Damien Feugas'
+    confirmUnload: 'Au moins une vue de la perspective %1s à été modifiée.'
 
   errors:
     wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'

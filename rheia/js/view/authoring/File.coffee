@@ -165,7 +165,7 @@ define [
         @_canSave = false
       else
         @_canSave = @model.content isnt utf8.encode @_editorWidget.options.text or ''
-      console.log '>> can be save ?', @_canSave, @canSave()
+      # console.log '>> TODO can be save ?', @_canSave, @canSave()
       super()
 
     # **private**

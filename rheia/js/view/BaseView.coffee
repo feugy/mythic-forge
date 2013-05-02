@@ -143,7 +143,7 @@ define [
     #
     # @param event [event] optionnal click event on the save button
     saveModel: (event = null) =>
-      console.log ">> try to save #{@model.id}", @model, @_canSave, @_isNew
+      # console.log ">> TODO try to save #{@model.id}", @model, @_canSave, @_isNew
       return unless @canSave()
       console.log "save asked for #{@model.id}"
       event?.preventDefault()
@@ -223,26 +223,28 @@ define [
     # **private**
     # Displays warning dialog when edited object have been removed externally.
     _notifyExternalRemove: () =>
-      return if $("#externalRemove-#{@model.id}").length > 0
+      id = md5 "externalRemove-#{@model.id}"
+      return if $("##{id}").length > 0
       utils.popup i18n.titles.external, 
         _.sprintf(i18n.msgs.externalRemove, @model.id), 
         'warning', 
         [text: i18n.buttons.ok],
         0,
-        "externalRemove-#{@model.id}"
+        id
 
     # **private**
     # Displays warning dialog when edited object have been modified externally.
     #
     # @param saved [Object] the received values from server
     _notifyExternalChange: (saved) =>
-      return if $("#externalChange-#{@model.id}").length > 0
+      id = md5 "externalChange-#{@model.id}"
+      return if $("##{id}").length > 0
       utils.popup i18n.titles.external, 
         _.sprintf(i18n.msgs.externalChange, @model.id), 
         'warning',
         [text: i18n.buttons.ok], 
         0,
-        "externalChange-#{@model.id}"
+        id
 
     # **private**
     # Displays error dialog when current server operation failed on edited object.
@@ -284,7 +286,7 @@ define [
     #
     # @param saved [Object] the saved model
     _onSaved: (saved) =>
-      console.log "TODO >>> received save for #{@model.id}"
+      # console.log "TODO >>> received save for #{@model.id}"
       console.dir saved
       # takes in account if we updated the edited objet
       return unless saved.id is @model.id
@@ -329,7 +331,7 @@ define [
       
       # the current operation failed
       if (details.id is @model.id) and (@_saveInProgress or @_removeInProgress)
-        console.log "TODO >>> received server error for #{@model.id}:", err
+        # console.log "TODO >>> received server error for #{@model.id}:", err
         console.dir details
         # displays error.
         @_notifyServerError err

@@ -100,11 +100,12 @@ define [
       for spec in buttons
         buttonSpec.push
           text: spec.text
-          click: ((handler)-> (event) -> 
-            proceed = handler() if handler?
+          click: ((handler, id)-> (event) -> 
+            proceed = true
+            proceed = handler() if _.isFunction handler
             # remove popup and invoke possible handler
-            $("##{id}").remove() unless proceed? and proceed is false
-          )(spec.click)
+            $("##{id}").remove() unless proceed is false
+          )(spec.click, id)
 
         buttonSpec[buttonSpec.length-1].icons = primary: "small #{spec.icon}" if spec.icon?
 

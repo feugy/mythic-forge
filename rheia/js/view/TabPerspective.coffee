@@ -19,10 +19,11 @@
 'use strict'
 
 define [
+  'i18n!nls/common'
   'jquery'
   'underscore'
   'backbone'
-], ($, _, Backbone) ->
+], (i18n, $, _, Backbone) ->
 
   # Abstract View class that embed common behaviour of perspectives.
   # Manage tab widget, shortcuts view opening and closing.
@@ -70,6 +71,11 @@ define [
         .on("keydown.#{@cid}", {keys:'ctrl+shift+d', includeInputs:true}, @_onRemoveHotKey)
         .on "keydown.#{@cid}", {keys:'ctrl+q', includeInputs:true}, @_onCloseHotKey
 
+      # bind unload warning
+      $(window).on 'beforeunload.#{@cid}', (event) =>
+        # check that all view were saved
+        return unless _.find(@_views, (v) -> v.canSave())?
+        event.returnValue = _.sprintf i18n.msgs.confirmUnload, i18n.titles["#{className}Perspective"]
 
     # The view destroyer: unbinds shortcuts
     dispose: =>

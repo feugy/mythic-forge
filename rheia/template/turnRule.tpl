@@ -1,4 +1,4 @@
-TurnRule = require '../model/TurnRule'
+TurnRule = require 'hyperion/model/TurnRule'
 
 # Your custom rule. 
 # Always executed on server side.

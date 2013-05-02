@@ -1,4 +1,4 @@
-Rule = require '../model/Rule'
+Rule = require 'hyperion/model/Rule'
 
 # Your custom rule.
 # Set the active attribute to false to temporary disable it.
