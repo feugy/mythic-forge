@@ -335,7 +335,6 @@ describe 'Item tests', ->
     it 'should modelWatcher send linked objects ids and not full objects', (done) ->
       # given a modification on linked properties
       item2.affluents.push item
-      item2.markModified 'affluents'
       item2.end = item2
 
       # then a modification was detected on modified properties

@@ -89,16 +89,21 @@ Player = typeFactory 'Player',
     # @param next [Function] function that must be called to proceed with other middleware.
     init: (next, player) ->
       player.characters = [] unless _.isArray player.characters
+      # set original copies for further comparisons
+      @__origcharacters = []
+      @__origprefs = JSON.stringify player.prefs or {}
       return next() if player.characters.length is 0 
       # loads the character from database
-      Item.find {_id: {$in: player.characters}}, (err, characters) ->
+      Item.find {_id: {$in: player.characters}}, (err, characters) =>
         return next(new Error "Unable to init item #{player.id}. Error while resolving its character: #{err}") if err?
-        # Do the replacement, whatever we really found. Unexisting characters will be erased
-        player.characters = _.map player.characters, (id) -> _.find characters, (character) -> character.id is id
-        player.characters = _.without player.characters, null, undefined
-        # store original value
-        player.__origcharacters = player.characters.concat() or []
-        player.__origprefs = JSON.stringify player.prefs or {}
+        final = []
+        # keep order, but remove undefined or null characters
+        for id in player.characters
+          character = _.find characters, (c) -> c.id is id
+          if character?
+            final.push character
+            @__origcharacters.push id
+        player.characters = final
         next()
 
     # For manually provided accounts, check password existence.
@@ -122,9 +127,6 @@ Player = typeFactory 'Player',
         saveCharacters = @characters.concat()
         # Do not store string version of id.
         @_doc.characters[i] = character.id for character, i in saveCharacters when character?.id?
-        # deletes comparison temporary attributes
-        delete @_doc.__origcharacters
-        delete @_doc.__origprefs
         next()
         # res comparison attributes
         @__origcharacters = @_doc.characters.concat() or []

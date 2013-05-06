@@ -37,7 +37,6 @@ loggers = {}
 # possible methods, with their verbosity. 0 means all logs.
 methods =
   all: 0
-  trace: 1
   log: 2
   debug: 2
   info: 3
@@ -102,7 +101,7 @@ format = (args, level, name) ->
   "#{moment().format conf.dateFormat or defaultDateFormat} #{process.pid} #{_s.pad name, nameMaxLength} #{_s.pad level, levelMaxLength} : #{vals.join ' '}"
 
 # Logger Factory: creates new (or retrieve existing) logger with the following methods (ordered):
-#  trace, log, debug, info, warn, error
+#  log, debug, info, warn, error
 #
 # All those methods can be invoked with any number of arguments, which are turned into strings and concatenated.
 #

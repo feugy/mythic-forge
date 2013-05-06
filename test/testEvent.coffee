@@ -406,7 +406,6 @@ describe 'Event tests', ->
     it 'should modelWatcher send linked objects ids and not full objects', (done) ->
       # given a modification on linked properties
       event2.children.push event
-      event2.markModified 'children'
       event2.father = event2
 
       # then a modification was detected on modified properties

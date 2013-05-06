@@ -56,8 +56,6 @@ class _ModelWatcher extends EventEmitter
       delete changes._id
 
     delete changes.__v # added by mongoose to store version
-    # removes orignal saves for array properties
-    delete changes[prop] for prop of changes when 0 is prop.indexOf '__orig'
 
     # do not embed the linked map and type for items, events and fields
     changes.type = changes.type?.id if className is 'Item' or className is 'Event'

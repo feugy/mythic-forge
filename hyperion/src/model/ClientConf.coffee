@@ -36,7 +36,7 @@ module.exports = conn.model 'clientConf', typeFactory 'ClientConf',
     # Save original value for further comparisons.
     init: (next, conf) ->
       # store original value
-      conf.__origvalues = JSON.stringify conf.values or {}
+      @__origvalues = JSON.stringify conf.values or {}
       next()
 
     # Save middleware, to check that no injection is done through values

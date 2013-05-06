@@ -178,7 +178,7 @@ describe 'Player tests', ->
           assert.ok awaited, 'watcher wasn\'t invoked'
           done()
 
-    it 'should unknown players be erased when loading', (done) ->
+    it 'should unknown characters be erased when loading', (done) ->
       # given a unknown character added to player in db
       Player.collection.update {_id:player.id}, {$push: characters:new ObjectId().toString()}, (err) ->
         return done err if err?
@@ -197,11 +197,10 @@ describe 'Player tests', ->
             assert.ok item.equals, doc.characters[0]
             done()
 
-    it 'should unknown players be erased when saving', (done) ->
+    it 'should unknown characters be erased when saving', (done) ->
       # given a unknown character added to player
       unknown = new ObjectId().toString()
       player.characters.push unknown, item
-      player.markModified 'characters'
 
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->

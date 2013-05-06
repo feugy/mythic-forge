@@ -116,7 +116,7 @@ emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
       fs.mkdirsSync folderPath
       logger?.info "Folder '#{folderPath}' successfully created"
     catch err
-      console.trace();
+      console.trace()
       throw "Unable to create the folder '#{folderPath}': #{err}"
 
 # Enforce the folder existence.

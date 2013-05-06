@@ -84,11 +84,11 @@ mongoose.Document.prototype._registerHooks = ->
 # @param instance [Object] Mongoose instance which is analyzed and may be marked as modified
 # @param prop [String] name of the compared properties
 compareArrayProperty = (instance, prop) ->
-  original = instance["__orig#{prop}"]
+  original = instance["__orig#{prop}"] or []
   # original contains, ids, current may also contain Mongoose objects
   current = _.map instance[prop] or [], (linked) -> if 'object' is utils.type(linked) and linked?.id? then linked.id else linked
   # compare original value and current dynamic value and mark modified if necessary
-  instance.markModified prop unless _.isEqual original or [], current
+  instance.markModified prop unless _.isEqual original, current
 
 # Compares an object property with arbitrary content to its original value.
 # The original value is searched inside the __origXXX attribute when XXX is the property name
@@ -97,7 +97,7 @@ compareArrayProperty = (instance, prop) ->
 # @param instance [Object] Mongoose instance which is analyzed and may be marked as modified
 # @param prop [String] name of the compared properties
 compareObjProperty = (instance, prop) ->
-  original = instance["_orig#{prop}"]
+  original = instance["_orig#{prop}"] or "{}"
   current = JSON.stringify instance[prop] or {}
   instance.markModified prop unless original is current
     
@@ -105,11 +105,12 @@ originalIsModified = mongoose.Document.prototype.isModified
 mongoose.Document.prototype.isModified = (path) ->
   # detect modification on dynamic arrays
   if @type?.properties?
-    compareArrayProperty @, prop for prop, value of @type.properties when value.type is 'array'
+    for prop, value of @type.properties when value.type is 'array'
+      compareArrayProperty @, prop 
 
   # detect modification on characters array
   if @_className is 'Player' 
-    compareArrayProperty @, 'characters' if Array.isArray @characters
+    compareArrayProperty @, 'characters'
     compareObjProperty @, 'prefs'
 
   # detect modifications on arbitrary objects
@@ -206,8 +207,6 @@ module.exports = (typeName, spec, options = {}) ->
         # special case of plain json property that is ignored by mongoose.utils.clone()
         if doc._className is 'Player'
           ret.prefs = doc.prefs
-        # removes orignal saves for array properties
-        delete ret[prop] for prop of ret when 0 is prop.indexOf '__orig'
       ret
 
   # Extends original Mongoose toJSON method to add className and changing _id to id.
@@ -217,8 +216,6 @@ module.exports = (typeName, spec, options = {}) ->
       # special case of plain json property that is ignored by mongoose.utils.clone()
       if doc._className is 'Player'
         ret.prefs = doc.prefs
-      # removes orignal saves for array properties
-      delete ret[prop] for prop of ret when 0 is prop.indexOf '__orig'
       ret.id = ret._id
       delete ret._id
       delete ret.__v
@@ -493,10 +490,6 @@ module.exports = (typeName, spec, options = {}) ->
       # get through all existing attributes
       attrs = Object.keys @_doc;
       for attr in attrs when attr isnt '__v' # ignore versionning attribute
-        # remove original saved of dynamic arrays
-        if 0 is attr.indexOf '__orig'
-          delete @_doc[attr]
-          continue
         # not in schema, nor in type
         if attr of properties
           # use not property cause it's not always defined at this moment

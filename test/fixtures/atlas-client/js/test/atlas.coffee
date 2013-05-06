@@ -179,7 +179,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
           expect(emitter.emitted[0].args[0]).to.equal 'update'
           expect(emitter.emitted[0].args[1]).to.deep.equal player
-          expect(emitter.emitted[0].args[2]).to.deep.equal ['characters', 'prefs']
+          expect(emitter.emitted[0].args[2]).to.deep.equal ['characters']
           done()
 
       it 'should character be added to a map', (done) ->
@@ -486,15 +486,12 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         Atlas.ruleService.execute 'testRule3', player, [], (err, result) ->
           return done "Failed to execute rule over player: #{err}" if err?
           # then a modelChanged event was issued
-          expect(emitter.emitted).to.have.length 2
+          console.log emitter.emitted
+          expect(emitter.emitted).to.have.length 1
           expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
           expect(emitter.emitted[0].args[0]).to.equal 'update'
-          expect(emitter.emitted[0].args[1]).to.deep.equal player
-          expect(emitter.emitted[0].args[2]).to.deep.equal ['prefs']
-          expect(emitter.emitted[1].type).to.be.equal 'modelChanged'
-          expect(emitter.emitted[1].args[0]).to.equal 'update'
-          expect(emitter.emitted[1].args[1]).to.deep.equal player.characters[0]
-          expect(emitter.emitted[1].args[2]).to.deep.equal ['strength']
+          expect(emitter.emitted[0].args[1]).to.deep.equal player.characters[0]
+          expect(emitter.emitted[0].args[2]).to.deep.equal ['strength']
           # then the character strength has been reseted
           expect(player.characters[0]).to.have.property 'strength', 10
           # then rule results was returned
