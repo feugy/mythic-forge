@@ -12,7 +12,6 @@
 
 - Rheia
   - Bugs
-    - [!!] FSItem move popup does not close on ok
     - [!!] After version change, version list is empty
     - map navigation and zoom - NOT reproducted
     - persistent change detection after saving a rule - NOT reproducted
@@ -23,8 +22,6 @@
     - single file search & replace
 
 - Atlas
-  - [!!!] Implement Fields
-  - [!!!] Implement Rule service
   - [!!!] Manage labels in clientConf
   - [!!!] Provide widget library with Image service
   - [!] package as library
@@ -34,6 +31,7 @@
 
 - Hyperion
   - bugs
+    - Enforce type order same as id order in findCached
     - remove item type property does not update existing items
     - bug with map value when retrieving items with search
     - fix from handling at event creation
@@ -168,6 +166,7 @@
     - fix multiple events received after reloading
     - configuration merge not displayed
     - an actor rule can be created with a turn rule/script name and erase it 
+    - FSItem move popup does not close on ok
   - handle rule requires
   - perspective loader
   - login page
@@ -282,17 +281,10 @@
       - contextual menu in search results
 
 - Atlas
+  - Provide connection facilities
+  - Provide bindings for all models and their types
+  - Implement rule services
   - create and automate tests
-  - map displayal
-  - rules resolution
-  - application of map items modifications 
-  - create a new player and display its map
-  - bot mode
-  - transitions
-    - image sprite specification (size, location)
-    - transition duration
-    - transition chain
-    - image cache
 
 # Consequent changes
   - no more distinction between Items and Actors

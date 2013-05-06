@@ -85,11 +85,10 @@ mongoose.Document.prototype._registerHooks = ->
 # @param prop [String] name of the compared properties
 compareArrayProperty = (instance, prop) ->
   original = instance["__orig#{prop}"]
-  return if original is undefined
   # original contains, ids, current may also contain Mongoose objects
   current = _.map instance[prop] or [], (linked) -> if 'object' is utils.type(linked) and linked?.id? then linked.id else linked
   # compare original value and current dynamic value and mark modified if necessary
-  instance.markModified prop unless _.isEqual original, current
+  instance.markModified prop unless _.isEqual original or [], current
 
 # Compares an object property with arbitrary content to its original value.
 # The original value is searched inside the __origXXX attribute when XXX is the property name
@@ -113,7 +112,7 @@ mongoose.Document.prototype.isModified = (path) ->
     compareArrayProperty @, 'characters' if Array.isArray @characters
     compareObjProperty @, 'prefs'
 
-  # detect modifications on arbitrary objects (ClientConf and Players)
+  # detect modifications on arbitrary objects
   compareObjProperty @, 'values' if @_className is 'ClientConf'
 
   originalIsModified.apply @, arguments
@@ -165,7 +164,16 @@ module.exports = (typeName, spec, options = {}) ->
       when 'update'
         # partial update
         # do not use setter to avoid marking the instance as modified.
-        cache[changes.id]._doc[attr] = value for attr, value of changes when !(attr in ['id'])
+        for attr, value of changes when !(attr in ['id', '__v'])
+          instance = cache[changes.id]
+          instance._doc[attr] = value  
+          if "__orig#{attr}" of instance
+            if _.isArray instance["__orig#{attr}"]
+              # object array
+              instance["__orig#{attr}"] = _.map value or [], (o) -> if 'object' is utils.type(o) and o?.id? then o.id else o
+            else
+              # arbitrary JSON
+              instance["__orig#{attr}"] = value
       when 'deletion' 
         delete cache[changes.id]
 
@@ -255,7 +263,7 @@ module.exports = (typeName, spec, options = {}) ->
     ids = _.uniq ids;
     notCached = []
     cached = []
-    # first look into the cache
+    # first look into the cache (order is preserved)
     for id in ids 
       if id of cache
         cached.push cache[id]
@@ -265,7 +273,8 @@ module.exports = (typeName, spec, options = {}) ->
     # then into the database
     @find {_id: $in: notCached}, (err, results) =>
       return callback err if err?
-      callback null, cached.concat results
+      # keep the original order
+      callback null, (cache[id] for id in ids when cache[id]?)
 
 
   # Load the different ids from MongoDB.

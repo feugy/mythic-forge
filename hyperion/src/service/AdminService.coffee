@@ -217,7 +217,7 @@ class _AdminService
         model = models[0]
 
         for key, value of values
-          model[key] = value unless key in ['id', 'properties', 'characters']
+          model[key] = value unless key in ['id', 'properties']
           # manually set and unset properties
           if key is 'properties'
             # at the begining, all existing properties may be unset
@@ -239,14 +239,6 @@ class _AdminService
             model.setProperty.apply model, args for args in set
             # and delete removed ones
             model.unsetProperty name for name in unset
-
-          else if key is 'characters'
-            # manually mark characters as modified if needed
-            previous = _.pluck model.characters, 'id'
-            newly = _.pluck value, 'id'
-            if _.difference(newly, previous).length isnt 0
-              model.characters = value
-              model.markModified 'characters'
 
         _save model
     else 

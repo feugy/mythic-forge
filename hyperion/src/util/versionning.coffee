@@ -129,12 +129,10 @@ module.exports =
         repo = git repository
         repo.git 'config', {}, ['--file', pathUtil.join(repository, '.git', 'config'), 'user.name', 'mythic-forge'], (err) ->
           if err
-            console.log 'failed 1'
             repoInit = false
             return callback err
           repo.git 'config', {}, ['--file', pathUtil.join(repository, '.git', 'config'), 'user.email', 'mythic.forge.adm@gmail.com'], (err) ->
             if err
-              console.log 'failed 2'
               repoInit = false
               return callback err
             logger.debug "git repository initialized !"

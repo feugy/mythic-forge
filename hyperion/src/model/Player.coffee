@@ -52,8 +52,9 @@ Player = typeFactory 'Player',
     default: false
 
   # link to characters.
+  # do not declare as Array: we do not want of MongooseArray
   characters:
-    type: []
+    type: {}
     default: -> [] # use a function to force instance variable
 
   # player's preference: plain json.
@@ -87,6 +88,7 @@ Player = typeFactory 'Player',
     # @param item [Item] the initialized item.
     # @param next [Function] function that must be called to proceed with other middleware.
     init: (next, player) ->
+      player.characters = [] unless _.isArray player.characters
       return next() if player.characters.length is 0 
       # loads the character from database
       Item.find {_id: {$in: player.characters}}, (err, characters) ->
@@ -120,8 +122,11 @@ Player = typeFactory 'Player',
         saveCharacters = @characters.concat()
         # Do not store string version of id.
         @_doc.characters[i] = character.id for character, i in saveCharacters when character?.id?
+        # deletes comparison temporary attributes
+        delete @_doc.__origcharacters
+        delete @_doc.__origprefs
         next()
-        # store new original value
+        # res comparison attributes
         @__origcharacters = @_doc.characters.concat() or []
         @__origprefs = JSON.stringify @_doc.prefs or {}
         # restore save to allow reference reuse.

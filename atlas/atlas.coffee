@@ -32,7 +32,23 @@
   # The factory accepts a options parameter, that may include:
   # - debug [Boolean] true to ouput debug message on console.
   @factory = (eventEmitter, options = {}) ->
-
+      
+    # internal state
+    isLoggingOut = false
+    connected = false
+    connecting = false
+    player = null
+    
+    # Per-class model caches
+    models =
+      Player: {}
+      Item: {}
+      ItemType: {}
+      Event: {}
+      EventType: {}
+      Map: {}
+      FieldType: {}
+      
     # Atlas global namespace
     Atlas = 
       # socket.io high level object
@@ -43,6 +59,16 @@
       
       # socket.io namespace for sending messages to server
       gameNS: null
+      
+    # read-only player, populated by `connect()`
+    Object.defineProperty Atlas, 'player', 
+      get: -> player
+      enumerable: true
+            
+    # read-only connection flag, populated by `connect()`
+    Object.defineProperty Atlas, 'connected', 
+      get: -> connected
+      enumerable: true
       
     #-----------------------------------------------------------------------------
     # Utilities
@@ -87,11 +113,6 @@
       
     #-----------------------------------------------------------------------------
     # Connection to server
-    
-    # internal state
-    isLoggingOut = false
-    connected = false
-    connecting = false
       
     # Needed on firefox to avoid errors when refreshing the page
     if $? and window?
@@ -163,6 +184,8 @@
           return callback err if err?
           # enrich player before sending him
           player = new Atlas.Player raw, (err) ->
+            # update socket.io query to allow reconnection with new token value
+            Atlas.socket.socket.options.query = "token=#{player.token}"
             eventEmitter.emit 'connected', player
             callback err, player
         
@@ -172,22 +195,13 @@
     Atlas.disconnect = (callback) =>
       return callback() unless Atlas.socket?
       isLoggingOut = true
+      player = null
       Atlas.socket.emit 'logout'
       Atlas.socket.disconnect()
       callback()
 
     #-----------------------------------------------------------------------------
     # Abstract models
-
-    # Per-class model caches
-    models =
-      Player: {}
-      Item: {}
-      ItemType: {}
-      Event: {}
-      EventType: {}
-      Map: {}
-      FieldType: {}
 
     # bounds to server updates
     eventEmitter.on 'connected', ->
@@ -880,7 +894,7 @@
 
       # **private**
       # List of properties that must be defined in this instance.
-      @_fixedAttributes: ['email', 'provider', 'password', 'lastConnection', 'firstName', 'lastName', 'isAdmin', 'characters', 'prefs']
+      @_fixedAttributes: ['email', 'provider', 'password', 'lastConnection', 'firstName', 'lastName', 'isAdmin', 'characters', 'prefs', 'token']
 
       # **private**
       # Load the model values from raw JSON
