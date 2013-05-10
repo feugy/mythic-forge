@@ -245,7 +245,7 @@ describe 'RuleService tests', ->
                       assert.equal 0, existing.stock.length
                       done()
 
-  describe 'given a player and a dumb rule', ->
+  describe 'given a player, an event and a dumb rule', ->
 
     beforeEach (done) ->
       # Creates a dumb rule that always match
@@ -277,7 +277,17 @@ describe 'RuleService tests', ->
                   add: (a) -> module.exports.const + a
                   _private2: -> # not exported too !
               """
-            ).save done
+            ).save (err) ->
+              return done err if err?
+              new EventType(id: 'message').save (err, saved) ->
+                return done err if err?
+                eventType = saved
+                # Drop existing events
+                Event.collection.drop -> Event.loadIdCache ->
+                  new Event(type: eventType).save (err, saved) ->
+                    return done err if err?
+                    event1 = saved
+                    done()
 
     # Restore admin player for further tests
     after (done) ->
@@ -295,6 +305,18 @@ describe 'RuleService tests', ->
         assert.ok player.equals results['rule0'][0].target
         done()
 
+    it 'should rule be applicable for player over event', (done) ->
+      # when resolving applicable rules for the player
+      service.resolve player.id, event1.id, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+
+        assert.ok results isnt null and results isnt undefined
+        # then the rule must have matched
+        assert.property results, 'rule0'
+        assert.equal 1, results['rule0'].length
+        assert.ok event1.equals results['rule0'][0].target
+        done()
+
     it 'should rule be executed for player', (done) ->
       # given an applicable rule for a target 
       service.resolve player.id, (err, results)->
@@ -302,6 +324,19 @@ describe 'RuleService tests', ->
 
         # when executing this rule on that target
         service.execute 'rule0', player.id, {}, (err, result)->
+          return done "Unable to execute rules: #{err}" if err?
+
+          # then the rule is executed.
+          assert.equal result, 'hello !'
+          done()
+
+    it 'should rule be executed for player over event', (done) ->
+      # given an applicable rule for a target 
+      service.resolve player.id, event1.id, (err, results)->
+        return done "Unable to resolve rules: #{err}" if err?
+
+        # when executing this rule on that target
+        service.execute 'rule0', player.id, event1.id, {}, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.

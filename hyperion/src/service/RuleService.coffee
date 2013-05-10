@@ -193,17 +193,18 @@ class _RuleService
   #
   # @overload resolve(playerId)
   #   Resolves applicable rules at for a player
-  #   @param playerId [ObjectId] the concerned player's id
+  #   @param playerId [ObjectId] the concerned player id
   #
   # @overload resolve(actorId, x, y)
   #   Resolves applicable rules at a specified coordinate
-  #   @param actorId [ObjectId] the concerned actor's id
+  #   @param actorId [ObjectId] the concerned item id
   #   @param x [Number] the targeted x coordinate
   #   @param y [Number] the targeted y coordinate
   #
   # @overload resolve(actorId, targetId)
   #   Resolves applicable rules at for a specific target
-  #   @param targetId [ObjectId] the targeted item/event's id
+  #   @param actorId [ObjectId] the concerned item/player id
+  #   @param targetId [ObjectId] the targeted item/event id
   #
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
@@ -242,9 +243,9 @@ class _RuleService
   #   Executes a specific rule for a player
   #   @param playerId [ObjectId] the concerned player's id
   #
-  # @overload resolve(ruleId, actorId, targetId, callback)
+  # @overload execute(ruleId, actorId, targetId, callback)
   #   Executes a specific rule for an actor and a given target
-  #   @param actorId [ObjectId] the concerned actor's id
+  #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjetId] the targeted item or event
   #
   # @param parameters [Array] array of awaited rule parameters

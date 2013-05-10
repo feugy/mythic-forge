@@ -60,6 +60,9 @@
       # socket.io namespace for sending messages to server
       gameNS: null
       
+      # refer current options
+      options: options
+      
     # read-only player, populated by `connect()`
     Object.defineProperty Atlas, 'player', 
       get: -> player
@@ -395,7 +398,7 @@
       # @option err [Error] an Error object or null if no error occured
       # @option models [Array<Model>] the matching models, may be empty if no model matched given conditions
       @find: (conditions, callback = ->) ->
-        callback null, _.where models[@_className], conditions
+        _.defer => callback null, _.where models[@_className], conditions
       
       # Find a model within the cache.
       # No server access done.
@@ -405,7 +408,7 @@
       # @option err [Error] an Error object or null if no error occured
       # @option model [Model] the first matching models, may be null if no model matched given conditions
       @findOne: (conditions, callback = ->) ->
-        callback null, _.findWhere models[@_className], conditions
+        _.defer => callback null, _.findWhere models[@_className], conditions
 
       # Find a model with its id within the cache.
       # No server access done.
@@ -432,7 +435,7 @@
           ids.splice ids.indexOf(id), 1
           break if ids.lenght is 0
 
-        callback null, result
+        _.defer => callback null, result
 
       # Fetch some models from the server. For models that have linked properties, they are resolve at first level.
       # Local cache is updated with results.
@@ -446,25 +449,24 @@
         rid = utils.rid()
 
         # load missing characters
-        process = (reqId, err, results) =>
+        options.debug and console.log "fetch on server (#{@_fetchMethod}) instances: #{ids.join ','}"
+        Atlas.gameNS.on "#{@_fetchMethod}-resp", process = (reqId, err, results) =>
           return unless reqId is rid
           Atlas.gameNS.removeListener "#{@_fetchMethod}-resp", process
           return callback err if err?
           async.each results, (raw, next) =>
-            model = @findById raw.id
-            if model?
-              # update cache with new value, as requested
-              onModelUpdate @_className, raw, next
-            else
-              # add new model to local cache
-              new Atlas[@_className] raw, next
+            @findById raw.id, (err, model) =>
+              return next err if err?
+              if model?
+                # update cache with new value, as requested
+                onModelUpdate @_className, raw, next
+              else
+                # add new model to local cache
+                new Atlas[@_className] raw, next
           , (err) =>
             return callback err if err?
             @findCached _.pluck(results, 'id'), (err, results) =>
               callback err, results
-
-        options.debug and console.log "fetch on server (#{@_fetchMethod}) instances: #{ids.join ','}"
-        Atlas.gameNS.on "#{@_fetchMethod}-resp", process
         Atlas.gameNS.emit @_fetchMethod, rid, ids
 
       # Model constructor: load the model from raw JSON
@@ -904,6 +906,7 @@
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
       _load: (raw, callback = ->) =>
+        console.log raw
         # do not invoke callback now
         super raw, (err) =>
           return callback err if err?
@@ -1042,6 +1045,7 @@
             # players, items and events will have _className, fields not
             target = appliance.target
             if target._className?
+              options.debug and console.log "#{ruleId} apply on #{target._className} #{target.id}"
               ModelClass = Atlas[target._className]
               # get the existing model from the collection
               ModelClass.findById target.id, (err, model) =>
@@ -1052,6 +1056,7 @@
                 # not existing ? adds it
                 appliance.target = new ModelClass target, next
             else
+              options.debug and console.log "#{ruleId} apply on field #{target.x} #{target.y}"
               appliance.target = new Atlas.Field target, next
           , next
         , (err) ->

@@ -129,17 +129,18 @@ module.exports =
   #
   # @overload resolve(playerId)
   #   Resolves applicable rules at for a player
-  #   @param playerId [ObjectId] the concerned player's id
+  #   @param playerId [ObjectId] the concerned player id
   #
   # @overload resolve(actorId, x, y)
   #   Resolves applicable rules at a specified coordinate
-  #   @param actorId [ObjectId] the concerned actor's id
+  #   @param actorId [ObjectId] the concerned item id
   #   @param x [Number] the targeted x coordinate
   #   @param y [Number] the targeted y coordinate
   #
   # @overload resolve(actorId, targetId)
   #   Resolves applicable rules at for a specific target
-  #   @param targetId [ObjectId] the targeted item/event's id
+  #   @param actorId [ObjectId] the concerned item/player id
+  #   @param targetId [ObjectId] the targeted item/event id
   #
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
@@ -166,29 +167,34 @@ module.exports =
         return resolveEnd "Cannot resolve rules. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?
         actor = result for result in results when result.id is actorId
         target = result for result in results when result.id is targetId
-        return callback "No actor with id #{actorId}" unless actor?
 
         process = =>
           # at last, resolve rules.
           logger.debug "resolve rules for actor #{actorId} and #{targetId}"
           internalResolve actor, [target], false, @, callback
 
-        if target?
-          process()
-        else 
+        findTarget = =>
+          # target exists: resolve it
+          return process() if target?
           # target could be also an event
           Event.findOne {_id: targetId}, (err, result) =>
             return callback "Cannot resolve rule. Failed to retrieve event target (#{targetId}): #{err}" if err?
             target = result
-            if target?
+            return process() if target?
+            # target could be also a field
+            Field.findOne {_id: targetId}, (err, result) =>
+              return callback "Cannot resolve rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
+              return callback "No target with id #{targetId}" unless result?
+              target = result
               process()
-            else
-              # target could be also a field
-              Field.findOne {_id: targetId}, (err, result) =>
-                return callback "Cannot resolve rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
-                return callback "No target with id #{targetId}" unless result?
-                target = result
-                process()
+
+        return findTarget() if actor?
+        # actor could be a player
+        Player.findOne {_id: actorId}, (err, result) =>
+          return resolveEnd "Cannot resolve rules. Failed to retrieve actor (#{actorId}): #{err}" if err?
+          return callback "No actor with id #{actorId}" unless result?
+          actor = result
+          findTarget()
 
     else if args.length is 3 
       actorId = args[0]
@@ -225,12 +231,12 @@ module.exports =
   #
   # @overload execute(ruleId, playerId, callback)
   #   Executes a specific rule for a player
-  #   @param playerId [ObjectId] the concerned player's id
+  #   @param playerId [ObjectId] the concerned player id
   #
-  # @overload resolve(ruleId, actorId, targetId, callback)
+  # @overload execute(ruleId, actorId, targetId, callback)
   #   Executes a specific rule for an actor and a given target
-  #   @param actorId [ObjectId] the concerned actor's id
-  #   @param targetId [ObjetId] the targeted item or event
+  #   @param actorId [ObjectId] the concerned item/player id
+  #   @param targetId [ObjetId] the targeted item/event id
   #
   # @param parameters [Array] array of awaited rule parameters
   # @param callback [Function] callback executed when rule was applied. Called with parameters:
@@ -299,28 +305,35 @@ module.exports =
       targetId = args[1]
       return callback "Target id is null !" unless targetId?
       return callback "Actor id is null !" unless actorId?
+
       # actorId and targetId are specified. Retrieve corresponding items and events
       Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
         return callback "Cannot execute rule. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?
         actor = result for result in results when result.id is actorId
         target = result for result in results when result.id is targetId
-        return callback "No actor with id #{actorId}" unless actor?
-        if target?
-          process()
-        else 
+
+        findTarget = =>
+          # target exists: process execution
+          return process() if target?
           # target could be also an event
           Event.findOne {_id: targetId}, (err, result) =>
             return callback "Cannot execute rule. Failed to retrieve event target (#{targetId}): #{err}" if err?
             target = result
-            if target?
+            return process() if target?
+            # target could be also a field
+            Field.findOne {_id: targetId}, (err, result) =>
+              return callback "Cannot execute rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
+              return callback "No target with id #{targetId}" unless result?
+              target = result
               process()
-            else
-              # target could be also a field
-              Field.findOne {_id: targetId}, (err, result) =>
-                return callback "Cannot execute rule. Failed to retrieve field target (#{targetId}): #{err}" if err?
-                return callback "No target with id #{targetId}" unless result?
-                target = result
-                process()
+
+        return findTarget() if actor?
+        # actor could be a player
+        Player.findOne {_id: actorId}, (err, result) =>
+          return callback "Cannot execute rules. Failed to retrieve actor (#{actorId}): #{err}" if err?
+          return callback "No actor with id #{actorId}" unless result?
+          actor = result
+          findTarget()
 
     else 
       callback 'execute() must be call with player id or actor and target ids'

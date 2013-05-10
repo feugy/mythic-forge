@@ -129,7 +129,7 @@ module.exports = (app = null) ->
             res.send css
            
     # SPA root need to be treaten differently, because of pushState. Must be after compilation middleware.
-    app.get new RegExp("^#{base}(/\\w*)*(?!\\.\\w+)$"), (req, res, next) ->
+    app.get new RegExp("^#{base}.*(?!\\.\\w+)$"), (req, res, next) ->
       # redirects with trailing slash to avoid relative path errors from browser
       return res.redirect "#{base}/" if req.url is "#{base}"
 
