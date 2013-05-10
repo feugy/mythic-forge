@@ -85,7 +85,7 @@ Item = typeFactory 'Item',
     # @param next [Function] function that must be called to proceed with other middleware.
     save: (next) ->
       # enforce quantity value regarding the type quantifiable attribute
-      if @get('type').get 'quantifiable'
+      if @type?.get 'quantifiable'
         @set 'quantity', 0 unless @get('quantity')?
       else
         @set 'quantity', null if @get('quantity')?

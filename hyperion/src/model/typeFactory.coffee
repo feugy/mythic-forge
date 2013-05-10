@@ -409,7 +409,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instance [Object] the root instance on which linked objects were resolved.
-    AbstractType.methods.getLinked = (callback) ->
+    AbstractType.methods.getLinked = AbstractType.methods.fetch = (callback) ->
       AbstractType.statics.getLinked [this], (err, instances) =>
         callback err, if instances and instances?.length is 1 then instances[0] else null
 
@@ -420,7 +420,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instances [Array<Object>] the instances on which linked objects were resolved.
-    AbstractType.statics.getLinked = (instances, callback) ->
+    AbstractType.statics.getLinked = AbstractType.statics.fetch (instances, callback) ->
       ids = []
       # identify each linked properties 
       for instance in instances
@@ -486,6 +486,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @param next [Function] function that must be called to proceed with other middleware.
     # Calling it with an argument indicates the the validation failed and cancel the instante save.
     AbstractType.pre 'save', (next) ->
+      return next new Error "Cannot save instance #{@_className} (#{@id}) without type" unless @type?
       properties = @type.properties
       # get through all existing attributes
       attrs = Object.keys @_doc;

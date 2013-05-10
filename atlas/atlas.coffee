@@ -440,13 +440,15 @@
       # Fetch some models from the server. For models that have linked properties, they are resolve at first level.
       # Local cache is updated with results.
       #
-      # @param ids [Array<String>] the searched model ids
+      # @param ids [Array<String|Model>] the searched model or their ids
       # @param callback [Function] end callback, invoked with arguments:
       # @option err [Error] an Error object or null if no error occured
       # @option models [Array<Model>] the matching models, may be empty if no model matched given ids
       @fetch: (ids, callback = ->) ->
         throw new Error "fetch not suppored for #{@_className}" unless @_fetchMethod?
         rid = utils.rid()
+        # only keep ids
+        ids = _.map ids, (obj) -> if _.isObject(obj) and 'id' of obj then obj.id else obj
 
         # load missing characters
         options.debug and console.log "fetch on server (#{@_fetchMethod}) instances: #{ids.join ','}"
@@ -643,7 +645,7 @@
               # reuse existing model
               return nextVal null, linked if linked?
               # we have data: add it
-              nextVal err, new Atlas[val._className] val
+              new Atlas[val._className] val, nextVal
         , (err, processed) ->
           return callback err if err?
           if modified
