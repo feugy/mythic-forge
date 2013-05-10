@@ -27,6 +27,7 @@ Item = require '../../model/Item'
 Event = require '../../model/Event'
 Field = require '../../model/Field'
 Player = require '../../model/Player'
+Map = require '../../model/Map'
 utils = require '../../util/common'
 modelUtils = require '../../util/model'
 logger = require('../../util/logger').getLogger 'service'
@@ -271,24 +272,47 @@ module.exports =
 
           rule.execute actor, target, parameters, (err, result) => 
             return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-
             saved = []
-            # removes objects from mongo
-            logger.debug "remove model #{obj.id}" for obj in rule.removed
-            async.forEach rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
-              return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-              # adds new objects to be saved
-              saved = saved.concat rule.saved
-              # looks for modified linked objects
-              modelUtils.filterModified actor, saved
-              modelUtils.filterModified target, saved
-              # saves the whole in MongoDB
-              logger.debug "save modified model #{obj.id}" for obj in saved
-              async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
-                return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-                # everything was fine
-                callback null, result
 
+            # load removed ids
+            ids = (id for id in rule.removed when _.isString id)
+            async.eachSeries [Item, Event, Player, Field, Map], (Class, next) =>
+              # no more ids
+              return next() if ids.length is 0
+
+              enrich = (err, results) =>
+                return next "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
+                # replace found result into rule.removed array
+                for removed in results 
+                  for id, i in rule.removed when id is removed.id
+                    rule.removed[i] = removed 
+                    ids = _.without ids, id
+                    break
+                next()
+
+              # try to load objects from their ids
+              if 'findCached' of Class
+                Class.findCached ids, enrich
+              else 
+                Class.find {_id: $in: ids}, enrich
+            , (err) =>
+              return callback err if err?
+              # removes objects from mongo
+              logger.debug "remove model #{obj.id}" for obj in rule.removed
+              async.each rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
+                return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
+                # adds new objects to be saved
+                saved = saved.concat rule.saved
+                # looks for modified linked objects
+                modelUtils.filterModified actor, saved
+                modelUtils.filterModified target, saved
+                # saves the whole in MongoDB
+                logger.debug "save modified model #{obj.id}" for obj in saved
+                async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
+                  return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
+                  # everything was fine
+                  callback null, result
+            
     if args.length is 1
       playerId = args[0]
       return callback "Player id is null !" unless playerId?
@@ -307,7 +331,7 @@ module.exports =
       return callback "Actor id is null !" unless actorId?
 
       # actorId and targetId are specified. Retrieve corresponding items and events
-      Item.find {$or:[{_id: actorId},{_id: targetId}]}, (err, results) =>
+      Item.find {_id: $in: [actorId, targetId]}, (err, results) =>
         return callback "Cannot execute rule. Failed to retrieve actor (#{actorId}) or target (#{targetId}): #{err}" if err?
         actor = result for result in results when result.id is actorId
         target = result for result in results when result.id is targetId

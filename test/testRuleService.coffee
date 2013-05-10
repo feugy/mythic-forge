@@ -245,6 +245,48 @@ describe 'RuleService tests', ->
                       assert.equal 0, existing.stock.length
                       done()
 
+  it 'should rule delete existing objects by ids', (done) ->
+    # given a rule that creates an object
+    script = new Executable
+      id:'rule29', 
+      content: """Rule = require 'hyperion/model/Rule'
+        module.exports = new (class RemovePart extends Rule
+          canExecute: (actor, target, callback) =>
+            callback null, []
+          execute: (actor, target, params, callback) =>
+            @removed.push target.id
+            callback null, 'removed'
+        )()"""
+    script.save (err) ->
+      # given a type
+      return done err if err?
+      new ItemType(id: 'container').save (err, saved) ->
+        return done err if err?
+        type1 = saved
+        # given an item
+        new Item(type: type1).save (err, saved) ->
+          return done err if err?
+          Item.findOne {_id: saved.id}, (err, existing) =>
+            return done "Unable to create item: #{err}" if err?
+            return done 'Item not created' unless existing?
+
+            # given the rules that are applicable for the both items
+            service.resolve saved.id, saved.id, (err, results)->
+              return done "Unable to resolve rules: #{err}" if err?
+              return done 'the rule29 was not resolved' if results['rule29'].length isnt 1
+
+              # when executing this rule on that target
+              service.execute 'rule29', saved.id, saved.id, {}, (err, result)->
+                return done "Unable to execute rules: #{err}" if err?
+
+                # then the rule is executed.
+                assert.equal result, 'removed'
+                # then the item does not exist in database anymore
+                Item.findOne {_id: saved.id}, (err, existing) =>
+                  return done "Unable to create item: #{err}" if err?
+                  assert.isNull existing
+                  done()
+
   describe 'given a player, an event and a dumb rule', ->
 
     beforeEach (done) ->

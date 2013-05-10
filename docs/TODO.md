@@ -1,6 +1,7 @@
 # TODO
 
 - Hyperion
+  - [!!!] 
   - cache evinction on inutility and size
   - test images for field types and event types
   - [!] documentation
@@ -144,6 +145,7 @@
     - modifiable, pausable and unic date system for rules
     - reference dependencies to hyperions modules as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
+    - remove models by id in rule's removed array
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

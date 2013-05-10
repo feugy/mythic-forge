@@ -125,7 +125,7 @@ filterModified = (obj, modified) ->
   # do not process if already known
   return if obj in modified 
   # will be save if at least one path is modified
-  modified.push obj if obj?.isModified()
+  modified.push obj if obj?.isModified?()
   if obj?._className is 'Player'
     # recurse if needed on characters
     filterModified value, modified for value in obj.characters when value? and 'string' isnt utils.type value
