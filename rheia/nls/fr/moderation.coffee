@@ -23,7 +23,8 @@ define
     item: '%1$s (%2$s)'
     event: '%1$s (%2$s)'
     player: '%1$s (%2$s)'
-    chooseType: 'Choix du type'
+    createItem: 'Création d\'un objet'
+    createEvent: 'Création d\'un évènement'
     shadowObj: 'Operation impossible'
 
   labels: 
@@ -101,8 +102,9 @@ define
     itemExternalChange: "L'objet à été modifié par ailleur. Ses valeurs ont été mises à jour"
     eventExternalChange: "L'évènement à été modifié par ailleur. Ses valeurs ont été mises à jour"
     playerExternalChange: "Le joueur à été modifié par ailleur. Ses valeurs ont été mises à jour"
-    chooseItemType: "<p>Choisissez un type d'objet pour le nouvel objet :</p>"
-    chooseEventType: "<p>Choisissez un type d'objet pour le nouvel évènement :</p>"
+    chooseItemType: "<p>Choisissez un type et un identidiant pour le nouvel objet.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
+    chooseEventType: "<p>Choisissez un type et un identifiant pour le nouvel évènement.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
     invalidPrefs: 'Préférences : erreur de syntaxe JSON'
     shadowObj: "<p>L'objet en question n'existe plus: il a dû être supprimé depuis votre dernière recherche.</p><p>Votre recherche a été mise à jour.<p/>"
     invalidEmail: 'Le login/e-mail est vide ou contient des caractères invalides'
+    noTypes: 'Aucun type disponible. Veuillez en créer un dans la perspective d\'Edition.'

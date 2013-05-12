@@ -81,7 +81,7 @@ define [
     _createAlt: =>
       return if @$el.find('.alt').length isnt 0
       # do not use regular HTML alt attribute because Chrome doesn't handle it correctly: position cannot be set
-      @$el.prepend "<p class=\"alt\">#{i18n.loadableImage.noImage}</p>"
+      @$el.prepend "<p class=\"alt\">#{@options.altText}</p>"
       
     # **private**
     # Invoked when a file have been choosen.
@@ -148,3 +148,6 @@ define [
 
     # allow subclasses to disable buttons
     noButtons: false
+
+    # Alternative text used if no image available
+    altText: i18n.loadableImage.noImage

@@ -128,6 +128,9 @@ for name in question warning cancel
 .ui-button-text-icon-primary .ui-button-text
   padding-left 2.3em
 
+.ui-widget-overlay 
+  opacity 0.7
+
 // Validators
 
 :not(.ui-numeric) > input.validation-error
@@ -299,6 +302,27 @@ body
         right 0
 
 // Common style for perspective layout
+
+.loadable.selected
+  box-shadow: 0 0 10px 5px #AAA
+    
+.name-choose-popup
+  
+  input.name
+    display block
+    width 350px
+    margin 0.5em 1em
+
+  .errors
+    text-align center
+    font-size fontSize*0.9
+    color errorColor
+
+  .loadable
+    margin-top 1em
+
+  .loadable:not(:first-child)
+    margin-left 0.3em
 
 .perspective
   space = 1em

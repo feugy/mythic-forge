@@ -25,6 +25,7 @@ define [
   'i18n!nls/moderation'
   'text!tpl/moderationPerspective.html'
   'utils/utilities'
+  'utils/validators'
   'model/ItemType'
   'model/EventType'
   'model/Map'
@@ -39,7 +40,7 @@ define [
   'widget/search'
   'widget/moderationMap'
   'widget/loadableImage'
-], ($, TabPerspective, i18n, i18nModeration, template, utils, ItemType, EventType, 
+], ($, TabPerspective, i18n, i18nModeration, template, utils, validators, ItemType, EventType, 
   Map, Field, Item, Event, Player, ItemView, EventView, PlayerView, Renderers) ->
 
   i18n = $.extend true, i18n, i18nModeration
@@ -173,14 +174,14 @@ define [
           primary: "small new-item"
         text: false
       ).attr('title', i18n.tips.newItem
-      ).on 'click', @_onChooseItemType
+      ).on 'click', (event) => @_onChooseType event, true
 
       @$el.find(".right .new-event").button(
         icons:
           primary: "small new-event"
         text: false
       ).attr('title', i18n.tips.newEvent
-      ).on 'click', @_onChooseEventType
+      ).on 'click', (event) => @_onChooseType event, false
 
       @$el.find(".right .new-player").button(
         icons:
@@ -306,70 +307,88 @@ define [
       @_inhibitZoom = false
 
     # **private**
-    # Display a popup to choose an item type before creating a new item
+    # Display a popup to choose an item type before creating a new item or event
     #
     # @param event [Event] canceled button clic event
-    _onChooseItemType: (event) =>
+    # @param isItem [Boolean] true if selected type is for item, false for event
+    _onChooseType: (event, isItem) =>
       event?.preventDefault()
+
+      Class = if isItem then ItemType else EventType
+      title = if isItem then i18n.titles.createItem else i18n.titles.createEvent
+      message = if isItem then i18n.msgs.chooseItemType else i18n.msgs.chooseEventType
+
+      # display loadable image for each existing types
       listLoaded = =>
-        ItemType.collection.off 'reset', listLoaded
+        Class.collection.off 'reset', listLoaded
         popup.find('.loader').remove()
 
+        popup.append "<div class='errors'>#{i18n.msgs.noTypes}</div>" if Class.collection.models.length is 0
         # Display a loadable image by types
-        for type in ItemType.collection.models
+        for type in Class.collection.models
           $("<div data-id='#{type.id}'></div>").loadableImage(
             source: type.descImage
-            noButtons:true
+            noButtons: true
+            altText: type.id
           ).appendTo popup
 
       # gets type list and display popup while.
-      ItemType.collection.on 'reset', listLoaded
-      ItemType.collection.fetch()
-      popup = utils.popup i18n.titles.chooseType, i18n.msgs.chooseItemType, null, [
+      Class.collection.on 'reset', listLoaded
+      Class.collection.fetch()
+      popup = utils.popup(title, message, null, [
         text: i18n.buttons.ok
-        click: => popup.off 'click', '.loadable'
-      ]
-      popup.addClass("choose-type").append "<div class='loader'></div>"
+        click: (event) => 
+          event?.preventDefault()
+          validator.validate()
+          selected = popup.find '.loadable.selected'
+          # Do not proceed unless no validation error and selected type
+          return false unless selected.length is 1 and validator.errors.length is 0
+          @_creationType = Class.collection.get selected.data 'id'
+          id = popup.find('.id').val()
 
-      # Type select handler
-      popup.on 'click', '.loadable', (event) =>
-        @_creationType = ItemType.collection.get $(event.target).closest('.loadable').data 'id'
-        console.log "type #{@_creationType?.id} selected for new item"
-        popup.dialog 'close'
-        app.router.trigger 'open', 'Item'
+          # ask server if id is free
+          rid = utils.rid()
+          app.sockets.admin.on 'isIdValid-resp', listener = (reqId, err) =>
+            return unless rid is reqId
+            app.sockets.admin.removeListener 'isIdValid-resp', listener
+            return popup.find('.errors').first().empty().append i18n.msgs.alreadyUsedId if err
+            validator.dispose()
+            # now we can opens the view tab
+            popup.dialog 'close'
+            popup.off 'click', '.loadable'
+            input.off 'keyup'
+            console.log "type #{@_creationType?.id} selected for new object"
+            app.router.trigger 'open', (if isItem then 'Item' else 'Event'), id
 
-    # **private**
-    # Display a popup to choose an event type before creating a new event
-    #
-    # @param event [Event] canceled button clic event
-    _onChooseEventType: (event) =>
-      event?.preventDefault()
-      listLoaded = =>
-        EventType.collection.off 'reset', listLoaded
-        popup.find('.loader').remove()
+          app.sockets.admin.emit 'isIdValid', rid, id
+          false
+      ]).addClass('name-choose-popup choose-type').append("""
+          <div class="id-container">
+            <label>#{i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
+            <input type='text' class='id' value='#{utils.generateId()}'/>
+          </div>
+          <div class='errors'></div>
+          <div class='loader'></div>"""
 
-        # Display a loadable image by types
-        for type in EventType.collection.models
-          $("<div data-id='#{type.id}'></div>").loadableImage(
-            source: type.descImage
-            noButtons:true
-          ).appendTo popup
+      ).on 'click', '.loadable', (event) =>
+        popup.find('.loadable').removeClass 'selected'
+        $(event.target).closest('.loadable').addClass 'selected'
 
-      # gets type list and display popup while.
-      EventType.collection.on 'reset', listLoaded
-      EventType.collection.fetch()
-      popup = utils.popup i18n.titles.chooseType, i18n.msgs.chooseEventType, null, [
-        text: i18n.buttons.ok
-        click: => popup.off 'click', '.loadable'
-      ]
-      popup.addClass("choose-type").append "<div class='loader'></div>"
+      # creates id validator
+      validator = new validators.Regexp 
+        required: true
+        invalidError: i18n.msgs.invalidId
+        regexp: i18n.constants.uidRegex
+      , i18n.labels.id, input = popup.find('.id'), 'keyup' 
 
-      # Type select handler
-      popup.on 'click', '.loadable', (event) =>
-        @_creationType = EventType.collection.get $(event.target).closest('.loadable').data 'id'
-        console.log "type #{@_creationType?.id} selected for new event"
-        popup.dialog 'close'
-        app.router.trigger 'open', 'Event'
+      # displays error on keyup. Binds after validator creation to validate first
+      input.focus()
+      input.on 'keyup', (event) =>
+        # displays error on keyup
+        container = popup.find('.errors').first()
+        container.empty()
+        if validator.errors.length
+          container.append error.msg for error in validator.errors
 
     # **private**
     # Handler invoked when a tab was added to the widget. Make tab draggable to affect instance.

@@ -52,7 +52,7 @@ define [
           @$ = $(@)
           data = @$.data name
           options = $.extend true, {}, $.fn[name].defaults, if 'object' is utils.type method then method
-          
+
           unless data? 
             data = new Clazz @, options
             @$.data name, data

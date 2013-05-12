@@ -28,5 +28,10 @@ define
       instanceAffectation: 'affectInstances'
       uidRegex: /^[\w$-]+$/i #/^[$_\u0041-\uff70].*$/i
       emailRegex: /^[$_\u0041-\uff70]+$/i
+
+    msgs: 
+      invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
+      alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"
+    
     TOTRANSLATE: true    
 

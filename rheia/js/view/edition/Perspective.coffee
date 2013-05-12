@@ -146,7 +146,7 @@ define [
             id = input.val()
             # ask server if id is free
             rid = utils.rid()
-            listener = (reqId, err) =>
+            app.sockets.admin.on 'isIdValid-resp', listener = (reqId, err) =>
               return unless rid is reqId
               app.sockets.admin.removeListener 'isIdValid-resp', listener
               if err
@@ -156,8 +156,6 @@ define [
               # now we can opens the view tab
               popup.dialog 'close'
               @_onOpenElement type, id
-              
-            app.sockets.admin.on 'isIdValid-resp', listener
             app.sockets.admin.emit 'isIdValid', rid, id
             false
         ,

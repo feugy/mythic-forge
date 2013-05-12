@@ -420,7 +420,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instances [Array<Object>] the instances on which linked objects were resolved.
-    AbstractType.statics.getLinked = AbstractType.statics.fetch (instances, callback) ->
+    AbstractType.statics.getLinked = AbstractType.statics.fetch = (instances, callback) ->
       ids = []
       # identify each linked properties 
       for instance in instances
