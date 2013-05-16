@@ -36,7 +36,7 @@ define [
 
     # **private**
     # List of not upadated attributes
-    _notUpdated: ['id', 'type', 'map']
+    _notUpdated: ['id', 'type']
 
     # enhanced inheritted method to trigger `add` event on existing models that
     # are added a second time.
@@ -77,7 +77,7 @@ define [
         model = @get changes.id
         model?._transition = changes.transition
 
-      # Call inherited merhod
+      # Call inherited method
       super className, changes
 
       # reset transition change detection when updated
@@ -143,7 +143,7 @@ define [
         else 
           @map = map
 
-    # Overrides inherited setter to handle i18n fields.
+    # Overrides inherited setter to handle transition
     #
     # @param attr [String] the modified attribute
     # @param value [Object] the new attribute value

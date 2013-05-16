@@ -1,18 +1,21 @@
 # TODO
 
 - Hyperion
-  - [!!!] 
   - cache evinction on inutility and size
   - test images for field types and event types
   - [!] documentation
   - Rule engine
+    - [!!!] path to node_modules from rules
+    - [!!!] trigger single category
     - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
+    - [!!!] token expiration: no refresh on operations
 
 - Rheia
   - Bugs
+    - [!!!] no category in rule tree
     - [!!] After version change, version list is empty
     - map navigation and zoom - NOT reproducted
     - persistent change detection after saving a rule - NOT reproducted
@@ -169,6 +172,7 @@
     - configuration merge not displayed
     - an actor rule can be created with a turn rule/script name and erase it 
     - FSItem move popup does not close on ok
+    - item's map changes not displayed in moderation (when map was previously not existing)
   - handle rule requires
   - perspective loader
   - login page

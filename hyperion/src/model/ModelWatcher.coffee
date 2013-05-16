@@ -69,7 +69,10 @@ class _ModelWatcher extends EventEmitter
         # for update, only emit modified datas
         changes = 
           id: instance.id
-        changes[path] = instance.get(path) or null for path in modified
+        for path in modified
+          changes[path] = instance.get(path)
+          # init to null if property was removed
+          changes[path] = null unless changes[path]? 
 
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{changes.id or changes.path}}"

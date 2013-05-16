@@ -251,7 +251,9 @@
 
         # performs update propagation
         end = (err) ->
-          eventEmitter.emit 'modelChanged', 'update', model, _.without _.keys(changes), 'id' if modified and !err?
+          options.debug and console.log "end of update for model #{model.id} (#{className})", modified, err
+          if modified and !err?
+            eventEmitter.emit 'modelChanged', 'update', model, _.without _.keys(changes), 'id' 
           callback err
 
         # enrich specific models properties
@@ -347,7 +349,7 @@
         # affect id
         @id = raw?.id
         throw new Error "cannot create #{@constructor._className} without id" unless @id?
-        @_load raw, => _.defer => callback null, @
+        @_load raw, (err) => _.defer => callback err, @
 
       # **private**
       # Load the model values from raw JSON
@@ -542,7 +544,7 @@
     # @param callback [Function] enrichment end callback, invoked with arguments:
     # @option callback error [Error] an Error object, or null if no error occured
     enrichCharacters = (player, callback = ->) ->
-      return callback unless _.isArray player.characters
+      return callback null unless _.isArray player.characters
       raws = player.characters.concat()
       toLoad = []
       player.characters = []
@@ -625,7 +627,7 @@
         modified = false
         async.map processed, (val, nextVal) ->
           isString = 'string' is utils.type val
-          return nextVal val unless isString or val?._className?
+          return nextVal null, val unless isString or val?._className?
           modified = true
           if isString
             # look into items, and then into events
@@ -1019,7 +1021,7 @@
         else if args.length is 2
           # execute for actor over a target
           targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
-          options.debug and console.log "execute rule #{ruleName} for #{actor} and target #{target}"
+          options.debug and console.log "execute rule #{ruleName} for #{actorId} and target #{targetId}"
           Atlas.gameNS.emit 'executeRule', @_executeArgs.rid, ruleName, actorId, targetId, params
         else 
           return callback new Error "Can't execute rules with arguments #{arguments}"
@@ -1083,6 +1085,102 @@
 
     # Only provide a singleton of RuleService
     Atlas.ruleService = new RuleService()
+
+    #-----------------------------------------------------------------------------
+    # Rule Service
+
+    # The rule service is responsible for retreiveing and storring images in a cache.
+    # When requesting multiple time the same image, it stacks requester callback and invoke
+    # them when the image is ready. 
+    # It immediately returns the existing image when cached. 
+    class ImageService
+
+      # **private**        
+      # Temporary storage of caller callback  for pending images
+      _pendingStacks: {}
+
+      # **private**
+      # Image local cache, that store Image objects
+      _cache: {}
+      
+      # **private**
+      # Timestamps added to image request to server, avoiding cache
+      _timestamps: {}
+      
+      # Load an image. Once it's available, the callback is invoked
+      # If this image has already been loaded (url used as key), the event is imediately emitted.
+      #
+      # @param image [String] the image **ABSOLUTE** url
+      # @param callback [Function] retrieval end callback, invoked with arguments
+      # @option callback err [Error] an Error object, or null if no error occured
+      # @option callback key [String] key used to retrieved image data (image url)
+      # @option callback data [Object] the image data
+      load: (image, callback) =>
+        isLoading = false
+        return isLoading unless image?
+        # Use cache if available, with a timeout to simulate asynchronous behaviour
+        if image of @_cache
+          _.defer =>
+            callback null, image, @_cache[image]
+        else if image of @_pendingStacks
+          # add a new listener for this image.
+          @_pendingStacks[image].push callback
+        else
+          @_pendingStacks[image] = [callback]
+          # creates an image facility
+          imgData = new Image()
+          # bind loading handlers
+          $(imgData).load @_onImageLoaded
+          $(imgData).error @_onImageFailed
+          @_timestamps[image] = new Date().getTime()
+          # adds a timestamped value to avoid browser cache
+          imgData.src = "#{image}?#{@_timestamps[image]}"
+
+      # Returns the image content from the cache, or null if the image was not requested yet
+      getImage: (image) =>
+        return null unless image of @_cache
+        @_cache[image]
+
+      # **private**
+      # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
+      #
+      # @param event [Event] image loading success event
+      _onImageLoaded: (event) =>
+        # get only the image without host, port and base path
+        key = null
+        src = event.target.src.replace /\?\d*$/, ''
+        for image of @_pendingStacks when _(src).endsWith image
+          key = image 
+          break
+        return unless key?
+        # remove pending stack
+        stack = @_pendingStacks[key]
+        delete @_pendingStacks[key]
+        options.debug and console.log "store in cache image #{key}"
+        # strore image data and invoke callbacks
+        @_cache[key] = event.target
+        callback null, key, @_cache[key] for callback in stack
+    
+      # **private**
+      # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
+      # @param event [Event] image loading fail event
+      _onImageFailed: (event) =>
+        # get only the image without host, port and base path
+        key = null
+        src = event.target.src.replace /\?\d*$/, ''
+        for image of @_pendingStacks when _(src).endsWith image
+          key = image 
+          break
+        return unless key?
+        # remove pending stack
+        stack = @_pendingStacks[key]
+        delete @_pendingStacks[key]
+        options.debug and console.log "image #{src} loading failed"
+        # invoke callbacks
+        callback new Error("#{key} image not found"), key for callback in stack
+
+    # Only provide a singleton of ImageService
+    Atlas.imageService = new ImageService()
 
     # return created namespace
     Atlas
