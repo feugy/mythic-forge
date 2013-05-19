@@ -187,7 +187,6 @@ define [
       @_imageWidget.setOption 'current', @model.imageNum
 
       # map ownership
-      console.log @model.map?.id
       @_mapList.find("[value]").removeAttr 'selected'
       @_mapList.find("[value='#{@model.map?.id}']").attr 'selected', 'selected'
       @_xWidget.setOption 'value', @model.x

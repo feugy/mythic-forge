@@ -394,7 +394,7 @@ describe 'RuleService tests', ->
         rule = rules.rule0
 
         # then requires have been replaced by a single define
-        assert.equal 0, rule.indexOf('define(\'rule0\', [\'hyperion/model/Rule\'], function(Rule){\n'), 'no define() call'
+        assert.equal 0, rule.indexOf("define('rule0', ['hyperion/model/Rule'], function(Rule){\n"), 'no define() call'
         assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
         assert.equal -1, rule.indexOf('require'), 'still require() in rule'
         assert.equal -1, rule.indexOf(' Rule,'), 'still scope definition in rule'
@@ -452,7 +452,8 @@ describe 'RuleService tests', ->
           rule = rules.rule0
 
           # then requires have been replaced by a single define
-          assert.equal 0, rule.indexOf('define(\'rule0\', [\'moment\'], function(moment){\n'), 'no define() call'
+          console.log rule
+          assert.equal 0, rule.indexOf("define('rule0', ['moment'], function(moment){\n"), 'no define() call'
           assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
           assert.equal -1, rule.indexOf('require'), 'still require() in rule'
 

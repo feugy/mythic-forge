@@ -37,6 +37,7 @@ loggerWorker = LoggerFactory.getLogger 'worker'
 depReg = /(.*)\s=\srequire\((.*)\);\n/
 compiledRoot = pathUtils.resolve pathUtils.normalize utils.confKey 'executable.target'
 pathToHyperion = utils.relativePath(compiledRoot, pathUtils.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
+pathToNodeModules = utils.relativePath(compiledRoot, "#{pathUtils.join __dirname, '..', '..', '..', 'node_modules'}/".replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 
 # Pool of workers.
 pool = []
@@ -167,7 +168,9 @@ class _RuleService
           while -1 isnt content.search depReg
             # removes the require directive and extract relevant variable and path
             content = content.replace depReg, (str, variable, dep)->
-              deps.push dep.replace "'#{pathToHyperion}", "'hyperion"
+              dep = dep.replace "'#{pathToHyperion}", "'hyperion"
+              dep = dep.replace "'#{pathToNodeModules}", "'"
+              deps.push dep
               vars.push variable
               return ''
 

@@ -48,7 +48,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
       listener.apply @, args for listener in @events[type]
   )()
 
-  window.Atlas = AtlasFactory emitter
+  window.Atlas = AtlasFactory emitter, debug:false
   
   describe 'Atlas tests', ->
 
@@ -168,18 +168,22 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           provider: player.provider
           characters: [models.john]
         adminNS.once 'save-resp', (reqId, err) ->
-          return done "Failed to save player: #{err}" if err?
+            return done "Failed to save player: #{err}" if err?
+        
+        # then a modelChanged event is triggered about player
+        emitter.on 'modelChanged', listener = (kind, model, changes) -> 
+          return unless model.id is player.id
+          emitter.off 'modelChanged', listener
+        
           # then player model is automatically updated
           expect(player.characters).to.have.lengthOf 1
           expect(player.characters[0]).to.be.an.instanceOf Atlas.Item
           expect(player.characters[0]).to.have.property 'id', 'john'
           expect(player.characters[0]).to.have.property 'strength', 20
           # then a modelChanged event was issued
-          expect(emitter.emitted).to.have.length 1
-          expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-          expect(emitter.emitted[0].args[0]).to.equal 'update'
-          expect(emitter.emitted[0].args[1]).to.deep.equal player
-          expect(emitter.emitted[0].args[2]).to.deep.equal ['characters']
+          expect(kind).to.equal 'update'
+          expect(model).to.deep.equal player
+          expect(changes).to.deep.equal ['characters']
           done()
 
       it 'should character be added to a map', (done) ->
@@ -193,7 +197,13 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           models.john.y = 2
           adminNS.emit 'save', makeRid(), 'Item', models.john
           adminNS.once 'save-resp', (reqId, err) ->
-            return done "Failed to save character: #{err}" if err?
+              return done "Failed to save character: #{err}" if err?
+          
+          # then a modelChanged event is triggered about character
+          emitter.on 'modelChanged', listener = (kind, model, changes) -> 
+            return unless model.id is character.id
+            emitter.off 'modelChanged', listener
+            
             # then character model is automatically updated
             expect(character.map).to.be.an.instanceOf Atlas.Map
             expect(character.map).to.have.property 'id', 'testMap1'
@@ -201,11 +211,9 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(character.x).to.be.equal 5
             expect(character.y).to.be.equal 2
             # then a modelChanged event was issued
-            expect(emitter.emitted).to.have.length 1
-            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-            expect(emitter.emitted[0].args[0]).to.equal 'update'
-            expect(emitter.emitted[0].args[1]).to.deep.equal character
-            expect(emitter.emitted[0].args[2]).to.deep.equal ['imageNum', 'y', 'x', 'map']
+            expect(kind).to.equal 'update'
+            expect(model).to.deep.equal character
+            expect(changes).to.deep.equal ['imageNum', 'y', 'x', 'map']
             done()
 
       it 'should event have populated from cache and server', (done) -> 
@@ -271,12 +279,14 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         models.bob.linked = ['evt1']
         create {className: 'Item', container: models, obj: models.bob}, (err) ->
           return done "Failed to select item #{err}" if err?
-          # then a modelChanged event was issued
-          expect(emitter.emitted).to.have.length 1
-          expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-          expect(emitter.emitted[0].args[0]).to.equal 'update'
-          expect(emitter.emitted[0].args[1]).to.have.property 'id', 'bob'
-          expect(emitter.emitted[0].args[2]).to.deep.equal ['strength', 'linked']
+          
+        # then a modelChanged event was issued
+        emitter.on 'modelChanged', listener = (kind, model, changes) ->
+          return unless model.id is 'bob'
+          emitter.off 'modelChanged', listener
+          
+          expect(kind).to.equal 'update'
+          expect(changes).to.deep.equal ['strength', 'linked']
           # when getting locally cached related object
           Atlas.Item.findById 'tim', (err, item) ->
             return done "Failed to select item #{err}" if err?
@@ -467,16 +477,19 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           # when executing a rule for this model
           Atlas.ruleService.execute 'testRule1', character, character, [], (err, result) ->
             return done "Failed to execute rule over target: #{err}" if err?
-            # then a modelChanged event was issued
-            expect(emitter.emitted).to.have.length 1
-            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-            expect(emitter.emitted[0].args[0]).to.equal 'update'
-            expect(emitter.emitted[0].args[1]).to.deep.equal character
-            expect(emitter.emitted[0].args[2]).to.deep.equal ['strength']
-            # then the character strength has been modified
-            expect(character).to.have.property 'strength', 21
             # then rule results was returned
             expect(result).to.include 'strengthened'
+            
+          # then a modelChanged event was issued
+          emitter.on 'modelChanged', listener = (kind, model, changes) ->
+            return unless model.id is character.id
+            emitter.off 'modelChanged', listener
+            
+            expect(kind).to.equal 'update'
+            expect(model).to.deep.equal character
+            expect(changes).to.deep.equal ['strength']
+            # then the character strength has been modified
+            expect(character).to.have.property 'strength', 21
             # update raw model that have not been modified
             models.john.strength = character.strength
             done()
@@ -485,17 +498,19 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         # when executing a rule for player
         Atlas.ruleService.execute 'testRule3', player, [], (err, result) ->
           return done "Failed to execute rule over player: #{err}" if err?
-          # then a modelChanged event was issued
-          console.log emitter.emitted
-          expect(emitter.emitted).to.have.length 1
-          expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-          expect(emitter.emitted[0].args[0]).to.equal 'update'
-          expect(emitter.emitted[0].args[1]).to.deep.equal player.characters[0]
-          expect(emitter.emitted[0].args[2]).to.deep.equal ['strength']
-          # then the character strength has been reseted
-          expect(player.characters[0]).to.have.property 'strength', 10
           # then rule results was returned
           expect(result).to.include 'reseted'
+          
+        # then a modelChanged event was issued
+        emitter.on 'modelChanged', listener = (kind, model, changes) ->
+          return unless model.id is player.characters[0].id
+          emitter.off 'modelChanged', listener
+          
+          expect(kind).to.equal 'update'
+          expect(model).to.deep.equal player.characters[0]
+          expect(changes).to.deep.equal ['strength']
+          # then the character strength has been reseted
+          expect(player.characters[0]).to.have.property 'strength', 10
           # update raw model that have not been modified
           models.john.strength = player.characters[0].strength
           done()
@@ -533,15 +548,19 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           adminNS.emit 'save', makeRid(), 'Item', models.john
           adminNS.once 'save-resp', (reqId, err) ->
             return done "Failed to save character: #{err}" if err?
+            
+          # then a modelChanged event was issued
+          emitter.on 'modelChanged', listener = (kind, model, changes) ->
+            return unless model.id is character.id
+            emitter.off 'modelChanged', listener
+            
             # then character model is automatically updated
             expect(character.map).not.to.exist
             expect(player.characters[0].map).not.to.exist
             # then a modelChanged event was issued
-            expect(emitter.emitted).to.have.length 1
-            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-            expect(emitter.emitted[0].args[0]).to.equal 'update'
-            expect(emitter.emitted[0].args[1]).to.deep.equal character
-            expect(emitter.emitted[0].args[2]).to.deep.equal ['map']
+            expect(kind).to.equal 'update'
+            expect(model).to.deep.equal character
+            expect(changes).to.deep.equal ['map']
             done()
 
       it 'should character be removed', (done) ->
@@ -552,23 +571,32 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           adminNS.emit 'remove', makeRid(), 'Item', models.john
           adminNS.once 'remove-resp', (reqId, err) ->
             return done "Failed to remove character: #{err}" if err?
-            delete models.john
-            # then player is automatically updated
-            expect(player.characters).to.have.length 0
-            # then a modelChanged event was issued
-            expect(emitter.emitted).to.have.length 2
-            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-            expect(emitter.emitted[0].args[0]).to.equal 'update'
-            expect(emitter.emitted[0].args[1]).to.deep.equal player
-            expect(emitter.emitted[0].args[2]).to.deep.equal ['characters']
-            expect(emitter.emitted[1].type).to.be.equal 'modelChanged'
-            expect(emitter.emitted[1].args[0]).to.equal 'deletion'
-            expect(emitter.emitted[1].args[1]).to.deep.equal character
+          
+          next = ->
+            emitter.off 'modelChanged', listener
             # then character is not in cache anymore
             Atlas.Item.findById 'john', (err, character) ->
               return done "Failed to remove character: #{err}" if err?
               expect(character).not.to.exist
+              delete models.john
               done()
+              
+          # then a modelChanged event was issued
+          exec = 0
+          emitter.on 'modelChanged', listener = (kind, model, changes) ->
+            if model.id is player.id
+              # then player is automatically updated
+              expect(player.characters).to.have.length 0
+              expect(kind).to.equal 'update'
+              expect(model).to.deep.equal player
+              expect(changes).to.deep.equal ['characters']
+              next() if ++exec is 2
+              
+            else if model.id is character.id
+              # then character was removed
+              expect(kind).to.equal 'deletion'
+              expect(model).to.deep.equal character
+              next() if ++exec is 2
 
     # Phantom is under test environment, where security is disabled
     if -1 is navigator.userAgent.indexOf 'PhantomJS'

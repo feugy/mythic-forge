@@ -3,38 +3,40 @@
 - Hyperion
   - cache evinction on inutility and size
   - test images for field types and event types
-  - [!] documentation
+  - Documentation
   - Rule engine
-    - [!!!] path to node_modules from rules
-    - [!!!] trigger single category
-    - [!] provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
+    - trigger single category
+    - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
-    - [!!!] token expiration: no refresh on operations
+    - token expiration: no refresh on operations
 
 - Rheia
   - Bugs
-    - [!!!] no category in rule tree
-    - [!!] After version change, version list is empty
+    - noticeable slowdown in Firefox
+    - no category in rule tree
+    - view save return not taken in account in edition perspective
+    - after version change, version list is empty
+    - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - map navigation and zoom - NOT reproducted
-    - persistent change detection after saving a rule - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
-  - [!] documentation
+  - Documentation
   - Authoring perspective
     - multiple file search & replace
     - single file search & replace
+  - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
 
 - Atlas
-  - [!!!] Manage labels in clientConf
-  - [!!!] Provide widget library with Image service
-  - [!] package as library
-  - [!] documentation
+  - manage labels in clientConf
+  - provide widget library with Image service
+  - package as library
+  - Documentation
 
 # Done
 
 - Hyperion
-  - bugs
+  - Bugs
     - Enforce type order same as id order in findCached
     - remove item type property does not update existing items
     - bug with map value when retrieving items with search
@@ -130,6 +132,7 @@
     - restrict rheia access to administrators only
     - test password management of manually registered players
   - Rule engine 
+    - path to node_modules from rules
     - file system storage and compilation
     - runtime resolution and execution at server side
     - runtime resolution at client side
@@ -158,7 +161,7 @@
     - secured websocket
 
 - Rheia
-  - bugs
+  - Bugs
     - spaces inside tab names 
     - rule with category appears in turnRules in search results
     - browser do not retain passwords

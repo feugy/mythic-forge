@@ -581,8 +581,8 @@
     # @param callback [Function] enrichment end callback, invoked with arguments:
     # @option callback error [Error] an Error object, or null if no error occured
     enrichFrom = (model, callback = ->) ->
-      return callback unless model.from?
-
+      return callback null unless model.from?
+      
       # try to build model from raw version of item
       id = if 'object' is utils.type model.from then model.from.id else model.from
       Atlas.Item.findById id, (err, from) ->
@@ -910,7 +910,6 @@
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
       _load: (raw, callback = ->) =>
-        console.log raw
         # do not invoke callback now
         super raw, (err) =>
           return callback err if err?
@@ -1087,7 +1086,7 @@
     Atlas.ruleService = new RuleService()
 
     #-----------------------------------------------------------------------------
-    # Rule Service
+    # Image Service
 
     # The rule service is responsible for retreiveing and storring images in a cache.
     # When requesting multiple time the same image, it stacks requester callback and invoke
@@ -1137,10 +1136,27 @@
           imgData.src = "#{image}?#{@_timestamps[image]}"
 
       # Returns the image content from the cache, or null if the image was not requested yet
-      getImage: (image) =>
-        return null unless image of @_cache
-        @_cache[image]
-
+      # 
+      # @param key [String] image key requested
+      # @return the loaded DOM image node, or null if no image corresponding to key
+      getImage: (key) =>
+        return null unless key of @_cache
+        @_cache[key]
+        
+      # Gets the base 64 image data from an image
+      #
+      # @param key [String] image key requested
+      # @return the base 64 corresponding image data
+      getImageString: (key) ->
+        return null unless key of @_cache
+        canvas = $("<canvas></canvas>")[0]
+        canvas.width = @_cache[key].width
+        canvas.height = @_cache[key].height
+        # Copy the image contents to the canvas
+        ctx = canvas.getContext '2d'
+        ctx.drawImage @_cache[key], 0, 0
+        canvas.toDataURL 'image/png'
+      
       # **private**
       # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
       #
@@ -1149,7 +1165,7 @@
         # get only the image without host, port and base path
         key = null
         src = event.target.src.replace /\?\d*$/, ''
-        for image of @_pendingStacks when _(src).endsWith image
+        for image of @_pendingStacks when new RegExp("#{image}$").test src 
           key = image 
           break
         return unless key?
@@ -1168,7 +1184,7 @@
         # get only the image without host, port and base path
         key = null
         src = event.target.src.replace /\?\d*$/, ''
-        for image of @_pendingStacks when _(src).endsWith image
+        for image of @_pendingStacks when new RegExp("#{image}$").test src
           key = image 
           break
         return unless key?
