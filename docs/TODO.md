@@ -14,7 +14,6 @@
 - Rheia
   - Bugs
     - noticeable slowdown in Firefox
-    - no category in rule tree
     - view save return not taken in account in edition perspective
     - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
@@ -162,6 +161,7 @@
 
 - Rheia
   - Bugs
+    - no rule category displayed in rule tree
     - spaces inside tab names 
     - rule with category appears in turnRules in search results
     - browser do not retain passwords

@@ -228,14 +228,14 @@ define [
           @exported = exported
           oldKind = @kind
 
-          if exported instanceof Rule
+          if utils.isA exported, Rule
             # rule specificity: category management
             @kind = 'Rule'
             if @exported?.category isnt @_oldCategory
               @_oldCategory = @exported?.category
               @trigger 'change:category', @
 
-          else if exported instanceof TurnRule
+          else if utils.isA exported, TurnRule
             # turn rule specificity: rank management
             @kind = 'TurnRule'
             if @exported?.rank isnt @_oldRank

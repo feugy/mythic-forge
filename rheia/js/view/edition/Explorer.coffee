@@ -86,7 +86,7 @@ define [
         grouped = utils.sortAttributes grouped
         # sort inside categories
         _(grouped).each (content, group) -> grouped[group] = _(content).sortBy (model) -> model.id
-    
+
         return grouped
       when 'TurnRule' then criteria = 'rank'
       else criteria = 'id'
