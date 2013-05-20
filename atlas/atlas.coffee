@@ -956,6 +956,8 @@
       #   @param actor [Item|String] the actor item or its id
       #   @param target [Item|String] the targeted item or its id
       #
+      # @param categories [Array<String>] restrict resolution to a given categories. 
+      # If empty, no restriction on tested rules. Otherwise, only rule that match one of the specified category is returned
       # @param callback [Function] resolution end callback, invoked with arguments
       # @option callback err [Error] an Error object, or null if no error occured
       # @option callback results [Object] applicable rules in an associative array, where rule id is key, 
@@ -963,7 +965,7 @@
       # - params [Array] awaited parameters (may be empty)
       # - category [String] rule category
       # - target [Model] applicable target (enriched model)
-      resolve: (args..., callback = ->) =>
+      resolve: (args..., categories, callback = ->) =>
         # do not allow multiple resolution
         return callback new Error "resolution already in progress" if @_resolveArgs?
         @_resolveArgs =
@@ -974,18 +976,18 @@
         if args.length is 1
           # resolve for player
           options.debug and console.log "resolve rules for player #{actorId}"
-          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, categories
         else if args.length is 2
           # resolve for actor over a target
           targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
           options.debug and console.log "resolve rules for #{actorId} and target #{targetId}"
-          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, targetId
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, targetId, categories
         else if args.length is 3
           # resolve for actor over a tile
           x = args[1]
           y = args[2]
           options.debug and console.log "resolve rules for #{actorId} at #{x}:#{y}"
-          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, x, y
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, x, y, categories
         else 
           return callback new Error "Can't resolve rules with arguments #{arguments}"
 

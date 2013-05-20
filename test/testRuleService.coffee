@@ -116,7 +116,7 @@ describe 'RuleService tests', ->
               item2 = saved
               
               # given the rules that are applicable for a target 
-              service.resolve item1.id, item2.id, (err, results)->
+              service.resolve item1.id, item2.id, [], (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
                 return done 'the rule3 was not resolved' unless 'rule3' of results
 
@@ -163,7 +163,7 @@ describe 'RuleService tests', ->
           item1 = saved
               
           # given the rules that are applicable for himself
-          service.resolve item1.id, item1.id, (err, results)->
+          service.resolve item1.id, item1.id, [], (err, results)->
             return done "Unable to resolve rules: #{err}" if err?
             return done 'the rule4 was not resolved' if results['rule4'].length isnt 1
 
@@ -222,7 +222,7 @@ describe 'RuleService tests', ->
             item1 = saved  
 
             # given the rules that are applicable for the both items
-            service.resolve item1.id, item2.id, (err, results)->
+            service.resolve item1.id, item2.id, [], (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
               return done 'the rule5 was not resolved' if results['rule5'].length isnt 1
 
@@ -271,7 +271,7 @@ describe 'RuleService tests', ->
             return done 'Item not created' unless existing?
 
             # given the rules that are applicable for the both items
-            service.resolve saved.id, saved.id, (err, results)->
+            service.resolve saved.id, saved.id, [], (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
               return done 'the rule29 was not resolved' if results['rule29'].length isnt 1
 
@@ -337,7 +337,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player.id, (err, results)->
+      service.resolve player.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -349,7 +349,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable for player over event', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player.id, event1.id, (err, results)->
+      service.resolve player.id, event1.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -361,7 +361,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for player', (done) ->
       # given an applicable rule for a target 
-      service.resolve player.id, (err, results)->
+      service.resolve player.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -374,7 +374,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for player over event', (done) ->
       # given an applicable rule for a target 
-      service.resolve player.id, event1.id, (err, results)->
+      service.resolve player.id, event1.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -452,7 +452,6 @@ describe 'RuleService tests', ->
           rule = rules.rule0
 
           # then requires have been replaced by a single define
-          console.log rule
           assert.equal 0, rule.indexOf("define('rule0', ['moment'], function(moment){\n"), 'no define() call'
           assert.equal rule.length-3, rule.indexOf('});'), 'define() not properly closed'
           assert.equal -1, rule.indexOf('require'), 'still require() in rule'
@@ -494,7 +493,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # given an applicable rule for a target 
-        service.resolve player.id, (err, results)->
+        service.resolve player.id, [], (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
@@ -573,7 +572,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items
-      service.resolve item1.id, -1, 0, (err, results)->
+      service.resolve item1.id, -1, 0, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -583,7 +582,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on coordinates', (done) ->
       # when resolving applicable rules at a coordinate
-      service.resolve item1.id, 1, 2, (err, results)->
+      service.resolve item1.id, 1, 2, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -604,7 +603,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on coordinates with map isolation', (done) ->
       # when resolving applicable rules at a coordinate of the second map
-      service.resolve item4.id, 1, 2, (err, results)->
+      service.resolve item4.id, 1, 2, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -622,7 +621,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on item target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, item2.id, (err, results)->
+      service.resolve item1.id, item2.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -634,7 +633,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for item target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, item2.id, (err, results)->
+      service.resolve item1.id, item2.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -647,7 +646,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on event target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, event1.id, (err, results)->
+      service.resolve item1.id, event1.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -659,7 +658,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for event target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, event1.id, (err, results)->
+      service.resolve item1.id, event1.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -672,7 +671,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on field target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, field1.id, (err, results)->
+      service.resolve item1.id, field1.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -684,7 +683,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for field target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, field1.id, (err, results)->
+      service.resolve item1.id, field1.id, [], (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -712,7 +711,7 @@ describe 'RuleService tests', ->
         return done err if err?
 
         # given the rules that are applicable for a target 
-        service.resolve item1.id, item2.id, (err, results)->
+        service.resolve item1.id, item2.id, [], (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           assert.property results, 'rule2'
@@ -1204,7 +1203,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1.id, item1.id, (err, results) ->
+        service.resolve item1.id, item1.id, [], (err, results) ->
           return done "Unable to resolve rules: #{err}" if err?
           # then the rule was not resolved
           assert.notProperty results, 'rule10', 'Disabled rule was resolved'
@@ -1263,7 +1262,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1.id, item1.id, (err) ->
+        service.resolve item1.id, item1.id, [], (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'failed to require'
@@ -1286,7 +1285,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.resolve item1.id, item1.id, (err) ->
+        service.resolve item1.id, item1.id, [], (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'rule25 throw error'
@@ -1385,3 +1384,109 @@ describe 'RuleService tests', ->
           return done err if err?
           assert.equal item1.id, results
           done()
+
+  describe 'given some dumb rules with categories', ->
+
+    # rule30, rule31: cat1, rule32: cat2, rule33: no category
+    beforeEach (done) ->
+      async.each [
+        new Executable 
+          id:'rule30', 
+          content: """Rule = require 'hyperion/model/Rule'
+            module.exports = new (class Dumb extends Rule
+              canExecute: (actor, target, callback) =>
+                callback null, [] 
+              execute: (actor, target, params, callback) =>
+                callback null, params.p1
+            ) 'cat1' """
+      ,
+        new Executable 
+          id:'rule31', 
+          content: """Rule = require 'hyperion/model/Rule'
+            module.exports = new (class Dumb extends Rule
+              canExecute: (actor, target, callback) =>
+                callback null, [] 
+              execute: (actor, target, params, callback) =>
+                callback null, params.p1
+            ) 'cat1' """
+      ,
+        new Executable 
+          id:'rule32', 
+          content: """Rule = require 'hyperion/model/Rule'
+            module.exports = new (class Dumb extends Rule
+              canExecute: (actor, target, callback) =>
+                callback null, [] 
+              execute: (actor, target, params, callback) =>
+                callback null, params.p1
+            ) 'cat2' """
+      ,
+        new Executable 
+          id:'rule33', 
+          content: """Rule = require 'hyperion/model/Rule'
+            module.exports = new (class Dumb extends Rule
+              canExecute: (actor, target, callback) =>
+                callback null, [] 
+              execute: (actor, target, params, callback) =>
+                callback null, params.p1
+            )() """
+      ], (script, next) ->
+        script.save next
+      , (err) ->
+        return done err if err?
+        new ItemType(id: 'dumber').save (err, saved) ->
+          return done err if err?
+          itemType = saved
+          # Drop existing events
+          Item.collection.drop -> Item.loadIdCache ->
+            new Item(type: itemType).save (err, saved) ->
+              return done err if err?
+              item1 = saved
+              done()
+
+    it 'should only rules of a given category be resolved', (done) ->
+      # when resolving cat2
+      service.resolve item1.id, item1.id, ['cat2'], (err, results) ->
+        # then no error reported
+        return done err if err?
+        # only rules from cat2 were resolved
+        assert.notProperty results, 'rule30'
+        assert.notProperty results, 'rule31'
+        assert.property results, 'rule32'
+        assert.notProperty results, 'rule33'
+        done()
+
+    it 'should rules of a multiple categories be resolved', (done) ->
+      # when resolving cat1 and cat2
+      service.resolve item1.id, item1.id, ['cat2', 'cat1'], (err, results) ->
+        # then no error reported
+        return done err if err?
+        # only rules from cat2 or cat2 were resolved
+        assert.property results, 'rule30'
+        assert.property results, 'rule31'
+        assert.property results, 'rule32'
+        assert.notProperty results, 'rule33'
+        done()
+
+    it 'should rules without categories be resolved', (done) ->
+      # when resolving with empty category
+      service.resolve item1.id, item1.id, [''], (err, results) ->
+        # then no error reported
+        return done err if err?
+        # only rules without cagegories were resolved
+        assert.notProperty results, 'rule30'
+        assert.notProperty results, 'rule31'
+        assert.notProperty results, 'rule32'
+        assert.property results, 'rule33'
+        done()
+
+    it 'should all rules be resolved', (done) ->
+      # when resolving without categories
+      service.resolve item1.id, item1.id, [], (err, results) ->
+        # then no error reported
+        return done err if err?
+        # all rules were resolved
+        assert.property results, 'rule30'
+        assert.property results, 'rule31'
+        assert.property results, 'rule32'
+        assert.property results, 'rule33'
+        done()

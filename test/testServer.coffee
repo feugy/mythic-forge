@@ -412,7 +412,7 @@ describe 'server tests', ->
 
           # when resolving rules for john on jack
           rid = generateId()
-          socket.emit 'resolveRules', rid, john.id, jack.id
+          socket.emit 'resolveRules', rid, john.id, jack.id, []
 
     describe 'given a type', ->
       @bail true

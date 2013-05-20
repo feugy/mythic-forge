@@ -388,7 +388,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
           # when resolving rules for this model
-          Atlas.ruleService.resolve character, character, (err, results) ->
+          Atlas.ruleService.resolve character, character, [], (err, results) ->
             return done "Failed to resolve rules over target: #{err}" if err?
             expect(results).not.to.have.property 'testRule2'
             expect(results).not.to.have.property 'testRule3'
@@ -405,7 +405,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
           # when resolving rules for a tile
-          Atlas.ruleService.resolve character, 5, 2, (err, results) ->
+          Atlas.ruleService.resolve character, 5, 2, [], (err, results) ->
             return done "Failed to resolve rules over tile: #{err}" if err?
             expect(results).not.to.have.property 'testRule3'
             expect(results).not.to.have.property 'testRule4'
@@ -424,7 +424,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
 
       it 'should rules be resolved for a player', (done) ->
         # when resolving rules for current player
-        Atlas.ruleService.resolve player, (err, results) ->
+        Atlas.ruleService.resolve player, [], (err, results) ->
           return done "Failed to resolve rules over player: #{err}" if err?
           # then the player rule is appliable
           expect(results).not.to.have.property 'testRule1'
@@ -444,7 +444,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
           # when resolving rules for this item only
-          Atlas.ruleService.resolve character, (err, results) ->
+          Atlas.ruleService.resolve character, [], (err, results) ->
             expect(err).to.exist
             expect(err.message).to.include 'No player with id john'
             expect(results).not.to.exists
@@ -452,9 +452,9 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
 
       it 'should rules resolution not be ran in parallel', (done) ->
         # given a rule resolution in progress
-        Atlas.ruleService.resolve player, done
+        Atlas.ruleService.resolve player, [], done
         # when resolving rules in parrallel
-        Atlas.ruleService.resolve player, (err, results) ->
+        Atlas.ruleService.resolve player, [], (err, results) ->
           expect(err).to.exist
           expect(err.message).to.include 'resolution already in progress'
           expect(results).not.to.exists
@@ -464,7 +464,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
           # when resolving rules over an empty tile
-          Atlas.ruleService.resolve character, -5, -5, (err, results) ->
+          Atlas.ruleService.resolve character, -5, -5, [], (err, results) ->
             return done "Failed to resolve rules over tile: #{err}" if err?
             # then the player rule is appliable
             expect(_.keys results).to.have.length 0

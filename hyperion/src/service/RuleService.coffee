@@ -209,6 +209,8 @@ class _RuleService
   #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjectId] the targeted item/event id
   #
+  # @param categories [Array<String>] restrict resolution to a given categories. 
+  # If empty, no restriction on tested rules. Otherwise, only rule that match one of the specified category is returned
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] applicable rules: an associated array with rule names id as key, and

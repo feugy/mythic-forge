@@ -37,7 +37,9 @@ logger = require('../../util/logger').getLogger 'service'
 # @param actor [Object] the concerned actor or Player
 # @param targets [Array<Item/Event>] array of targets the targeted item and event
 # @param wholeRule [Boolean] true to returns the whole rule and not just id/category
-# @parma worker [Object] current object on which _errMsg is set for unexpected errors
+# @param worker [Object] current object on which _errMsg is set for unexpected errors
+# @param categories [Array<String>] restrict resolution to a given categories. 
+# If empty, no restriction on tested rules. Otherwise, only rule that match one of the specified category is returned
 # @param callback [Function] callback executed when rules where determined. Called with parameters:
 # @option callback err [String] an error string, or null if no error occured
 # @option callback rules [Object] applicable rules: an associated array with rule id as key, and
@@ -45,7 +47,7 @@ logger = require('../../util/logger').getLogger 'service'
 # - target [Object] the target
 # - params [Object] the awaited parameters specification
 # - category [String] the rule category
-internalResolve = (actor, targets, wholeRule, worker, callback) ->
+internalResolve = (actor, targets, wholeRule, worker, categories, callback) ->
   results = {}
   remainingTargets = 0
   
@@ -59,11 +61,9 @@ internalResolve = (actor, targets, wholeRule, worker, callback) ->
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
         obj = require pathUtils.relative __dirname, executable.compiledPath
-        obj.id = executable.id
-        if obj? and(utils.isA obj, Rule) and obj.active
-          rules.push obj 
-          obj.id = executable.id
-          obj.category = '' unless 'string' is utils.type obj.category
+        obj?.id = executable.id
+        obj?.category = '' unless 'string' is utils.type obj?.category
+        rules.push obj if obj? and(utils.isA obj, Rule) and obj.active and (categories.length is 0 or obj.category in categories)
       catch err
         # report require errors
         err = "failed to require executable #{executable.id}: #{err}"
@@ -143,6 +143,8 @@ module.exports =
   #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjectId] the targeted item/event id
   #
+  # @param categories [Array<String>] restrict resolution to a given categories. 
+  # If empty, no restriction on tested rules. Otherwise, only rule that match one of the specified category is returned
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] applicable rules: an associated array with rule id as key, and
@@ -150,7 +152,7 @@ module.exports =
   # - target [Object] the target
   # - params [Object] the awaited parameters specification
   # - category [String] the rule category
-  resolve: (args..., callback) =>
+  resolve: (args..., categories, callback) =>
     if args.length is 1
       # only playerId specified. Retrieve corresponding account
       playerId = args[0]
@@ -159,7 +161,7 @@ module.exports =
         return callback "No player with id #{playerId}" unless player?      
         # at last, resolve rules.
         logger.debug "resolve rules for player #{playerId}"
-        internalResolve player, [player], false, @, callback
+        internalResolve player, [player], false, @, categories, callback
     else if args.length is 2
       # actorId and targetId are specified. Retrieve corresponding items and events
       actorId = args[0]
@@ -172,7 +174,7 @@ module.exports =
         process = =>
           # at last, resolve rules.
           logger.debug "resolve rules for actor #{actorId} and #{targetId}"
-          internalResolve actor, [target], false, @, callback
+          internalResolve actor, [target], false, @, categories, callback
 
         findTarget = =>
           # target exists: resolve it
@@ -220,7 +222,7 @@ module.exports =
           return callback "Cannot resolve rules. Failed to retrieve field at position x:#{x} y:#{y}: #{err}" if err?
           results.splice 0, 0, field if field?
           logger.debug "resolve rules for actor #{actorId} at x:#{x} y:#{y}"
-          internalResolve actor, results, false, @, callback
+          internalResolve actor, results, false, @, categories, callback
     else 
       callback "resolve() must be call with player id or actor and target ids, or actor id and coordinates"
    
@@ -251,7 +253,7 @@ module.exports =
       logger.debug "execute rule #{ruleId} of #{actor.id} for #{target.id}"
 
       # then resolve rules
-      internalResolve actor, [target], true, @, (err, rules) =>
+      internalResolve actor, [target], true, @, [], (err, rules) =>
         # if the rule does not apply, leave right now
         return callback "Cannot resolve rule #{ruleId}: #{err}" if err?
         applicable = null

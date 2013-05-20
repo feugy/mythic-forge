@@ -5,7 +5,6 @@
   - test images for field types and event types
   - Documentation
   - Rule engine
-    - trigger single category
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
@@ -132,6 +131,7 @@
     - restrict rheia access to administrators only
     - test password management of manually registered players
   - Rule engine 
+    - restrict rule resolution to given categories
     - path to node_modules from rules
     - file system storage and compilation
     - runtime resolution and execution at server side
