@@ -85,7 +85,7 @@ describe 'RuleService tests', ->
       id:'rule3', 
       content: """Rule = require 'hyperion/model/Rule'
         class DriveLeft extends Rule
-          canExecute: (actor, target, callback) =>
+          canExecute: (actor, target, context, callback) =>
             target.getLinked ->
               callback null, if target.pilot.equals actor then [] else null
           execute: (actor, target, params, callback) =>
@@ -141,7 +141,7 @@ describe 'RuleService tests', ->
       content: """Rule = require 'hyperion/model/Rule'
         Item = require 'hyperion/model/Item'
         module.exports = new (class AddPart extends Rule
-          canExecute: (actor, target, callback) =>
+          canExecute: (actor, target, context, callback) =>
             callback null, if actor.stock.length is 0 then [] else null
           execute: (actor, target, params, callback) =>
             part = new Item {type:actor.type, name: 'part'}
@@ -189,7 +189,7 @@ describe 'RuleService tests', ->
       id:'rule5', 
       content: """Rule = require 'hyperion/model/Rule'
         module.exports = new (class RemovePart extends Rule
-          canExecute: (actor, target, callback) =>
+          canExecute: (actor, target, context, callback) =>
             callback null, []
           execute: (actor, target, params, callback) =>
             @removed.push target
@@ -251,7 +251,7 @@ describe 'RuleService tests', ->
       id:'rule29', 
       content: """Rule = require 'hyperion/model/Rule'
         module.exports = new (class RemovePart extends Rule
-          canExecute: (actor, target, callback) =>
+          canExecute: (actor, target, context, callback) =>
             callback null, []
           execute: (actor, target, params, callback) =>
             @removed.push target.id
@@ -295,7 +295,7 @@ describe 'RuleService tests', ->
         id:'rule0'
         content:"""Rule = require 'hyperion/model/Rule'
           class MyRule extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               callback null, 'hello !'
@@ -485,7 +485,7 @@ describe 'RuleService tests', ->
       # given a modification on rule content
       script.content = """Rule = require 'hyperion/model/Rule'
         class MyRule extends Rule
-          canExecute: (actor, target, callback) =>
+          canExecute: (actor, target, context, callback) =>
             callback null, []
           execute: (actor, target, params, callback) =>
             callback null, 'hello modified !'
@@ -512,7 +512,7 @@ describe 'RuleService tests', ->
         id:'rule1', 
         content: """Rule = require 'hyperion/model/Rule'
           class MyRule extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               callback null, 'hello !'
@@ -700,7 +700,7 @@ describe 'RuleService tests', ->
         id:'rule2', 
         content: """Rule = require 'hyperion/model/Rule'
           class MoveRule extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, if target.x is 1 then [] else null
             execute: (actor, target, params, callback) =>
               target.x++
@@ -738,7 +738,7 @@ describe 'RuleService tests', ->
         id:'rule22'
         content: """Rule = require 'hyperion/model/Rule'
           class AssembleRule extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, if target.type.equals(actor.type) and !target.equals actor then [] else null
             execute: (actor, target, params, callback) =>
               target.compose = actor
@@ -1193,7 +1193,7 @@ describe 'RuleService tests', ->
           module.exports = new (class Dumb extends Rule
             constructor: ->
               @active = false
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               target.name = 'changed !'
@@ -1222,7 +1222,7 @@ describe 'RuleService tests', ->
           module.exports = new (class Dumb extends Rule
             constructor: ->
               @active = false
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               target.name = 'changed !'
@@ -1253,7 +1253,7 @@ describe 'RuleService tests', ->
           require 'hyperion/unknown'
           
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               callback null
@@ -1275,7 +1275,7 @@ describe 'RuleService tests', ->
         content: """Rule = require 'hyperion/model/Rule'
           
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               setTimeout => 
                 throw new Error @id+' throw error'
               , 0
@@ -1299,7 +1299,7 @@ describe 'RuleService tests', ->
           require 'hyperion/unknown'
           
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               callback null
@@ -1321,7 +1321,7 @@ describe 'RuleService tests', ->
         content: """Rule = require 'hyperion/model/Rule'
           
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               setTimeout => 
@@ -1343,7 +1343,7 @@ describe 'RuleService tests', ->
         id:'rule23', 
         content: """Rule = require 'hyperion/model/Rule'
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, [
                 name: 'p1'
                 type: 'object'
@@ -1367,7 +1367,7 @@ describe 'RuleService tests', ->
         id:'rule24', 
         content: """Rule = require 'hyperion/model/Rule'
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, [
                 name: 'p1'
                 type: 'object'
@@ -1397,7 +1397,7 @@ describe 'RuleService tests', ->
           ItemType = require 'hyperion/model/ItemType'
 
           module.exports = new (class Dumb extends Rule
-            canExecute: (actor, target, callback) =>
+            canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
               # creates a new map
@@ -1441,7 +1441,7 @@ describe 'RuleService tests', ->
           id:'rule30', 
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
-              canExecute: (actor, target, callback) =>
+              canExecute: (actor, target, context, callback) =>
                 callback null, [] 
               execute: (actor, target, params, callback) =>
                 callback null, params.p1
@@ -1451,7 +1451,7 @@ describe 'RuleService tests', ->
           id:'rule31', 
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
-              canExecute: (actor, target, callback) =>
+              canExecute: (actor, target, context, callback) =>
                 callback null, [] 
               execute: (actor, target, params, callback) =>
                 callback null, params.p1
@@ -1461,7 +1461,7 @@ describe 'RuleService tests', ->
           id:'rule32', 
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
-              canExecute: (actor, target, callback) =>
+              canExecute: (actor, target, context, callback) =>
                 callback null, [] 
               execute: (actor, target, params, callback) =>
                 callback null, params.p1
@@ -1471,7 +1471,7 @@ describe 'RuleService tests', ->
           id:'rule33', 
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
-              canExecute: (actor, target, callback) =>
+              canExecute: (actor, target, context, callback) =>
                 callback null, [] 
               execute: (actor, target, params, callback) =>
                 callback null, params.p1

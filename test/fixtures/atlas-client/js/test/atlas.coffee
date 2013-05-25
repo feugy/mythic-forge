@@ -94,7 +94,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         async.each [
           {className: 'Executable', container: rules, obj: id: 'testRule1', content: """Rule = require 'hyperion/model/Rule'
               module.exports = new (class CustomRule extends Rule
-                canExecute: (actor, target, callback) =>
+                canExecute: (actor, target, context, callback) =>
                   callback null, if target.strength? then [] else null
                 execute: (actor, target, params, callback) =>
                   target.strength++
@@ -102,7 +102,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               )()"""}
           {className: 'Executable', container: rules, obj: id: 'testRule2', content: """Rule = require 'hyperion/model/Rule'
               module.exports = new (class CustomRule extends Rule
-                canExecute: (actor, target, callback) =>
+                canExecute: (actor, target, context, callback) =>
                   callback null, if target?.typeId? and target?.mapId? then [] else null
                 execute: (actor, target, params, callback) =>
                   actor.x = target.x
@@ -111,7 +111,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               )()"""}
           {className: 'Executable', container: rules, obj: id: 'testRule3', content: """Rule = require 'hyperion/model/Rule'
               module.exports = new (class CustomRule extends Rule
-                canExecute: (actor, target, callback) =>
+                canExecute: (actor, target, context, callback) =>
                   callback null, if target?._className is 'Player' then [] else null
                 execute: (actor, target, params, callback) =>
                   for character in actor.characters
@@ -120,7 +120,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               )()"""}
           {className: 'Executable', container: rules, obj: id: 'testRule4', content: """Rule = require 'hyperion/model/Rule'
               module.exports = new (class CustomRule extends Rule
-                canExecute: (actor, target, callback) =>
+                canExecute: (actor, target, context, callback) =>
                   callback null, if target?._className is 'Player' then [] else null
                 execute: (actor, target, params, callback) =>
                   callback null

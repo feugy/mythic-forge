@@ -71,29 +71,32 @@ internalResolve = (actor, targets, wholeRule, worker, categories, callback) ->
         return callback err
 
     logger.debug "#{rules.length} candidate rules"
-    # evaluates the number of target. No targets ? leave immediately.
-    remainingTargets = targets.length
-    return callback null, results unless remainingTargets > 0
+    # No targets ? leave immediately.
+    return callback null, results unless targets.length > 0
 
     # second part of the resolution, after the actor was resolved
     process = (err) ->
       return callback "Cannot resolve rule because actor's (#{actor.id}) linked item/event cannot be resolve: #{err}" if err?
 
-      # process all targets in parallel.
-      for target in targets
-        # third part of the resolution, after target have been resolved
-        process2 = (err) ->
-          return callback "Cannot resolve rule because target's (#{target.id}) linked item/event cannot be resolve: #{err}" if err?
-
-          # function applied to filter rules that apply to the current target.
-          filterRule = (rule, end) -> 
-            
+      # first, resolve all targets
+      async.map targets, (target, next) ->
+        # resolve items and events, but not fields
+        if target instanceof Item or target instanceof Event
+          target.getLinked next
+        else 
+          next null, target
+      , (err, targets) ->
+        return callback "Cannot resolve rule because target's linked item/event cannot be resolve: #{err}" if err?
+        # process all resolved targets in parallel.
+        async.each targets, (target, nextTarget) ->
+          # resolve all rules for this target.
+          async.each rules, (rule, nextRule) -> 
             # message used in case of uncaught exception
             worker._errMsg = "Failed to resolve rule #{rule.id}. Received exception "
 
-            rule.canExecute actor, target, (err, parameters) ->
+            rule.canExecute actor, target, {}, (err, parameters) ->
               # exit at the first resolution error
-              return callback "Failed to resolve rule #{rule.id}. Received exception #{err}" if err?
+              return nextRule "Failed to resolve rule #{rule.id}. Received exception #{err}" if err?
               if Array.isArray parameters
                 logger.debug "rule #{rule.id} applies"
                 if wholeRule
@@ -104,19 +107,11 @@ internalResolve = (actor, targets, wholeRule, worker, categories, callback) ->
                 result.params = parameters
                 results[rule.id] = [] unless rule.id of results
                 results[rule.id].push result 
-              end()
-          
-          # resolve all rules for this target.
-          async.forEach rules, filterRule, ->
-            # if no target remains, the final callback is invoked.
-            remainingTargets--
-            callback null, results unless remainingTargets > 0
-                  
-        # resolve items and events, but not fields
-        if target instanceof Item or target instanceof Event
-          target.getLinked process2
-        else 
-          process2 null
+              nextRule()
+          , nextTarget
+        , (err) ->
+          # final callback
+          callback err, results
 
     # resolve actor, but not player
     if actor instanceof Item

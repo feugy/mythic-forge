@@ -310,7 +310,7 @@ describe 'server tests', ->
                   Item = require 'hyperion/model/Item'
 
                   module.exports = new (class RenameRule extends Rule
-                    canExecute: (actor, target, callback) =>
+                    canExecute: (actor, target, context, callback) =>
                       callback null, if target.name is 'Jack' then [] else null
                     execute: (actor, target, params, callback) =>
                       @saved.push new Item({type: target.type, name:'Peter'})

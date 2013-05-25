@@ -20,10 +20,10 @@
 
 # Game rules are constituted by two main functions:
 #
-#     canExecute(actor, target): Boolean
+#     canExecute()
 # which is invoked each time the rule engine needs to identify if the rule apply to a given situation
 # 
-#     execute(actor, target)
+#     execute()
 # which is invoked when the rule must be effectivly applied.
 #
 # `canExecute()` is intended to be invoked on server and client side, and must not modifiy anything.
@@ -52,10 +52,11 @@ class Rule
   #
   # @param actor [Item] the concerned actor
   # @param target [Item] the concerned target
+  # @param context [Object] extra information on resolution context
   # @param callback [Function] called when the rule is applied, with two arguments:
   # @option callback err [String] error string. Null if no error occured
   # @option callback params [Array] array of awaited parameter (may be empty), or null/undefined if rule does not apply
-  canExecute: (actor, target, callback) =>
+  canExecute: (actor, target, context, callback) =>
     throw "#{module.filename}.canExecute() is not implemented yet !"
 
   # This method effectively contains the rule's logic.

@@ -449,7 +449,7 @@ describe 'SearchService tests', ->
                         module.exports = new (class Move extends Rule
                           constructor: ->
                             @category= 'map'
-                          canExecute: (actor, target, callback) =>
+                          canExecute: (actor, target, context, callback) =>
                             callback null, []
                           execute: (actor, target, params, callback) =>
                             callback null
@@ -463,7 +463,7 @@ describe 'SearchService tests', ->
                         module.exports = new (class Attack extends Rule
                           constructor: ->
                             @active= false
-                          canExecute: (actor, target, callback) =>
+                          canExecute: (actor, target, context, callback) =>
                             callback null, []
                           execute: (actor, target, params, callback) =>
                             callback null
