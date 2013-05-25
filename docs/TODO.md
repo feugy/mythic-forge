@@ -1,10 +1,12 @@
 # TODO
 
 - Hyperion
+  - Bugs
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
   - Rule engine
+    - inject current player when relevant inside resolve and execute
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
@@ -13,6 +15,8 @@
 
 - Rheia
   - Bugs
+    - [!!] item misplaced after drag'n drop of moderation map
+    - [!!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
     - view save return not taken in account in edition perspective
     - after version change, version list is empty
@@ -31,6 +35,9 @@
   - package as library
   - Documentation
 
+
+map.consult({x:0, y:0}, {x:10, y:10}, function(err, fields, items) {mapFields = fields; mapItems = items;});
+
 # Done
 
 - Hyperion
@@ -39,6 +46,7 @@
     - remove item type property does not update existing items
     - bug with map value when retrieving items with search
     - fix from handling at event creation
+    - save new item on a new map : mapId stored in DB, but map object not affected to item (modelWatcher does not send the map)
   - ImageService to upload and associate images to types
   - remove all images when removing a type
   - Field type CRUD

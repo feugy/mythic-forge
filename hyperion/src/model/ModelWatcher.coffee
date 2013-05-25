@@ -62,7 +62,11 @@ class _ModelWatcher extends EventEmitter
 
     if modified and 'map' in modified and (className is 'Item' or className is 'Field')
       # but send the map if it changed
-      changes.map = if 'object' is utils.type changes.map then changes.map.id else null
+      unless changes.map?
+        changes.map = null 
+      else
+        # only the id if we got an object, or itself if already an id
+        changes.map = changes.map.id if 'object' is utils.type changes.map 
 
     if operation is 'update'
       if className isnt 'Executable' and className isnt 'FSItem'

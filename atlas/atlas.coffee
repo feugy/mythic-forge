@@ -989,7 +989,7 @@
           options.debug and console.log "resolve rules for #{actorId} at #{x}:#{y}"
           Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, x, y, categories
         else 
-          return callback new Error "Can't resolve rules with arguments #{arguments}"
+          return callback new Error "Can't resolve rules with arguments #{JSON.stringify arguments, null, 2}"
 
       # Triggers a specific rule execution for a given actor on a target
       #
@@ -1025,7 +1025,7 @@
           options.debug and console.log "execute rule #{ruleName} for #{actorId} and target #{targetId}"
           Atlas.gameNS.emit 'executeRule', @_executeArgs.rid, ruleName, actorId, targetId, params
         else 
-          return callback new Error "Can't execute rules with arguments #{arguments}"
+          return callback new Error "Can't execute rules with arguments #{JSON.stringify arguments, null, 2}"
 
       # **private**
       # Rules resolution handler: enrich results with models and invoke original callback.

@@ -1385,6 +1385,53 @@ describe 'RuleService tests', ->
           assert.equal item1.id, results
           done()
 
+    it 'should rule affect new items on new maps', (done) ->
+      mapId = 'testMap34'
+      itemId = 'ralph'
+      # given a map that creates a new map and a new item on this map
+      script = new Executable
+        id: 'rule34'
+        content: """Rule = require 'hyperion/model/Rule'
+          Map = require 'hyperion/model/Map'
+          Item = require 'hyperion/model/Item'
+          ItemType = require 'hyperion/model/ItemType'
+
+          module.exports = new (class Dumb extends Rule
+            canExecute: (actor, target, callback) =>
+              callback null, []
+            execute: (actor, target, params, callback) =>
+              # creates a new map
+              map = new Map id:'#{mapId}', kind: 'square'
+              @saved.push map
+
+              ItemType.findCached ['dog'], (err, [Dog]) =>
+                return callback err if err?
+                ralph = new Item id: '#{itemId}', type: Dog, map: map, x: 10, y: 7
+                @saved.push ralph
+                callback null, 
+          )()"""
+
+      script.save (err) ->
+        return done err if err?
+        # when executing rule
+        service.execute 'rule34', item1.id, item1.id, {}, (err, results) ->
+          # then no error reported
+          return done err if err?
+          # then map was created
+          Map.findCached [mapId], (err, [map]) ->
+            return done err if err?
+            assert.isDefined map
+            # then item was created
+            Item.findCached [itemId], (err, [item]) ->
+              return done err if err?
+              assert.isDefined item
+              assert.deepEqual item.type, type1
+              # then item is on map
+              assert.deepEqual item.map, map
+              assert.equal item.x, 10
+              assert.equal item.y, 7
+              done()
+
   describe 'given some dumb rules with categories', ->
 
     # rule30, rule31: cat1, rule32: cat2, rule33: no category
