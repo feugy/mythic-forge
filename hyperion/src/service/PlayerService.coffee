@@ -42,8 +42,8 @@ class _PlayerService
   # Service constructor.
   # Ensure admin account existence.
   constructor: ->
-    # Will update the last connection date after a minute to avoid too much db access
-    @activity = _.debounce (email) =>
+    # Will update the last connection date at maximum eveny minute to avoid too much db access
+    @activity = _.throttle (email) =>
       Player.findOne {email: email}, (err, player) =>
         return if err? or player is null # ignore errors
         # set to a minute ago, because we are using debounce.

@@ -408,11 +408,11 @@ describe 'server tests', ->
 
             # when executing the rename rule for john on jack
             rid = generateId()
-            socket.emit 'executeRule', rid, 'rename', john.id, jack.id, []
+            socket.emit 'executeRule', rid, 'rename', john.id, jack.id, {}
 
           # when resolving rules for john on jack
           rid = generateId()
-          socket.emit 'resolveRules', rid, john.id, jack.id, []
+          socket.emit 'resolveRules', rid, john.id, jack.id, null
 
     describe 'given a type', ->
       @bail true

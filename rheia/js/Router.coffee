@@ -47,8 +47,6 @@ requirejs.config
     'underscore.string': 'lib/underscore.string-2.3.0-min'
     'utf8': 'lib/utf8'
     'hyperion': './'
-    # shim for rules
-    'mongodb': 'lib/shim/mongodb'
     
   shim:
     'ace/ace':

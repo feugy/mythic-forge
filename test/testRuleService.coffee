@@ -116,7 +116,7 @@ describe 'RuleService tests', ->
               item2 = saved
               
               # given the rules that are applicable for a target 
-              service.resolve item1.id, item2.id, [], (err, results)->
+              service.resolve item1.id, item2.id, null, (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
                 return done 'the rule3 was not resolved' unless 'rule3' of results
 
@@ -163,7 +163,7 @@ describe 'RuleService tests', ->
           item1 = saved
               
           # given the rules that are applicable for himself
-          service.resolve item1.id, item1.id, [], (err, results)->
+          service.resolve item1.id, item1.id, null, (err, results)->
             return done "Unable to resolve rules: #{err}" if err?
             return done 'the rule4 was not resolved' if results['rule4'].length isnt 1
 
@@ -222,7 +222,7 @@ describe 'RuleService tests', ->
             item1 = saved  
 
             # given the rules that are applicable for the both items
-            service.resolve item1.id, item2.id, [], (err, results)->
+            service.resolve item1.id, item2.id, null, (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
               return done 'the rule5 was not resolved' if results['rule5'].length isnt 1
 
@@ -271,7 +271,7 @@ describe 'RuleService tests', ->
             return done 'Item not created' unless existing?
 
             # given the rules that are applicable for the both items
-            service.resolve saved.id, saved.id, [], (err, results)->
+            service.resolve saved.id, saved.id, null, (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
               return done 'the rule29 was not resolved' if results['rule29'].length isnt 1
 
@@ -337,7 +337,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player.id, [], (err, results)->
+      service.resolve player.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -349,7 +349,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable for player over event', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player.id, event1.id, [], (err, results)->
+      service.resolve player.id, event1.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -361,7 +361,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for player', (done) ->
       # given an applicable rule for a target 
-      service.resolve player.id, [], (err, results)->
+      service.resolve player.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -374,7 +374,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for player over event', (done) ->
       # given an applicable rule for a target 
-      service.resolve player.id, event1.id, [], (err, results)->
+      service.resolve player.id, event1.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -493,7 +493,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # given an applicable rule for a target 
-        service.resolve player.id, [], (err, results)->
+        service.resolve player.id, null, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
@@ -572,7 +572,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items
-      service.resolve item1.id, -1, 0, [], (err, results)->
+      service.resolve item1.id, -1, 0, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -582,7 +582,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on coordinates', (done) ->
       # when resolving applicable rules at a coordinate
-      service.resolve item1.id, 1, 2, [], (err, results)->
+      service.resolve item1.id, 1, 2, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -603,7 +603,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on coordinates with map isolation', (done) ->
       # when resolving applicable rules at a coordinate of the second map
-      service.resolve item4.id, 1, 2, [], (err, results)->
+      service.resolve item4.id, 1, 2, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -621,7 +621,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on item target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, item2.id, [], (err, results)->
+      service.resolve item1.id, item2.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -633,7 +633,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for item target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, item2.id, [], (err, results)->
+      service.resolve item1.id, item2.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -646,7 +646,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on event target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, event1.id, [], (err, results)->
+      service.resolve item1.id, event1.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -658,7 +658,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for event target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, event1.id, [], (err, results)->
+      service.resolve item1.id, event1.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -671,7 +671,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on field target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, field1.id, [], (err, results)->
+      service.resolve item1.id, field1.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -683,7 +683,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for field target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, field1.id, [], (err, results)->
+      service.resolve item1.id, field1.id, null, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
@@ -711,7 +711,7 @@ describe 'RuleService tests', ->
         return done err if err?
 
         # given the rules that are applicable for a target 
-        service.resolve item1.id, item2.id, [], (err, results)->
+        service.resolve item1.id, item2.id, null, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           assert.property results, 'rule2'
@@ -1203,7 +1203,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1.id, item1.id, [], (err, results) ->
+        service.resolve item1.id, item1.id, null, (err, results) ->
           return done "Unable to resolve rules: #{err}" if err?
           # then the rule was not resolved
           assert.notProperty results, 'rule10', 'Disabled rule was resolved'
@@ -1262,7 +1262,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1.id, item1.id, [], (err) ->
+        service.resolve item1.id, item1.id, null, (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'failed to require'
@@ -1285,7 +1285,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.resolve item1.id, item1.id, [], (err) ->
+        service.resolve item1.id, item1.id, null, (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'rule25 throw error'
@@ -1528,7 +1528,7 @@ describe 'RuleService tests', ->
 
     it 'should all rules be resolved', (done) ->
       # when resolving without categories
-      service.resolve item1.id, item1.id, [], (err, results) ->
+      service.resolve item1.id, item1.id, null, (err, results) ->
         # then no error reported
         return done err if err?
         # all rules were resolved

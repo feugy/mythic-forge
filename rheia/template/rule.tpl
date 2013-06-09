@@ -10,10 +10,11 @@ class CustomRule extends Rule
   # 
   # @param actor [Item] the concerned actor
   # @param target [Item] the concerned target
+  # @param context [Object] extra information on resolution context
   # @param callback [Function] called when the rule is applied, with two arguments:
   # @option callback err [String] error string. Null if no error occured
   # @option callback params [Array] array of awaited parameter (may be empty), or null/undefined if rule does not apply
-  canExecute: (actor, target, callback) =>
+  canExecute: (actor, target, context, callback) =>
     callback null, null
 
   # The rule execution method: actor and target may be modified, and will be automatically saved (as well as their modified linked object).

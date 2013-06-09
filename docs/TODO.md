@@ -15,10 +15,11 @@
 
 - Rheia
   - Bugs
+    - [!!!] view save return not taken in account in edition perspective: once script category is opened
+    - [!!!] multiple item menu iw above item rendering in moderation map
     - [!!] item misplaced after drag'n drop of moderation map
     - [!!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
-    - view save return not taken in account in edition perspective
     - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - map navigation and zoom - NOT reproducted
