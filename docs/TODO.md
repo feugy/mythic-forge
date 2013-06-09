@@ -16,8 +16,6 @@
 - Rheia
   - Bugs
     - [!!!] view save return not taken in account in edition perspective: once script category is opened
-    - [!!!] multiple item menu iw above item rendering in moderation map
-    - [!!] item misplaced after drag'n drop of moderation map
     - [!!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
     - after version change, version list is empty
@@ -140,6 +138,7 @@ map.consult({x:0, y:0}, {x:10, y:10}, function(err, fields, items) {mapFields = 
     - test password management of manually registered players
   - Rule engine 
     - restrict rule resolution to given categories
+    - restrict rule resolution to given rule id
     - path to node_modules from rules
     - file system storage and compilation
     - runtime resolution and execution at server side
@@ -170,6 +169,8 @@ map.consult({x:0, y:0}, {x:10, y:10}, function(err, fields, items) {mapFields = 
 
 - Rheia
   - Bugs
+    - multiple item menu is above item rendering in moderation map
+    - item misplaced after drag'n drop of moderation map
     - no rule category displayed in rule tree
     - spaces inside tab names 
     - rule with category appears in turnRules in search results

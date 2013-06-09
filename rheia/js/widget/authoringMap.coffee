@@ -158,7 +158,7 @@ define [
           o.upperCoord = o.renderer.nextCorner o.lowerCoord
           console.log "new displayed coord: ", o.lowerCoord, ' to: ', o.upperCoord
           # creates a clone layer while reloading
-          @_cloneLayer = $("<canvas width=\"#{o.renderer.width*3}\" height=\"#{o.renderer.height*3}\"></canvas>")
+          @_cloneContent()
           # empty datas
           @_data = []
           @$el.trigger 'coordChanged'
@@ -270,13 +270,19 @@ define [
         top: event.pageY-offset.top
       }
 
+    #**private**
+    # While reloading all data, add a clone to avoid flickering
+    # New field will be loading into that clone, and then copied into target field layer when loading finished
+    _cloneContent: =>
+      @_cloneLayer = $("<canvas width=\"#{@options.renderer.width*3}\" height=\"#{@options.renderer.height*3}\"></canvas>")
+
     # **private**
     # If no image loading remains, and if a clone layer exists, then its content is 
     # copied into the field layer
-    _replaceFieldClone: =>
-      o = @options
-      # only if no image loading is pendinf
+    _endLoading: =>
+      # only if no image loading is pendind
       return unless @_pendingImages is 0 and @_cloneLayer?
+      o = @options
       # all images were rendered on clone layer: copy it on field layer.
       fieldLayer = @_container.find '.fields'
       fieldLayer.css top:0, left:0
@@ -398,7 +404,7 @@ define [
       src = src.slice src.lastIndexOf('/')+1
       @_pendingImages--
         
-      return @_replaceFieldClone() unless success
+      return @_endLoading() unless success
         
       ctx = @$el.find('.fields')[0].getContext '2d'
       # write on field layer, unless a clone layer exists
@@ -409,7 +415,7 @@ define [
           {left, top} = o.renderer.coordToPos data
           ctx.drawImage img, left, top, o.renderer.tileW+1, o.renderer.tileH+1
       # all images was loaded: remove temporary field layer
-      @_replaceFieldClone()
+      @_endLoading()
           
     # **private**
     # Map drop handler. Triggers affectation.

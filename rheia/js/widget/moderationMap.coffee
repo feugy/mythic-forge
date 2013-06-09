@@ -45,6 +45,14 @@ define [
     _itemWidgets: {}
 
     # **private**
+    # layer that holds items while loading new map
+    _itemCloneLayer: null
+
+    # **private**
+    # stores items rendering, organized by item id, while loading new map
+    _cloneWidgets: {}
+
+    # **private**
     # Number of pending loading items 
     _loading: 0
 
@@ -66,15 +74,6 @@ define [
     # @param added [Array<Object>] added data (JSON array). 
     addData: (added) =>
       o = @options
-
-      # end of item loading: removes old items and reset layer position
-      checkLoadingEnd = =>
-        return unless @_loading is 0
-        # all widget are loaded: reset position
-        @_itemLayer.css 
-          top: 0
-          left: 0
-
       # separate fields from items
       fields = []
       for obj in added
@@ -84,31 +83,22 @@ define [
         else if !(obj._className?)
           fields.push obj.toJSON() if o.mapId is obj.mapId
         else if obj._className is 'Item' and o.mapId is obj.map?.id
-          @_loading++
           id = obj.id
-          # avoid updating widget while construction is not finished
-          continue if @_itemWidgets[id] is 'tmp'
-          # to avoid update the widget while it has not been constructed
-          @_itemWidgets[id] = 'tmp'
-          _.defer =>
-            # creates widget for this item
-            @_itemWidgets[id] = $('<span></span>').mapItem(
-              model: obj
-              map: @
-            ).on('loaded', =>
-              @_loading--
-              # remove previous widget
-              @_itemLayer.find("[data-id='#{id}']").remove()
-              @_itemWidgets[id].$el.attr 'data-id', id
-              checkLoadingEnd()
-            ).on('dispose', (event, widget) =>
-              # when reloading, it's possible that widget have already be replaced
-              return unless @_itemWidgets[id] is widget
-              delete @_itemWidgets[id]
-            ).appendTo(@_itemLayer
-            ).data 'mapItem'
-
-      checkLoadingEnd()
+          #do not add same widget twice
+          return if @_itemWidgets[id]?
+          @_loading++
+          # creates widget for this item
+          @_itemWidgets[id] = $("<span data-id='#{id}'></span>").mapItem(
+            model: obj
+            map: @
+          ).on('loaded', firstLoading = =>
+            # only relevant on first loading
+            @_itemWidgets[id]?.$el?.off 'loaded', firstLoading
+            @_loading--
+            @_endLoading()
+          ).on('dispose', (event, widget) =>
+            delete @_itemWidgets[id]
+          ).appendTo(@_itemLayer).data 'mapItem'
       
       # let superclass manage fields
       super fields if fields.length > 0
@@ -129,7 +119,7 @@ define [
       fields = []
       for obj in removed
         if obj._className is 'Item'
-          # immediately removes corresponding widget
+          # immediately removes corresponding widget. Will trigger 'dispose' event
           @_itemWidgets[obj.id]?.$el.remove()
         else unless obj._className?
           fields.push obj.toJSON() if @options.mapId is obj.mapId
@@ -170,6 +160,33 @@ define [
         @_itemLayer.css
           height: @options.renderer.height*3
           width: @options.renderer.width*3
+
+    #**private**
+    # While reloading all data, add a clone to avoid flickering
+    _cloneContent: =>
+      super()
+      @_cloneWidgets = @_itemWidgets
+      @_itemCloneLayer = @_itemLayer
+      @_itemLayer = $("<div class='items movable'></div>").css
+        height: @options.renderer.height*3
+        width: @options.renderer.width*3
+      @_itemWidgets = {}
+
+    # **private**
+    # If no image loading remains, and if a clone layer exists, then its content is 
+    # copied into the field layer
+    _endLoading: =>
+      super()
+      return unless @_loading is 0 and @_itemCloneLayer?
+      # unregister dispose event handler
+      widget.$el.off 'dispose' for id, widget of @_cloneWidgets
+      @_cloneWidgets = null
+      # remove clones
+      @_container.find('.items').remove()
+      @_itemCloneLayer = null
+      # place new clone layer
+      @_itemLayer.appendTo @_container
+      
 
     # **private**
     # Returns the DOM node moved by drag'n drop operation within the map.

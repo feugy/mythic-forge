@@ -267,7 +267,7 @@ define [
       switch method 
         when 'create', 'update' 
           # add object if creation
-          @constructor.collection.add @ if 'create'
+          @constructor.collection.add @ if 'create' is method
           app.sockets.admin.on 'save-resp', listener = (reqId, err) =>
             return unless rid is reqId
             app.sockets.admin.removeListener 'save-resp', listener
