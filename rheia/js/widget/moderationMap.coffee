@@ -285,6 +285,8 @@ define [
       coord = @options.renderer.posToCoord @_mousePos event
       @_popupMenu?.$el.off 'click'
       @_popupMenu?.$el.remove()
+      # stop if comming from the popup menu to avoid opening something else
+      return if $(event.target).closest('.menu').length isnt 0
 
       @_clicked = []
       for id, widget of @_itemWidgets
@@ -312,6 +314,7 @@ define [
         @_popupMenu.$el.on 'click', (event) =>
           id = $(event.target).closest('li').data 'id'
           return unless id?
+          event.preventDefault()
           @$el.trigger 'itemClicked', @_itemWidgets[id].options.model
 
   # widget declaration

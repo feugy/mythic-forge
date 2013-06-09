@@ -46,7 +46,7 @@ define [
         ).click (event) =>
           event.preventDefault()
           event.stopImmediatePropagation()
-          @_setCurrent @options.current+1
+          @_setCurrent @options.current+1, true
 
       @$el.find('.previous').button(
           text: false
@@ -54,7 +54,7 @@ define [
         ).click (event) =>
           event.preventDefault()
           event.stopImmediatePropagation()
-          @_setCurrent @options.current-1
+          @_setCurrent @options.current-1, true
 
       # loading handler
       @bindTo app.router, 'imageLoaded', (success, src, image) => 
@@ -82,7 +82,7 @@ define [
     # `change` event is possibly triggered.
     #
     # @param value [Number] new image index.
-    _setCurrent: (value) =>
+    _setCurrent: (value, animate=false) =>
       # first check the value
       return unless value >= 0 and value < @options.images.length
       container = @$el.find '.container'
@@ -94,9 +94,12 @@ define [
       container.width imageWidth*@options.images.length
         
       # moves the image container
-      container.stop().animate
-        left: -imageWidth * value
-      , @options.speed
+      container.stop()
+      offset = -imageWidth * value
+      if animate
+        container.animate {left: offset}, @options.speed
+      else
+        container.css left: offset
 
       # updates nav buttons.
       @$el.find('.previous').button 'option', 'disabled', value is 0
