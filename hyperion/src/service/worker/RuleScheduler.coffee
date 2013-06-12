@@ -26,7 +26,7 @@ modelUtils = require '../../util/model'
 TurnRule = require '../../model/TurnRule'
 Executable = require '../../model/Executable'
 notifier = require('../Notifier').get()
-logger = require('../../util/logger').getLogger 'service'
+logger = require('../../util/logger').getLogger 'scheduler'
 
 frequency = process.env.frequency
 

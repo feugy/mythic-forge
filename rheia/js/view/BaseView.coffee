@@ -91,7 +91,7 @@ define [
 
       # bind to server events
       @bindTo @_collection, 'add', @_onCreated
-      @bindTo @model, 'update', @_onSaved
+      @bindTo @_collection, 'update', @_onSaved
       @bindTo @_collection, 'remove', @_onRemoved
       @bindTo app.router, 'serverError', @_onServerError
 
@@ -143,7 +143,6 @@ define [
     #
     # @param event [event] optionnal click event on the save button
     saveModel: (event = null) =>
-      # console.log ">> TODO try to save #{@model.id}", @model, @_canSave, @_isNew
       return unless @canSave()
       console.log "save asked for #{@model.id}"
       event?.preventDefault()
@@ -286,8 +285,6 @@ define [
     #
     # @param saved [Object] the saved model
     _onSaved: (saved) =>
-      # console.log "TODO >>> received save for #{@model.id}"
-      console.dir saved
       # takes in account if we updated the edited objet
       return unless saved.id is @model.id
       # if it was a close save, trigger close once again
@@ -331,8 +328,6 @@ define [
       
       # the current operation failed
       if (details.id is @model.id) and (@_saveInProgress or @_removeInProgress)
-        # console.log "TODO >>> received server error for #{@model.id}:", err
-        console.dir details
         # displays error.
         @_notifyServerError err
         @_saveInProgress = false

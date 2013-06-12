@@ -30,7 +30,7 @@ Player = require '../../model/Player'
 Map = require '../../model/Map'
 utils = require '../../util/common'
 modelUtils = require '../../util/model'
-logger = require('../../util/logger').getLogger 'service'
+logger = require('../../util/logger').getLogger 'executor'
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #
@@ -309,7 +309,7 @@ module.exports =
               async.each rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
                 return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                 # adds new objects to be saved
-                saved = saved.concat rule.saved
+                saved = [].concat rule.saved
                 # looks for modified linked objects
                 modelUtils.filterModified actor, saved
                 modelUtils.filterModified target, saved

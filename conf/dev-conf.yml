@@ -5,7 +5,10 @@ logger:
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10
   levels: 
+    # Do not exceed 10 characters !
     service: warn
+    executor: all
+    scheduler: warn
     model: warn
     web: warn
     webSocket: warn

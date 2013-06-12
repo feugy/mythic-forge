@@ -54,8 +54,8 @@ define [
     # The view constructor.
     #
     # @param className [String] css ClassName, set by subclasses
-    constructor: (className) ->
-      super tagName: 'div', className:"#{className} perspective"
+    constructor: (@className) ->
+      super tagName: 'div', className:"#{@className} perspective"
 
       @_views = []
       @_tabs = null
@@ -251,7 +251,7 @@ define [
       event?.stopImmediatePropagation()
       # tries to save current
       return false unless @_tabs?.options.selected isnt -1
-      console.log "save current tab ##{@_tabs.options.selected} by hotkey"
+      console.log "#{@className} save current tab ##{@_tabs.options.selected} by hotkey"
       @_views[@_tabs.options.selected]?.saveModel()
       false
 
@@ -265,7 +265,7 @@ define [
       event?.stopImmediatePropagation()
       # tries to save current
       return false unless @_tabs?.options.selected isnt -1
-      console.log "remove current tab ##{@_tabs.options.selected} by hotkey"
+      console.log "#{@className} remove current tab ##{@_tabs.options.selected} by hotkey"
       @_views[@_tabs.options.selected]?.removeModel()
       false
 
@@ -279,6 +279,6 @@ define [
       event?.stopImmediatePropagation()
       # tries to save current
       return false unless @_tabs?.options.selected isnt -1
-      console.log "close current tab ##{@_tabs.options.selected} by hotkey"
+      console.log "#{@className} close current tab ##{@_tabs.options.selected} by hotkey"
       @tryCloseTab @_views[@_tabs.options.selected] if @_views[@_tabs.options.selected]?
       false

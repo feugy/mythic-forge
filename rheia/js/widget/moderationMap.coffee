@@ -82,7 +82,7 @@ define [
           fields.push obj
         else if !(obj._className?)
           fields.push obj.toJSON() if o.mapId is obj.mapId
-        else if obj._className is 'Item' and o.mapId is obj.map?.id
+        else if obj._className is 'Item' and o.mapId is obj.map?.id and obj.x? and obj.y?
           id = obj.id
           #do not add same widget twice
           return if @_itemWidgets[id]?

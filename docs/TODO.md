@@ -15,7 +15,8 @@
 
 - Rheia
   - Bugs
-    - [!!!] view save return not taken in account in edition perspective: once script category is opened
+    - [!!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
+    - [!!!] failed to load scripts when compiling rules or other scripts
     - [!!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
     - after version change, version list is empty

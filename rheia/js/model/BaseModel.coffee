@@ -118,7 +118,6 @@ define [
           # console.log "update property #{key}"
 
       # emit a change.
-      @trigger 'update', model, @, changes
       model.trigger 'update', model, changes
       # propagates changes on collection to global change event
       app.router.trigger 'modelChanged', 'update', model
@@ -266,8 +265,9 @@ define [
       rid = utils.rid();
       switch method 
         when 'create', 'update' 
-          # add object if creation
-          @constructor.collection.add @ if 'create' is method
+          # add object to collection to listen to events
+          @constructor.collection.add @ unless @constructor.collection.get(@id)?
+          # ask save on server
           app.sockets.admin.on 'save-resp', listener = (reqId, err) =>
             return unless rid is reqId
             app.sockets.admin.removeListener 'save-resp', listener
