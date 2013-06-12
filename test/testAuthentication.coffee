@@ -90,7 +90,7 @@ describe 'Authentication tests', ->
               assert.isNotNull token
               # then account has been created and populated
               Player.findOne {email:twitterUser}, (err, saved) ->
-                return done "Failed to find created account in db: #{err}" if err?
+                return done "Failed to find created account in db: #{err}" if err? or !saved?
                 assert.equal saved.firstName, 'Bauer'
                 assert.equal saved.lastName, 'Jack'
                 assert.equal saved.token, token
