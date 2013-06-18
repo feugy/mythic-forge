@@ -2,6 +2,7 @@
 
 - Hyperion
   - Bugs
+    - find a way to use model cache when accessing db (.find, .exec)
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
@@ -15,9 +16,9 @@
 
 - Rheia
   - Bugs
-    - [!!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
-    - [!!!] failed to load scripts when compiling rules or other scripts
-    - [!!] not all visible square moderation map is loaded
+    - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
+    - [!!] failed to load scripts when compiling rules or other scripts
+    - [!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
     - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
@@ -170,6 +171,7 @@ map.consult({x:0, y:0}, {x:10, y:10}, function(err, fields, items) {mapFields = 
 
 - Rheia
   - Bugs
+    - remove linked in moderation view does not really remove link in db
     - multiple item menu is above item rendering in moderation map
     - item misplaced after drag'n drop of moderation map
     - no rule category displayed in rule tree

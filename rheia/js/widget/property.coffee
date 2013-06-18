@@ -75,6 +75,7 @@ define [
           unless isNull
             @options.value = rendering.val()
           else if @options.allowNull
+            rendering.val ''
             rendering.attr 'disabled', 'disabled'
 
         when 'text'

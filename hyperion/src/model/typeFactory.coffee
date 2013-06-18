@@ -35,6 +35,9 @@ imageStore = utils.confKey 'images.store'
 
 # cache of used ids for all managed type cache, populated at startup
 idCache = {}
+# Bunch of inmemory caches.
+# contain for each managed class an associative array in which model ids are keys and model are values
+caches = {}
 
 # load ids of all existing models from database
 loadIdCache = (callback = null) ->
@@ -71,8 +74,8 @@ modelWatcher.on 'executableReset', (removed) ->
 loadIdCache()
 
 # Extends _registerHook to construct dynamic properties in Document constructor
-original_registerHooks = mongoose.Document.prototype._registerHooks
-mongoose.Document.prototype._registerHooks = ->
+original_registerHooks = mongoose.Document::_registerHooks
+mongoose.Document::_registerHooks = ->
   ret = original_registerHooks.apply @, arguments
   @_defineProperties()
   ret
@@ -101,8 +104,8 @@ compareObjProperty = (instance, prop) ->
   current = JSON.stringify instance[prop] or {}
   instance.markModified prop unless original is current
     
-originalIsModified = mongoose.Document.prototype.isModified
-mongoose.Document.prototype.isModified = (path) ->
+originalIsModified = mongoose.Document::isModified
+mongoose.Document::isModified = (path) ->
   # detect modification on dynamic arrays
   if @type?.properties?
     for prop, value of @type.properties when value.type is 'array'
@@ -119,7 +122,7 @@ mongoose.Document.prototype.isModified = (path) ->
   originalIsModified.apply @, arguments
 
 # Initialize dynamic properties from type when needed
-mongoose.Document.prototype._defineProperties = ->
+mongoose.Document::_defineProperties = ->
   if @type?.properties?
     # define setters and getters for properties once the instance have been initialized
     for name, prop of @type.properties
@@ -153,8 +156,8 @@ mongoose.Document.prototype._defineProperties = ->
 # @return the created type
 module.exports = (typeName, spec, options = {}) ->
 
-  # Local cache
-  cache = {}
+  caches[typeName] = {}
+  cache = caches[typeName]
 
   # when receiving a change from another worker, update the instance cache
   modelWatcher.on 'change', (operation, className, changes, wId) ->

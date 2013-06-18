@@ -81,9 +81,9 @@ define [
         value = widget.options.value
         # stores only linked ids
         if widget.options.type is 'object'
-          value = value?.id
+          value = if value? then value.id else null
         else if widget.options.type is 'array'
-          value = (obj?.id for obj in value)
+          value = ((if obj? then obj.id else null) for obj in value)
 
         @model[name] = value
       
@@ -114,12 +114,12 @@ define [
 
         # compare only linked ids
         if widget.options.type is 'object'
-          value = value?.id
-          original = original?.id
+          value = if value? then value.id else null
+          original = if original? then original.id else null
         else if widget.options.type is 'array'
           value = (obj?.id for obj in value)
           if Array.isArray original
-            original = (obj?.id for obj in original)
+            original = ((if obj? then obj.id else null) for obj in original)
           else 
             original = []
 
