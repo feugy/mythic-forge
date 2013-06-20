@@ -244,12 +244,12 @@ describe 'Event tests', ->
         assert.equal event2.id, doc.children[0]
         done()
 
-    it 'should getLinked retrieves linked objects', (done) ->
+    it 'should fetch retrieves linked objects', (done) ->
       # given a unresolved event
       Event.findOne {content: event2.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # when resolving it
-        doc.getLinked (err, doc) ->
+        doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
           assert.equal event.id, doc.father.id
@@ -258,12 +258,12 @@ describe 'Event tests', ->
           assert.equal doc.father.children[0], event.children[0]
           done()
 
-    it 'should getLinked retrieves linked arrays', (done) ->
+    it 'should fetch retrieves linked arrays', (done) ->
       # given a unresolved event
       Event.findOne {content: event.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # when resolving it
-        doc.getLinked (err, doc) ->
+        doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
           assert.equal doc.children.length, 1
@@ -274,28 +274,28 @@ describe 'Event tests', ->
           assert.equal linked.children.length, 0
           done()
 
-    it 'should getLinked retrieves all properties of all objects', (done) ->
+    it 'should fetch retrieves all properties of all objects', (done) ->
       # given a unresolved events
       Event.where().sort(content: 'asc').exec (err, docs) ->
         return done "Can't find event: #{err}" if err?
         # when resolving them
-        Event.getLinked docs, (err, docs) ->
+        Event.fetch docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first event has resolved links
           assert.equal event.id, docs[1].father.id
           assert.equal docs[1].father.content, event.content
           assert.equal docs[1].father.father, event.father
-          assert.equal docs[1].father.children[0], event.children[0]
+          assert.equal docs[1].father.children[0].id, event.children[0]
           # then the second event has resolved links
           assert.equal docs[0].children.length, 1
           linked = docs[0].children[0]
           assert.equal event2.id, linked.id
           assert.equal linked.content, event2.content
-          assert.equal linked.father, event2.father
+          assert.equal linked.father.id, event2.father
           assert.equal linked.children.length, 0
           done()
 
-    it 'should getLinked removes null in arrays', (done) ->
+    it 'should fetch removes null in arrays', (done) ->
       # given nulls inside array
       event.children = [null, event2, null]
       event.save (err) ->
@@ -307,7 +307,7 @@ describe 'Event tests', ->
           assert.equal doc.children.length, 1
           assert.equal utils.type(doc.children[0]), 'string'
           # when resolving it
-          Event.getLinked [doc], (err, docs) ->
+          Event.fetch [doc], (err, docs) ->
             return done "Can't resolve links: #{err}" if err?
             # then the property does not contains nulls anymore
             assert.ok event.equals docs[0]
@@ -315,7 +315,7 @@ describe 'Event tests', ->
             assert.ok event2.equals docs[0].children[0]
             done()
 
-    it 'should getLinked handle circular references in properties', (done) ->
+    it 'should fetch handle circular references in properties', (done) ->
       # given circular reference in dynamic properties
       event.children = [event2]
       event.save (err, event) ->
@@ -329,7 +329,7 @@ describe 'Event tests', ->
             return done "Can't find event: #{err}" if err?
             assert.equal docs.length, 2
             # when resolving then
-            Event.getLinked docs, (err, docs) ->
+            Event.fetch docs, true, (err, docs) ->
               return done "Can't resolve links: #{err}" if err?
               
               assert.equal docs.length, 2
@@ -358,7 +358,7 @@ describe 'Event tests', ->
                 assert.fail "Fail to serialize item: #{err}"
               done()
 
-    it 'should getLinked handle circular references in from', (done) ->
+    it 'should fetch handle circular references in from', (done) ->
       # given circular reference in dynamic properties
       event.from = item
       event.save (err, event) ->
@@ -374,7 +374,7 @@ describe 'Event tests', ->
             assert.equal doc.from.chat.length, 1
             assert.equal utils.type(doc.from.chat[0]), 'string'
             # when resolving it
-            Event.getLinked [doc], (err, docs) ->
+            Event.fetch [doc], true, (err, docs) ->
               return done "Can't resolve links: #{err}" if err?
               # then the proeprty were resolved
               assert.ok item.equals docs[0].from
@@ -388,7 +388,7 @@ describe 'Event tests', ->
                 assert.equal doc.chat.length, 1
                 assert.equal utils.type(doc.chat[0]), 'string'
                 # when resolving it
-                Item.getLinked [doc], (err, docs) ->
+                Item.fetch [doc], true, (err, docs) ->
                   return done "Can't resolve links: #{err}" if err?
                   # then the property were resolved
                   assert.ok item.equals docs[0]

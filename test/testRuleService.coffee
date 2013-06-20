@@ -86,10 +86,10 @@ describe 'RuleService tests', ->
       content: """Rule = require 'hyperion/model/Rule'
         class DriveLeft extends Rule
           canExecute: (actor, target, context, callback) =>
-            target.getLinked ->
+            target.fetch ->
               callback null, if target.pilot.equals actor then [] else null
           execute: (actor, target, params, callback) =>
-            target.getLinked ->
+            target.fetch ->
               target.x++
               target.pilot.x++
               callback null, 'driven left'
@@ -241,7 +241,7 @@ describe 'RuleService tests', ->
                   Item.findOne {type: type1.id, name: 'base'}, (err, existing) =>
                     return done "Item not created" if err?
 
-                    existing.getLinked ->
+                    existing.fetch ->
                       assert.equal 0, existing.stock.length
                       done()
 
@@ -766,6 +766,68 @@ describe 'RuleService tests', ->
               assert.ok item2.equals item
               assert.equal item1.id, item.compose, 'item2 do not compose item1'
               done()
+
+    it 'should concurrent modifications on same model be handled', (done) ->
+      # given a cyclic objet
+      item1.name = 'car'
+      item1.parts = [item2, item3]
+      item1.save (err, item1) =>
+        return done "Unable to link part of item1: #{err}" if err?
+        item2.name = 'motor'
+        item2.compose = item1
+        item2.save (err, item2) =>
+          return done "Unable to link part of item2: #{err}" if err?
+          item3.name = 'seats'
+          item3.compose = item1
+          item3.save (err, item3) =>
+            return done "Unable to link part of item3: #{err}" if err?
+            # given a rule that fetch linked object and modify target in several ways
+            new Executable(
+              id:'rule35'
+              content: """async = require 'async'
+                Rule = require 'hyperion/model/Rule'
+                class CyclicRule extends Rule
+                  canExecute: (actor, target, context, callback) =>
+                    callback null, if actor?.equals target then [] else null
+                  execute: (actor, target, params, callback) =>
+                    actor.fetch (err) =>
+                      return callback err if err?
+                      actor.name += '*'
+                      async.each actor.parts, (part, next) =>
+                        part.fetch (err) =>
+                          return next err if err?
+                          part.name += '+'
+                          part.compose.name += '!'
+                          next()
+                      , callback
+                module.exports = new CyclicRule()"""
+            ).save (err) ->
+              return done err if err?
+              # when executing this rule on that target
+              service.execute 'rule35', item1.id, item1.id, {}, (err, result)->
+                return done "Unable to execute rules: #{err}" if err?
+                # then the rule is executed.
+                
+                # then the first item was modified on database
+                Item.findById item1.id, (err, item) =>
+                  return done "failed to retrieve item: #{err}" if err?
+                  assert.equal item.name, 'car*!!'
+                  assert.equal item.parts.length, 2
+                  assert.equal item2.id, item.parts[0], 'item1 do not have item2 in its parts'
+                  assert.equal item3.id, item.parts[1], 'item1 do not have item3 in its parts'
+
+                  # then the second item was modified on database
+                  Item.findById item2.id, (err, item) =>
+                    return done "failed to retrieve item: #{err}" if err?
+                    assert.equal item.name, 'motor+'
+                    assert.equal item1.id, item.compose, 'item2 do not compose item1'
+
+                    # then the third item was modified on database
+                    Item.findById item3.id, (err, item) =>
+                      return done "failed to retrieve item: #{err}" if err?
+                      assert.equal item.name, 'seats+'
+                      assert.equal item1.id, item.compose, 'item3 do not compose item1'
+                      done()
 
   describe 'given an item type and an item', ->
 

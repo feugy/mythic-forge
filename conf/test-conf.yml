@@ -6,9 +6,11 @@ logger:
   nameMaxLength: 10
   levels: 
     service: error
+    executor: error
+    scheduler: error
     model: error
     web: error
-    console: error
+    webSocket: error
     worker: error
 
 # Server's configuration

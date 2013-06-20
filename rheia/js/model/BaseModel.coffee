@@ -305,7 +305,7 @@ define [
   # BaseLinkedModel provides common behaviour for model with linked properties.
   # 
   # It resolve type during construction (and trigger `typeFetched` when finished if type was not available).
-  # It adds a `getLinked` instance method to resolve linked properties
+  # It adds a `fetch` instance method to resolve linked properties
   class BaseLinkedModel extends BaseModel
 
     # Class of the type of this model.
@@ -451,7 +451,7 @@ define [
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instance [BaseLinkedModel] the root instance on which linked were resolved.
-    getLinked: (callback) =>
+    fetch: (callback) =>
       needResolution = false
       # identify each linked properties 
       console.log "search linked ids in #{@_className.toLowerCase()} #{@id}"
@@ -514,8 +514,11 @@ define [
               clazz = @constructor
               for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{value._className}"
                 clazz = require(candidateScript)
-              obj = new clazz value
-              clazz.collection.add obj
+              # reuse or add new model into collection
+              obj = clazz.collection.get value.id
+              unless obj?
+                obj = new clazz value
+                clazz.collection.add obj
             else
               obj = null
             # update current object
@@ -528,8 +531,11 @@ define [
               clazz = @constructor
               for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"
                 clazz = require(candidateScript)
-              obj = new clazz val
-              clazz.collection.add obj
+              # reuse or add new model into collection
+              obj = clazz.collection.get value.id
+              unless obj?
+                obj = new clazz value
+                clazz.collection.add obj
               # update current object
               @[prop].push obj
 

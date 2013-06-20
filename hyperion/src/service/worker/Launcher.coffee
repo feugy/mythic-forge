@@ -42,9 +42,9 @@ Executable.resetAll false, (err) ->
 
 # manage worker unexpected failure
 process.on 'uncaughtException', (err) ->
-  err = if worker._errMsg? then worker._errMsg + err.stack else err.stack
+  err = if worker._errMsg? then worker._errMsg + err.stack else if err.stack? then err.stack else err
   # an exception has been caught:
-  logger.info "worker #{process.pid} caught unexpected exception: #{err}"
+  logger.warn "worker #{process.pid} caught unexpected exception: #{err}"
   process.send method: worker._method, results: [err]
   # let it fail: master will respawn it
   process.exit 0

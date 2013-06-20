@@ -94,7 +94,7 @@ Player = typeFactory 'Player',
       @__origprefs = JSON.stringify player.prefs or {}
       return next() if player.characters.length is 0 
       # loads the character from database
-      Item.find {_id: {$in: player.characters}}, (err, characters) =>
+      Item.findCached player.characters, (err, characters) =>
         return next(new Error "Unable to init item #{player.id}. Error while resolving its character: #{err}") if err?
         final = []
         # keep order, but remove undefined or null characters

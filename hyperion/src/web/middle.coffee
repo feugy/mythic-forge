@@ -45,9 +45,6 @@ LoggerFactory = require '../util/logger'
 
 logger = LoggerFactory.getLogger 'web'
 
-
-connectedList = []
-
 # If an ssl certificate is found, use it.
 app = null
 certPath = utils.confKey 'ssl.certificate', null
@@ -94,20 +91,6 @@ io.set 'log level', 0 # only errors
 getRedirect = (req) ->
   url = urlParse if req.headers.referer? then req.headers.referer else "http://#{req.headers.host}"
   "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'}#{url.pathname}"
-
-# Kick a user
-# 
-# @param id [String] the kicked socket id
-# @param email [String] socket corresponding player's email 
-# @param reason [String] kicking explanation
-closeSocket = (id, email, reason) ->
-  # gets the corresponding socket
-  socket =  io?.sockets?.sockets?[id]
-  return unless socket?  
-  socket.disconnect()
-  logger.info "Kick user #{email} for #{reason}"
-  idx = connectedList.indexOf email
-  connectedList.splice idx, 1 if idx isnt -1
 
 # Set a cookie after authentication to grant access on game dev client.
 #
@@ -285,7 +268,6 @@ io.on 'connection', (socket) ->
     player.socketId = socket.id
     player.save (err) ->
       return logger.warn "Failed to set socket id of player #{email}: #{err}" if err?
-      connectedList.push email unless email in connectedList
 
   # message to get connected player
   socket.on 'getConnected', (callback) ->
@@ -297,7 +279,7 @@ io.on 'connection', (socket) ->
   socket.on 'logout', ->
     socket.get 'email', (err, value) ->
       return callback err if err?
-      playerService.disconnect value, 'logout', ->
+      playerService.disconnect value, 'logout'
 
 # socket.io `game` namespace 
 #
@@ -328,7 +310,7 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
 
   # add a message to returns connected list
   socket.on 'connectedList', (reqId) ->
-    socket.emit 'connectedList-resp', reqId, connectedList
+    socket.emit 'connectedList-resp', reqId, playerService.connectedList
 
 # socket.io `updates` namespace 
 #
@@ -346,7 +328,10 @@ watcher.on 'change', (operation, className, instance) ->
 notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
   if event is 'disconnect'
     # close socket of disconnected user.
-    closeSocket details[0].socketId, details[0].email, details[1] 
+    socket =  io?.sockets?.sockets?[details[0].socketId]
+    return unless socket?  
+    socket.disconnect()
+    logger.info "disconnect user #{details[0].email} for #{details[1]}"
   if scope is 'time' 
     updateNS?.emit 'change', 'time', details[0] 
   else

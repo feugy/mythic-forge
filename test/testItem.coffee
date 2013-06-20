@@ -261,12 +261,12 @@ describe 'Item tests', ->
         assert.equal item2.id, doc.affluents[0]
         done()
 
-    it 'should getLinked retrieves linked objects', (done) ->
+    it 'should fetch retrieves linked objects', (done) ->
       # given a unresolved item
       Item.findOne {name: item2.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # when resolving it
-        doc.getLinked (err, doc) ->
+        doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.equal item.id, doc.end.id
@@ -275,12 +275,12 @@ describe 'Item tests', ->
           assert.equal doc.end.affluents[0], item.affluents[0]
           done()
 
-    it 'should getLinked retrieves linked arrays', (done) ->
+    it 'should fetch retrieves linked arrays', (done) ->
       # given a unresolved item
       Item.findOne {name: item.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # when resolving it
-        doc.getLinked (err, doc) ->
+        doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
           assert.equal doc.affluents.length, 1
@@ -291,28 +291,28 @@ describe 'Item tests', ->
           assert.equal linked.affluents.length, 0
           done()
 
-    it 'should getLinked retrieves all properties of all objects', (done) ->
+    it 'should fetch retrieves all properties of all objects', (done) ->
       # given a unresolved items
       Item.where().sort(name:'asc').exec (err, docs) ->
         return done "Can't find item: #{err}" if err?
         # when resolving them
-        Item.getLinked docs, (err, docs) ->
+        Item.fetch docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
           assert.equal item.id, docs[0].end.id
           assert.equal docs[0].end.name, item.name
           assert.equal docs[0].end.end, item.end
-          assert.equal docs[0].end.affluents[0], item.affluents[0]
+          assert.equal docs[0].end.affluents[0].id, item.affluents[0]
           # then the second item has resolved links
           assert.equal docs[1].affluents.length, 1
           linked = docs[1].affluents[0]
           assert.equal item2.id, linked.id
           assert.equal linked.name, item2.name
-          assert.equal linked.end, item2.end
+          assert.equal linked.end.id, item2.end
           assert.equal linked.affluents.length, 0
           done()
 
-    it 'should getLinked removes null in arrays', (done) ->
+    it 'should fetch removes null in arrays', (done) ->
       # given nulls inside array
       item.affluents = [null, item2, null]
       item.save (err) ->
@@ -324,7 +324,7 @@ describe 'Item tests', ->
           assert.equal doc.affluents.length, 1
           assert.equal utils.type(doc.affluents[0]), 'string'
           # when resolving it
-          Item.getLinked [doc], (err, docs) ->
+          Item.fetch [doc], (err, docs) ->
             return done "Can't resolve links: #{err}" if err?
             # then the property does not contains nulls anymore
             assert.ok item.equals docs[0]

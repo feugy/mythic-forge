@@ -39,20 +39,14 @@ module.exports = class PlayerService
 #
 class _PlayerService
 
+  # emails of currently connected players
+  connectedList: []
+
   # Service constructor.
   # Ensure admin account existence.
   constructor: ->
-    # Will update the last connection date at maximum eveny minute to avoid too much db access
-    @activity = _.throttle (email) =>
-      Player.findOne {email: email}, (err, player) =>
-        return if err? or player is null # ignore errors
-        # set to a minute ago, because we are using debounce.
-        now = new moment()  
-        now.milliseconds 0
-        now.subtract 'seconds', 60
-        player.lastConnection = now.toDate()
-        player.save()
-    , 60000
+    @connectedList = []
+    @activity = _.throttle @activity, 60000
 
     Player.findOne {email:'admin'}, (err, result) =>
       throw "Unable to check admin account existence: #{err}" if err?
@@ -60,6 +54,25 @@ class _PlayerService
       new Player(email:'admin', password: 'admin', isAdmin:true).save (err) =>
         throw "Unable to create admin account: #{err}" if err?
         logger.warn '"admin" account has been created with password "admin". Please change it immediately'
+        
+
+  # Update the last connection date of a given player
+  # Throttle to one minute to avoid too much db access
+  #
+  # @param email [String] email of the concerned player
+  activity: (email) =>
+    Player.findOne {email: email}, (err, player) =>
+      return if err? or player is null # ignore errors
+      # set to a minute ago, because we are using debounce.
+      now = new moment()  
+      now.milliseconds 0
+      now.subtract 'seconds', 60
+      player.lastConnection = now.toDate()
+      # usefull for reconnection case
+      unless email in @connectedList
+        @connectedList.push email
+        notifier.notify 'players', 'connect', player
+      player.save()
 
   # Create a new player account. Check the email unicity before creation. 
   #
@@ -97,7 +110,7 @@ class _PlayerService
       # check player existence and password correctness
       return callback null, false, {type:'error', message:'Wrong credentials'} if player is null or !player.checkPassword password
       # update the saved token and last connection date
-      setTokens player, 'Manual', callback
+      @_setTokens player, 'Manual', callback
 
   # Authenticate a Google account: if account does not exists, creates it, or returns the existing one
   # Usable with passport-google-oauth.
@@ -128,7 +141,7 @@ class _PlayerService
           lastName: profile.name.familyName
 
       # update the saved token and last connection date
-      setTokens player, 'Google', callback
+      @_setTokens player, 'Google', callback
 
   # Authenticate a Twitter account: if account does not exists, creates it, or returns the existing one
   # Usable with passport-twitter.
@@ -159,7 +172,7 @@ class _PlayerService
           lastName: profile.displayName.split(' ')[0] or ''
 
       # update the saved token and last connection date
-      setTokens player, 'Twitter', callback
+      @_setTokens player, 'Twitter', callback
 
   # Retrieve a player by its email, with its characters resolved.
   #
@@ -169,16 +182,14 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
   getByEmail: (email, withLinked, callback) =>
-    if 'function' is utils.type withLinked
-      callback = withLinked
-      withLinked = false
+    [callback, withLinked] = [withLinked, false] if 'function' is utils.type withLinked
     logger.debug "consult player by email: #{email}"
     Player.findOne {email: email}, (err, player) =>
       return callback err, null if err?
       if player? and player.characters.length isnt 0 and withLinked
         logger.debug 'resolves its character'
         # resolve the character
-        Item.getLinked player.characters, (err, instances) =>
+        Item.fetch player.characters, (err, instances) =>
           return callback err, null if err?
           player.characters = instances
           callback null, player
@@ -206,7 +217,10 @@ class _PlayerService
         player.token = null
         player.save (err, saved) =>
           return callback "Failed to reset player's expired token: #{err}" if err?
-          notifier.notify 'players', 'disconnect', saved, 'expired'
+          idx = @connectedList.indexOf saved.email
+          unless idx is -1
+            @connectedList.splice idx, 1
+            notifier.notify 'players', 'disconnect', saved, 'expired'
           callback "Expired token"
       else 
         # change token for security reason
@@ -222,7 +236,7 @@ class _PlayerService
   # @param callback [Function] callback executed when player was disconnected. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the disconnected player.
-  disconnect: (email, reason, callback) =>
+  disconnect: (email, reason, callback = ->) =>
     Player.findOne {email: email}, (err, player) =>
       return callback err if err?
       return callback "No player with email #{email} found" unless player?
@@ -231,27 +245,33 @@ class _PlayerService
       player.save (err, saved) =>
         return callback "Failed to reset player's token: #{err}" if err?
         # send disconnection event
-        notifier.notify 'players', 'disconnect', saved, reason
+        idx = @connectedList.indexOf email
+        unless idx is -1
+          @connectedList.splice idx, 1
+          notifier.notify 'players', 'disconnect', saved, reason
         callback null, saved
 
-# Mutualize authentication mecanism last part: generate a token and save player. 
-# Sends also a `connect` notification.
-#
-# @param player [Object] saved player, whose token are generated
-# @param provider [String] provider name, for logs
-# @param callback [Function] save end callback, invoked with two arguments:
-# @option callback err [String] an error string, or null if no error occured
-# @option callback token [String] the generated token
-setTokens = (player, provider, callback) ->
-  # update the saved token and last connection date
-  token = utils.generateToken 24
-  player.token = token
-  # avoid milliseconds to simplify usage
-  now = new Date()
-  now.setMilliseconds 0
-  player.set 'lastConnection', now
-  player.save (err, newPlayer) ->
-    return callback "Failed to update player: #{err}" if err?
-    logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email}"
-    notifier.notify 'players', 'connect', newPlayer
-    callback null, token, newPlayer
+  # **private**
+  # Mutualize authentication mecanism last part: generate a token and save player. 
+  # Sends also a `connect` notification.
+  #
+  # @param player [Object] saved player, whose token are generated
+  # @param provider [String] provider name, for logs
+  # @param callback [Function] save end callback, invoked with two arguments:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback token [String] the generated token
+  _setTokens: (player, provider, callback) =>
+    # update the saved token and last connection date
+    token = utils.generateToken 24
+    player.token = token
+    # avoid milliseconds to simplify usage
+    now = new Date()
+    now.setMilliseconds 0
+    player.set 'lastConnection', now
+    player.save (err, newPlayer) =>
+      return callback "Failed to update player: #{err}" if err?
+      logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email}"
+      unless newPlayer.email in @connectedList
+        @connectedList.push newPlayer.email
+        notifier.notify 'players', 'connect', newPlayer
+      callback null, token, newPlayer

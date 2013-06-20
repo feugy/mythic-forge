@@ -39,7 +39,7 @@ require [
   'async'
 ], (require, mocha, async) ->
 
-  mocha.setup 'bdd'  
+  mocha.setup ui:'bdd', bail:true
   window.async = async
   
   # now require tests

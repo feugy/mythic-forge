@@ -147,7 +147,6 @@
         if connecting or connected
           connected = false
           connecting = false
-          Atlas.socket = null
           callback new Error err
 
       Atlas.socket.on 'disconnect', (reason) =>
@@ -155,7 +154,6 @@
         connected = false
         Atlas.gameNS?.removeAllListeners()
         Atlas.updateNS?.removeAllListeners()
-        Atlas.socket = null
         return if isLoggingOut
         callback new Error if reason is 'booted' then 'kicked' else 'disconnected'
     
@@ -196,7 +194,7 @@
     # 
     # @param callback [Function] invoked when player is properly disconnected.
     Atlas.disconnect = (callback) =>
-      return callback() unless Atlas.socket?
+      return callback() unless connected
       isLoggingOut = true
       player = null
       Atlas.socket.emit 'logout'
@@ -240,18 +238,18 @@
       Atlas[className].findById changes?.id, (err, model) ->
         return callback err if err?
         return callback null unless model?
-        options.debug and console.log "process update for model #{model.id} (#{className})", changes
+        options.debug && console.log "process update for model #{model.id} (#{className})", changes
         # then, update the local cache
         modified = false
         for attr, value of changes
           unless attr in Atlas[className]._notUpdated
             modified = true
             model[attr] = value 
-            options.debug and console.log "update property #{attr}"
+            options.debug && console.log "update property #{attr}"
 
         # performs update propagation
         end = (err) ->
-          options.debug and console.log "end of update for model #{model.id} (#{className})", modified, err
+          options.debug && console.log "end of update for model #{model.id} (#{className})", modified, err
           if modified and !err?
             eventEmitter.emit 'modelChanged', 'update', model, _.without _.keys(changes), 'id' 
           callback err
@@ -608,7 +606,7 @@
     # @param callback [Function] enrichment end callback, invoked with arguments:
     # @option callback error [Error] an Error object, or null if no error occured
     enrichTypeProperties = (model, raw, callback = ->) ->
-      return callback new Error "no type found for model #{model.constructor._className} #{model.id}" unless model.type?.properties?
+      return callback new Error "no type found for model #{model.constructor._className} #{model.id}" unless model.type?
       delete model.__dirty__
       async.each _.pairs(model.type.properties), ([attr, spec], next) ->
         model[attr] = (
@@ -727,7 +725,7 @@
         if err?
           options.debug and console.error "Fail to retrieve map content: #{err}" 
           return @_consultCallback new Error err
-        options.debug and console.log "#{items.length} item(s) and {fields.length} field(s) received for map #{@id}"
+        options.debug and console.log "#{items.length} item(s) and #{fields.length} field(s) received for map #{@id}"
         # enrich returned models: items will be cached, not fields, but all will trigger events
         async.map items, (raw, next) ->
           Atlas.Item.findById raw.id, (err, item) -> 
@@ -956,8 +954,10 @@
       #   @param actor [Item|String] the actor item or its id
       #   @param target [Item|String] the targeted item or its id
       #
-      # @param categories [Array<String>] restrict resolution to a given categories. 
-      # If empty, no restriction on tested rules. Otherwise, only rule that match one of the specified category is returned
+      # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId. 
+      # If an array, only rule that match one of the specified category is resolved.
+      # If a single string, only rule that has this id is resolved.
+      # Otherwise all rules are resolved.
       # @param callback [Function] resolution end callback, invoked with arguments
       # @option callback err [Error] an Error object, or null if no error occured
       # @option callback results [Object] applicable rules in an associative array, where rule id is key, 
@@ -965,7 +965,7 @@
       # - params [Array] awaited parameters (may be empty)
       # - category [String] rule category
       # - target [Model] applicable target (enriched model)
-      resolve: (args..., categories, callback = ->) =>
+      resolve: (args..., restriction, callback = ->) =>
         # do not allow multiple resolution
         return callback new Error "resolution already in progress" if @_resolveArgs?
         @_resolveArgs =
@@ -976,18 +976,18 @@
         if args.length is 1
           # resolve for player
           options.debug and console.log "resolve rules for player #{actorId}"
-          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, categories
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, restriction
         else if args.length is 2
           # resolve for actor over a target
           targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
           options.debug and console.log "resolve rules for #{actorId} and target #{targetId}"
-          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, targetId, categories
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, targetId, restriction
         else if args.length is 3
           # resolve for actor over a tile
           x = args[1]
           y = args[2]
           options.debug and console.log "resolve rules for #{actorId} at #{x}:#{y}"
-          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, x, y, categories
+          Atlas.gameNS.emit 'resolveRules', @_resolveArgs.rid, actorId, x, y, restriction
         else 
           return callback new Error "Can't resolve rules with arguments #{JSON.stringify arguments, null, 2}"
 
@@ -1027,6 +1027,10 @@
         else 
           return callback new Error "Can't execute rules with arguments #{JSON.stringify arguments, null, 2}"
 
+      # Indicates that service is busy
+      # @return true if a resolution or execution is already in progress
+      isBusy: => @_executeArgs? or @_resolveArgs?
+      
       # **private**
       # Rules resolution handler: enrich results with models and invoke original callback.
       #

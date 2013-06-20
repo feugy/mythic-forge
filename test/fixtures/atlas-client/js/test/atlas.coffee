@@ -601,7 +601,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
     # Phantom is under test environment, where security is disabled
     if -1 is navigator.userAgent.indexOf 'PhantomJS'
 
-      it.skip 'should unknown token not be connected', (done) ->
+      it 'should unknown token not be connected', (done) ->
         Atlas.disconnect ->
           # given a token
           Atlas.connect 'unknown', (err, player) ->

@@ -110,7 +110,7 @@ getProp = (obj, path, callback) ->
     if obj.type?.properties?[step]?.type is 'object' or obj.type?.properties?[step]?.type is 'array'
       # we may need to load object.
       if ('array' is utils.type(subObj) and 'string' is utils.type subObj?[0]) or 'string' is utils.type subObj
-        obj.getLinked (err, obj) ->
+        obj.fetch (err, obj) ->
           return callback "error on loading step #{step} along path #{path}: #{err}" if err?
           subObj = if index isnt -1 then obj[step][index] else obj[step]
           endStep()
@@ -123,7 +123,7 @@ getProp = (obj, path, callback) ->
 
 filterModified = (obj, modified) ->
   # do not process if already known
-  return if obj in modified 
+  return if obj in modified
   # will be save if at least one path is modified
   modified.push obj if obj?.isModified?()
   if obj?._className is 'Player'
@@ -298,18 +298,19 @@ module.exports =
   # @param markModified [Boolean] true if the replacement need to be tracked as item modification. default to true
   processLinks: (instance, properties, markModified = true) ->
     for name, property of properties
-      value = instance[name]
+      value = instance._doc[name]
       if property.type is 'object'
         if value isnt null and 'object' is utils.type(value) and value?.id?
-          instance[name] = value.id 
+          # Use internal model storage to avoid infinite call stack
+          instance._doc[name] = value.id 
           instance.markModified name
       else if property.type is 'array'
         if 'array' is utils.type value
           for linked, i in value when 'object' is utils.type(linked) and linked?.id?
             value[i] = linked.id 
             instance.markModified name
-          # filter null values
-          instance[name] = _.filter value, (obj) -> obj?
+          # filter null values. Use internal model storage to avoid infinite call stack
+          instance._doc[name] = _.filter value, (obj) -> obj?
 
   # Returns the value of a given object's property, along the specified path.
   # Path may contains '.' to dive inside sub-objects, and '[]' to dive inside

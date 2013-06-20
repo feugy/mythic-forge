@@ -78,7 +78,8 @@ class _GameService
         next()
     , -> callback null, types
 
-  # Retrieve Items by their ids. Each linked objects are resolved.
+  # Retrieve Items by their ids. 
+  # Each linked objects are resolved, but cyclic dependencies are broken.
   #
   # @param ids [Array<String>] array of ids
   # @param callback [Function] callback executed when items where retrieved. Called with parameters:
@@ -88,9 +89,11 @@ class _GameService
     logger.debug "Consult items with ids: #{ids}"
     Item.find {_id: {$in: ids}}, (err, items) ->
       return callback err, null if err?
-      Item.getLinked items, callback
+      # break cyclic dependencies, to avoid serialization errors
+      Item.fetch items, true, callback
 
-  # Retrieve Events by their ids. Each linked objects are resolved.
+  # Retrieve Events by their ids.
+  # Each linked objects are resolved, but cyclic dependencies are broken.
   #
   # @param ids [Array<String>] array of ids
   # @param callback [Function] callback executed when items where retrieved. Called with parameters:
@@ -100,7 +103,8 @@ class _GameService
     logger.debug "Consult events with ids: #{ids}"
     Event.find {_id: {$in: ids}}, (err, events) ->
       return callback err, null if err?
-      Event.getLinked events, callback
+      # break cyclic dependencies, to avoid serialization errors
+      Event.fetch events, true, callback
 
   # Retrieve all items that belongs to a map within given coordinates.
   #

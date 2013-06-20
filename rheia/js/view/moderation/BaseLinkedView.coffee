@@ -92,7 +92,7 @@ define [
     # Triggers the linked objects resolution
     _fillRendering: =>
       # resolve linked and draw properties
-      @model.getLinked @_onLinkedResolved
+      @model.fetch @_onLinkedResolved
       super()
 
     # **private**

@@ -90,7 +90,7 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, callback) ->
       async.map targets, (target, next) ->
         # resolve items and events, but not fields
         if target instanceof Item or target instanceof Event
-          target.getLinked next
+          target.fetch next
         else 
           next null, target
       , (err, targets) ->
@@ -123,7 +123,7 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, callback) ->
 
     # resolve actor, but not player
     if actor instanceof Item
-      actor.getLinked process
+      actor.fetch process
     else 
       process null
 
@@ -314,8 +314,10 @@ module.exports =
                 modelUtils.filterModified actor, saved
                 modelUtils.filterModified target, saved
                 # saves the whole in MongoDB
-                logger.debug "save modified model #{obj.id}" for obj in saved
-                async.forEach saved, ((obj, end) -> obj.save (err)-> end err), (err) => 
+                async.forEach saved, (obj, end) -> 
+                  logger.debug "save modified model #{obj.id}, #{obj.modifiedPaths().join(',')}"
+                  obj.save end
+                , (err) => 
                   return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                   # everything was fine
                   callback null, result

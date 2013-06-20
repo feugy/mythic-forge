@@ -408,22 +408,31 @@ module.exports = (typeName, spec, options = {}) ->
     # This method retrieves linked objects in properties.
     # All `object` and `array` properties are resolved. 
     # Properties that aims at unexisting objects are reset to null.
+    # Works in two modes: 
+    # - read only from DB: it ensure not returning cyclic model trees, but same entity may be presented by two different models
+    # - read both in DB and cache: ensure entity uniquness, but may return cyclic model trees
     #
+    # @param breakCycles [Boolean] true to break entities cycle, default to false
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instance [Object] the root instance on which linked objects were resolved.
-    AbstractType.methods.getLinked = AbstractType.methods.fetch = (callback) ->
-      AbstractType.statics.getLinked [this], (err, instances) =>
+    AbstractType.methods.fetch = (breakCycles, callback) ->
+      if _.isFunction breakCycles
+        [callback, breakCycles] = [breakCycles, false]
+      AbstractType.statics.fetch [this], breakCycles, (err, instances) =>
         callback err, if instances and instances?.length is 1 then instances[0] else null
 
-    # This static version of `getLinked` performs multiple linked objects resolution in one operation.
-    # See `getLinked()` for more information.
+    # This static version of `fetch` performs multiple linked objects resolution in one operation.
+    # See `fetch()` for more information.
     #
     # @param instances [Array<Object>] an array that contains instances which are resoluved.
+    # @param breakCycles [Boolean] true to break entities cycle, default to false
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
     # @option callback err [String] an error message if an error occured.
     # @option callback instances [Array<Object>] the instances on which linked objects were resolved.
-    AbstractType.statics.getLinked = AbstractType.statics.fetch = (instances, callback) ->
+    AbstractType.statics.fetch = (instances, breakCycles, callback) ->
+      if _.isFunction breakCycles
+        [callback, breakCycles] = [breakCycles, false]
       ids = []
       # identify each linked properties 
       for instance in instances
@@ -446,9 +455,18 @@ module.exports = (typeName, spec, options = {}) ->
 
       # resolve in both items and events
       linked = []
-      async.forEach [require('./Item'), require('./Event')], (clazz, end) ->
-        # do NOT use findCached: triggers a max call stack exceeded
-        clazz.find _id: $in:ids, (err, results) ->
+      async.forEach [{name: 'Item', clazz:require('./Item')}, {name: 'Event', clazz:require('./Event')}], (spec, end) ->
+        # two modes: 
+        # - read only from DB: it ensure not returning cyclic model trees, but same entity may be presented by two different models
+        # - read both in DB and cache: ensure entity uniquness, but may return cyclic model trees
+        cachedIds = if breakCycles then [] else _.intersection ids, _.keys caches[spec.name]
+        if cachedIds.length > 0
+          # immediately add cached entities
+          linked = linked.concat (caches[spec.name][id] for id in cachedIds)
+        # quit if no more ids to read
+        return end() if cachedIds.length is ids.length
+        # read remaining ids from DB
+        spec.clazz.find _id: $in: _.difference(ids, cachedIds), (err, results) ->
           return callback("Unable to resolve linked on #{instances}. Error while retrieving linked: #{err}") if err?
           linked = linked.concat results
           end()
@@ -490,6 +508,7 @@ module.exports = (typeName, spec, options = {}) ->
     # Calling it with an argument indicates the the validation failed and cancel the instante save.
     AbstractType.pre 'save', (next) ->
       return next new Error "Cannot save instance #{@_className} (#{@id}) without type" unless @type?
+                    
       properties = @type.properties
       # get through all existing attributes
       attrs = Object.keys @_doc;
@@ -511,9 +530,9 @@ module.exports = (typeName, spec, options = {}) ->
         # Do not store strings, store dates instead
         if value.type is 'date' and 'string' is utils.type @[prop]
           @[prop] = new Date @[prop]
-
+          
       wasNew = @isNew
-      ## generate id if necessary
+      # generate id if necessary
       @id = new ObjectId().toString() unless @id? or !wasNew
       if wasNew
         # validates id 
@@ -526,7 +545,7 @@ module.exports = (typeName, spec, options = {}) ->
       # stores the isNew status and modified paths now, to avoid registering modification on wrong attributes.
       modifiedPaths = @modifiedPaths().concat()
       # replace links by them ids
-      modelUtils.processLinks this, properties
+      modelUtils.processLinks @, properties
       # replace type with its id, for storing in Mongo, without using setters.
       saveType = @type
       @_doc.type = saveType?.id
