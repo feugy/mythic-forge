@@ -31,21 +31,20 @@ gameService = require('../service/GameService').get()
 notifier = require('../service/Notifier').get()
 
 # Stores authorized tokens to avoid requesting to much playerService
-authorizedTokens = {}
+authorizedKeys = {}
+
 # Register handler on players connection and disconnection
-notifier.on notifier.NOTIFICATION, (event, state, player) ->
-  return unless event is 'players'
-  if state is 'connect'
-    if player.isAdmin
-      logger.debug "allow static connection from player #{player.id}"
-      # adds an entry to grant access on secured RIA 
-      token = player.token
-      authorizedTokens[token] = player.id 
-  else if state is 'disconnect'
-    logger.debug "deny static connection from player #{player.id}"
+notifier.on notifier.NOTIFICATION, (event, stateOrEmail, playerOrkey) ->
+  return unless event in ['admin-connect', 'players']
+  if event is 'admin-connect'
+    logger.debug "allow static connection from player #{stateOrEmail}"
+    # adds an entry to grant access on secured RIA 
+    authorizedKeys[playerOrkey] = stateOrEmail
+  else if stateOrEmail is 'disconnect'
     # removes entry from the cache
-    for token, id of authorizedTokens when id is player.id
-      delete authorizedTokens[token]
+    for key, email of authorizedKeys when email is playerOrkey.email
+      logger.debug "deny static connection from player #{playerOrkey.email}"
+      delete authorizedKeys[key]
       break
 
 # exports a function to reuse existing express application
@@ -83,13 +82,13 @@ module.exports = (app = null) ->
     if securedRedirect?
       # if RIA is secured, register first a security filter
       app.get new RegExp("^#{base}"), (req, res, next) ->
-        token = req.signedCookies?.token
+        key = req.cookies?.key
         # redirect unless cookie exists
-        return res.redirect "#{securedRedirect}?redirect=#{encodeURIComponent req.url}" unless token?
+        return res.redirect "#{securedRedirect}?redirect=#{encodeURIComponent req.url}" unless key?
         # proceed if cookie value is known
-        return next() if token of authorizedTokens
+        return next() if key of authorizedKeys
         # removes the cookie and deny
-        res.clearCookie 'token'
+        res.clearCookie 'key'
         res.redirect "#{securedRedirect}?error=#{encodeURIComponent "#{base} not authorized"}"
 
     registerConf base

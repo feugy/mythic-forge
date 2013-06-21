@@ -7,7 +7,7 @@ logger:
   levels: 
     # Do not exceed 10 characters !
     service: warn
-    executor: all
+    executor: warn
     scheduler: warn
     model: warn
     web: warn

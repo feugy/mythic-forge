@@ -92,16 +92,6 @@ getRedirect = (req) ->
   url = urlParse if req.headers.referer? then req.headers.referer else "http://#{req.headers.host}"
   "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'}#{url.pathname}"
 
-# Set a cookie after authentication to grant access on game dev client.
-#
-# @param res [Object] Http response on which set the cookie
-# @param cookie [String] the cookie value
-addCookie = (res, cookie) ->
-  res.cookie 'token', cookie,
-    signed: true
-    httpOnly: true 
-    expires: new moment().add('days', 1).toDate()
-
 # This methods exposes all service methods in a given namespace.
 # The first parameter of all mehods is interpreted as a request id, used inside response to allow client to distinguish calls.
 #
@@ -221,8 +211,6 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     passport.authenticate(provider, (err, token) ->
       # authentication failed
       return res.redirect "#{redirect}?error=#{err}" if err?
-      # before redirecting, set a cookie to allow access to gamedev
-      addCookie res, token
       res.redirect "#{redirect}?token=#{token}"
       # remove session created during authentication
       req.session.destroy()
@@ -262,10 +250,16 @@ io.on 'connection', (socket) ->
   # retrieve the player email set during autorization phase, and stores it.
   socket.set 'email', email
 
+  # on each connection, generate a key for dev access
+  key = null
+
   # set socket id to player
   playerService.getByEmail email, false, (err, player) ->
     return logger.warn "Failed to retrieve player #{email} to set its socket id: #{err or 'no player found'}" if err? or player is null
     player.socketId = socket.id
+    if player.isAdmin
+      key = utils.generateToken 24
+      notifier.notify 'admin-connect', email, key
     player.save (err) ->
       return logger.warn "Failed to set socket id of player #{email}: #{err}" if err?
 
@@ -273,12 +267,14 @@ io.on 'connection', (socket) ->
   socket.on 'getConnected', (callback) ->
     socket.get 'email', (err, value) ->
       return callback err if err?
-      playerService.getByEmail value, false, callback
+      playerService.getByEmail value, false, (err, player) =>
+        # return key to rheia
+        player.key = key if key? and player?
+        callback err, player
 
   # message to manually logout the connected player
   socket.on 'logout', ->
     socket.get 'email', (err, value) ->
-      return callback err if err?
       playerService.disconnect value, 'logout'
 
 # socket.io `game` namespace 
@@ -363,11 +359,6 @@ app.post '/auth/login', (req, res, next) ->
   passport.authenticate('local', (err, token, details) ->
     # authentication failed
     err = details.message if token is false
-    unless err?
-      if details?.isAdmin
-        # before redirecting, set a cookie to allow access to gamedev
-        addCookie res, token
-
     # depending on the requested result, redirect or send redirection in json
     res.format
       html: ->

@@ -72,7 +72,7 @@ Player = typeFactory 'Player',
 
   # cookie used to access game developpment zone 
   # **Not propagated by modelWatcher nor returned by AdminService**
-  cookie: String
+  key: String
 
   # password, only used for manually provided accounts
   # **Not propagated by modelWatcher nor returned by AdminService**
@@ -160,13 +160,13 @@ Player.statics.purge = (player) ->
     # Mongoose proxy
     delete player._doc.password
     delete player._doc.token 
-    delete player._doc.cookie
+    delete player._doc.key
     delete player._doc.socketId
   else 
     # plain raw object
     delete player.password
     delete player.token 
-    delete player.cookie
+    delete player.key
     delete player.socketId
   player
 

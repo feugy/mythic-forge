@@ -476,7 +476,7 @@ module.exports = (typeName, spec, options = {}) ->
           properties = instance.type.properties
           logger.debug "replace linked ids in #{instance.id}"
           for prop, def of properties
-            value = instance[prop]
+            value = instance._doc[prop]
             if def.type is 'object' and 'string' is utils.type value
               link = null
               for l in linked

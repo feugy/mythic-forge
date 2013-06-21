@@ -273,5 +273,6 @@ class _PlayerService
       logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email}"
       unless newPlayer.email in @connectedList
         @connectedList.push newPlayer.email
-        notifier.notify 'players', 'connect', newPlayer
+      # always notify new connection to refresh token caches
+      notifier.notify 'players', 'connect', newPlayer
       callback null, token, newPlayer

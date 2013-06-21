@@ -2,7 +2,6 @@
 
 - Hyperion
   - Bugs
-    - find a way to use model cache when accessing db (.find, .exec)
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
@@ -36,13 +35,13 @@
   - package as library
   - Documentation
 
-
-map.consult({x:0, y:0}, {x:10, y:10}, function(err, fields, items) {mapFields = fields; mapItems = items;});
-
 # Done
 
 - Hyperion
   - Bugs
+    - allow dev reconnection on server failure
+    - fetch now uses cache, to avoid referencing with two different models the same entity. Unless explicitly specified GameService.getItem(), GameService.getEvent()) for serialization reasons
+    - use cache to resolve player characters
     - Enforce type order same as id order in findCached
     - remove item type property does not update existing items
     - bug with map value when retrieving items with search

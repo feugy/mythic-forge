@@ -177,6 +177,9 @@ define [
       connected = false 
       app.sockets[name].removeAllListeners() for name of app.sockets
       return if isLoggingOut
+      console.log "disconnected for #{reason}"
+      if reason is 'booted'
+        document.cookie = "key=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/"
       errorCallback if reason is 'booted' then 'kicked' else 'disconnected'
 
     socket.on 'connect', -> 
@@ -185,6 +188,10 @@ define [
         # stores the token to allow re-connection
         app.player = player
         localStorage.setItem 'app.token', player.token
+        # set cookie for dev access if admin
+        if player.key
+          console.log 'set dev cookie', player.key
+          document.cookie = "key=#{player.key}; max-age=#{1000*60*60*24}; path=/"
         # update socket.io query to allow reconnection with new token value
         socket.socket.options.query = "token=#{player.token}"
 
