@@ -496,9 +496,10 @@ define [
           console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved from cache"
           callback null, @ 
 
-      # process response
       rid = utils.rid()
-      process = (reqId, err, instances) =>
+      # now that we have the linked ids, get the corresponding instances.
+      app.sockets.game.emit "get#{@_className}s", rid, [@id]
+      app.sockets.game.on "get#{@_className}s-resp", process = (reqId, err, instances) =>
         return unless rid is reqId
         app.sockets.game.removeListener "get#{@_className}s-resp", process
 
@@ -532,7 +533,7 @@ define [
               for candidateScript in @constructor.linkedCandidateClasses when candidateScript is "model/#{val._className}"
                 clazz = require(candidateScript)
               # reuse or add new model into collection
-              obj = clazz.collection.get value.id
+              obj = clazz.collection.get val.id
               unless obj?
                 obj = new clazz value
                 clazz.collection.add obj
@@ -542,10 +543,6 @@ define [
         # end of resolution.
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
         callback null, @
-
-      # now that we have the linked ids, get the corresponding instances.
-      app.sockets.game.on "get#{@_className}s-resp", process
-      app.sockets.game.emit "get#{@_className}s", rid, [@id]
 
     # **private** 
     # Method used to serialize a model when saving and removing it

@@ -161,8 +161,8 @@ module.exports = (typeName, spec, options = {}) ->
 
   # when receiving a change from another worker, update the instance cache
   modelWatcher.on 'change', (operation, className, changes, wId) ->
-    wId = wId or process.id
-    return if wId is process.id or className isnt typeName or !(cache[changes?.id]?)
+    wId = wId or process.pid
+    return if wId is process.pid or className isnt typeName or !(cache[changes?.id]?)
     # update the cache
     switch operation
       when 'update'
@@ -179,7 +179,7 @@ module.exports = (typeName, spec, options = {}) ->
               # arbitrary JSON
               instance["__orig#{attr}"] = value
       when 'deletion' 
-        delete cache[changes.id]
+        delete caches[typeName][changes.id]
 
   spec.versionKey = false
   
@@ -304,11 +304,10 @@ module.exports = (typeName, spec, options = {}) ->
     cache[@id] = @
     
   # post-remove middleware: now that the type was properly removed, update the cache.
-  AbstractType.pre 'remove', (next) ->
-    # do removal
-    next()
+  AbstractType.post 'remove', ->
     # updates the cache
-    delete cache[@id]
+    delete caches[typeName][@id]
+        
     # broadcast deletion
     modelWatcher.change 'deletion', typeName, @
     if options.hasImages

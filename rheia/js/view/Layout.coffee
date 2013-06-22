@@ -93,6 +93,7 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       i18n: i18n
+      host: window.location.origin
 
     # **private**
     # Route handler: activate the corresponding button

@@ -305,8 +305,10 @@ module.exports =
             , (err) =>
               return callback err if err?
               # removes objects from mongo
-              logger.debug "remove model #{obj.id}" for obj in rule.removed
-              async.each rule.removed, ((obj, end) -> obj.remove (err)-> end err), (err) => 
+              async.each rule.removed, (obj, end) -> 
+                logger.debug "remove model #{obj.id}"
+                obj.remove (err)-> end err
+              , (err) => 
                 return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                 # adds new objects to be saved
                 saved = [].concat rule.saved
@@ -315,6 +317,8 @@ module.exports =
                 modelUtils.filterModified target, saved
                 # saves the whole in MongoDB
                 async.forEach saved, (obj, end) -> 
+                  # do not re-save models that were already removed !
+                  return end() if _.find(rule.removed, (removed) -> removed?.equals?(obj))?
                   logger.debug "save modified model #{obj.id}, #{obj.modifiedPaths().join(',')}"
                   obj.save end
                 , (err) => 

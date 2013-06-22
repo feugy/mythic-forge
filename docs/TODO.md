@@ -15,6 +15,8 @@
 
 - Rheia
   - Bugs
+    - [!!!] moderation map does not shows item updates 
+    - [!!!] when update received on an item moderation view, displayed image is wrong
     - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
     - [!!] failed to load scripts when compiling rules or other scripts
     - [!] not all visible square moderation map is loaded
