@@ -154,7 +154,7 @@ define [
 
       # no: just display the sprite image
       @_image.css {'background-position': "#{@_offset.x}px #{@_offset.y}px"}
-      return unless transition?
+      return @_onLastFrame() unless transition?
 
       # yes: let's start the animation !
       @_start = new Date().getTime()
@@ -166,7 +166,7 @@ define [
 
       if document.hidden
         # document not visible: drop directly to last frame.
-        @_onFrame @_start+@_sprite?.duration
+        @_onLastFrame()
       else 
         # adds it to current animations
         _anims[@options.model.id] = @
@@ -197,6 +197,11 @@ define [
               left: @_newPos.left-@_newPos.stepL*(@_sprite.number-@_step)
               top: @_newPos.top-@_newPos.stepT*(@_sprite.number-@_step)
       else 
+        @_onLastFrame()
+
+    # ** private**
+    # Apply last frame: display sprite's first position, end movement
+    _onLastFrame: =>
         # removes from executing animations first.
         delete _anims[@options.model.id]
         # end of the animation: displays first sprite
