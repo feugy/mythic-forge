@@ -12,6 +12,7 @@ logger:
     model: warn
     web: warn
     webSocket: warn
+    watcher: warn
     worker: warn
     console: all
 

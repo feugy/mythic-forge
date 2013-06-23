@@ -162,22 +162,24 @@ module.exports = (typeName, spec, options = {}) ->
   # when receiving a change from another worker, update the instance cache
   modelWatcher.on 'change', (operation, className, changes, wId) ->
     wId = wId or process.pid
-    return if wId is process.pid or className isnt typeName or !(cache[changes?.id]?)
+    return unless className is typeName and cache[changes?.id]?
     # update the cache
     switch operation
       when 'update'
-        # partial update
-        # do not use setter to avoid marking the instance as modified.
-        for attr, value of changes when !(attr in ['id', '__v'])
-          instance = cache[changes.id]
-          instance._doc[attr] = value  
-          if "__orig#{attr}" of instance
-            if _.isArray instance["__orig#{attr}"]
-              # object array
-              instance["__orig#{attr}"] = _.map value or [], (o) -> if 'object' is utils.type(o) and o?.id? then o.id else o
-            else
-              # arbitrary JSON
-              instance["__orig#{attr}"] = value
+        # if comming from your process, no need to updated
+        unless wId is process.pid
+          # partial update
+          # do not use setter to avoid marking the instance as modified.
+          for attr, value of changes when !(attr in ['id', '__v'])
+            instance = cache[changes.id]
+            instance._doc[attr] = value  
+            if "__orig#{attr}" of instance
+              if _.isArray instance["__orig#{attr}"]
+                # object array
+                instance["__orig#{attr}"] = _.map value or [], (o) -> if 'object' is utils.type(o) and o?.id? then o.id else o
+              else
+                # arbitrary JSON
+                instance["__orig#{attr}"] = value
       when 'deletion' 
         delete caches[typeName][changes.id]
 

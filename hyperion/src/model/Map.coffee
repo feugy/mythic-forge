@@ -21,6 +21,7 @@
 typeFactory = require './typeFactory'
 conn = require './connection'
 logger = require('../util/logger').getLogger 'model'
+modelWatcher = require('./ModelWatcher').get()
 modelUtils = require '../util/model'
 
 # Define the schema for map item types
@@ -49,7 +50,13 @@ Map = typeFactory 'Map',
         # now removes fields and items on it
         # does not issue messages
         # does not load models
-        require('./Field').remove(mapId:@id).exec()
-        require('./Item').remove(map:@id).exec()
+        require('./Field').where('mapId', @id).remove (err) =>
+          return logger.error "Faild to remove fields of deleted map #{@id}: #{err}" if err?
+        require('./Item').where('map', @id).select(_id:1).lean().exec (err, objs) =>
+          return logger.error "Faild to select items of deleted map #{@id}: #{err}" if err?
+          require('./Item').where('map', @id).remove (err) =>
+            return logger.error "Faild to remove items of deleted map #{@id}: #{err}" if err?
+            # issue events for caches and clients
+            modelWatcher.change 'deletion', 'Item', obj for obj in objs
 
 module.exports = conn.model 'map', Map

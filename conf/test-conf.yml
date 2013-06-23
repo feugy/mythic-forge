@@ -11,6 +11,7 @@ logger:
     model: error
     web: error
     webSocket: error
+    watcher: error
     worker: error
 
 # Server's configuration

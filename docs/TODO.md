@@ -2,6 +2,7 @@
 
 - Hyperion
   - Bugs
+    - [!!!] item in player character is still present after a map deletion
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation

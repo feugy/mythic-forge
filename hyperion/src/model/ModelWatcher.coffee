@@ -21,7 +21,7 @@
 _ = require 'underscore'
 pathUtils = require 'path'
 utils = require '../util/common'
-logger = require('../util/logger').getLogger 'model'
+logger = require('../util/logger').getLogger 'watcher'
 EventEmitter = require('events').EventEmitter
 
 gameClientRoot = utils.confKey 'game.dev'

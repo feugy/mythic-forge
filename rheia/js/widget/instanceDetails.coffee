@@ -105,7 +105,8 @@ define [
                 .toggleable(
                   firstShowDelay: 1000
                 ).data 'toggleable'
-            @_tooltip.open event.pageX, event.pageY
+            # do not open tooltip on mouse position, to avoid intersepting clicks
+            @_tooltip.open event.pageX+10, event.pageY+10
           , 500
         @$el.on 'mouseleave', => clearTimeout @_tooltipTimeout
 
