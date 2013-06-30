@@ -161,8 +161,8 @@ module.exports =
   # - type: [String] the value expected type, that can be: string, text, boolean, integer, float, date, time, datetime, object
   #
   # Optionnal constraints may include:
-  # - min: [Number/Date] minimum accepted value (excluded) for integer, float, date, time and datetime
-  # - max: [Number/Date] maximum accepted value (excluded) for integer, float, date, time and datetime
+  # - min: [Number/Date] minimum accepted value (included) for integer, float, date, time and datetime
+  # - max: [Number/Date] maximum accepted value (included) for integer, float, date, time and datetime
   # - within: [Array<String>] list of acceptable values for string, acceptable ids for objects.
   # - property: [Object] path to a given property, specified by 'path' attribute (a string) and from 
   # (a string that may be 'actor' or 'target'), for object

@@ -535,7 +535,7 @@ define [
               # reuse or add new model into collection
               obj = clazz.collection.get val.id
               unless obj?
-                obj = new clazz value
+                obj = new clazz val
                 clazz.collection.add obj
               # update current object
               @[prop].push obj

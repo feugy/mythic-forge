@@ -157,12 +157,11 @@ mongoose.Document::_defineProperties = ->
 module.exports = (typeName, spec, options = {}) ->
 
   caches[typeName] = {}
-  cache = caches[typeName]
 
   # when receiving a change from another worker, update the instance cache
   modelWatcher.on 'change', (operation, className, changes, wId) ->
     wId = wId or process.pid
-    return unless className is typeName and cache[changes?.id]?
+    return unless className is typeName and caches[typeName][changes?.id]?
     # update the cache
     switch operation
       when 'update'
@@ -171,7 +170,7 @@ module.exports = (typeName, spec, options = {}) ->
           # partial update
           # do not use setter to avoid marking the instance as modified.
           for attr, value of changes when !(attr in ['id', '__v'])
-            instance = cache[changes.id]
+            instance = caches[typeName][changes.id]
             instance._doc[attr] = value  
             if "__orig#{attr}" of instance
               if _.isArray instance["__orig#{attr}"]
@@ -267,8 +266,8 @@ module.exports = (typeName, spec, options = {}) ->
     cached = []
     # first look into the cache (order is preserved)
     for id in ids 
-      if id of cache
-        cached.push cache[id]
+      if id of caches[typeName]
+        cached.push caches[typeName][id]
       else
         notCached.push id
     return _.defer(-> callback null, cached) if notCached.length is 0
@@ -276,7 +275,7 @@ module.exports = (typeName, spec, options = {}) ->
     @find {_id: $in: notCached}, (err, results) =>
       return callback err if err?
       # keep the original order
-      callback null, (cache[id] for id in ids when cache[id]?)
+      callback null, (caches[typeName][id] for id in ids when caches[typeName][id]?)
 
 
   # Load the different ids from MongoDB.
@@ -298,12 +297,12 @@ module.exports = (typeName, spec, options = {}) ->
   # post-init middleware: populate the cache
   AbstractType.post 'init', ->
     # store in cache
-    cache[@id] = @
+    caches[typeName][@id] = @
   
   # post-save middleware: update cache
   AbstractType.post 'save',  ->
     # now that the instance was properly saved, update the cache.
-    cache[@id] = @
+    caches[typeName][@id] = @
     
   # post-remove middleware: now that the type was properly removed, update the cache.
   AbstractType.post 'remove', ->
@@ -421,7 +420,7 @@ module.exports = (typeName, spec, options = {}) ->
       if _.isFunction breakCycles
         [callback, breakCycles] = [breakCycles, false]
       AbstractType.statics.fetch [this], breakCycles, (err, instances) =>
-        callback err, if instances and instances?.length is 1 then instances[0] else null
+        callback err, instances?[0] or null
 
     # This static version of `fetch` performs multiple linked objects resolution in one operation.
     # See `fetch()` for more information.
@@ -442,18 +441,31 @@ module.exports = (typeName, spec, options = {}) ->
         properties = instance.type.properties
         for prop, def of properties
           value = instance[prop]
-          if def.type is 'object' and 'string' is utils.type value
-            # Do not resolve objects that were previously resolved
-            logger.debug "found #{value} in property #{prop}"
-            ids.push value
-          else if def.type is 'array' and value?.length > 0 and _.find(value, (val) -> 'string' is utils.type val)?
-            # Do not resolve arrays that were previously resolved
-            logger.debug "found #{value} in property #{prop}"
-            ids = ids.concat value
+          if def.type is 'object'
+            unless breakCycles
+              # if cache is used, always fetch value
+              if value?.id? or 'string' is utils.type value
+                logger.debug "found #{value.id or value} in property #{prop}"
+                ids.push value.id or value
+            else if 'string' is utils.type value
+              # otherwise, only kept unresolved values
+              logger.debug "found #{value} in property #{prop}"
+              ids.push value
+          else if def.type is 'array' and value?.length > 0
+            for val in value
+              unless breakCycles
+                # if cache is used, always fetch value
+                if val?.id? or 'string' is utils.type val
+                  logger.debug "found #{val.id or val} in property #{prop}"
+                  ids.push val.id or val
+              else if 'string' is utils.type val
+                # otherwise, only kept unresolved values
+                logger.debug "found #{val} in property #{prop}"
+                ids.push val
       
       # now that we have the linked ids, get the corresponding instances.
       return callback(null, instances) unless ids.length > 0
-
+      
       # resolve in both items and events
       linked = []
       async.forEach [{name: 'Item', clazz:require('./Item')}, {name: 'Event', clazz:require('./Event')}], (spec, end) ->
@@ -478,10 +490,10 @@ module.exports = (typeName, spec, options = {}) ->
           logger.debug "replace linked ids in #{instance.id}"
           for prop, def of properties
             value = instance._doc[prop]
-            if def.type is 'object' and 'string' is utils.type value
+            if def.type is 'object'
               link = null
               for l in linked
-                if l.id is value
+                if l.id is (value?.id or value)
                   link = l
                   break
               logger.debug "replace with object #{link?.id} in property #{prop}"
@@ -489,8 +501,8 @@ module.exports = (typeName, spec, options = {}) ->
               instance._doc[prop] = link
             else if def.type is 'array' and value?.length > 0
               result = []
-              for id, i in value when 'string' is utils.type id
-                result[i] = _.find linked, (link) -> link.id is id
+              for val, i in value
+                result[i] = _.find linked, (link) -> link.id is (val?.id or val)
                 logger.debug "replace with object #{result[i]?.id} position #{i} in property #{prop}"
               # filter null values
               # do not use setter to avoid marking the instance as modified.
@@ -525,12 +537,12 @@ module.exports = (typeName, spec, options = {}) ->
       # set the default values
       for prop, value of properties
 
-        if undefined is @[prop]
-          @[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
+        if undefined is @_doc[prop]
+          @_doc[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
 
         # Do not store strings, store dates instead
-        if value.type is 'date' and 'string' is utils.type @[prop]
-          @[prop] = new Date @[prop]
+        if value.type is 'date' and 'string' is utils.type @_doc[prop]
+          @_doc[prop] = new Date @_doc[prop]
           
       wasNew = @isNew
       # generate id if necessary

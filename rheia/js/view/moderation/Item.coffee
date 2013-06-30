@@ -167,7 +167,7 @@ define [
       @model.imageNum = @_imageWidget.options.current
 
       # map ownership
-      @model.map = Map.collection.get @_mapList.find('option').filter(':selected').val()
+      @model.map = Map.collection.get(@_mapList.find('option').filter(':selected').val()) or null
       @model.x = @_xWidget.options.value
       @model.y = @_yWidget.options.value
       @model.quantity = @_quantityWidget.options.value if @_hasQuantity
