@@ -61,6 +61,23 @@ define [
         app.sockets.updates.on 'update', @_onUpdate
         app.sockets.updates.on 'deletion', @_onRemove
 
+    # Server equivalent: find cached models by id
+    #
+    # @param ids [Array] the searched ids.
+    # @param callback [Function] the callback function, that takes two parameters
+    # @option callback err [String] an error string, or null if no error occured
+    # @option callback obj [Array] the found types. May be empty.
+    findCached: (ids, callback) =>
+      _.defer => 
+        # keep id order if possible
+        results = []
+        for model, i in @models when model?.id in ids
+          results[i] = model
+          # stop as soon as possible
+          ids.splice ids.indexOf model.id, 1
+          break if ids.length is 0
+        callback null, _.compact results
+
     # Provide a custom sync method to wire model to the server.
     # Only read operation is supported.
     #

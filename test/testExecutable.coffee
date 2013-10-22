@@ -29,7 +29,7 @@ executable = null
 listener = null
 root =  utils.confKey 'executable.source'
 
-describe 'Executable tests', -> 
+describe.only 'Executable tests', -> 
 
   beforeEach (done) ->
     # Empty the source and compilation folders content
@@ -75,6 +75,48 @@ describe 'Executable tests', ->
         # then it's values were saved
         assert.equal executables[0].id, id
         assert.equal executables[0].content, content
+        assert.equal executables[0].lang, 'coffee'
+        # then a new configuration key was added
+        ClientConf.findById 'default', (err, conf) ->
+          err = 'not found' unless err? or conf?
+          return done "Failed to get conf: #{err}" if err?
+          assert.equal conf.values?.names?[id], id
+          assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
+          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
+          done()
+
+  it 'should js executable be created', (done) ->
+    # given a JS new executable
+    content = '(function() {console.log("hello world");})()'
+    id = 'test5'
+    executable = new Executable id: id, lang: 'js', content: content
+
+    awaited = false
+    confChanged = false
+
+    # then a creation event was issued
+    listener = (operation, className, instance) ->
+      if operation is 'update' and className is 'ClientConf'
+        confChanged = true
+      else if operation is 'creation' and className is 'Executable'
+        assert.ok executable.equals instance
+        awaited = true
+    watcher.on 'change', listener
+
+    # when saving it
+    executable.save (err) ->
+      return done "Can't save executable: #{err}" if err?
+
+      # then it is in the file system
+      Executable.find (err, executables) ->
+        return done "Can't find executable: #{err}" if err?
+
+        # then it's the only one executable
+        assert.equal executables.length, 1
+        # then it's values were saved
+        assert.equal executables[0].id, id
+        assert.equal executables[0].content, content
+        assert.equal executables[0].lang, 'js'
         # then a new configuration key was added
         ClientConf.findById 'default', (err, conf) ->
           err = 'not found' unless err? or conf?
@@ -94,6 +136,25 @@ describe 'Executable tests', ->
     executable.save (err) ->
       # then an error is reported
       assert.include err, "Unexpected 'STRING'"
+
+      # then it's not on the file system
+      Executable.find (err, executables) ->
+        return done "Can't find executable: #{err}" if err?
+
+        # then no executables found
+        assert.equal executables.length, 0
+        done()
+
+  it 'should js executable compilation error be reported', (done) -> 
+    # given a new executable with compilation error
+    content = 'console.("hello world");'
+    id = 'test3'
+    executable = new Executable id: id, lang:'js', content: content
+    
+    # when saving it
+    executable.save (err) ->
+      # then an error is reported
+      assert.include err, "Expected an identifier and instead saw '('."
 
       # then it's not on the file system
       Executable.find (err, executables) ->

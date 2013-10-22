@@ -24,16 +24,37 @@ path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
 cluster = require 'cluster'
+jshint = require('jshint').JSHINT
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 utils = require '../util/common'
 modelUtils = require '../util/model'
-Item = null
 
+# Options used for js syntax checking with jshint
+hintOpts = 
+  asi: true
+  boss: true
+  debug: false
+  eqnull: true
+  evil: true
+  iterator: true
+  laxcomma: true
+  loopfunc: true
+  multistr: true
+  notypeof: true
+  proto: true
+  smarttabs: true
+  shadow: true
+  sub: true
+  supernew: true
+  validthis: true
+  node: true
+
+Item = null
 root = path.resolve path.normalize utils.confKey 'executable.source'
 compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
-ext = utils.confKey 'executable.extension','.coffee'
+supported = ['coffee', 'js']
 requirePrefix = 'hyperion'
 pathToHyperion = utils.relativePath(compiledRoot, path.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 pathToNodeModules = utils.relativePath(compiledRoot, path.join(__dirname, '..', '..', '..', 'node_modules').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
@@ -78,17 +99,24 @@ cleanNodeCache = ->
 # @option callback err [String] an error message. Null if no error occured
 # @option callback executable [Executable] the compiled executable
 compileFile = (executable, silent, callback) ->
+  # replace requires with references to hyperion
+  content = executable.content.replace new RegExp("(require\\s*\\(?\\s*[\"'])#{requirePrefix}", 'g'), "$1#{pathToHyperion}"
+  # replace requires with references to node_modules
+  content = content.replace new RegExp("(require\\s*\\(?\\s*[\"'])(?!\\.)", 'g'), "$1#{pathToNodeModules}/"
+  # compile results
   try 
-    # replace requires with references to hyperion
-    content = executable.content.replace new RegExp("(require\\s*\\(?\\s*[\"'])#{requirePrefix}", 'g'), "$1#{pathToHyperion}"
-    # replace requires with references to node_modules
-    content = content.replace new RegExp("(require\\s*\\(?\\s*[\"'])(?!\\.)", 'g'), "$1#{pathToNodeModules}/"
-    # compile results
-    js = coffee.compile content, bare: true
+    switch executable.lang 
+      when 'coffee'
+        content = coffee.compile content, bare: true
+      when 'js'
+        # Only takes in account first error
+        unless jshint content, hintOpts
+          throw "#{jshint.errors[0].line}:#{jshint.errors[0].character}, #{jshint.errors[0].reason}"
   catch exc
     return callback "Error while compilling executable #{executable.id}: #{exc}"
+
   # Eventually, write a copy with a js extension
-  fs.writeFile executable.compiledPath, js, (err) =>
+  fs.writeFile executable.compiledPath, content, (err) =>
     return callback "Error while saving compiled executable #{executable.id}: #{err}" if err?
     logger.debug "executable #{executable.id} successfully compiled"
     # store it in local cache.
@@ -206,10 +234,10 @@ class Executable
 
         readFile = (file, end) -> 
           # only take coffeescript in account
-          if ext isnt path.extname file
-            return end()
+          ext = path.extname file
+          return end() unless ext in supported
           # creates an empty executable
-          executable = new Executable {id:file.replace ext, ''}
+          executable = new Executable {id:file.replace(ext, ''), lang: ext}
 
           fs.readFile executable.path, encoding, (err, content) ->
             if err?
@@ -273,6 +301,9 @@ class Executable
   # The unic file name of the executable, which is also its id.
   id: null
 
+  # The executable language (Coffee-Script by default)
+  lang: 'coffee'
+
   # The executable content (Utf-8 string encoded).
   content: ''
 
@@ -289,8 +320,9 @@ class Executable
   # @option attributes content [String] the file content. Empty by default.
   constructor: (attributes) ->
     @id = attributes.id
-    @content = attributes.content || ''
-    @path = path.join root, @id+ext
+    @content = attributes.content or ''
+    @lang = attributes.lang or 'coffee'
+    @path = path.join root, "#{@id}.#{@lang}"
     @compiledPath = path.join compiledRoot, @id+'.js'
 
   # Save (or update) a executable and its content.

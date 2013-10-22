@@ -45,11 +45,7 @@ Map = typeFactory 'Map',
       #
       # @param next [Function] function that must be called to proceed with other middleware.
       remove: (next) ->
-        # performs removal
-        next()
-        # now removes fields and items on it
-        # does not issue messages
-        # does not load models
+        # now removes fields and items on it without loading models
         require('./Field').where('mapId', @id).remove (err) =>
           return logger.error "Faild to remove fields of deleted map #{@id}: #{err}" if err?
         require('./Item').where('map', @id).select(_id:1).lean().exec (err, objs) =>
@@ -58,5 +54,7 @@ Map = typeFactory 'Map',
             return logger.error "Faild to remove items of deleted map #{@id}: #{err}" if err?
             # issue events for caches and clients
             modelWatcher.change 'deletion', 'Item', obj for obj in objs
+            # performs removal
+            next()
 
 module.exports = conn.model 'map', Map

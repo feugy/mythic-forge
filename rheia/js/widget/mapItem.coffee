@@ -202,21 +202,21 @@ define [
     # ** private**
     # Apply last frame: display sprite's first position, end movement
     _onLastFrame: =>
-        # removes from executing animations first.
-        delete _anims[@options.model.id]
-        # end of the animation: displays first sprite
-        @_offset.x = 0
-        @_image.css 'background-position': "#{@_offset.x}px #{@_offset.y}px"
+      # removes from executing animations first.
+      delete _anims[@options.model.id]
+      # end of the animation: displays first sprite
+      @_offset.x = 0
+      @_image.css 'background-position': "#{@_offset.x}px #{@_offset.y}px"
 
-        # if necessary, apply new coordinates and position
-        if @_newCoordinates?
-          @options.coordinates = @_newCoordinates
-          @_newCoordinates = null
-        if @_newPos
-          delete @_newPos.stepL
-          delete @_newPos.stepT
-          @$el.css @_newPos
-          @_newPos = null
+      # if necessary, apply new coordinates and position
+      if @_newCoordinates?
+        @options.coordinates = @_newCoordinates
+        @_newCoordinates = null
+      if @_newPos
+        delete @_newPos.stepL
+        delete @_newPos.stepT
+        @$el.css @_newPos
+        @_newPos = null
 
     # **private**
     # Image loading handler: positionnates the widget inside map

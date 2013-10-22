@@ -31,6 +31,18 @@
   # 
   # The factory accepts a options parameter, that may include:
   # - debug [Boolean] true to ouput debug message on console.
+  # - preCreate [Function] extension point invoked when a creation is received from server, before processing data. Invoked with parameters :
+  # @param className [String] created model class name
+  # @param created [Object] raw created model
+  # @param  callback [Function] end callback to resume update process. Invoke with null and created, or with truthy value as first argument to cancel update
+  # - preUpdate [Function] extension point invoked when an update is received from server, before processing data. Invoked with parameters :
+  # @param className [String] updated model class name
+  # @param changes [Object] raw new values (always contains id)
+  # @param  callback [Function] end callback to resume update process. Invoke with null and changes, or with truthy value as first argument to cancel update
+  # - preDelete [Function] extension point invoked when a deletion is received from server, before processing data. Invoked with parameters :
+  # @param className [String] deleted model class name
+  # @param deleted [Object] raw deleted model
+  # @param  callback [Function] end callback to resume update process. Invoke with null and deleted, or with truthy value as first argument to cancel update
   @factory = (eventEmitter, options = {}) ->
       
     # internal state
@@ -38,16 +50,6 @@
     connected = false
     connecting = false
     player = null
-    
-    # Per-class model caches
-    models =
-      Player: {}
-      Item: {}
-      ItemType: {}
-      Event: {}
-      EventType: {}
-      Map: {}
-      FieldType: {}
       
     # Atlas global namespace
     Atlas = 
@@ -63,6 +65,9 @@
       # refer current options
       options: options
       
+      # keep event emitter
+      eventEmitter: eventEmitter
+       
     # read-only player, populated by `connect()`
     Object.defineProperty Atlas, 'player', 
       get: -> player
@@ -203,12 +208,29 @@
 
     #-----------------------------------------------------------------------------
     # Abstract models
+    
+    # Per-class model caches
+    models =
+      Player: {}
+      Item: {}
+      ItemType: {}
+      Event: {}
+      EventType: {}
+      Map: {}
+      FieldType: {}
 
     # bounds to server updates
     eventEmitter.on 'connected', ->
-      Atlas.updateNS.on 'creation', onModelCreation
-      Atlas.updateNS.on 'update', onModelUpdate
-      Atlas.updateNS.on 'deletion', onModelDeletion
+      factory = (hook, process) =>
+        (className, model) =>
+          # immediately process message...
+          return process className, model unless _.isFunction Atlas.options?[hook]
+          # ...or use hook that may cancel processing
+          Atlas.options[hook] className, model, (err, model) =>
+            process className, model unless err
+      Atlas.updateNS.on 'creation', factory 'preCreate', Atlas.modelCreation
+      Atlas.updateNS.on 'update', factory 'preUpdate', Atlas.modelUpdate
+      Atlas.updateNS.on 'deletion',  factory 'preDelete', Atlas.modelDeletion
 
     # Add the created model into relevant cache
     #
@@ -216,7 +238,7 @@
     # @param model [Object] raw created model
     # @param  callback [Function] construction end callback, invoked with argument:
     # @option callback error [Error] an Error object, or null if no error occured
-    onModelCreation = (className, model, callback = ->) ->
+    Atlas.modelCreation = (className, model, callback = ->) ->
       return callback null unless className is 'Field' or className of models
       # build a new model
       options.debug and console.log "create new instance #{className} #{model.id}"
@@ -232,32 +254,38 @@
     # @param changes [Object] raw new values (always contains id)
     # @param  callback [Function] construction end callback, invoked with argument:
     # @option callback error [Error] an Error object, or null if no error occured
-    onModelUpdate = (className, changes, callback = ->) ->
+    Atlas.modelUpdate = (className, changes, callback = ->) ->
       return callback null unless className of models
       # first, get the cached model and quit if not found
       Atlas[className].findById changes?.id, (err, model) ->
         return callback err if err?
-        return callback null unless model?
+        unless model?
+          # update on an unexisting model: fetch it if possible
+          if Atlas[className]._fetchMethod?
+            return Atlas[className].fetch [changes.id], callback
+          else
+            return callback null 
         options.debug && console.log "process update for model #{model.id} (#{className})", changes
         # then, update the local cache
-        modified = false
+        modifiedFields = []
         for attr, value of changes
           unless attr in Atlas[className]._notUpdated
-            modified = true
+            # ignore change if value is identical or if field ignored
+            modifiedFields.push attr
             model[attr] = value 
             options.debug && console.log "update property #{attr}"
 
         # performs update propagation
         end = (err) ->
-          options.debug && console.log "end of update for model #{model.id} (#{className})", modified, err
-          if modified and !err?
-            eventEmitter.emit 'modelChanged', 'update', model, _.without _.keys(changes), 'id' 
+          options.debug && console.log "end of update for model #{model.id} (#{className})", modifiedFields, err
+          if modifiedFields.length isnt 0 and !err?
+            eventEmitter.emit 'modelChanged', 'update', model, modifiedFields 
           callback err
 
         # enrich specific models properties
-        if modified and className is 'Player' and 'characters' of changes
+        if modifiedFields.length isnt 0 and className is 'Player' and 'characters' of changes
           enrichCharacters model, end
-        else if modified and className in ['Item', 'Event']
+        else if modifiedFields.length isnt 0 and className in ['Item', 'Event']
           async.parallel [
             (next) ->
               return next() unless 'map' of changes and className is 'Item'
@@ -278,7 +306,7 @@
     # @param model [Object] raw removed model
     # @param  callback [Function] construction end callback, invoked with argument:
     # @option callback error [Error] an Error object, or null if no error occured
-    onModelDeletion = (className, model, callback = ->) ->
+    Atlas.modelDeletion = (className, model, callback = ->) ->
       # manage field deletion first
       return eventEmitter.emit 'modelChanged', 'deletion', new Atlas.Field(model, callback) if className is 'Field'
       # other models deletion
@@ -461,7 +489,7 @@
               return next err if err?
               if model?
                 # update cache with new value, as requested
-                onModelUpdate @_className, raw, next
+                Atlas.modelUpdate @_className, raw, next
               else
                 # add new model to local cache
                 new Atlas[@_className] raw, next
@@ -782,6 +810,11 @@
       # **private**
       # List of properties that must be defined in this instance.
       @_fixedAttributes: ['descImage', 'images', 'properties', 'quantifiable']
+    
+    # manages transition changes on Item's updates
+    eventEmitter.on 'modelChanged', (event, operation, model, changes) ->
+      return unless operation is 'update' and model._className is 'Item' and 'transition' in changes and 
+      model._transition = model.transition
 
     # Item modelize any objects and actor that can be found on a map, and may be controlled by players
     # An item always have a type, which is systematically populated from cache or server during initialization.
@@ -804,7 +837,12 @@
       # **private**
       # List of properties that must be defined in this instance.
       @_fixedAttributes: ['map', 'x', 'y', 'imageNum', 'state', 'transition', 'quantity', 'type']
-
+      
+      # **private**
+      # Provide the transition used to animate items.
+      # Do not use directly used `model.getTransition` because it's not reset when not appliable.
+      _transition: null
+      
       # **private**
       # Load the model values from raw JSON
       # Ensure the existence of fixed attributes
@@ -813,6 +851,7 @@
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
       _load: (raw, callback = ->) =>
+        @_transition = null
         # do not invoke callback now
         super raw, (err) =>
           return callback err if err?
@@ -824,6 +863,15 @@
               return callback err if err?
               # then enrich map
               enrichMap @, callback
+      
+      # Returns the Item's transition. Designed to be used only one time.
+      # When restrieved, the transition is reset until its next change.
+      #
+      # @return the current transition, or null if no transition available.
+      getTransition: =>
+        transition = @_transition 
+        @_transition = null
+        transition
 
     #-----------------------------------------------------------------------------
     # Event and EventType models
@@ -1090,6 +1138,9 @@
 
     # Only provide a singleton of RuleService
     Atlas.ruleService = new RuleService()
+    # make some alias
+    Atlas.executeRule = Atlas.ruleService.execute
+    Atlas.resolveRules = Atlas.ruleService.resolve
 
     #-----------------------------------------------------------------------------
     # Image Service

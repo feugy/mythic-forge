@@ -184,9 +184,11 @@ describe 'Item tests', ->
               Item.find {map: map.id}, (err, items) ->
                 return done err if err?
                 assert.equal items.length, 0
-                assert.equal 1, changes.length, 'watcher wasn\'t invoked'
-                assert.equal changes[0][1], 'Map'
+                assert.equal 2, changes.length, 'watcher wasn\'t invoked'
+                assert.equal changes[0][1], 'Item'
                 assert.equal changes[0][0], 'deletion'
+                assert.equal changes[1][1], 'Map'
+                assert.equal changes[1][0], 'deletion'
                 watcher.removeListener 'change', listener
                 done()
 
