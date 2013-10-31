@@ -130,8 +130,9 @@ define [
     #
     # @param type [String] type of the opened/created instance
     # @param id [String] optional id of the opened instance. Null for creations
+    # @param args [Array] optional arguments for view creation
     # @return the created view, or null to cancel opening/creation
-    _constructView: (type, id) =>
+    _constructView: (type, id, args) =>
       return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Map', 'ClientConf']
       
       unless id?
@@ -144,6 +145,7 @@ define [
             validator.validate()
             return false unless validator.errors.length is 0
             id = input.val()
+            lang = popup.find('.lang').val()
             # ask server if id is free
             rid = utils.rid()
             app.sockets.admin.on 'isIdValid-resp', listener = (reqId, err) =>
@@ -155,7 +157,7 @@ define [
               validator.dispose()
               # now we can opens the view tab
               popup.dialog 'close'
-              @_onOpenElement type, id
+              @_onOpenElement type, id, lang
             app.sockets.admin.emit 'isIdValid', rid, id
             false
         ,
@@ -168,9 +170,16 @@ define [
         # adds a text field and an error field above it
         popup.append """<div class="id-container">
             <label>#{if type is 'ClientConf' then i18n.labels.locale else i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
-            <input type='text' class='id'/>
-          </div>
-          <div class='errors'></div>"""
+            <input type='text' class='id'/>"""
+        if type in ['Rule', 'TurnRule', 'Script']
+          popup.append """<div class="lang-container">
+            <label>#{i18n.msgs.chooseLang}</label>
+            <select class="lang">
+              <option selected='selected' value='coffee'>#{i18n.labels.coffee}</option>
+              <option value='js'>#{i18n.labels.js}</option>
+            </select>
+          </div>"""
+        popup.append "</div><div class='errors'></div>"
         input = popup.find '.id'
 
         # creates the validator
@@ -196,9 +205,9 @@ define [
         when 'FieldType' then new FieldTypeView id
         when 'ItemType' then new ItemTypeView id
         when 'EventType' then new EventTypeView id
-        when 'Rule' then new RuleView id
-        when 'TurnRule' then new TurnRuleView id
-        when 'Script' then new ScriptView id
+        when 'Rule' then new RuleView id, args?[0]
+        when 'TurnRule' then new TurnRuleView id, args?[0]
+        when 'Script' then new ScriptView id, args?[0]
         when 'Map' then new MapView id
         when 'ClientConf' then new ClientConfView id
         else null

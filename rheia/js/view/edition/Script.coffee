@@ -51,14 +51,18 @@ define [
     # widget that allows content edition
     _editorWidget: null
 
+    # **private**
+    # language used, for creation only
+    _lang: null
+
     # The view constructor.
     #
-    # @param id [String] the edited object's id, of null for a creation.
+    # @param id [String] the edited object's id, or null for a creation.
+    # @param lang [String] created object language, or null for an opening.
     # @param className [String] optional CSS className, used by subclasses
-    constructor: (id, className = 'script') ->
+    constructor: (id, @_lang = null, className = 'script') ->
       super id, className
       # on content changes, displays category and active status
-      @bindTo @model, 'change:error', @_onCompilationError
       console.log "creates script edition view for #{if id? then @model.id else 'a new script'}"
     
     # Called by the TabPerspective each time the view is showned.
@@ -68,7 +72,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable content: emptyScript
+      @model = new Executable content: emptyScript, lang: @_lang
 
     # **private**
     # Gets values from rendering and saved them into the edited object.
@@ -82,11 +86,8 @@ define [
     _fillRendering: =>
       # superclass handles description image
       super()
-      # clean compilation error
-      @$el.find('.errors > .compilation').remove()
       @_editorWidget.setOption 'text', @model.content
       @_onChange()
-      @_onCompilationError() if @model.error?
 
     # **private**
     # Prepare data to be rendered into the template
@@ -94,6 +95,7 @@ define [
     # @return data filled into the template
     _getRenderData: =>
       title: _.sprintf i18n.titles.script, @model.id
+      lang: i18n.labels[@model.lang]
       i18n: i18n
 
     # **private**
@@ -102,7 +104,7 @@ define [
     _specificRender: =>
       super()
       @_editorWidget = @$el.find('.content').advEditor(
-        mode: 'coffee'
+        mode: i18n.constants.extToMode[@model.lang]
       ).on('change', @_onChange).data 'advEditor'
 
     # **private**
@@ -120,9 +122,3 @@ define [
         original: @model.content
         current: @_editorWidget.options.text
       comparable
-
-    # **private**
-    # Displays the detected compilation errors.
-    _onCompilationError: =>
-      @$el.find('.errors > .compilation').remove()
-      @$el.find('.errors').append "<div class='compilation'>#{@model.error}</div>"

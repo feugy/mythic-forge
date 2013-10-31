@@ -29,6 +29,26 @@ define
       uidRegex: /^[\w$-]+$/i #/^[$_\u0041-\uff70].*$/i
       emailRegex: /^[$_\u0041-\uff70]+$/i
 
+      # map that indicates to which extension corresponds which editor mode
+      # extensions are keys, mode are values
+      extToMode:
+        coffee: 'coffee'
+        json: 'json'
+        js: 'javascript'
+        html: 'html'
+        htm: 'html'
+        css: 'css'
+        xml: 'xml'
+        svg: 'svg'
+        yaml: 'yaml'
+        yml: 'yaml'
+        stylus: 'stylus'
+        styl: 'stylus'
+        png: 'img'
+        jpg: 'img'
+        jpeg: 'img'
+        gif: 'img'
+
     msgs: 
       invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
       alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"

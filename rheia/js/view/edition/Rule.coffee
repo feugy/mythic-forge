@@ -23,10 +23,11 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/rule.html'
-  'text!tpl/rule.tpl'
+  'text!tpl/new-rule-coffee.tpl'
+  'text!tpl/new-rule-js.tpl'
   'view/edition/Script'
   'model/Executable'
-], ($, i18n, i18nEdition, template, emptyRule, ScriptView, Executable) ->
+], ($, i18n, i18nEdition, template, emptyRuleCoffee, emptyRuleJs, ScriptView, Executable) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -44,9 +45,10 @@ define [
     # The view constructor.
     #
     # @param id [String] the edited object's id, of null for a creation.
+    # @param lang [String] created object language, or null for an opening.
     # @param className [String] optional CSS className, used by subclasses
-    constructor: (id, className = 'rule') ->
-      super id, className
+    constructor: (id, lang= null, className = 'rule') ->
+      super id, lang, className
       # on content changes, displays category and active status
       @bindTo @model, 'change:category', @_onCategoryChange
       @bindTo @model, 'change:active', @_onActiveChange
@@ -55,7 +57,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable content: emptyRule
+      @model = new Executable lang: @_lang, content: if @_lang is 'js' then emptyRuleJs else emptyRuleCoffee
 
     # **private**
     # Updates rendering with values from the edited object.
@@ -70,8 +72,9 @@ define [
     #
     # @return data filled into the template
     _getRenderData: =>
-      title: _.sprintf i18n.titles.rule, @model.id
-      i18n: i18n
+      data = super()
+      data.title = _.sprintf i18n.titles.rule, @model.id
+      data
       
     # **private**
     # Invoked when a model is created on the server.

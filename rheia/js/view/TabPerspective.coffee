@@ -139,8 +139,9 @@ define [
     #
     # @param type [String] type of the opened/created instance
     # @param id [String] optional id of the opened instance. Null for creations
+    # @param args [Array] optional arguments for view creation
     # @return the created view, or null to cancel opening/creation
-    _constructView: (type, id) =>
+    _constructView: (type, id, args) =>
       throw new Error '_constructView() must be implemented by subclasses'
 
     # **private**
@@ -164,14 +165,15 @@ define [
     #  
     # @param type [String] opened element className.
     # @param id [String] opened element id, or null for a creation.
-    _onOpenElement: (type, id) =>
+    # @param args... [Any] optional creation arguments
+    _onOpenElement: (type, id, args...) =>
       # first check if the view is not already opened.
       if id?
         idx = @_indexOfView id
         return @_tabs.select idx unless idx is -1
 
       # creates the relevant view
-      view = @_constructView type, id
+      view = @_constructView type, id, args
       return unless view?
 
       @_views.push view

@@ -1169,14 +1169,14 @@ describe 'RuleService tests', ->
 
     it 'should turn compilation failure be reported', (done) ->
       async.forEach [
-        # given a turn rule with broken require
+        # given a turn rule with broken select
         new Executable
           id:'rule18'
           content: """TurnRule = require 'hyperion/model/TurnRule'
-            Item = require 'hyperion/unknown'
 
             module.exports = new (class Dumb extends TurnRule
               select: (callback) =>
+                @error 'coucou'
                 callback null
               execute: (target, callback) =>
                 callback null
@@ -1205,17 +1205,15 @@ describe 'RuleService tests', ->
           return done "Unable to trigger turn: #{err}" if err?
 
           # then notifications where received in right order
-          assert.equal 5, notifications.length
+          assert.equal 4, notifications.length
           assert.equal notifications[0][0], 'begin'
-          assert.equal notifications[1][0], 'error'
+          assert.equal notifications[1][0], 'rule'
           assert.equal notifications[1][1], 'rule18'
-          assert.isNotNull notifications[1][2]
-          assert.include notifications[1][2], 'failed to require'
-          assert.equal notifications[2][0], 'rule'
-          assert.equal notifications[2][1], 'rule19'
-          assert.equal notifications[3][0], 'success'
-          assert.equal notifications[3][1], 'rule19'
-          assert.equal notifications[4][0], 'end'
+          assert.equal notifications[2][0], 'failure'
+          assert.equal notifications[2][1], 'rule18'
+          assert.isNotNull notifications[2][2]
+          assert.include notifications[2][2], 'failed to select or execute rule'
+          assert.equal notifications[3][0], 'end'
           done()
 
     it 'should disabled turn rule not be executed', (done) ->
@@ -1312,10 +1310,10 @@ describe 'RuleService tests', ->
       script = new Executable 
         id:'rule20', 
         content: """Rule = require 'hyperion/model/Rule'
-          require 'hyperion/unknown'
           
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
+              @error 'coucou'
               callback null, []
             execute: (actor, target, params, callback) =>
               callback null
@@ -1327,7 +1325,7 @@ describe 'RuleService tests', ->
         service.resolve item1.id, item1.id, null, (err) ->
           # then the error is reported
           assert.isNotNull err
-          assert.include err, 'failed to require'
+          assert.include err, 'has no method'
           done()
 
     it 'should asynchronous failling rule not be resolved', (done) ->
@@ -1358,12 +1356,12 @@ describe 'RuleService tests', ->
       script = new Executable 
         id:'rule21', 
         content: """Rule = require 'hyperion/model/Rule'
-          require 'hyperion/unknown'
           
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, callback) =>
+              @error "coucou"
               callback null
           )()"""
       script.save (err) ->
@@ -1373,7 +1371,7 @@ describe 'RuleService tests', ->
         service.execute 'rule21', item1.id, item1.id, {}, (err, results) ->
           # then the error is reported
           assert.isNotNull err
-          assert.include err, 'failed to require'
+          assert.include err, 'has no method'
           done()
 
     it 'should asynchronous failling rule not be executed', (done) ->

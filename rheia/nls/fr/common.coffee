@@ -91,7 +91,7 @@ define
     removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
     searchFailed: 'La recherche à échouée :<br/><br/>%s'
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
-    copyright: '&copy; 2010-2012 Damien Feugas'
+    copyright: '&copy; 2010-2014 Damien Feugas'
     confirmUnload: 'Au moins une vue de la perspective %1s à été modifiée.'
 
   errors:

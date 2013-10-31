@@ -31,32 +31,12 @@ define [
 
   i18n = $.extend(true, i18n, i18nAuthoring)
 
-  # map that indicates to which extension corresponds which editor mode
-  # extensions are keys, mode are values
-  extToMode =
-    'coffee': 'coffee'
-    'json': 'json'
-    'js': 'javascript'
-    'html': 'html'
-    'htm': 'html'
-    'css': 'css'
-    'xml': 'xml'
-    'svg': 'svg'
-    'yaml': 'yaml'
-    'yml': 'yaml'
-    'stylus': 'stylus'
-    'styl': 'stylus'
-    'png': 'img'
-    'jpg': 'img'
-    'jpeg': 'img'
-    'gif': 'img'
-
   # Returns the supported mode of a given file
   #
   # @param item [FSItem] the concerned item
   # @return the supported mode
   getMode = (item) ->
-    if item.extension of extToMode then extToMode[item.extension] else 'text'
+    if item.extension of i18n.constants.extToMode then i18n.constants.extToMode[item.extension] else 'text'
 
   # View that allows to edit files
   class FileView extends BaseView

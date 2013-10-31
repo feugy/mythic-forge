@@ -29,7 +29,7 @@ executable = null
 listener = null
 root =  utils.confKey 'executable.source'
 
-describe.only 'Executable tests', -> 
+describe 'Executable tests', -> 
 
   beforeEach (done) ->
     # Empty the source and compilation folders content
@@ -46,7 +46,7 @@ describe.only 'Executable tests', ->
 
   it 'should executable be created', (done) -> 
     # given a new executable
-    content = 'console.log "hello world"'
+    content = 'greetings = "hello world"'
     id = 'test1'
     executable = new Executable id: id, content: content
     
@@ -76,6 +76,7 @@ describe.only 'Executable tests', ->
         assert.equal executables[0].id, id
         assert.equal executables[0].content, content
         assert.equal executables[0].lang, 'coffee'
+        assert.propertyVal executables[0].meta, 'kind', 'Script'
         # then a new configuration key was added
         ClientConf.findById 'default', (err, conf) ->
           err = 'not found' unless err? or conf?
@@ -87,7 +88,7 @@ describe.only 'Executable tests', ->
 
   it 'should js executable be created', (done) ->
     # given a JS new executable
-    content = '(function() {console.log("hello world");})()'
+    content = '(function() {var greetings = "hello world";})()'
     id = 'test5'
     executable = new Executable id: id, lang: 'js', content: content
 
@@ -117,6 +118,7 @@ describe.only 'Executable tests', ->
         assert.equal executables[0].id, id
         assert.equal executables[0].content, content
         assert.equal executables[0].lang, 'js'
+        assert.propertyVal executables[0].meta, 'kind', 'Script'
         # then a new configuration key was added
         ClientConf.findById 'default', (err, conf) ->
           err = 'not found' unless err? or conf?
@@ -187,11 +189,14 @@ describe.only 'Executable tests', ->
 
     it 'should executable be updated', (done) ->      
       confChanged = false
+      execChanges = null
 
       # then a creation event was issued
-      listener = (operation, className, instance) ->
-        return unless operation is 'update' and className is 'ClientConf'
-        confChanged = true 
+      listener = (operation, className, changes) ->
+        if operation is 'update' and className is 'ClientConf'
+          confChanged = true 
+        if operation is 'update' and className is 'Executable'
+          execChanges = changes
       watcher.on 'change', listener
 
       # when modifying and saving a executable
@@ -205,7 +210,9 @@ describe.only 'Executable tests', ->
           # then only the relevant values were modified
           assert.equal executables[0].content, newContent
           assert.equal executables[0].id, 'test2'
+          assert.propertyVal executables[0].meta, 'kind', 'Script'
           assert.isFalse confChanged, 'watcher was invoked for client configuration'
+          assert.isNotNull execChanges, "watcher was't invoked for executable: #{execChanges}"
           done()
 
     it 'should executable be removed', (done) ->
@@ -258,3 +265,76 @@ describe.only 'Executable tests', ->
         assert.property result, 'findCached'
         assert.equal new result()._className, 'Item'
         done()
+
+    it 'should executable meta for Rule contains category and active', (done) ->
+      # given an executable with an inactive Rule 'cat3' category
+      executable = new Executable 
+        id: 'test5'
+        content: """Rule = require 'hyperion/model/Rule'
+            module.exports = new (class Dumb extends Rule
+              constructor: ->
+                @category = 'cat3'
+                @active = false
+            )() """
+      executable.save (err) ->
+        return done err if err?
+        assert.propertyVal executable.meta, 'kind', 'Rule'
+        assert.propertyVal executable.meta, 'category', 'cat3'
+        assert.propertyVal executable.meta, 'active', false
+        done()
+
+    it 'should executable meta for TurnRule contains rank and active', (done) ->
+      # given an executable with an active TurnRule rank 10
+      executable = new Executable 
+          id:'test6', 
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @rank = 10
+            )() """
+      executable.save (err) ->
+        return done err if err?
+        assert.propertyVal executable.meta, 'kind', 'TurnRule'
+        assert.propertyVal executable.meta, 'rank', 10
+        assert.propertyVal executable.meta, 'active', true
+        done()
+
+    it 'should executable meta for be updated', (done) ->
+      # given an executabl with metas
+      executable = new Executable 
+          id:'test7', 
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @active = false
+            )() """
+      executable.save (err) ->
+        return done err if err?
+
+        assert.propertyVal executable.meta, 'kind', 'TurnRule'
+        assert.propertyVal executable.meta, 'rank', 0
+        assert.propertyVal executable.meta, 'active', false
+        execChanges = null
+
+        # then a update event was issued
+        listener = (operation, className, changes) ->
+          execChanges = changes if operation is 'update' and className is 'Executable'
+        watcher.on 'change', listener
+        # when saving content new values
+        executable.contant = """TurnRule = require 'hyperion/model/TurnRule'
+            module.exports = new (class Dumb extends TurnRule
+              constructor: ->
+                @active = true
+                @rank = 5
+            )() """
+
+        executable.save (err) ->
+          return done err if err?
+
+          # then metas were updated
+          assert.propertyVal executable.meta, 'kind', 'TurnRule'
+          assert.propertyVal executable.meta, 'rank', 5
+          assert.propertyVal executable.meta, 'active', true
+          assert.isNotNull execChanges, 'watcher wasn\'t invoked for executable'
+          assert.ok 'meta' of execChanges
+          done()

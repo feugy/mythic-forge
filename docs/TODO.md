@@ -15,6 +15,7 @@
     - token expiration: no refresh on operations
 
 - Rheia
+  - [!!!!] fix rule/turn rule active/category/rank changes (upgrade to Backbone 1.1)
   - Bugs
     - [!!!] when update received on an item moderation view, displayed image is wrong
     - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
@@ -162,6 +163,7 @@
     - reference dependencies to hyperions modules as 'hyperion' instead of '../'
     - do not exports inactive or turn rules to client
     - remove models by id in rule's removed array
+    - allow rule, turn rule and script to be written in plain javascript
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation
@@ -261,6 +263,7 @@
       - try to reload executable when initializing executables on requirejs errors
     - TurnRule
     - Scripts
+    - choose and display script/rule language
   - administration perspective
     - create and restore game client versions
     - display externally triggered deployements

@@ -24,11 +24,14 @@ path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
 cluster = require 'cluster'
+pathUtils = require 'path'
 jshint = require('jshint').JSHINT
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 utils = require '../util/common'
 modelUtils = require '../util/model'
+Rule = require '../model/Rule'
+TurnRule = require '../model/TurnRule'
 
 # Options used for js syntax checking with jshint
 hintOpts = 
@@ -54,7 +57,7 @@ Item = null
 root = path.resolve path.normalize utils.confKey 'executable.source'
 compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
 encoding = utils.confKey 'executable.encoding', 'utf8'
-supported = ['coffee', 'js']
+supported = ['.coffee', '.js']
 requirePrefix = 'hyperion'
 pathToHyperion = utils.relativePath(compiledRoot, path.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 pathToNodeModules = utils.relativePath(compiledRoot, path.join(__dirname, '..', '..', '..', 'node_modules').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
@@ -125,9 +128,29 @@ compileFile = (executable, silent, callback) ->
     cleanNodeCache()
 
     process = ->
+      previousMeta = _.clone executable.meta
+      try 
+        executable.meta = 
+          kind: 'Script'
+        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+        # and singleton (like ModuleWatcher) will be broken.
+        obj = require pathUtils.relative __dirname, executable.compiledPath
+        if obj? and utils.isA obj, TurnRule
+          executable.meta.active = obj.active
+          executable.meta.rank = obj.rank
+          executable.meta.kind = 'TurnRule'
+        else if obj? and utils.isA obj, Rule
+          executable.meta.active = obj.active
+          executable.meta.category = obj.category
+          executable.meta.kind = 'Rule'
+        else
+          executable.meta.kind = 'Script'
+      catch err
+        return callback "failed to require executable #{executable.id}: #{err}"
+
       # propagate change
       unless silent
-        modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable, ['content']
+        modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable
         delete wasNew[executable.id]
       # and invoke final callback
       callback null, executable
@@ -237,7 +260,7 @@ class Executable
           ext = path.extname file
           return end() unless ext in supported
           # creates an empty executable
-          executable = new Executable {id:file.replace(ext, ''), lang: ext}
+          executable = new Executable {id:file.replace(ext, ''), lang: ext[1..]}
 
           fs.readFile executable.path, encoding, (err, content) ->
             if err?
@@ -303,6 +326,11 @@ class Executable
 
   # The executable language (Coffee-Script by default)
   lang: 'coffee'
+
+  # Executable metadatas, depending on the content.
+  # At least, meta contains the kind property, that might be 'Rule', 'TurnRule' or 'Script'
+  # For rules, meta contains also `category` and `active` properties, and for turn rules `active` and `rank`.
+  meta: {}
 
   # The executable content (Utf-8 string encoded).
   content: ''

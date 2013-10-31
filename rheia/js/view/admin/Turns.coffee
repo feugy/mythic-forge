@@ -61,8 +61,7 @@ define [
 
       @_turnInProgress = false
 
-      @bindTo Executable.collection, 'reset add remove update change:name change:rank', @_onResetList
-      @bindTo app.router, 'kindChanged', @_onResetList
+      @bindTo Executable.collection, 'reset add remove update', @_onResetList
 
       utils.onRouterReady =>  
         # retrieve rules
@@ -132,11 +131,9 @@ define [
     # **private**
     # Build turn ordered list when the Executable collection changed
     _onResetList: =>
-      console.log (id:rule.id, kind:rule.kind, active:rule.active for rule in Executable.collection.models)
-      @_rules = (rule for rule in Executable.collection.models when rule.kind is 'TurnRule' and rule.id? and rule.active)
-      console.log @_rules
+      @_rules = (rule for rule in Executable.collection.models when rule.meta.kind is 'TurnRule' and rule.id? and rule.meta.active)
       # turn rules are organized by their rank
-      @_rules = _.chain(@_rules).map((rule) -> rank:rule.rank, value:rule).sortBy('rank').pluck('value').value()
+      @_rules = _.chain(@_rules).map((rule) -> rank:rule.meta.rank, value:rule).sortBy('rank').pluck('value').value()
 
       list = ''
       list += @_renderRule rule for rule in @_rules

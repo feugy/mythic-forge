@@ -23,10 +23,11 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/turnRule.html'
-  'text!tpl/turnRule.tpl'
+  'text!tpl/new-turnRule-coffee.tpl'
+  'text!tpl/new-turnRule-js.tpl'
   'view/edition/Rule'
   'model/Executable'
-], ($, i18n, i18nEdition, template, emptyRule, RuleView, Executable) ->
+], ($, i18n, i18nEdition, template, emptyRuleCoffee, emptyRuleJs, RuleView, Executable) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -41,8 +42,9 @@ define [
     #
     # @param router [Router] the event bus
     # @param id [String] the edited object's id, of null for a creation.
-    constructor: (id) ->
-      super id, 'turn-rule'
+    # @param lang [String] created object language, or null for an opening.
+    constructor: (id, lang) ->
+      super id, lang, 'turn-rule'
       # on content changes, displays rank.
       @bindTo @model, 'change:rank', @_onRankChange
       console.log "creates turn rule edition view for #{if id? then @model.id else 'a new turn rule'}"
@@ -50,7 +52,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable id: i18n.labels.newName, content: emptyRule
+      @model = new Executable lang: @_lang, content: if @_lang is 'js' then emptyRuleJs else emptyRuleCoffee
       
     # **private**
     # Updates rendering with values from the edited object.
@@ -64,8 +66,9 @@ define [
     #
     # @return data filled into the template
     _getRenderData: =>
-      title: _.sprintf i18n.titles.turnRule, @model.id
-      i18n: i18n
+      data = super()
+      data.title = _.sprintf i18n.titles.turnRule, @model.id
+      data
 
     # **private**
     # Invoked when a model is created on the server.

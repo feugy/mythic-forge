@@ -65,7 +65,7 @@ define [
         when 'Executable' 
           name = @options.model.id
           # for opening behaviour, when need to distinguish Rules from TurnRules
-          category = @options.model.kind or 'Script'
+          category = @options.model.meta.kind
           categoryClass = utils.dashSeparated category
 
       @$el.addClass(@options.model.id)
@@ -98,9 +98,7 @@ define [
       else
         @$el.prepend "<img/>" if category in ['ItemType', 'EventType']
         if category in ['TurnRule', 'Rule']
-          @$el.addClass 'inactive' unless @options.model.active
-          @bindTo @options.model, 'change:active', =>
-            @$el.toggleClass 'inactive', !@options.model.active 
+          @$el.addClass 'inactive' unless @options.model.meta.active
 
       # adds a contextual menu that opens on right click
       content = "<ul class='menu'><li class='open'><i class='x-small ui-icon open'></i>#{_.sprintf i18n.typeDetails.open, name}</li>"

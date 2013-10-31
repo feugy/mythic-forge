@@ -80,7 +80,7 @@ define [
     switch kind
       when 'Rule'
         # group by category
-        grouped = _(collection.models).groupBy (model) -> model.category || rootCategory
+        grouped = _(collection.models).groupBy (model) -> model.meta.category || rootCategory
 
         # sort categories
         grouped = utils.sortAttributes grouped
@@ -88,15 +88,18 @@ define [
         _(grouped).each (content, group) -> grouped[group] = _(content).sortBy (model) -> model.id
 
         return grouped
-      when 'TurnRule' then criteria = 'rank'
-      else criteria = 'id'
-        
-    _.chain(collection.models).map((model) -> 
-        {criteria:model[criteria], value:model}
-      ).sortBy((model) ->
-        model.criteria
-      ).pluck('value').value()
 
+      when 'TurnRule' 
+        # sort by meta's rank
+        return _.chain(collection.models).map((model) -> 
+          {criteria:model.meta.rank, value:model}
+        ).sortBy((model) ->
+          model.criteria
+        ).pluck('value').value()
+      else 
+        # or sort by id
+        return _.sortBy collection.models, 'id'
+    
   # duration of categories animation, in millis
   animDuration= 250
 
@@ -115,8 +118,14 @@ define [
     constructor: () ->
       super tagName: 'div', className:'explorer'
 
+      # Executable specificity: do not listen to collection events, but to server events
+      @bindTo Executable.collection, 'reset', @_onResetCategory
+      @bindTo app.router, 'modelChanged', (operation, model) =>
+        return unless model.collection is Executable.collection
+        @_onUpdateCategory model, model.collection, null, operation
+
       # bind changes to collections
-      for model in [ItemType, FieldType, Executable, EventType, Map, ClientConf]
+      for model in [ItemType, FieldType, EventType, Map, ClientConf]
         @bindTo model.collection, 'reset', @_onResetCategory
 
         @bindTo model.collection, 'add', (element, collection) =>
@@ -127,11 +136,6 @@ define [
 
         @bindTo model.collection, 'update', (element, collection, changes) =>
           @_onUpdateCategory element, collection, changes, 'update'
-
-      # special case of executable categories that refresh the all tree item
-      @bindTo Executable.collection, 'change:category', @_onCategoryChange
-      @bindTo Executable.collection, 'change:rank', @_onCategoryChange
-      @bindTo Executable.collection, 'change:active', @_onActiveChange
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: () =>
@@ -182,9 +186,9 @@ define [
           rules = []
           turnRules = []
           for executable in Executable.collection.models
-            if executable.kind is 'TurnRule'
+            if executable.meta.kind is 'TurnRule'
               turnRules.push executable
-            else if executable.kind is 'Rule'
+            else if executable.meta.kind is 'Rule'
               rules.push executable
             else
               scripts.push executable
@@ -225,6 +229,7 @@ define [
     # @param changes [Object] map of changed attributes
     # @param operation [String] 'add', 'remove' or 'update' operation
     _onUpdateCategory: (element, collection, changes, operation) =>
+      console.log "_onUpdateCategory", arguments
       category = null
       switch collection
         when Map.collection 
@@ -236,11 +241,14 @@ define [
         when EventType.collection
           if operation isnt 'update' or 'descImage' of changes then category = 'EventType'
         when Executable.collection 
-          if operation isnt 'update' then category = (if element.kind then element.kind else 'Script')
+          category = element.meta?.kind
         when ClientConf.collection 
           if operation isnt 'update' then category = 'ClientConf'
-        
+      if category is null and utils.isA element, Executable
+        category = element.meta.kind
+
       return unless category?
+      console.log "_onUpdateCategory next", category
 
       container = @$el.find "dd[data-category='#{category}']"
       markup = $('<div></div>').typeDetails model:element
@@ -253,21 +261,21 @@ define [
           rules = []
           turnRules = []
           for executable in Executable.collection.models
-            if executable.kind is 'TurnRule'
+            if executable.meta.kind is 'TurnRule'
               turnRules.push executable
-            else if executable.kind is 'Rule'
+            else if executable.meta.kind is 'Rule'
               rules.push executable
             else
               scripts.push executable
           models = sortCollection 
-            models: if element.kind is 'Rule' then rules else if element.kind is 'TurnRule' then turnRules else scripts
-          , element.kind or 'Script'
+            models: if element.meta.kind is 'Rule' then rules else if element.meta.kind is 'TurnRule' then turnRules else scripts
+          , element.meta.kind
         else 
           models = sortCollection collection
 
         # compute the insertion index
-        if collection is Executable.collection and element.kind is 'Rule'
-          category = element.category || rootCategory
+        if collection is Executable.collection and element.meta.kind is 'Rule'
+          category = element.meta.category || rootCategory
           container = @$el.find "dt[data-subcategory=#{element.category}] + dd" unless category is rootCategory
           idx = models[category].indexOf element
         else
@@ -289,19 +297,3 @@ define [
         when 'update' 
           container.find(".#{element.id}").remove()
           add()
-         
-    # **private**
-    # Refresh the executable content to displays sub-categories, with small delay to avoid too much refresh
-    _onCategoryChange: =>  
-      clearTimeout @_changeTimeout if @_changeTimeout
-      @_changeTimeout = setTimeout =>
-        @_onResetCategory Executable.collection
-      , 50
-
-    # **private**
-    # Refresh the active status of a rule
-    #
-    # @param executable [Executable] the concerned executable
-    _onActiveChange: (executable) =>  
-      return unless executable.kind?
-      @$el.find(".#{executable.id}").toggleClass 'inactive', !executable.active

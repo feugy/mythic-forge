@@ -58,9 +58,9 @@ class _ModelWatcher extends EventEmitter
     delete changes.__v # added by mongoose to store version
 
     # do not embed the linked map and type for items, events and fields
-    changes.type = changes.type?.id if className is 'Item' or className is 'Event'
+    changes.type = changes.type?.id if className in ['Item', 'Event']
 
-    if modified and 'map' in modified and (className is 'Item' or className is 'Field')
+    if modified and 'map' in modified and (className in ['Item', 'Field'])
       # but send the map if it changed
       unless changes.map?
         changes.map = null 
@@ -69,7 +69,7 @@ class _ModelWatcher extends EventEmitter
         changes.map = changes.map.id if 'object' is utils.type changes.map 
 
     if operation is 'update'
-      if className isnt 'Executable' and className isnt 'FSItem'
+      unless className in ['Executable', 'FSItem']
         # for update, only emit modified datas
         changes = 
           id: instance.id

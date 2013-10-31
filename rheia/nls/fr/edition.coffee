@@ -34,6 +34,7 @@ define
   msgs:
     chooseId: "<p>Vous devez d'abord choisir un identifiant.</p><p><b>Attention :</b> il doit être unique et ne pourra être modifié par la suite.</p>"
     chooseLocale: "<p>Vous devez d'abord choisir une langue (code sur 2 ou 4 caractères).</p><p>Cette langue pourra être utilisée depuis le client de jeu.</p>"
+    chooseLang: "<p>Vous devez également choisir un langage de programmation, qui ne pourra pas être modifié par la suite.</p>"
     removeItemTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'object <b>%s</b> ?</p><p>Tous les objets de ce type seront aussi supprimés.</p>"
     removeEventTypeConfirm: "<p>Voulez-vous vraiment supprimer le type d'évènements <b>%s</b> ?</p><p>Tous les évènements de ce type seront aussi supprimés.</p>"
     removeFieldTypeConfirm: "<p>Voulez-vous vraiment supprimer le type de terrains <b>%s</b> ?</p><p>Tous les terrains de ce type seront aussi supprimés.</p>"
@@ -91,6 +92,9 @@ define
     ]
     randomAffect: 'affectation aléatoire'
     mapNotSaved: "Merci de sauvegarder la carte avant d'affecter des terrains"
+    lang: 'Language'
+    coffee: 'CoffeeScript'
+    js: 'JavaScript'
 
   tips:
     addProperty: 'Ajoute une nouvelle propriété'

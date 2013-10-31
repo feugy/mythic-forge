@@ -24,7 +24,7 @@ requirejs.config
     'ace': 'lib/ace-1.0-min'
     'async': 'lib/async-0.1.22-min'
     'backbone': 'lib/backbone-0.9.2-min'
-    'coffeescript': 'lib/coffee-script-1.4.0-min'
+    'coffeescript': 'lib/coffee-script-1.6.3-min'
     'hogan': 'lib/hogan-2.0.0-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
     'html5slider': 'lib/html5slider-min'
