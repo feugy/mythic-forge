@@ -121,8 +121,8 @@ define [
       # Executable specificity: do not listen to collection events, but to server events
       @bindTo Executable.collection, 'reset', @_onResetCategory
       @bindTo app.router, 'modelChanged', (operation, model) =>
-        return unless model.collection is Executable.collection
-        @_onUpdateCategory model, model.collection, null, operation
+        return unless utils.isA model, Executable
+        @_onUpdateCategory model, Executable.collection, null, operation
 
       # bind changes to collections
       for model in [ItemType, FieldType, EventType, Map, ClientConf]
@@ -229,7 +229,6 @@ define [
     # @param changes [Object] map of changed attributes
     # @param operation [String] 'add', 'remove' or 'update' operation
     _onUpdateCategory: (element, collection, changes, operation) =>
-      console.log "_onUpdateCategory", arguments
       category = null
       switch collection
         when Map.collection 
@@ -248,12 +247,11 @@ define [
         category = element.meta.kind
 
       return unless category?
-      console.log "_onUpdateCategory next", category
 
       container = @$el.find "dd[data-category='#{category}']"
       markup = $('<div></div>').typeDetails model:element
       shift = -250
-      add = () =>
+      add = =>
         # gets the list of updated models
         if collection is Executable.collection
           # cast down between turn rules, rules and scripts
@@ -275,9 +273,30 @@ define [
 
         # compute the insertion index
         if collection is Executable.collection and element.meta.kind is 'Rule'
-          category = element.meta.category || rootCategory
-          container = @$el.find "dt[data-subcategory=#{element.category}] + dd" unless category is rootCategory
+          category = element.meta.category or rootCategory
           idx = models[category].indexOf element
+          unless category is rootCategory
+            ruleContainer = @$el.find 'dd[data-category="Rule"]'
+            container = ruleContainer.find "dt[data-subcategory=#{category}] + dd" 
+            if container.length is 0
+              # no sub category found: creates it, and insert it at right index
+              grouped = sortCollection models: Executable.collection.filter( (rule) -> rule.meta?.kind is 'Rule'), 'Rule'
+              # uncategorized is present in grouped but not in rendering, and each category is represented by two nodes 
+              containerIdx = (_.indexOf(_.keys(grouped), category)-1)*2
+              # and uncategorized rules are displayed above categories
+              containerIdx += grouped[rootCategory].length
+
+              subCategory = "<dt data-subcategory=\"#{category}\" class='open'>#{category}</dt><dd></dd>"
+              if containerIdx < ruleContainer.children().length
+                ruleContainer.children().eq(containerIdx).before subCategory
+              else 
+                ruleContainer.append subCategory
+              container = ruleContainer.find("dt[data-subcategory=\"#{category}\"] + dd")
+            else if !container.prev().hasClass 'open'
+              # opens the subcategory where rule is inserted
+              container.prev().addClass 'open'
+              container.show()
+
         else
           idx = models.indexOf element
 
@@ -290,10 +309,22 @@ define [
         _.delay => 
           markup.transition x:0, animDuration, -> $(this).css transform: ''
         , 10
+
+      remove = => 
+        previous = @$el.find(".type-details.#{element.id}").first()
+        parent = previous.parent()
+        # if the previous value is the only child of a sub-category
+        if parent.children().length is 1 && parent.prev().data('subcategory')?
+          # removes the whole sub-category
+          parent.prev().remove()
+          parent.remove()
+        else
+          # removes only previous value.
+          previous.remove()
         
       switch operation
-        when 'remove' then container.find(".#{element.id}").remove()
+        when 'remove' then remove()
         when 'add' then add()
-        when 'update' 
-          container.find(".#{element.id}").remove()
+        when 'update'
+          remove()
           add()

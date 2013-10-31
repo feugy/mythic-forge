@@ -49,9 +49,8 @@ define [
     # @param className [String] optional CSS className, used by subclasses
     constructor: (id, lang= null, className = 'rule') ->
       super id, lang, className
-      # on content changes, displays category and active status
-      @bindTo @model, 'change:category', @_onCategoryChange
-      @bindTo @model, 'change:active', @_onActiveChange
+      # on content changes, updates metadatas also
+      @bindTo @model, 'change:meta', @_onMetaChange
       console.log "creates rule edition view for #{if id? then @model.id else 'a new rule'}"
     
     # **private**
@@ -62,8 +61,7 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      @_onCategoryChange()
-      @_onActiveChange()
+      @_onMetaChange()
       # superclass handles name and content
       super()
 
@@ -84,21 +82,15 @@ define [
     _onCreated: (created) =>
       return unless @_saveInProgress
       # unbound from the old model updates
-      @unboundFrom @model, 'change:category'
-      @unboundFrom @model, 'change:active'
+      @unboundFrom @model, 'change:meta'
       # now refresh rendering
       super created
       # bind to the new model
-      @bindTo @model, 'change:category', @_onCategoryChange
-      @bindTo @model, 'change:active', @_onActiveChange
+      @bindTo @model, 'change:meta', @_onMetaChange
 
     # **private**
-    # Refresh category displayal when the model's content changed.
-    _onCategoryChange: =>
-      category = @model.category
+    # Refresh category and active displayal when the model's content changed.
+    _onMetaChange: =>
+      category = @model.meta.category
       @$el.find('.category').html if category then category else i18n.labels.noRuleCategory
-
-    # **private**
-    # Refresh active displayal when the model's content changed.
-    _onActiveChange: =>
-      @$el.toggleClass 'inactive', !@model.active
+      @$el.toggleClass 'inactive', !@model.meta.active

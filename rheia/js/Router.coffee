@@ -23,7 +23,8 @@ requirejs.config
   paths:
     'ace': 'lib/ace-1.0-min'
     'async': 'lib/async-0.1.22-min'
-    'backbone': 'lib/backbone-0.9.2-min'
+    'backbone': 'lib/backbone-1.1.0-min'
+    'backbone-queryparams': 'lib/backbone-queryparams-min',
     'coffeescript': 'lib/coffee-script-1.6.3-min'
     'hogan': 'lib/hogan-2.0.0-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
@@ -56,6 +57,8 @@ requirejs.config
     'backbone': 
       deps: ['underscore', 'jquery']
       exports: 'Backbone'
+    'backbone-queryparams': 
+      deps: ['backbone']
     'hogan': 
       exports: 'Hogan'
     'hotkeys':
@@ -117,6 +120,7 @@ define [
   'view/moderation/Perspective'
   'view/Layout'
   # unwired dependencies
+  'backbone-queryparams'
   'utils/extensions'
   'jquery-ui'
   'jquery-punch' 
@@ -223,11 +227,6 @@ define [
       # Define some URL routes (order is significant: evaluated from last to first)
       @route '*route', '_onNotFound'
       @route 'login', '_onDisplayLogin'
-      @route 'login?error=:err', '_onLoginError'
-      @route 'login?token=:token', '_onLoggedIn'
-      @route 'login?redirect=:redirect', 'logAndRedirect', (redirect) =>
-        localStorage.setItem 'app.redirect', decodeURIComponent redirect
-        @_onDisplayLogin()
       @route 'edition', 'edition', =>
         @_showPerspective 'editionPerspective', EditionPerspective
       @route 'authoring', 'authoring', =>
@@ -284,9 +283,16 @@ define [
 
     # **private**
     # Display the login view
-    _onDisplayLogin: =>
-      form = $('#loginStock').detach()
-      $('body').empty().append new LoginView(form).render().$el
+    _onDisplayLogin: (params)=>
+      if params?.error?
+        @_onLoginError params.error
+      else if params?.token?
+        @_onLoggedIn params.token
+      else 
+        if params?.redirect?
+          localStorage.setItem 'app.redirect', decodeURIComponent params.redirect
+        form = $('#loginStock').detach()
+        $('body').empty().append new LoginView(form).render().$el
 
     # **private**
     # Invoked when coming-back from an authentication provider, with a valid token value.

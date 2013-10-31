@@ -15,11 +15,9 @@
     - token expiration: no refresh on operations
 
 - Rheia
-  - [!!!!] fix rule/turn rule active/category/rank changes (upgrade to Backbone 1.1)
   - Bugs
     - [!!!] when update received on an item moderation view, displayed image is wrong
     - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
-    - [!!] failed to load scripts when compiling rules or other scripts
     - [!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
     - after version change, version list is empty
@@ -193,6 +191,7 @@
     - an actor rule can be created with a turn rule/script name and erase it 
     - FSItem move popup does not close on ok
     - item's map changes not displayed in moderation (when map was previously not existing)
+    - fix rule/turn rule active/category/rank changes
   - handle rule requires
   - perspective loader
   - login page

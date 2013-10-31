@@ -46,20 +46,12 @@ define [
     constructor: (id, lang) ->
       super id, lang, 'turn-rule'
       # on content changes, displays rank.
-      @bindTo @model, 'change:rank', @_onRankChange
       console.log "creates turn rule edition view for #{if id? then @model.id else 'a new turn rule'}"
 
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new Executable lang: @_lang, content: if @_lang is 'js' then emptyRuleJs else emptyRuleCoffee
-      
-    # **private**
-    # Updates rendering with values from the edited object.
-    _fillRendering: =>
-      @_onRankChange()
-      # superclass handles name and content
-      super()
 
     # **private**
     # Prepare data to be rendered into the template
@@ -71,21 +63,7 @@ define [
       data
 
     # **private**
-    # Invoked when a model is created on the server.
-    # Extends inherited method to bind event handler on new model.
-    #
-    # @param created [Object] the created model
-    _onCreated: (created) =>
-      return unless @_saveInProgress
-      # unbound from the old model updates
-      @unboundFrom @model, 'change:rank'
-      # now refresh rendering
-      super created
-      # bind to the new model
-      @bindTo @model, 'change:rank', @_onRankChange
-
-    # **private**
-    # Refresh rank displayal when the model's content changed.
-    _onRankChange: =>
-      rank = @model.rank
-      @$el.find('.rank').html if rank? then rank else 0
+    # Refresh rank and active displayal when the model's content changed.
+    _onMetaChange: =>
+      @$el.find('.rank').html @model.meta?.rank or 0
+      @$el.toggleClass 'inactive', !@model.meta?.active

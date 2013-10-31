@@ -109,10 +109,8 @@ define [
     # @param model [Object] created model.
     _onAdd: (className, model) =>
       return unless className is @_className
-      console.log "-- received add from server", arguments
-      debugger
       # add the created raw model. An event will be triggered
-      @add model
+      @add model, merge:true
       # propagates changes on collection to global change event
       app.router.trigger 'modelChanged', 'add',  @get model[@model.prototype.idAttribute]
 
@@ -124,7 +122,6 @@ define [
     # @param changes [Object] new changes for a given model.
     _onUpdate: (className, changes) =>
       return unless className is @_className
-      console.log "-- received update from server", arguments
       # first, get the cached item type and quit if not found
       model = @get changes[@model.prototype.idAttribute]
       return unless model?
