@@ -82,8 +82,10 @@ describe 'GameService tests', ->
                           done()
 
   after (done) ->
-    # set again the default configuration
-    new ClientConf(id: 'default').save done
+    ClientConf.findOne {_id:'default'}, (err, result) =>
+      return done() unless err? or result is null
+      # set again the default configuration
+      new ClientConf(id: 'default').save done
 
   it 'should consultMap returned only relevant items', (done) ->
     # when retrieving items within coordinate -5:-5 and 5:5

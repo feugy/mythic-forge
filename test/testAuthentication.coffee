@@ -202,14 +202,15 @@ describe 'Authentication tests', ->
             assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
             assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
             assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
+
             # forge form to log-in
             form = 
               Email: googleUser
-              GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
+              GALX: body.match(/name\s*=\s*"GALX"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
               Passwd: googlePassword
               checkConnection: 'youtube:248:1'
               checkedDomains: 'youtube'
-              continue: body.match(/id\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
+              continue: body.match(/name\s*=\s*"continue"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
               pstMsg: 1
               scc: 1
               service: 'lso'
@@ -247,6 +248,7 @@ describe 'Authentication tests', ->
                   assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
                   token = parseUrl(res.request.uri.href).query.replace 'token=', ''
                   assert.isNotNull token
+
                   # then account has been created and populated
                   Player.findOne {email:googleUser}, (err, saved) ->
                     return done "Failed to find created account in db: #{err}" if err? or saved is null
@@ -298,11 +300,11 @@ describe 'Authentication tests', ->
               # forge form to log-in
               form = 
                 Email: googleUser
-                GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
+                GALX: body.match(/name\s*=\s*"GALX"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
                 Passwd: googlePassword
                 checkConnection: 'youtube:248:1'
                 checkedDomains: 'youtube'
-                continue: body.match(/id\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
+                continue: body.match(/name\s*=\s*"continue"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
                 pstMsg: 1
                 scc: 1
                 service: 'lso'

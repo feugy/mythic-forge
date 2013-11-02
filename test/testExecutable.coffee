@@ -321,7 +321,7 @@ describe 'Executable tests', ->
           execChanges = changes if operation is 'update' and className is 'Executable'
         watcher.on 'change', listener
         # when saving content new values
-        executable.contant = """TurnRule = require 'hyperion/model/TurnRule'
+        executable.content = """TurnRule = require 'hyperion/model/TurnRule'
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
                 @active = true
