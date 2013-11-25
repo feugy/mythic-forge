@@ -312,7 +312,7 @@ describe 'server tests', ->
                   module.exports = new (class RenameRule extends Rule
                     canExecute: (actor, target, context, callback) =>
                       callback null, if target.name is 'Jack' then [] else null
-                    execute: (actor, target, params, callback) =>
+                    execute: (actor, target, params, context, callback) =>
                       @saved.push new Item({type: target.type, name:'Peter'})
                       @removed.push actor
                       target.name = 'Joe'

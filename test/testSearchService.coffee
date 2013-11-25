@@ -451,7 +451,7 @@ describe 'SearchService tests', ->
                             @category= 'map'
                           canExecute: (actor, target, context, callback) =>
                             callback null, []
-                          execute: (actor, target, params, callback) =>
+                          execute: (actor, target, params, context, callback) =>
                             callback null
                         )()"""
                     store: rules
@@ -465,7 +465,7 @@ describe 'SearchService tests', ->
                             @active= false
                           canExecute: (actor, target, context, callback) =>
                             callback null, []
-                          execute: (actor, target, params, callback) =>
+                          execute: (actor, target, params, context, callback) =>
                             callback null
                         )()"""
                     store: rules

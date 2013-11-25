@@ -43,10 +43,11 @@ var CustomRule = oop.create(
      * @param target [Item] the concerned target
      * @param params [Object] associative array (may be empty) of awaited parametes, specified by resolve.
      * @param callback [Function] called when the rule is applied, with one arguments:
+     * @param context [Object] extra information on execution context
      * @option callback err [String] error string. Null if no error occured
      * @option callback result [Object] an arbitrary result of this rule.
      */
-    execute: function(actor, target, params, callback) {
+    execute: function(actor, target, params, context, callback) {
       callback(null);
     }
 );

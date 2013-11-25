@@ -27,10 +27,11 @@ class CustomRule extends Rule
   # @param actor [Item] the concerned actor
   # @param target [Item] the concerned target
   # @param params [Object] associative array (may be empty) of awaited parametes, specified by resolve.
+  # @param context [Object] extra information on execution context
   # @param callback [Function] called when the rule is applied, with one arguments:
   # @option callback err [String] error string. Null if no error occured
   # @option callback result [Object] an arbitrary result of this rule.
-  execute: (actor, target, params, callback) =>
+  execute: (actor, target, params, context, callback) =>
     callback null
   
 # A rule object must be exported. You can set its category (constructor optionnal parameter)

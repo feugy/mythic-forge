@@ -88,7 +88,7 @@ describe 'RuleService tests', ->
           canExecute: (actor, target, context, callback) =>
             target.fetch ->
               callback null, if target.pilot.equals actor then [] else null
-          execute: (actor, target, params, callback) =>
+          execute: (actor, target, params, context, callback) =>
             target.fetch ->
               target.x++
               target.pilot.x++
@@ -116,12 +116,12 @@ describe 'RuleService tests', ->
               item2 = saved
               
               # given the rules that are applicable for a target 
-              service.resolve item1.id, item2.id, null, (err, results)->
+              service.resolve item1.id, item2.id, null, 'admin', (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
                 return done 'the rule3 was not resolved' unless 'rule3' of results
 
                 # when executing this rule on that target
-                service.execute 'rule3', item1.id, item2.id, {}, (err, result)->
+                service.execute 'rule3', item1.id, item2.id, {}, 'admin', (err, result)->
                   return done "Unable to execute rules: #{err}" if err?
 
                   # then the rule is executed.
@@ -143,7 +143,7 @@ describe 'RuleService tests', ->
         module.exports = new (class AddPart extends Rule
           canExecute: (actor, target, context, callback) =>
             callback null, if actor.stock.length is 0 then [] else null
-          execute: (actor, target, params, callback) =>
+          execute: (actor, target, params, context, callback) =>
             part = new Item {type:actor.type, name: 'part'}
             @saved.push part
             actor.stock = [part]
@@ -163,12 +163,12 @@ describe 'RuleService tests', ->
           item1 = saved
               
           # given the rules that are applicable for himself
-          service.resolve item1.id, item1.id, null, (err, results)->
+          service.resolve item1.id, item1.id, null, 'admin', (err, results)->
             return done "Unable to resolve rules: #{err}" if err?
             return done 'the rule4 was not resolved' if results['rule4'].length isnt 1
 
             # when executing this rule on that target
-            service.execute 'rule4', item1.id, item1.id, {}, (err, result)->
+            service.execute 'rule4', item1.id, item1.id, {}, 'admin', (err, result)->
               return done "Unable to execute rules: #{err}" if err?
 
               # then the rule is executed.
@@ -191,7 +191,7 @@ describe 'RuleService tests', ->
         module.exports = new (class RemovePart extends Rule
           canExecute: (actor, target, context, callback) =>
             callback null, []
-          execute: (actor, target, params, callback) =>
+          execute: (actor, target, params, context, callback) =>
             @removed.push target
             callback null, 'part removed'
         )()"""
@@ -222,12 +222,12 @@ describe 'RuleService tests', ->
             item1 = saved  
 
             # given the rules that are applicable for the both items
-            service.resolve item1.id, item2.id, null, (err, results)->
+            service.resolve item1.id, item2.id, null, 'admin', (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
               return done 'the rule5 was not resolved' if results['rule5'].length isnt 1
 
               # when executing this rule on that target
-              service.execute 'rule5', item1.id, item2.id, {}, (err, result)->
+              service.execute 'rule5', item1.id, item2.id, {}, 'admin', (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
@@ -253,7 +253,7 @@ describe 'RuleService tests', ->
         module.exports = new (class RemovePart extends Rule
           canExecute: (actor, target, context, callback) =>
             callback null, []
-          execute: (actor, target, params, callback) =>
+          execute: (actor, target, params, context, callback) =>
             @removed.push target.id
             callback null, 'removed'
         )()"""
@@ -271,12 +271,12 @@ describe 'RuleService tests', ->
             return done 'Item not created' unless existing?
 
             # given the rules that are applicable for the both items
-            service.resolve saved.id, saved.id, null, (err, results)->
+            service.resolve saved.id, saved.id, null, 'admin', (err, results)->
               return done "Unable to resolve rules: #{err}" if err?
               return done 'the rule29 was not resolved' if results['rule29'].length isnt 1
 
               # when executing this rule on that target
-              service.execute 'rule29', saved.id, saved.id, {}, (err, result)->
+              service.execute 'rule29', saved.id, saved.id, {}, 'admin', (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
 
                 # then the rule is executed.
@@ -297,7 +297,7 @@ describe 'RuleService tests', ->
           class MyRule extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
       ).save (err, saved) ->
@@ -337,7 +337,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on player', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player.id, null, (err, results)->
+      service.resolve player.id, null, player.email, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -349,7 +349,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable for player over event', (done) ->
       # when resolving applicable rules for the player
-      service.resolve player.id, event1.id, null, (err, results)->
+      service.resolve player.id, event1.id, null, player.email, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -361,11 +361,11 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for player', (done) ->
       # given an applicable rule for a target 
-      service.resolve player.id, null, (err, results)->
+      service.resolve player.id, null, player.email, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule0', player.id, {}, (err, result)->
+        service.execute 'rule0', player.id, {}, player.email, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -374,11 +374,11 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for player over event', (done) ->
       # given an applicable rule for a target 
-      service.resolve player.id, event1.id, null, (err, results)->
+      service.resolve player.id, event1.id, null, player.email, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule0', player.id, event1.id, {}, (err, result)->
+        service.execute 'rule0', player.id, event1.id, {}, player.email, (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -487,22 +487,65 @@ describe 'RuleService tests', ->
         class MyRule extends Rule
           canExecute: (actor, target, context, callback) =>
             callback null, []
-          execute: (actor, target, params, callback) =>
+          execute: (actor, target, params, context, callback) =>
             callback null, 'hello modified !'
         module.exports = new MyRule()"""
       script.save (err) ->
         return done err if err?
         # given an applicable rule for a target 
-        service.resolve player.id, null, (err, results)->
+        service.resolve player.id, null, player.email, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           # when executing this rule on that target
-          service.execute 'rule0', player.id, {}, (err, result)->
+          service.execute 'rule0', player.id, {}, player.email, (err, result)->
             return done "Unable to execute rules: #{err}" if err?
 
             # then the modficiation was taken in account
             assert.equal result, 'hello modified !'
             done()
+
+    it 'should current player be injected in canExecute context', (done) ->
+      # given a rule matching only on calling player
+      script.content = """Rule = require 'hyperion/model/Rule'
+        class MyRule extends Rule
+          canExecute: (actor, target, context, callback) =>
+            callback null, if context.player.equals(actor) then [] else null
+          execute: (actor, target, params, context, callback) =>
+            callback null, context.player
+        module.exports = new MyRule()"""
+      script.save (err) ->
+        return done err if err?
+
+        # when resolving rules on player
+        service.resolve player.id, null, player.email, (err, results)->
+          return done "Unable to resolve rules: #{err}" if err?
+
+          assert.ok results isnt null and results isnt undefined
+          # then the rule must have matched
+          assert.property results, 'rule0'
+          assert.equal 1, results['rule0'].length
+          assert.ok player.equals results['rule0'][0].target
+          done()
+
+    it 'should current player be injected in execute context', (done) ->
+      # given a rule returning calling player
+      script.content = """Rule = require 'hyperion/model/Rule'
+        class MyRule extends Rule
+          canExecute: (actor, target, context, callback) =>
+            callback null, if context.player.equals(actor) then [] else null
+          execute: (actor, target, params, context, callback) =>
+            callback null, context.player
+        module.exports = new MyRule()"""
+      script.save (err) ->
+        return done err if err?
+
+        # when executing this rule on the player
+        service.execute 'rule0', player.id, {}, player.email, (err, result)->
+          return done "Unable to execute rules: #{err}" if err?
+
+          # then player returned is calling player
+          assert.ok player.equals result
+          done()
 
   describe 'given items, events, fields and a dumb rule', ->
 
@@ -514,7 +557,7 @@ describe 'RuleService tests', ->
           class MyRule extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               callback null, 'hello !'
           module.exports = new MyRule()"""
       script.save (err) ->
@@ -572,7 +615,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on empty coordinates', (done) ->
       # when resolving applicable rules at a coordinate with no items
-      service.resolve item1.id, -1, 0, null, (err, results)->
+      service.resolve item1.id, -1, 0, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -582,7 +625,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on coordinates', (done) ->
       # when resolving applicable rules at a coordinate
-      service.resolve item1.id, 1, 2, null, (err, results)->
+      service.resolve item1.id, 1, 2, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -603,7 +646,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on coordinates with map isolation', (done) ->
       # when resolving applicable rules at a coordinate of the second map
-      service.resolve item4.id, 1, 2, null, (err, results)->
+      service.resolve item4.id, 1, 2, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         assert.ok results isnt null and results isnt undefined
@@ -621,7 +664,7 @@ describe 'RuleService tests', ->
 
     it 'should rule be applicable on item target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, item2.id, null, (err, results)->
+      service.resolve item1.id, item2.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -633,11 +676,11 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for item target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, item2.id, null, (err, results)->
+      service.resolve item1.id, item2.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule1', item1.id, item2.id, {}, (err, result)->
+        service.execute 'rule1', item1.id, item2.id, {}, 'admin', (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -646,7 +689,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on event target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, event1.id, null, (err, results)->
+      service.resolve item1.id, event1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -658,11 +701,11 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for event target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, event1.id, null, (err, results)->
+      service.resolve item1.id, event1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule1', item1.id, event1.id, {}, (err, result)->
+        service.execute 'rule1', item1.id, event1.id, {}, 'admin', (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -671,7 +714,7 @@ describe 'RuleService tests', ->
         
     it 'should rule be applicable on field target', (done) ->
       # when resolving applicable rules for a target
-      service.resolve item1.id, field1.id, null, (err, results)->
+      service.resolve item1.id, field1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
          
         assert.ok results isnt null and results isnt undefined
@@ -683,11 +726,11 @@ describe 'RuleService tests', ->
 
     it 'should rule be executed for field target', (done) ->
       # given an applicable rule for a target 
-      service.resolve item1.id, field1.id, null, (err, results)->
+      service.resolve item1.id, field1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
         # when executing this rule on that target
-        service.execute 'rule1', item1.id, field1.id, {}, (err, result)->
+        service.execute 'rule1', item1.id, field1.id, {}, 'admin', (err, result)->
           return done "Unable to execute rules: #{err}" if err?
 
           # then the rule is executed.
@@ -702,7 +745,7 @@ describe 'RuleService tests', ->
           class MoveRule extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, if target.x is 1 then [] else null
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               target.x++
               callback null, 'target moved'
           module.exports = new MoveRule()"""
@@ -711,14 +754,14 @@ describe 'RuleService tests', ->
         return done err if err?
 
         # given the rules that are applicable for a target 
-        service.resolve item1.id, item2.id, null, (err, results)->
+        service.resolve item1.id, item2.id, null, 'admin', (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
           assert.property results, 'rule2'
           assert.equal 1, results['rule2'].length
 
           # when executing this rule on that target
-          service.execute 'rule2', item1.id, item2.id, {}, (err, result)->
+          service.execute 'rule2', item1.id, item2.id, {}, 'admin', (err, result)->
             if err?
               assert.fail "Unable to execute rules: #{err}"
               return done();
@@ -740,7 +783,7 @@ describe 'RuleService tests', ->
           class AssembleRule extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, if target.type.equals(actor.type) and !target.equals actor then [] else null
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               target.compose = actor
               actor.parts.push target
               callback null, 'target assembled'
@@ -748,7 +791,7 @@ describe 'RuleService tests', ->
       ).save (err) ->
         return done err if err?
         # when executing this rule on that target
-        service.execute 'rule22', item1.id, item2.id, {}, (err, result)->
+        service.execute 'rule22', item1.id, item2.id, {}, 'admin', (err, result)->
           return done "Unable to execute rules: #{err}" if err?
           # then the rule is executed.
           assert.equal result, 'target assembled'
@@ -789,7 +832,7 @@ describe 'RuleService tests', ->
                 class CyclicRule extends Rule
                   canExecute: (actor, target, context, callback) =>
                     callback null, if actor?.equals target then [] else null
-                  execute: (actor, target, params, callback) =>
+                  execute: (actor, target, params, context, callback) =>
                     actor.fetch (err) =>
                       return callback err if err?
                       actor.name += '*'
@@ -804,7 +847,7 @@ describe 'RuleService tests', ->
             ).save (err) ->
               return done err if err?
               # when executing this rule on that target
-              service.execute 'rule35', item1.id, item1.id, {}, (err, result)->
+              service.execute 'rule35', item1.id, item1.id, {}, 'admin', (err, result)->
                 return done "Unable to execute rules: #{err}" if err?
                 # then the rule is executed.
                 
@@ -1255,7 +1298,7 @@ describe 'RuleService tests', ->
               @active = false
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               target.name = 'changed !'
               callback null, 'hello !'
           )()"""
@@ -1263,7 +1306,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1.id, item1.id, null, (err, results) ->
+        service.resolve item1.id, item1.id, null, 'admin', (err, results) ->
           return done "Unable to resolve rules: #{err}" if err?
           # then the rule was not resolved
           assert.notProperty results, 'rule10', 'Disabled rule was resolved'
@@ -1284,7 +1327,7 @@ describe 'RuleService tests', ->
               @active = false
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               target.name = 'changed !'
               callback null, 'hello !'
           )()"""
@@ -1292,7 +1335,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule11', item1.id, item1.id, {}, (err, results) ->
+        service.execute 'rule11', item1.id, item1.id, {}, 'admin', (err, results) ->
           # then the rule was not resolved
           assert.ok err?.indexOf('does not apply') isnt -1, 'Disabled rule was executed'
           done()
@@ -1315,14 +1358,14 @@ describe 'RuleService tests', ->
             canExecute: (actor, target, context, callback) =>
               @error 'coucou'
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               callback null
           )()"""
       script.save (err) ->
         # Creates a type
         return done err if err?
         # when resolving rule
-        service.resolve item1.id, item1.id, null, (err) ->
+        service.resolve item1.id, item1.id, null, 'admin', (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'has no method'
@@ -1339,13 +1382,13 @@ describe 'RuleService tests', ->
               setTimeout => 
                 throw new Error @id+' throw error'
               , 0
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               callback null, null
           )()"""
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.resolve item1.id, item1.id, null, (err) ->
+        service.resolve item1.id, item1.id, null, 'admin', (err) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'rule25 throw error'
@@ -1360,7 +1403,7 @@ describe 'RuleService tests', ->
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               @error "coucou"
               callback null
           )()"""
@@ -1368,7 +1411,7 @@ describe 'RuleService tests', ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule21', item1.id, item1.id, {}, (err, results) ->
+        service.execute 'rule21', item1.id, item1.id, {}, 'admin', (err, results) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'has no method'
@@ -1383,7 +1426,7 @@ describe 'RuleService tests', ->
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               setTimeout => 
                 throw new Error @id+' throw error'
               , 0
@@ -1391,7 +1434,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.execute 'rule26', item1.id, item1.id, {}, (err, results) ->
+        service.execute 'rule26', item1.id, item1.id, {}, 'admin', (err, results) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'rule26 throw error'
@@ -1408,14 +1451,14 @@ describe 'RuleService tests', ->
                 name: 'p1'
                 type: 'object'
               ]
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               callback null
           )()"""
       script.save (err) ->
         # Creates a type
         return done err if err?
         # when executing rule
-        service.execute 'rule23', item1.id, item1.id, {p1: item1}, (err, results) ->
+        service.execute 'rule23', item1.id, item1.id, {p1: item1}, 'admin', (err, results) ->
           # then the error is reported
           assert.isNotNull err
           assert.include err, 'Invalid parameter for rule23'
@@ -1433,13 +1476,13 @@ describe 'RuleService tests', ->
                 type: 'object'
                 within: [actor, target]
               ]
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               callback null, params.p1
           )()"""
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.execute 'rule24', item1.id, item1.id, {p1: item1.id}, (err, results) ->
+        service.execute 'rule24', item1.id, item1.id, {p1: item1.id}, 'admin', (err, results) ->
           # then no error reported, and parameter was properly used
           return done err if err?
           assert.equal item1.id, results
@@ -1459,7 +1502,7 @@ describe 'RuleService tests', ->
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
-            execute: (actor, target, params, callback) =>
+            execute: (actor, target, params, context, callback) =>
               # creates a new map
               map = new Map id:'#{mapId}', kind: 'square'
               @saved.push map
@@ -1474,7 +1517,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
         # when executing rule
-        service.execute 'rule34', item1.id, item1.id, {}, (err, results) ->
+        service.execute 'rule34', item1.id, item1.id, {}, 'admin', (err, results) ->
           # then no error reported
           return done err if err?
           # then map was created
@@ -1503,7 +1546,7 @@ describe 'RuleService tests', ->
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
                 callback null, [] 
-              execute: (actor, target, params, callback) =>
+              execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             ) 'cat1' """
       ,
@@ -1513,7 +1556,7 @@ describe 'RuleService tests', ->
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
                 callback null, [] 
-              execute: (actor, target, params, callback) =>
+              execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             ) 'cat1' """
       ,
@@ -1523,7 +1566,7 @@ describe 'RuleService tests', ->
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
                 callback null, [] 
-              execute: (actor, target, params, callback) =>
+              execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             ) 'cat2' """
       ,
@@ -1533,7 +1576,7 @@ describe 'RuleService tests', ->
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
                 callback null, [] 
-              execute: (actor, target, params, callback) =>
+              execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             )() """
       ], (script, next) ->
@@ -1552,7 +1595,7 @@ describe 'RuleService tests', ->
 
     it 'should only rules of a given category be resolved', (done) ->
       # when resolving cat2
-      service.resolve item1.id, item1.id, ['cat2'], (err, results) ->
+      service.resolve item1.id, item1.id, ['cat2'], 'admin', (err, results) ->
         # then no error reported
         return done err if err?
         # only rules from cat2 were resolved
@@ -1564,7 +1607,7 @@ describe 'RuleService tests', ->
 
     it 'should rules of a multiple categories be resolved', (done) ->
       # when resolving cat1 and cat2
-      service.resolve item1.id, item1.id, ['cat2', 'cat1'], (err, results) ->
+      service.resolve item1.id, item1.id, ['cat2', 'cat1'], 'admin', (err, results) ->
         # then no error reported
         return done err if err?
         # only rules from cat2 or cat2 were resolved
@@ -1576,7 +1619,7 @@ describe 'RuleService tests', ->
 
     it 'should rules without categories be resolved', (done) ->
       # when resolving with empty category
-      service.resolve item1.id, item1.id, [''], (err, results) ->
+      service.resolve item1.id, item1.id, [''], 'admin', (err, results) ->
         # then no error reported
         return done err if err?
         # only rules without cagegories were resolved
@@ -1588,7 +1631,7 @@ describe 'RuleService tests', ->
 
     it 'should all rules be resolved', (done) ->
       # when resolving without categories
-      service.resolve item1.id, item1.id, null, (err, results) ->
+      service.resolve item1.id, item1.id, null, 'admin', (err, results) ->
         # then no error reported
         return done err if err?
         # all rules were resolved

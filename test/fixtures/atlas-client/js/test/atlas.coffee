@@ -96,7 +96,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               module.exports = new (class CustomRule extends Rule
                 canExecute: (actor, target, context, callback) =>
                   callback null, if target.strength? then [] else null
-                execute: (actor, target, params, callback) =>
+                execute: (actor, target, params, context, callback) =>
                   target.strength++
                   callback null, 'target strengthened'
               )()"""}
@@ -104,7 +104,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               module.exports = new (class CustomRule extends Rule
                 canExecute: (actor, target, context, callback) =>
                   callback null, if target?.typeId? and target?.mapId? then [] else null
-                execute: (actor, target, params, callback) =>
+                execute: (actor, target, params, context, callback) =>
                   actor.x = target.x
                   actor.y = target.y
                   callback null, 'actor moved'
@@ -113,7 +113,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               module.exports = new (class CustomRule extends Rule
                 canExecute: (actor, target, context, callback) =>
                   callback null, if target?._className is 'Player' then [] else null
-                execute: (actor, target, params, callback) =>
+                execute: (actor, target, params, context, callback) =>
                   for character in actor.characters
                     character.strength = 10
                   callback null, 'player characters strength reseted'
@@ -122,7 +122,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               module.exports = new (class CustomRule extends Rule
                 canExecute: (actor, target, context, callback) =>
                   callback null, if target?._className is 'Player' then [] else null
-                execute: (actor, target, params, callback) =>
+                execute: (actor, target, params, context, callback) =>
                   callback null
               )()"""}
           {className: 'ItemType', container: types, obj: id: 'testCharacter', quantifiable: false, properties: strength:{type: 'integer', def:10}, linked:{type: 'array', def:'any'}}

@@ -282,7 +282,7 @@ io.on 'connection', (socket) ->
 # 'game' namespace exposes all method of GameService, plus a special 'currentPlayer' method.
 # @see {GameService}
 io.of('/game').on 'connection', (socket) ->
-  exposeMethods gameService, socket
+  exposeMethods gameService, socket, ['resolveRules', 'executeRule']
 
 # socket.io `admin` namespace 
 #
@@ -298,7 +298,7 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
   exposeMethods searchService, socket
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
   exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback']
-  exposeMethods ruleService, socket, ['export', 'resolve', 'execute']
+  exposeMethods ruleService, socket, [], ['export', 'resolve', 'execute']
 
   # do not expose all playerService methods, but just disconnection with the 'kick' message
   socket.on 'kick', (email) ->

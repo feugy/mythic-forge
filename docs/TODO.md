@@ -7,7 +7,6 @@
   - test images for field types and event types
   - Documentation
   - Rule engine
-    - inject current player when relevant inside resolve and execute
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
@@ -29,6 +28,7 @@
     - multiple file search & replace
     - single file search & replace
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
+  - Moderation perspective: apply rules on map/item/events
 
 - Atlas
   - manage labels in clientConf
@@ -162,6 +162,7 @@
     - do not exports inactive or turn rules to client
     - remove models by id in rule's removed array
     - allow rule, turn rule and script to be written in plain javascript
+    - inject current player inside resolve's and execute's context
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation

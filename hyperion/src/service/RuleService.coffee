@@ -194,17 +194,17 @@ class _RuleService
   # Resolves the applicable rules for a given situation.
   # Arguments are specified inside an array, and may be interpreted as: 
   #
-  # @overload resolve(playerId)
+  # @overload resolve(playerId, restriction, email, callback)
   #   Resolves applicable rules at for a player
   #   @param playerId [ObjectId] the concerned player id
   #
-  # @overload resolve(actorId, x, y)
+  # @overload resolve(actorId, x, y, restriction, email, callback)
   #   Resolves applicable rules at a specified coordinate
   #   @param actorId [ObjectId] the concerned item id
   #   @param x [Number] the targeted x coordinate
   #   @param y [Number] the targeted y coordinate
   #
-  # @overload resolve(actorId, targetId)
+  # @overload resolve(actorId, targetId, restriction, email, callback)
   #   Resolves applicable rules at for a specific target
   #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjectId] the targeted item/event id
@@ -213,6 +213,7 @@ class _RuleService
   # If an array, only rule that match one of the specified category is resolved.
   # If a single string, only rule that has this id is resolved.
   # Otherwise all rules are resolved.
+  # @param email [String] email of currently connected player
   # @param callback [Function] callback executed when rules where determined. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] applicable rules: an associated array with rule names id as key, and
@@ -246,16 +247,17 @@ class _RuleService
   #
   # @param ruleId [String] the executed rule id
   #
-  # @overload execute(ruleId, playerId, callback)
+  # @overload execute(ruleId, playerId, parameters, email, callback)
   #   Executes a specific rule for a player
   #   @param playerId [ObjectId] the concerned player's id
   #
-  # @overload execute(ruleId, actorId, targetId, callback)
+  # @overload execute(ruleId, actorId, targetId, parameters, email, callback)
   #   Executes a specific rule for an actor and a given target
   #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjetId] the targeted item or event
   #
   # @param parameters [Array] array of awaited rule parameters
+  # @param email [String] email of currently connected player
   # @param callback [Function] callback executed when rule was applied. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
