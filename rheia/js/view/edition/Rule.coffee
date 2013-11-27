@@ -91,6 +91,7 @@ define [
     # **private**
     # Refresh category and active displayal when the model's content changed.
     _onMetaChange: =>
+      return unless @model.meta?
       category = @model.meta.category
       @$el.find('.category').html if category then category else i18n.labels.noRuleCategory
       @$el.toggleClass 'inactive', !@model.meta.active

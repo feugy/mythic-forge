@@ -72,6 +72,7 @@ define [
       'click .toggle-grid': '_onToggleGrid'
       'click .toggle-markers': '_onToggleMarkers'
       'change .zoom': '_onZoomed'
+      'click .embody > .value': '_onDisplayEmbody'
 
     # **private**
     # View's mustache template
@@ -113,6 +114,7 @@ define [
         @bindTo Item.collection, 'add', @_onAddFieldOrItem
         @bindTo Item.collection, 'update', @_onUpdateItem
         @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
+        @bindTo app.router, 'embodyChanged', @_onRefreshEmbodiment
 
         @bindTo app.router, 'searchResults', (err, instances, results) =>
           return unless instances is true
@@ -190,6 +192,8 @@ define [
       ).attr('title', i18n.tips.newPlayer
       ).on 'click', => @_onOpenElement 'Player'
 
+      @_onRefreshEmbodiment()
+
       # for chaining purposes
       @
 
@@ -229,6 +233,19 @@ define [
         when 'Player'
           view = new PlayerView id
       view
+
+    # **private**
+    # When embodiment changed, refresh its name
+    _onRefreshEmbodiment: =>
+      @$el.find('.embody > .value').text if app.embodiment? then utils.instanceName(app.embodiment) else i18n.labels.noEmbodiment
+      # store new embodiment into local storage for refresh
+      
+
+    # **private**
+    # Display embodiement's view if possible
+    _onDisplayEmbody: =>
+      return unless app.embodiment?
+      app.router.trigger 'open', 'Item', app.embodiment.id
 
     # **private**
     # Map selector handler. Gets and displays new selected map content.

@@ -25,7 +25,6 @@ requirejs.config
     'async': 'lib/async-0.1.22-min'
     'backbone': 'lib/backbone-1.1.0-min'
     'backbone-queryparams': 'lib/backbone-queryparams-min',
-    'coffeescript': 'lib/coffee-script-1.6.3-min'
     'hogan': 'lib/hogan-2.0.0-min'
     'hotkeys': 'lib/jquery-hotkeys-min'
     'html5slider': 'lib/html5slider-min'
@@ -114,6 +113,7 @@ define [
   'service/ImagesService'
   'service/SearchService' 
   'service/AdminService' 
+  'model/Item'
   'view/admin/Perspective'
   'view/edition/Perspective'
   'view/authoring/Perspective'
@@ -132,7 +132,7 @@ define [
   'md5'
   'html5slider'
 
-], (_, $, io, async, Backbone, LoginView, i18n, utils, ImagesService, SearchService, AdminService, 
+], (_, $, io, async, Backbone, LoginView, i18n, utils, ImagesService, SearchService, AdminService, Item,
   AdminPerspective, EditionPerspective, AuthoringPerspective, ModerationPerspective, LayoutView) ->
 
   version = parseInt $.browser.version
@@ -236,6 +236,11 @@ define [
       @route 'moderation', 'moderation', =>
         @_showPerspective 'moderationPerspective', ModerationPerspective
 
+      # save embodiment into local storage for reload purposes
+      @on 'embodyChanged', => 
+        localStorage.removeItem 'app.embodiment'
+        localStorage.setItem 'app.embodiment', app.embodiment.id if app.embodiment?
+
       # general error handler
       @on 'serverError', (err, details) ->
         console.error "server error: #{if typeof err is 'object' then err.message else err}"
@@ -269,6 +274,11 @@ define [
 
       # update last perspective visited
       localStorage.setItem 'app.lastPerspective', window.location.pathname.replace conf.basePath, ''
+
+      # load embodiment
+      id = localStorage.getItem 'app.embodiment'
+      if id?
+        # TODO use getItems
 
       app.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists

@@ -28,7 +28,6 @@
     - multiple file search & replace
     - single file search & replace
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
-  - Moderation perspective: apply rules on map/item/events
 
 - Atlas
   - manage labels in clientConf
@@ -273,6 +272,7 @@
     - report last executed turn
     - trigger turn execution
   - moderation perspective
+    - apply rules on item/events/players, with current embodiment
     - Maps
       - maps list, switch current map
       - displayal with fields and items
@@ -292,6 +292,7 @@
       - restrict drop operations on object/array properties
       - display tooltip on object/array properties
       - update 'array'/'object' properties when removing an item/event
+      - ability to embody an item
     - Events 
       - CRUD
       - sort event by update date in properties

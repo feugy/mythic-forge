@@ -202,7 +202,7 @@ define [
     # @param versions [Array] a list (that may be empty) of game client version
     _onRefreshVersions: (err, versions, current) =>
       if err?
-        return utils.popup i18n.titles.serverError, _.sprintf(i18n.errors.version, err), 'cancel', [text:i18n.buttons.ok, icons:'valid'] 
+        return utils.popup i18n.titles.serverError, _.sprintf(i18n.errors.version, err), 'cancel', [text:i18n.buttons.ok, icon:'valid'] 
       @_version = current
       selector = @$el.find 'select'
       # refresh version selector
@@ -262,4 +262,4 @@ define [
       return unless err?
       @$el.find('select').removeAttr 'disabled'
       @$el.find('.new-version').button 'option', 'disabled', false
-      utils.popup i18n.titles.serverError, _.sprintf(i18n.errors.deploy, err), 'cancel', [text:i18n.buttons.ok, icons:'valid']
+      utils.popup i18n.titles.serverError, _.sprintf(i18n.errors.deploy, err), 'cancel', [text:i18n.buttons.ok, icon:'valid']

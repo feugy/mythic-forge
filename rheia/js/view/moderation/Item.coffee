@@ -154,6 +154,9 @@ define [
       @_transitionList = @$el.find '.transition.field'
       @_transitionList.on 'change', => @_onChange()
 
+      @$el.find('.embody').button(icons: primary: 'small embody').on 'click', @_onToggleEmbody
+      @$el.find('.embody').toggleClass 'active', app.embodiment is @model
+
       @_onTransitionListChanged()
 
       super()
@@ -270,3 +273,14 @@ define [
       @_transitionList.empty().append transitions      
 
       @_transitionList.find("[value='#{@model.transition}']").attr 'selected', 'selected' if @model?.transition?
+
+    # **private**
+    # Set global embodiment to current Item, or set it to null if already the case.
+    # Updates active status of the corresponding button
+    #
+    # @param evt [Event] optionnal click event
+    _onToggleEmbody: (evt) =>
+      evt?.preventDefault()
+      app.embodiment = if app.embodiment is @model then null else @model
+      app.router.trigger 'embodyChanged'
+      @$el.find('.embody').toggleClass 'active', app.embodiment is @model

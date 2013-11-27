@@ -21,6 +21,7 @@
 
 .moderation.perspective
 
+
   > .left 
     display box
     box-orient vertical
@@ -58,6 +59,18 @@
 
   > .right
   
+    > .action-bar
+      position relative
+
+      .embody
+        position absolute
+        top 0.5em
+        right 0.5em
+
+        .value
+          font-weight bold
+          cursor pointer
+
     .ui-tabs.action-bars
       display inline-block
       padding 0
@@ -90,6 +103,13 @@
         vertical-align bottom
 
   .view 
+
+    .apply-rule-container
+      margin 0
+      position absolute
+      right 1.3em
+      top 3px
+      width auto
 
     > table
       margin-top 10px
@@ -141,11 +161,6 @@
 
   .view.player
 
-    .kick
-      position absolute
-      right 1.3em
-      top 2px
-
     .prefs
       height 150px
       position relative
@@ -159,6 +174,24 @@
           font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
           font-size 12px
           line-height 16px
+
+  .view.item
+
+    .embody.ui-button
+      display inline-block
+      height 24px
+      width 28px
+      vertical-align bottom
+
+      .ui-button-icon-primary
+        top 1px
+
+      .ui-button-text
+        display none
+
+    .embody.ui-button.active
+      background white
+      box-shadow 0 0 3px #888888
 
 .choose-type 
 

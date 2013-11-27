@@ -32,6 +32,7 @@ define
     confirmRestore: 'Confirmation du changement'
     logView: 'Logs serveur'
     timeView: 'Heure du jeu'
+    ruleError: 'Erreur de règles'
 
   labels:
     gameVersions: 'Version en développement'
@@ -48,6 +49,7 @@ define
     COMMIT_END: 'déploiement validé !'
     ROLLBACK_START: 'retour en arrière...'
     ROLLBACK_END: 'déploiement annulé !'
+    noRules: 'aucune règle dispo.'
     
   buttons:
     deploy: 'Go !'
@@ -57,6 +59,7 @@ define
     triggerTurn: 'Déclencher le tour'
     pauseTime: 'Arreter'
     playTime: 'Reprendre'
+    applyRule: 'Appliquer...'
 
   msgs: 
     confirmDeploy: """<p>Vous allez déployer en production le client de jeu actuellement en développement.</p>
@@ -83,3 +86,5 @@ define
     deploy: """<p>Le déployement a échoué :</p>
       <p>%s</p>
       <p>Le client actuellement en production n'a pas été modifié.</p>"""
+    resolveRules: """<p>Impossible de résoudre les règles pour %s:</p><p>%s</p>"""
+    executeRule: """<p>Impossible d'éxécuter la règle %s sur %s:</p><p>%s</p>"""

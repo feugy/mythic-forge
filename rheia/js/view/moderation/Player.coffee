@@ -27,20 +27,21 @@ define [
   'i18n!nls/common'
   'i18n!nls/moderation'
   'text!tpl/player.html'
-  'view/BaseEditionView'
+  'view/BaseExecutableView'
   'model/Player'
   'widget/property'
   'widget/advEditor'
-], ($, _, moment, utils, validators, i18n, i18nModeration, template, BaseEditionView, Player) ->
+], ($, _, moment, utils, validators, i18n, i18nModeration, template, BaseExecutableView, Player) ->
 
   i18n = $.extend true, i18n, i18nModeration
 
   # Displays and edit a player on moderation perspective
-  class PlayerView extends BaseEditionView
+  class PlayerView extends BaseExecutableView
 
     events:
       'change .provider.field': '_onProviderChanged'
       'change .isAdmin.field': '_onChange'
+      'click .apply-rule-menu > *': '_onExecuteRule'
 
     # **private**
     # mustache template rendered
@@ -361,3 +362,15 @@ define [
       @_passwordWidget.setOption 'value', '' if provider?
 
       @_onChange()
+
+    # **private**
+    # Never use embodiement to resolve or execute on players
+    #
+    # @param ruleId [String] id of executed rule, null for resolution.
+    # @param params [Object] associative array of expected execution parameters, null for resolution.
+    # @param callback [Function] process end callback, invoked with arguments:
+    # @option callback err [String] an error string, or null if no error occured
+    # @option callback actor [Object] resolving/executing actor. May by null.
+    # @option callback params [Object] execution parameter values. May by empty.
+    _getRuleParameters: (ruleId, params, callback) =>
+      return callback null, null, {}

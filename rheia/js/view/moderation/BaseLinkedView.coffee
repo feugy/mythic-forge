@@ -23,13 +23,13 @@ define [
   'underscore'
   'utils/utilities'
   'i18n!nls/common'
-  'view/BaseEditionView'
+  'view/BaseExecutableView'
   'widget/property'
-], ($, _, utils, i18n, BaseEditionView) ->
+], ($, _, utils, i18n, BaseExecutableView) ->
 
   # A base view that brings properties functionnalities, with linked resolution and wutomatic property widget creation.
   # It assume that edited model is an instance that has a type.
-  class BaseLinkedView extends BaseEditionView
+  class BaseLinkedView extends BaseExecutableView
 
     # **private**
     # Message displayed when an external message was applied.

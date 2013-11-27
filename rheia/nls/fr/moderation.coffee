@@ -56,6 +56,8 @@ define
     prefs: 'Préférences'
     transition: 'Transition'
     noTransition: 'aucune'
+    noEmbodiment: '~~'
+    embodiment: 'Incarné'
 
   buttons:
     kick: 'Kickass !'
@@ -108,3 +110,4 @@ define
     shadowObj: "<p>L'objet en question n'existe plus: il a dû être supprimé depuis votre dernière recherche.</p><p>Votre recherche a été mise à jour.<p/>"
     invalidEmail: 'Le login/e-mail est vide ou contient des caractères invalides'
     noTypes: 'Aucun type disponible. Veuillez en créer un dans la perspective d\'Edition.'
+    noEmbodiment: 'Pour appliquer les règles, il faut au préalable incarner un Item de votre choix.'
