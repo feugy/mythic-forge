@@ -31,10 +31,6 @@ define [
   # rules resolution and application 
   class BaseExecutableView extends BaseEditionView
 
-    # rendering event mapping
-    events: 
-      'click .apply-rule-menu > *': '_onExecuteRule'
-
     # **private**
     # applicable rule menu
     _menu: null 
@@ -58,6 +54,7 @@ define [
         @_resolveRules()
       # hides menu and clear its content
       @_menu = @$el.find '.apply-rule-menu'
+      @_menu.on 'click', '> *', @_onExecuteRule
       @_menu.on 'mouseleave click', => 
         @_menu.removeClass 'open'
         @_menu.empty()
@@ -107,7 +104,7 @@ define [
     # Apply a given rule on the current model  
     _onExecuteRule: (event) =>
       ruleId = $(event.target).closest('li').data 'rule'
-      return unless rule?
+      return unless ruleId?
       # use a dedicated closure to avoid multiple request erasures
       ((rid, ruleId, params) =>
         # on response, display potential error
@@ -129,7 +126,7 @@ define [
           args.push actor.id if actor?
           args.push @model.id, params or {}
           app.sockets.game.emit.apply app.sockets.game, args
-      ) utils.rid(), ruleId, JSON.parse $(event.target).closest('li').data 'params'
+      ) utils.rid(), ruleId, $(event.target).closest('li').data 'params'
 
 
     # **private**

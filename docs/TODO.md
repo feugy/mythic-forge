@@ -2,6 +2,7 @@
 
 - Hyperion
   - Bugs
+    - [!!!] temper executable require after resetAll 
     - [!!!] item in player character is still present after a map deletion
   - cache evinction on inutility and size
   - test images for field types and event types
@@ -17,7 +18,6 @@
   - Bugs
     - [!!!] when update received on an item moderation view, displayed image is wrong
     - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
-    - [!] not all visible square moderation map is loaded
     - noticeable slowdown in Firefox
     - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
@@ -219,6 +219,7 @@
       - loading/save content
       - external modification/removal notification
       - displays images
+      - dot not save when restoring previous version
     - History
       - display file's history
       - revert to file version

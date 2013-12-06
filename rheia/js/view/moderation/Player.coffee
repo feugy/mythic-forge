@@ -41,7 +41,6 @@ define [
     events:
       'change .provider.field': '_onProviderChanged'
       'change .isAdmin.field': '_onChange'
-      'click .apply-rule-menu > *': '_onExecuteRule'
 
     # **private**
     # mustache template rendered

@@ -236,11 +236,6 @@ define [
       @route 'moderation', 'moderation', =>
         @_showPerspective 'moderationPerspective', ModerationPerspective
 
-      # save embodiment into local storage for reload purposes
-      @on 'embodyChanged', => 
-        localStorage.removeItem 'app.embodiment'
-        localStorage.setItem 'app.embodiment', app.embodiment.id if app.embodiment?
-
       # general error handler
       @on 'serverError', (err, details) ->
         console.error "server error: #{if typeof err is 'object' then err.message else err}"
@@ -274,11 +269,6 @@ define [
 
       # update last perspective visited
       localStorage.setItem 'app.lastPerspective', window.location.pathname.replace conf.basePath, ''
-
-      # load embodiment
-      id = localStorage.getItem 'app.embodiment'
-      if id?
-        # TODO use getItems
 
       app.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists

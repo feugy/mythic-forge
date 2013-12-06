@@ -88,6 +88,7 @@ define [
       @_editorWidget?.resize()
 
     dispose: =>
+      @model.restored = false
       @model.off 'version', @_onChangeVersion
       super()
 
@@ -145,7 +146,6 @@ define [
         @_canSave = false
       else
         @_canSave = @model.content isnt utf8.encode @_editorWidget.options.text or ''
-      # console.log '>> TODO can be save ?', @_canSave, @canSave()
       super()
 
     # **private**
@@ -171,8 +171,8 @@ define [
     # @param content [String] utf8 encoded content.
     _onChangeVersion: (item, content) =>
       return unless @model.equals item
+      @model.restored = true
       # update content
       @model.content = content
       # and refresh rendering
-      @_saveInProgress = true
-      @_onSaved @model
+      @_fillRendering()

@@ -503,8 +503,8 @@ define [
         row = Math.floor @height/@tileH
         col = Math.floor @width/@tileW
         {
-          x: coord.x + if upper then -col else col
-          y: coord.y + if upper then -row else row
+          x: coord.x + if upper then -col else col+1
+          y: coord.y + if upper then -row else row+1
         }
 
       # Translate map coordinates to css position (relative to the map origin)
