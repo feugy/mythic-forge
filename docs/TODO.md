@@ -16,7 +16,6 @@
 
 - Rheia
   - Bugs
-    - [!!!] when update received on an item moderation view, displayed image is wrong
     - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
     - [!] use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
@@ -173,6 +172,7 @@
 
 - Rheia
   - Bugs
+    - when update received on an item moderation view, displayed image is wrong
     - moderation map does not shows item movement when specified transition isn't found
     - remove linked in moderation view does not really remove link in db
     - multiple item menu is above item rendering in moderation map

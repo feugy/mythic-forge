@@ -298,7 +298,7 @@ define [
         # positionnate with animation if transition changed
         @_positionnate 'transition' of changes and changes.transition?
 
-      needsReload = 'imageNum' in changes
+      needsReload = 'imageNum' of changes
       # render new animation if needed
       if 'transition' of changes and changes.transition? and @options.map?
         @_renderSprite needsReload

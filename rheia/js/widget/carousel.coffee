@@ -25,21 +25,34 @@ define [
   'widget/base'
 ],  ($, _, i18n, Base) ->
 
+  sum = (array) ->
+    _.reduce array, ((sum, val) -> sum + (val or 0)), 0
+
   # Displays and navigate along several images, with two nav buttons.
   # One image displayed at a time.
   class Carousel extends Base
 
+    # **private**
+    # individual widths of displayed images
+    _widths: []
+
+    # **private**
+    # link to image container
+    _container: null
+
     # builds rendering
     constructor: (element, options) ->
       super element, options
-      
+      @_widths= []
+
       # creates a container for images, and two navigation buttons
       @$el.addClass('carousel').append """
         <div class="previous"></div>
         <div class="mask"><div class="container"></div></div>
         <div class="next"></div>"""
-      # instanciates navigation buttons
+      @_container = @$el.find '.container'
 
+      # instanciates navigation buttons
       @$el.find('.next').button(
           text: false
           disabled: true
@@ -58,12 +71,25 @@ define [
 
       # loading handler
       @bindTo app.router, 'imageLoaded', (success, src, image) => 
-        img = _(@options.images).find (source) -> _(src).endsWith source
+        img = _.find @options.images, (source) -> _(src).endsWith source
+        idx = _.indexOf @options.images, img
         return unless img?
-        @$el.find("img[data-src='#{img}']").attr('src', image).removeData('src').addClass @options.imageClass
+        node = @_container.children ":eq(#{idx})"
+        node.attr('src', image).addClass @options.imageClass
+        @_widths[idx] = node[0].getBoundingClientRect().width
+        # set container width
+        @_container.css width: sum @_widths
 
-      # first displayal, when dom is attached
-      _.defer => @_displayImages @options.images
+        # last image loaded ?
+        if _.without(@_widths, null, undefined).length is @options.images.length
+          # try to keep the current position
+          if @options.current < @options.images.length
+            @_setCurrent @options.current
+          else
+            @_setCurrent 0
+
+      # first displayal
+      @_displayImages @options.images
 
     # Method invoked when the widget options are set. Update rendering if `current` or `images` changed.
     #
@@ -85,21 +111,15 @@ define [
     _setCurrent: (value, animate=false) =>
       # first check the value
       return unless value >= 0 and value < @options.images.length
-      container = @$el.find '.container'
 
-      # compute the image width for moves: we need to be attached to body
-      imageWidth = container.children().outerWidth true
-
-      # set the container total width, in case it hasn't enought space to display
-      container.width imageWidth*@options.images.length
-        
       # moves the image container
-      container.stop()
-      offset = -imageWidth * value
+      @_container.stop()
+      offset = - sum @_widths[0...value]
+
       if animate
-        container.animate {left: offset}, @options.speed
+        @_container.animate {left: offset}, @options.speed
       else
-        container.css left: offset
+        @_container.css left: offset
 
       # updates nav buttons.
       @$el.find('.previous').button 'option', 'disabled', value is 0
@@ -118,20 +138,17 @@ define [
     # @param images [Array<String>] the new image array (contains url strings)
     _displayImages: (images) =>
       # removes previous images
-      @$el.find('.container').empty()
+      @_container.empty().attr 'width', 0
+      @_widths = []
       @options.images = if Array.isArray images then images else []
 
       # displays new ones
-      container = @$el.find '.container'
       for image in @options.images
-        container.append """<img class="#{@options.imageClass}" data-src="#{image}"/>"""
+        @_container.append """<img class="#{@options.imageClass}"/>"""
         app.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
 
-      # try to keep the current position
-      if @options.current < images.length
-        @_setCurrent @options.current
-      else
-        @_setCurrent 0
+      # no images to display: set current to 0
+      @_setCurrent 0 if @options.images.length is 0
 
   # widget declaration
   Carousel._declareWidget 'carousel', 
