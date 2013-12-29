@@ -96,7 +96,6 @@ define [
       $(document).off ".toggleable.#{@_id}"
       if @options.destroyOnClose
         @$el.remove() 
-        @destroy()
 
     # Destroyer: free dom handlers
     dispose: =>
@@ -104,6 +103,8 @@ define [
       $(document).off ".toggleable.#{@_id}"
       # superclass call
       super()
+      # invoke callback
+      @options.destroy?()
 
     # **private**
     # Mouse leave handler. Closes widget after a timeout

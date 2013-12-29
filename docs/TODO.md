@@ -18,6 +18,7 @@
   - Bugs
     - [!!!] when update received on an item moderation view, displayed image is wrong
     - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
+    - [!] use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
     - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
@@ -238,6 +239,7 @@
       - selection with Shift
       - multiple affectation
       - zoom, toggle markers and toggle grid commands
+      - choose tile size and use it in display
     - Search
       - input query with help and validation
       - display result and navigates
@@ -246,7 +248,7 @@
       - static fields and description image
       - properties
       - instance images
-      - sprites
+      - sprites, with percent size of map tile size
       - validation
       - quantity management
     - EventType
@@ -284,6 +286,7 @@
       - item affectation and moves by drag'n drop
       - multiple item menu
       - items animations (with z-ordering)
+      - use map tile size
     - Items
       - CRUD
       - external updates and removal

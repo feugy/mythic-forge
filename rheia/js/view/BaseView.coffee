@@ -278,7 +278,6 @@ define [
       @_isNew = false
       @_onSaved created
 
-
     # **private**
     # Invoked when a model is saved from the server.
     # Refresh internal and rendering if the saved object corresponds to the edited one.

@@ -156,10 +156,9 @@ define [
 
       # adds the item layer.    
       @_itemLayer = $("<div class='items movable'></div>").appendTo @_container
-      if @options.renderer?
-        @_itemLayer.css
-          height: @options.renderer.height*3
-          width: @options.renderer.width*3
+      @_itemLayer.css
+        height: @options.height*3
+        width: @options.width*3
 
     #**private**
     # While reloading all data, add a clone to avoid flickering
@@ -168,8 +167,8 @@ define [
       @_cloneWidgets = @_itemWidgets
       @_itemCloneLayer = @_itemLayer
       @_itemLayer = $("<div class='items movable'></div>").css
-        height: @options.renderer.height*3
-        width: @options.renderer.width*3
+        height: @options.height*3
+        width: @options.width*3
       @_itemWidgets = {}
 
     # **private**
@@ -199,8 +198,8 @@ define [
       # move from the map: search for an item wbove position
       offset = @$el.offset()
       pos = @options.renderer.posToCoord 
-        left: event.pageX+@options.renderer.width-offset.left
-        top: event.pageY+@options.renderer.height-offset.top
+        left: event.pageX+@options.width-offset.left
+        top: event.pageY+@options.height-offset.top
 
       @_dragged = []
       if @_popupMenu?
@@ -208,10 +207,12 @@ define [
         id = $(event.target).closest('li').data 'id'
         @_dragged.push @_itemWidgets[id].options.model if @_itemWidgets[id]?
       else
+        console.log pos
         # drag from the map
         for id, widget of @_itemWidgets
           if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
             @_dragged.push widget.options.model
+        console.log @_dragged
 
       if @_dragged.length is 1
         console.debug "moves instance #{@_dragged[0].id}"
@@ -219,9 +220,7 @@ define [
         moved = utils.dragHelper(@_dragged[0]).appendTo $('body')
         
         # set cursor offset of the drag helper, and avoid helper to be bellow cursor
-        @_container.draggable 'option', 'cursorAt',
-          left: (@options.tileDim*@options.zoom/2)-25
-          top: (@options.tileDim*@options.zoom/2)-22
+        @_container.draggable 'option', 'cursorAt', left: -5, top: -5
       else
         # reset the drag helper cursor offset
         @_container.draggable 'option', 'cursorAt', null

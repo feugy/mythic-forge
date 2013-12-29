@@ -137,7 +137,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     setOption: (key, value) =>
-      return unless key in ['renderer', 'lowerCoord', 'displayGrid', 'displayMarkers', 'zoom', 'mapId']
+      return unless key in ['renderer', 'lowerCoord', 'displayGrid', 'displayMarkers', 'zoom', 'mapId', 'tileDim', 'height', 'width']
       o = @options
       old = o[key]
       o[key] = value
@@ -166,9 +166,9 @@ define [
           @_drawGrid()
         when 'displayMarkers'
           @_drawMarkers()
-        when 'zoom'
+        when 'zoom', 'tileDim', 'height', 'width'
           # change zoom without triggering the event
-          @_zoom @options.zoom, true
+          @_zoom @options.zoom, true unless old is value
 
     # **private**
     # Re-builds rendering
@@ -187,25 +187,23 @@ define [
       @_loadedImages  = []
       @_pendingImages = 0
 
-      @$el.empty().removeClass().addClass 'map-widget'
       o = @options
+      @$el.empty().removeClass().css(width: o.width, height: o.height).addClass 'map-widget'
+      
       return unless o.renderer?
       o.renderer.init @
 
-      @$el.css(
-        height: o.renderer.height
-        width: o.renderer.width
-      ).mousewheel (event, delta) => 
+      @$el.mousewheel (event, delta) => 
         @_zoom @options.zoom + delta*@_zoomStep
         event?.preventDefault()
         return false
 
       # creates the layer container, 3 times bigger to allow drag operations
       @_container = $('<div class="map-perspective"></div>').css(
-        height: o.renderer.height*3
-        width: o.renderer.width*3
-        top: -o.renderer.height
-        left: -o.renderer.width
+        height: o.height*3
+        width: o.width*3
+        top: -o.height
+        left: -o.width
       ).draggable(
         distance: 5
         scope: o.dndType
@@ -224,20 +222,20 @@ define [
       ).appendTo @$el
 
       # creates the field canvas element      
-      $("""<canvas class="fields movable" height="#{o.renderer.height*3}" width="#{o.renderer.width*3}"></canvas>""").droppable(
+      $("""<canvas class="fields movable" height="#{o.height*3}" width="#{o.width*3}"></canvas>""").droppable(
         scope: o.dndType
         drop: @_onDrop
       ).appendTo @_container
 
       # creates the grid canvas element      
-      $("""<canvas class="selection" height="#{o.renderer.height*3}" width="#{o.renderer.width*3}"></canvas>""").appendTo @_container if @_selectable
-      $("""<canvas class="grid" height="#{o.renderer.height*3}" width="#{o.renderer.width*3}"></canvas>""").appendTo @_container
-      $("""<canvas class="markers" height="#{o.renderer.height*3}" width="#{o.renderer.width*3}"></canvas>""").appendTo @_container
-      $("""<canvas class="hover" height="#{o.renderer.height*3}" width="#{o.renderer.width*3}"></canvas>""").appendTo @_container
+      $("""<canvas class="selection" height="#{o.height*3}" width="#{o.width*3}"></canvas>""").appendTo @_container if @_selectable
+      $("""<canvas class="grid" height="#{o.height*3}" width="#{o.width*3}"></canvas>""").appendTo @_container
+      $("""<canvas class="markers" height="#{o.height*3}" width="#{o.width*3}"></canvas>""").appendTo @_container
+      $("""<canvas class="hover" height="#{o.height*3}" width="#{o.width*3}"></canvas>""").appendTo @_container
 
       @_container.find('canvas').css
-        width: "#{o.renderer.width*3}px"
-        height: "#{o.renderer.height*3}px"
+        width: "#{o.width*3}px"
+        height: "#{o.height*3}px"
 
       @_drawGrid()
       @_drawMarkers()
@@ -274,7 +272,8 @@ define [
     # While reloading all data, add a clone to avoid flickering
     # New field will be loading into that clone, and then copied into target field layer when loading finished
     _cloneContent: =>
-      @_cloneLayer = $("<canvas width=\"#{@options.renderer.width*3}\" height=\"#{@options.renderer.height*3}\"></canvas>")
+      @_cloneLayer = $("<canvas style='display: none' width='#{@options.width*3}' height='#{@options.height*3}'/>")
+      @$el.append @_cloneLayer
 
     # **private**
     # If no image loading remains, and if a clone layer exists, then its content is 
@@ -288,7 +287,8 @@ define [
       fieldLayer.css top:0, left:0
       canvas = fieldLayer[0]
       canvas.width = canvas.width
-      canvas.getContext('2d').putImageData @_cloneLayer[0].getContext('2d').getImageData(0, 0, o.renderer.width*3, o.renderer.height*3), 0, 0
+      canvas.getContext('2d').putImageData @_cloneLayer[0].getContext('2d').getImageData(0, 0, o.width*3, o.height*3), 0, 0
+      # free memory
       @_cloneLayer.remove()
       @_cloneLayer = null
 
@@ -456,16 +456,16 @@ define [
       # computes the absolute position and dimension of the widget
       offset = @$el.offset()
       @_dim = $.extend {}, offset
-      @_dim.right = @_dim.left + o.renderer.width
-      @_dim.bottom = @_dim.top + o.renderer.height
+      @_dim.right = @_dim.left + o.width
+      @_dim.bottom = @_dim.top + o.height
 
       cancel = false
       # keeps the start coordinate for a selection
       if event.shiftKey and @_selectable
         @_offset = offset
         @_start = o.renderer.posToCoord
-          left: event.pageX+o.renderer.width-@_offset.left
-          top: event.pageY+o.renderer.height-@_offset.top
+          left: event.pageX+o.width-@_offset.left
+          top: event.pageY+o.height-@_offset.top
         # adds a layer to draw selection
         @_selectLayer = @$el.find('.selection').clone()
         @_container.append @_selectLayer
@@ -503,8 +503,8 @@ define [
       if @_start and @_selectLayer
         # compute temporary end of the selectionEvalue la fin temporaire de la séléction
         end = o.renderer.posToCoord 
-          left: event.pageX+o.renderer.width-@_offset.left
-          top: event.pageY+o.renderer.height-@_offset.top
+          left: event.pageX+o.width-@_offset.left
+          top: event.pageY+o.height-@_offset.top
         lower =
           x: Math.min end.x, @_start.x
           y: Math.min end.y, @_start.y
@@ -538,7 +538,7 @@ define [
         o = @options
         
         # get the movement's width and height
-        reference = o.renderer.posToCoord left:o.renderer.width, top:o.renderer.height
+        reference = o.renderer.posToCoord left:o.width, top:o.height
         pos = 
           left:-parseInt @_container.css 'left'
           top:-parseInt @_container.css 'top'
@@ -561,8 +561,8 @@ define [
         @_container.find('.movable').css o.renderer.replaceMovable move
         @_container.css o.renderer.replaceContainer pos
         @_container.transition
-          left: -o.renderer.width
-          top: -o.renderer.height
+          left: -o.width
+          top: -o.height
         , 200, =>
           # reloads map
           console.log "map move ends on x:#{o.lowerCoord.x} y:#{o.lowerCoord.y}"
@@ -583,8 +583,8 @@ define [
       @_selectLayer.remove()
       # compute end coordinate
       end = o.renderer.posToCoord 
-        left: event.pageX+o.renderer.width-@_offset.left
-        top: event.pageY+o.renderer.height-@_offset.top
+        left: event.pageX+o.width-@_offset.left
+        top: event.pageY+o.height-@_offset.top
       console.log "selection between x:#{@_start.x} y:#{@_start.y} and x:#{end.x} y:#{end.y}"
 
       lower =
@@ -644,14 +644,14 @@ define [
     # Read-only, do not modify manually.
     upperCoord: {x:0, y:0}
 
-    # Awaited with and height for individual tiles, with normal zoom.
+    # Awaited with and height for individual tiles, without zoom.
     tileDim: 100
 
-    # Number of vertical displayed tiles 
-    verticalTileNum: 10
+    # Displayed widget height
+    height: 600
 
-    # Number of horizontal displayed tiles.
-    horizontalTileNum: 10
+    # Displayed widget width
+    width: 800
 
     # Flag that indicates wether or not display the tile grid.
     # Read-only, use `setOption('displayGrid', ...)` to modify.
@@ -698,12 +698,6 @@ define [
     # map coordinate of the lower-left hidden corner
     origin: {x:0, y:0}
 
-    # Map displayed width, without zoom taken in account
-    width: null
-
-    # Map displayed height, without zoom taken in account
-    height: null
-
     # Individual tile width, taking zoom into account
     tileW: null
 
@@ -716,7 +710,7 @@ define [
     #
     # @return number of tile in total map height
     _verticalTotalNum: () -> 
-      (-1 + Math.floor @height*3/@tileH)*3
+      (-1 + Math.floor @map.options.height*3/@tileH)*3
 
     # Initiate the renderer with map inner state. 
     # Initiate `tileW` and `tileH`.

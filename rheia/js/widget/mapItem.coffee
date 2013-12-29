@@ -24,8 +24,8 @@ define [
   'widget/loadableImage'
 ],  ($, utils, LoadableImage) ->
 
-  defaultHeight = 100;
-  defaultWidth = 100;
+  defaultHeight = 75
+  defaultWidth = 75
 
   # List of executing animations
   _anims = {}
@@ -76,20 +76,31 @@ define [
     # Stored position applied at the end of the next animation
     _newPos: null
 
+    # **private**
+    # number of image sprites
+    _numSprites: 1
+
+    # **private**
+    # number of steps of the longuest sprite
+    _longestSprite: 0
+    
+    # **private**
+    # flag to indicate wether to reload image after animation
+    _reloadAfterAnimation: false
+
     # Builds rendering. Image is computed from the model type image and instance number
     constructor: (element, options) ->
-      # compute item image
       @_sprite = null
       @_step = 0
       @_offset = x:0, y:0
       @_start = null
       @_newCoordinates = null
       @_newPos = null
-      @_imageSpec = options.model.type.images?[options.model.imageNum] 
-      options.source = @_imageSpec?.file or options.model.type.descImage
-
+      @_reloadAfterAnimation = false
+      # load current image
+      @_setImageSpec options
       super element, options
-      
+
       @$el.addClass 'map-item'
 
       @_image.replaceWith '<div class="image"></div>'
@@ -99,6 +110,27 @@ define [
       unless options.noUpdate
         @bindTo @options.model, 'update',  @_onUpdate
         @bindTo @options.model, 'destroy', => @$el.remove()
+
+    # **private**
+    # On image spec changes, compute number of sprites and longest sprite
+    # Also set the option 'source' that reloads item image, unless reload is false
+    # 
+    # @param options [Object] option to modify, or this.options if null
+    _setImageSpec: (options = null) =>
+      opts = options or @options
+      @_imageSpec = opts.model.type.images?[opts.model.imageNum]
+      @_numSprites = 1
+      @_longestSprite = 1
+      if @_imageSpec?.sprites?
+        @_numSprites = _.keys(@_imageSpec.sprites).length
+        for name, sprite of @_imageSpec.sprites when sprite.number > @_longestSprite
+          @_longestSprite = sprite.number
+
+      value = @_imageSpec?.file or opts.model.type.descImage
+      unless options?
+        @setOption 'source', value
+      else
+        opts.source = value
 
     # **private**
     # Compute and apply the position of the current widget inside its map widget.
@@ -118,12 +150,8 @@ define [
       pos = o.renderer.coordToPos coordinates
       
       # center horizontally with tile, and make tile bottom and widget bottom equal
-      pos.left += (o.renderer.tileW-@_imageSpec.width*o.zoom)/2 
-      pos.top += o.renderer.tileH-@_imageSpec.height*o.zoom
-
-      # add perspective correction
-      pos['-moz-transform'] = "scale(#{o.zoom})"
-      pos['-webkit-transform'] = "scale(#{o.zoom})"
+      pos.left += o.renderer.tileW*(1-@_imageSpec.width)/2 
+      pos.top += o.renderer.tileH*(1-@_imageSpec.height)
 
       if defer 
         # do not apply immediately the new position
@@ -135,8 +163,12 @@ define [
 
     # **private**
     # Shows relevant sprite image regarding the current model animation and current timing
-    _renderSprite: =>
+    #
+    # @param reload [Boolean] trigger reload at animation end
+    _renderSprite: (reload=false) =>
       return unless @_imageSpec?
+      @_reloadAfterAnimation = reload
+      
       # do we have a transition ?
       transition = @options.model.getTransition()
       transition = null unless @_imageSpec.sprites? and transition of @_imageSpec.sprites
@@ -150,10 +182,10 @@ define [
       @_step = 0
       # set the sprite row
       @_offset.x = 0
-      @_offset.y = if @_sprite? then -@_sprite.rank * @_imageSpec.height else 0
+      @_offset.y = if @_sprite? then -@_sprite.rank / 100*@_numSprites else 0
 
       # no: just display the sprite image
-      @_image.css {'background-position': "#{@_offset.x}px #{@_offset.y}px"}
+      @_image.css backgroundPosition: "#{@_offset.x}% #{@_offset.y}%"
       return @_onLastFrame() unless transition?
 
       # yes: let's start the animation !
@@ -183,19 +215,16 @@ define [
         # only animate at needed frames
         if current-@_start >= (@_step+1)*@_sprite.duration/(@_sprite.number+1)
           # changes frame 
-          if @_offset.x <= -(@_sprite.number*@_imageSpec.width) 
-            @_offset.x = 0 
-          else 
-            @_offset.x -= @_imageSpec.width
+          @_offset.x = @_step%@_sprite.number*-100
 
-          @_image.css 'background-position': "#{@_offset.x}px #{@_offset.y}px"
-
-          @_step++
+          @_image.css backgroundPosition: "#{@_offset.x}% #{@_offset.y}%"
           # Slightly move during animation
           if @_newPos?
             @$el.css 
               left: @_newPos.left-@_newPos.stepL*(@_sprite.number-@_step)
               top: @_newPos.top-@_newPos.stepT*(@_sprite.number-@_step)
+
+          @_step++
       else 
         @_onLastFrame()
 
@@ -204,9 +233,6 @@ define [
     _onLastFrame: =>
       # removes from executing animations first.
       delete _anims[@options.model.id]
-      # end of the animation: displays first sprite
-      @_offset.x = 0
-      @_image.css 'background-position': "#{@_offset.x}px #{@_offset.y}px"
 
       # if necessary, apply new coordinates and position
       if @_newCoordinates?
@@ -218,6 +244,15 @@ define [
         @$el.css @_newPos
         @_newPos = null
 
+      @_offset.x = 0
+      # reloads if necessary
+      if @_reloadAfterAnimation
+        @_reloadAfterAnimation = false
+        @_setImageSpec()
+      else
+        # end of the animation: displays first sprite
+        @$el.css backgroundPosition: "#{@_offset.x}% #{@_offset.y}%"
+
     # **private**
     # Image loading handler: positionnates the widget inside map
     #
@@ -228,12 +263,9 @@ define [
       return unless src is "/images/#{@options.source}"
       @unboundFrom app.router, 'imageLoaded'
       if success 
-        # displays image data and hides alertnative text
+        # displays image data and hides alternative text
         # As it was already loaded, browser cache will be involved
-        @_image.css 
-          background: "url(#{img})"
-          width: @_imageSpec?.width or defaultWidth
-          height: @_imageSpec?.height or defaultHeight
+        @_image.css background: "url(#{img})"
 
         @$el.find('.alt').remove()
       else 
@@ -241,8 +273,10 @@ define [
         @_createAlt()
 
       @$el.css
-        width: @_imageSpec?.width or defaultWidth
-        height: @_imageSpec?.height or defaultHeight
+        width: @options.map?.options.renderer.tileW*@_imageSpec?.width
+        height: @options.map?.options.renderer.tileH*@_imageSpec?.height
+
+      @_image.css backgroundSize: "#{100*@_longestSprite}% #{100*@_numSprites}%"
 
       @_positionnate()
 
@@ -264,14 +298,13 @@ define [
         # positionnate with animation if transition changed
         @_positionnate 'transition' of changes and changes.transition?
 
+      needsReload = 'imageNum' in changes
       # render new animation if needed
       if 'transition' of changes and changes.transition? and @options.map?
-        @_renderSprite()
-
-      if 'imageNum' of changes
-        # compute new item image
-        @_imageSpec = @options.model.type.images?[@options.model.imageNum] 
-        @setOption 'source', @_imageSpec?.file or @options.model.type.descImage
+        @_renderSprite needsReload
+      else if needsReload
+        # renderSprite will reload if necessary
+        @_setImageSpec()
 
 
   # widget declaration

@@ -39,6 +39,7 @@
     "socket.io-client": "0.9.11"
   },
   "scripts": {
+    "start": "node hyperion/bin/start",
     "postinstall": "cake build",
     "test": "cake test"
   },

@@ -27,6 +27,7 @@ define [
   'widget/base'
   'widget/typeTree'
   'widget/instanceTree'
+  'jquery-ui'
 ], ($, _, i18n, parser, utils, Base) ->
 
   # once search is used, increment the jquery-ui overley z-index

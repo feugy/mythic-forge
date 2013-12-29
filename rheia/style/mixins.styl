@@ -18,31 +18,46 @@
 */
 
 // cross-browser compatibility
-transition(args...)
-  -wekbit-transition args
-  -moz-transition args
-  transition args
+vendor-prefix(directive, args)
+  -webkit-{directive} args
+  -moz-{directive} args
+  {directive} args
 
-transform(args...)
-  -webkit-transform args
-  -moz-transform args
-  transform args
+user-select()
+  vendor-prefix 'user-select' arguments
 
+transition()
+  vendor-prefix 'transition' arguments
 
-transform-origin(args...)
-  -webkit-transform-origin args
-  -moz-transform-origin args
-  transform-origin args
+transform()
+  vendor-prefix 'transform' arguments
+
+transform-origin()
+  vendor-prefix 'transform-origin' arguments
   
-perspective(args...)
-  -webkit-perspective args
-  -moz-perspective args
-  perspective args
+perspective()
+  vendor-prefix 'perspective' arguments
 
-box-sizing(args...)
-  -webkit-box-sizing args
-  -moz-box-sizing args
-  box-sizing args
+box-sizing()
+  vendor-prefix 'box-sizing' arguments
+
+box-flex()
+  vendor-prefix 'box-flex' arguments
+
+box-ordinal-group()
+  vendor-prefix 'box-ordinal-group' arguments
+
+box-pack()
+  vendor-prefix 'box-pack' arguments
+
+box-direction()
+  vendor-prefix 'box-direction' arguments
+
+box-align()
+  vendor-prefix 'box-align' arguments
+
+box-orient()
+  vendor-prefix 'box-orient' arguments
 
 // Flexible box model compatibility
 display(value)
@@ -56,36 +71,6 @@ display(value)
     display inline-box
   else
     display value
-
-box-flex(args...)
-  -webkit-box-flex args
-  -moz-box-flex args
-  box-flex args
-
-box-ordinal-group(args...)
-  -webkit-box-ordinal-group args
-  -moz-box-ordinal-group args
-  box-ordinal-group args
-
-box-pack(args...)
-  -webkit-box-pack args
-  -moz-box-pack args
-  box-pack args
-
-box-direction(args...)
-  -webkit-box-direction args
-  -moz-box-direction args
-  box-direction args
-
-box-align(args...)
-  -webkit-box-align args
-  -moz-box-align args
-  box-align args
-
-box-orient(args...)
-  -webkit-box-orient args
-  -moz-box-orient args
-  box-orient args
   
 // Positionnate the current selector to take all available space inside parent.
 // Parent must be positionnate, because the current selector wil be absolute

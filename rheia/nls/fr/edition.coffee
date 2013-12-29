@@ -90,6 +90,7 @@ define
       {name: '3D isométrique', value:'diamond'}
       {name: '2D', value:'square'}
     ]
+    tileDim: "Dimension d'une tuile"
     randomAffect: 'affectation aléatoire'
     mapNotSaved: "Merci de sauvegarder la carte avant d'affecter des terrains"
     lang: 'Language'

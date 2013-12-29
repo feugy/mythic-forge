@@ -30,6 +30,11 @@ Map = typeFactory 'Map',
     kind: 
         type: String
         default: 'hexagon'
+
+    # dimension of a tile in this map
+    tileDim:
+        type: Number
+        default: 100
   , 
     strict:true
     middlewares:

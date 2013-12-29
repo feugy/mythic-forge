@@ -35,6 +35,14 @@ define [
   class SpriteImage extends LoadableImage
 
     # **private**
+    # edition widget for sprite width
+    @_spriteWWidget: null
+
+    # **private**
+    # edition widget for sprite height
+    @_spriteHWidget: null
+
+    # **private**
     # Builds rendering. Adds inputs for image dimensions
     constructor: (element, options) ->
       super element, options
@@ -50,11 +58,12 @@ define [
         @$el.removeClass 'show'
 
       # inputs for width and height
-      $("""<div class="dimensions">#{i18n.spriteImage.dimensions}<input type="numer" class="spriteW"/>
-        <input type="numer" class="spriteH"/></div>""").appendTo @$el
-
       $("""<div class="details">
         <h1>#{i18n.spriteImage.sprites}</h1>
+        <div class="dimensions">#{i18n.spriteImage.dimensions}
+          <span class="spriteW"></span>
+          <span class="spriteH"></span>
+        </div>
         <table>
           <thead>
             <tr>
@@ -84,10 +93,26 @@ define [
 
       @_refreshSprites()
 
-      @$el.find('.dimensions input').keyup _.debounce ((event) => @_onDimensionChange event), 300
+      @_spriteWWidget = @$el.find('.dimensions .spriteW').property(
+        type: 'float'
+        value: @options.spriteW
+        allowNull: false
+      ).on('change', =>
+        @options.spriteW = @_spriteWWidget.options.value
+        # the last parameters allow to split changes from the image from those from sprite definition
+        @$el.trigger 'change', isSprite: true unless @options._silent
+      ).data 'property'
 
-      @setOption 'spriteW', @options.spriteW
-      @setOption 'spriteH', @options.spriteH
+      @_spriteHWidget = @$el.find('.dimensions .spriteH').property(
+        type: 'float'
+        value: @options.spriteH
+        allowNull: false
+      ).on('change', =>
+        @options.spriteH = @_spriteHWidget.options.value
+        # the last parameters allow to split changes from the image from those from sprite definition
+        @$el.trigger 'change', isSprite: true unless @options._silent
+      ).data 'property'
+
       @options._silent = false
 
     # Method invoked when the widget options are set. Update rendering if `spriteH` or `spriteW` changed.
@@ -97,18 +122,18 @@ define [
     setOption: (key, value) =>
       return super key, value unless key in ['spriteW', 'spriteH', 'sprite']
       switch key
-        when 'spriteW', 'spriteH' 
-          value = parseInt value
-          value = 0 if isNaN value
+        when 'spriteW'
           @options[key] = value
-          @$el.find(".#{key}").val value
+          @_spriteWWidget?.setOption 'value', value
+        when 'spriteH'
+          @options[key] = value
+          @_spriteHWidget?.setOption 'value', value
         when 'sprite'
           @$el.find('.details *').unbind().remove()
           @_refreshSprites()
 
     # Frees DOM listeners
     dispose: =>
-      @$el.find('input').off()
       validator.dispose() for validator in @options._validators
       super()
 
@@ -203,28 +228,16 @@ define [
       @options.errors = @options.errors.concat validator.validate() for validator in @options._validators
       @$el.toggleClass 'validation-error', @options.errors.length isnt 0
 
-    # **private**
-    # hanlder that validates dimensions.
-    #
-    # @param event [Event] change event on dimension imputs
-    _onDimensionChange: (event) =>
-      for key in ['spriteW', 'spriteH']
-        value = parseInt @$el.find(".#{key}").val()
-        value = 0 if isNaN value
-        @$el.find(".#{key}").val value
-        @options[key] = value
-      @$el.trigger 'change', isSprite: true unless @options._silent
-
   # widget declaration
   SpriteImage._declareWidget 'spriteImage', $.extend true, {}, $.fn.loadableImage.defaults, 
 
     # sprite width, set with the dedicated input
     # read-only: use `setOption('spriteW')` to modify
-    spriteW: 0
+    spriteW: 1
 
     # sprite height, set with the dedicated input
     # read-only: use `setOption('spriteH')` to modify
-    spriteH: 0
+    spriteH: 1
 
     # sprites definition.
     # read-only: use `setOption('sprite')` to modify

@@ -148,6 +148,8 @@ define [
       @_mapWidget = @$el.find('.map').moderationMap(
         dndType: i18n.constants.instanceAffectation
         zoom: 0.75
+        width: 651
+        height: 651
         displayGrid: true
         displayMarkers: true
       ).on('affectInstance', @_onAffect
@@ -257,6 +259,7 @@ define [
       # reload map
       @_mapWidget.options[key] = val for key, val of renderDefaults[@_map.kind]
       @_mapWidget.setOption 'renderer', new Renderers[@_map.kind]()
+      @_mapWidget.setOption 'tileDim', @_map.tileDim
       @_mapWidget.setOption 'mapId', id
       @_mapWidget.setOption 'lowerCoord', @_mapWidget.options.lowerCoord
 
@@ -426,8 +429,8 @@ define [
         distance: 15
         cursorAt: top:-5, left:-5
         drag: -> 
-          # do not drag instances that do not have id yet
-          false unless view.model.id
+          # do not drag instances if edition in progress
+          false if view.canSave()
         helper: -> utils.dragHelper view.model
 
     # **private**

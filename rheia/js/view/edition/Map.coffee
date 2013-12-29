@@ -34,21 +34,6 @@ define [
 
   i18n = $.extend true, i18n, i18nEdition
 
-  # defaults rendering dimensions
-  renderDefaults = 
-    hexagon:
-      tileDim: 75
-      verticalTileNum: 14
-      horizontalTileNum: 12
-    diamond:
-      tileDim: 75
-      verticalTileNum: 11
-      horizontalTileNum: 12
-    square:
-      tileDim: 75
-      verticalTileNum: 8
-      horizontalTileNum: 11
-
   # Displays and edit a map on edition perspective
   class MapView extends BaseEditionView
 
@@ -77,6 +62,10 @@ define [
     # **private**
     # map content widget
     _mapWidget: null
+
+    # **private**
+    # tile dimension widget
+    _tileDimWidget: null
 
     # **private**
     # action button for selection removal
@@ -108,6 +97,8 @@ define [
         removed = [removed] unless Array.isArray removed
         removed[i] = obj.toJSON() for obj, i in removed
         @_mapWidget.removeData removed
+
+      @_refreshTileDim = _.debounce @_refreshTileDim, 150
 
       console.log "creates map edition view for #{@model.id}"
 
@@ -150,10 +141,14 @@ define [
       @_kindWidget = @$el.find('select.field').change =>
         kind = @_kindWidget.find('option:selected').val()
         if kind of Renderers and @_mapWidget?
-          renderer =  new Renderers[kind]() 
-          @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
-          @_mapWidget.setOption 'renderer', renderer
+          @_mapWidget.setOption 'renderer', new Renderers[kind]() 
         @_onChange()
+
+      @_tileDimWidget = @$el.find('.tileDim.field').property(
+        type: 'integer'
+        allowNull: false
+      ).on('change', @_refreshTileDim
+      ).data 'property'
 
       # hide commands until map created
       if @_isNew
@@ -167,6 +162,9 @@ define [
           lowerCoord: {x:0, y:0}
           displayGrid: true
           displayMarkers: true
+          tileDim: @model.tileDim
+          height: 601
+          width: 901
           mapId: @model.id
           dndType: i18n.constants.fieldAffectation
         ).on('affect', @_onAffect
@@ -199,6 +197,7 @@ define [
       super()
       # update map kind
       @model.kind = @_kindWidget.find('option:selected').val()
+      @model.tileDim = @_tileDimWidget.options.value
 
     # **private**
     # Updates rendering with values from the edited object.
@@ -207,11 +206,12 @@ define [
       # update kind rendering (before calling super)
       @_kindWidget.find('option:selected').removeAttr 'selected'
       @_kindWidget.find("option[value='#{kind}']").attr 'selected', 'selected'
+
+      # tile dimension
+      @_tileDimWidget.setOption 'value', @model.tileDim or 100
       
       if kind of Renderers and @_mapWidget?
-        renderer =  new Renderers[kind]() 
-        @_mapWidget.options[key] = val for key, val of renderDefaults[kind]
-        @_mapWidget.setOption 'renderer', renderer
+        @_mapWidget.setOption 'renderer', new Renderers[kind]() 
 
       # superclass handles description image and trigger _onChange
       super()
@@ -231,7 +231,19 @@ define [
         name: 'kind'
         original: @model.kind
         current: @_kindWidget.find('option:selected').val()
+      ,
+        name: 'tileDim'
+        original: @model.tileDim
+        current: @_tileDimWidget.options.value 
+
       comparable
+
+    # **private**
+    # Debounce method that updates map widget when tile dimension changes
+    _refreshTileDim: =>
+      @_onChange()
+      # refresh also map 
+      @_mapWidget.setOption 'tileDim', @_tileDimWidget.options.value
 
     # **private**
     # Multiple field affectation in the current map selection

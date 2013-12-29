@@ -45,7 +45,7 @@ define [
 
     # **private**
     # List of properties that must be defined in this instance.
-    _fixedAttributes: ['kind']
+    _fixedAttributes: ['kind', 'tileDim']
 
     # **private**
     # flag to avoid multiple concurrent server call.

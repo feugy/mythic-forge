@@ -72,7 +72,7 @@ define [
       #
       # @return number of tile in total map height
       _verticalTotalNum: () => 
-        (-1 + Math.floor @height*3/@tileH*0.75)*3
+        (-1 + Math.floor @map.options.height*3/@tileH*0.75)*3
 
       # Compute the map coordinates of the other corner of displayed rectangle
       #
@@ -487,10 +487,6 @@ define [
         @tileH = map.options.tileDim*map.options.zoom
         @tileW = map.options.tileDim*map.options.zoom
 
-        # canvas dimensions (add 1 to take in account stroke width, and no zoom)
-        @width = 1+map.options.horizontalTileNum*@tileW/map.options.zoom
-        @height = 1+map.options.verticalTileNum*@tileH/map.options.zoom 
-
         @origin = @nextCorner map.options.lowerCoord, true
 
       # Compute the map coordinates of the other corner of displayed rectangle
@@ -500,8 +496,8 @@ define [
       # False to indicate its the bottom-left corner
       # @return map coordinates of the other corner
       nextCorner: (coord, upper=false) => 
-        row = Math.floor @height/@tileH
-        col = Math.floor @width/@tileW
+        row = Math.floor @map.options.height/@tileH
+        col = Math.floor @map.options.width/@tileW
         {
           x: coord.x + if upper then -col else col+1
           y: coord.y + if upper then -row else row+1
@@ -519,9 +515,9 @@ define [
       coordToPos: (obj) =>
         {
           left: (obj.x - @origin.x)*@tileW
-          top: @height*3-(obj.y + 1 - @origin.y)*@tileH
+          top: @map.options.height*3-(obj.y + 1 - @origin.y)*@tileH
           # for z-index, inverted rows is more important 
-          'z-index': (@_verticalTotalNum()-obj.y+@origin.y)*2+obj.x 
+          'z-index': Math.round (@_verticalTotalNum()-obj.y+@origin.y)*2+obj.x 
         }
 
       # Translate css position (relative to the map origin) to map coordinates to css position
@@ -534,7 +530,7 @@ define [
       # @option return y [Number] object ordinates
       posToCoord: (pos) =>
         {
-          y: @origin.y + Math.floor (@height*3-pos.top)/@tileH
+          y: @origin.y + Math.floor (@map.options.height*3-pos.top)/@tileH
           x: @origin.x + Math.floor pos.left/@tileW
         }
 
@@ -544,14 +540,14 @@ define [
       drawGrid: (ctx) =>
         i = 0
         # draws horizontal lines starting from bottom
-        for y in [@height*3-1..0] by -@tileH
+        for y in [@map.options.height*3-1..0] by -@tileH
           ctx.moveTo 0, y
-          ctx.lineTo @width*3, y
+          ctx.lineTo @map.options.width*3, y
 
         # draws vertical lines
-        for x in [1..@width*3] by @tileW
+        for x in [1..@map.options.width*3] by @tileW
           ctx.moveTo x, 0
-          ctx.lineTo x, @height*3
+          ctx.lineTo x, @map.options.height*3
         ctx.stroke()
 
       # Draws the markers on a given context.
@@ -559,11 +555,11 @@ define [
       # @param ctx [Object] the canvas context on which drawing
       drawMarkers: (ctx) =>
         row = 0
-        for y in [@height*3-1..0] by -@tileH
+        for y in [@map.options.height*3-1..0] by -@tileH
           gameY = @origin.y + row++
           if gameY % 5 is 0
             col = 0
-            for x in [1..@width*3] by @tileW    
+            for x in [1..@map.options.width*3] by @tileW    
               gameX = @origin.x + col++
               if gameX % 5 is 0
                 ctx.fillText "#{gameX}:#{gameY}", x+@tileW*0.5, y-@tileH*0.5
@@ -601,7 +597,7 @@ define [
       # @return screen offset (left and top) of the container
       replaceContainer: (pos) =>
         {
-          left: -@width+(pos.left/@tileW)-(pos.left%@tileW)
-          top: -@height+(pos.top/@tileH)-(pos.top%@tileH)
+          left: -@map.options.width+(pos.left/@tileW)-(pos.left%@tileW)
+          top: -@map.options.height+(pos.top/@tileH)-(pos.top%@tileH)
         }
   }
