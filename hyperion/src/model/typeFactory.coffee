@@ -23,7 +23,6 @@ _ = require 'underscore'
 fs = require 'fs'
 path = require 'path'
 async = require 'async'
-ObjectId = require('mongodb').BSONPure.ObjectID
 MongoClient = require('mongodb').MongoClient
 Executable = require '../model/Executable'
 modelWatcher = require('./ModelWatcher').get()
@@ -546,7 +545,7 @@ module.exports = (typeName, spec, options = {}) ->
           
       wasNew = @isNew
       # generate id if necessary
-      @id = new ObjectId().toString() unless @id? or !wasNew
+      @id = modelUtils.generateId() unless @id? or !wasNew
       if wasNew
         # validates id 
         return next new Error "id #{@id} for model #{typeName} is invalid" unless modelUtils.isValidId @id
@@ -581,7 +580,7 @@ module.exports = (typeName, spec, options = {}) ->
     AbstractType.pre 'save', (next) ->
       wasNew = @isNew
       # generate id if necessary
-      @id = new ObjectId().toString() unless @id? or !wasNew
+      @id = modelUtils.generateId() unless @id? or !wasNew
       if wasNew
         # validates id 
         return next new Error "id #{@id} for model #{typeName} is invalid" unless modelUtils.isValidId @id

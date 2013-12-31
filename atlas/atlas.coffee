@@ -221,12 +221,12 @@
 
     # bounds to server updates
     eventEmitter.on 'connected', ->
-      factory = (hook, process) =>
-        (className, model) =>
+      factory = (hook, process) ->
+        (className, model) ->
           # immediately process message...
           return process className, model unless _.isFunction Atlas.options?[hook]
           # ...or use hook that may cancel processing
-          Atlas.options[hook] className, model, (err, model) =>
+          Atlas.options[hook] className, model, (err, model) ->
             process className, model unless err
       Atlas.updateNS.on 'creation', factory 'preCreate', Atlas.modelCreation
       Atlas.updateNS.on 'update', factory 'preUpdate', Atlas.modelUpdate
@@ -265,7 +265,7 @@
             return Atlas[className].fetch [changes.id], callback
           else
             return callback null 
-        options.debug && console.log "process update for model #{model.id} (#{className})", changes
+        options.debug and console.log "process update for model #{model.id} (#{className})", changes
         # then, update the local cache
         modifiedFields = []
         for attr, value of changes
@@ -273,11 +273,11 @@
             # ignore change if value is identical or if field ignored
             modifiedFields.push attr
             model[attr] = value 
-            options.debug && console.log "update property #{attr}"
+            options.debug and console.log "update property #{attr}"
 
         # performs update propagation
         end = (err) ->
-          options.debug && console.log "end of update for model #{model.id} (#{className})", modifiedFields, err
+          options.debug and console.log "end of update for model #{model.id} (#{className})", modifiedFields, err
           if modifiedFields.length isnt 0 and !err?
             eventEmitter.emit 'modelChanged', 'update', model, modifiedFields 
           callback err
@@ -664,6 +664,7 @@
                 # returns found event
                 return nextVal err, linked if err? or linked?
                 # linked not found: indicates it.
+                options.debug and console.log "linked #{val} in #{attr} not found, model #{model.id} is dirty"
                 model.__dirty__ = true
                 nextVal err, val
           else
@@ -695,7 +696,7 @@
 
       # **private**
       # List of properties that must be defined in this instance.
-      @_fixedAttributes: ['kind']
+      @_fixedAttributes: ['kind', 'tileDim']
 
       # **private**
       # request identifier to avoid multiple concurrent server call.
@@ -813,13 +814,13 @@
     
     # manages transition changes on Item's updates
     eventEmitter.on 'modelChanged', (event, operation, model, changes) ->
-      return unless operation is 'update' and model._className is 'Item' and 'transition' in changes and 
+      return unless operation is 'update' and model.constructor._className is 'Item' and 'transition' in changes 
       model._transition = model.transition
 
     # Item modelize any objects and actor that can be found on a map, and may be controlled by players
     # An item always have a type, which is systematically populated from cache or server during initialization.
     # Links to other items and event are resolved locally from cache. 
-    # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetchinf the item.
+    # If some of them are not resolved, a `__dirty__` attribute is added, and you can resolve them by fetchinf the item.
     class Atlas.Item extends CachedModel
 
       # **private**
@@ -894,7 +895,7 @@
     # Event modelize anything that can be issued by an Item, and that is not on map
     # An event always have a type and a from item, which are systematically populated from cache or server during initialization.
     # Links to other items and event are resolved locally from cache. 
-    # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetchinf the event.
+    # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetching the event.
     class Atlas.Event extends CachedModel
 
       # **private**

@@ -20,6 +20,7 @@
 
 _ = require 'underscore'
 async = require 'async'
+ObjectId = require('mongodb').BSONPure.ObjectID
 Model = require('mongoose').Model
 watcher = require('../model/ModelWatcher').get()
 utils = require '../util/common'
@@ -145,6 +146,11 @@ filterModified = (obj, modified) ->
         filterModified value, modified for value in values when value? and 'string' isnt utils.type value
 
 module.exports =
+
+  # Generate a random Id (using Mong native id)
+  # @return a generated Id
+  generateId: =>
+    new ObjectId().toString()
 
   # Enforce that a property value does not violate its corresponding definition.
   #

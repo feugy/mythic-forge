@@ -182,10 +182,13 @@ module.exports =
               err = null if err? and -1 isnt stdout?.indexOf 'nothing to commit'
               return callback "failed to commit the working copy: #{err}" if err?
 
-              # and at last ceates the tag
+              # creates the tag
               repo.create_tag to, (err) ->
                 return callback "failed to create tag: #{err}" if eff?
-                callback null
+                # and at last run gc to clean repo
+                repo.git 'gc', aggressive:true, prune:'tomorrow', (err, stdout, stderr) ->
+                  return callback "failed to run garbage collector: #{err}" if err?
+                  callback null
 
       if tags.length > 0
         # get commit is corresponding to last tag

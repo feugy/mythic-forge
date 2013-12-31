@@ -37,6 +37,10 @@ define [
     _widths: []
 
     # **private**
+    # how many image are still loading
+    _pending: 0
+
+    # **private**
     # link to image container
     _container: null
 
@@ -69,25 +73,6 @@ define [
           event.stopImmediatePropagation()
           @_setCurrent @options.current-1, true
 
-      # loading handler
-      @bindTo app.router, 'imageLoaded', (success, src, image) => 
-        img = _.find @options.images, (source) -> _(src).endsWith source
-        idx = _.indexOf @options.images, img
-        return unless img?
-        node = @_container.children ":eq(#{idx})"
-        node.attr('src', image).addClass @options.imageClass
-        @_widths[idx] = node[0].getBoundingClientRect().width
-        # set container width
-        @_container.css width: sum @_widths
-
-        # last image loaded ?
-        if _.without(@_widths, null, undefined).length is @options.images.length
-          # try to keep the current position
-          if @options.current < @options.images.length
-            @_setCurrent @options.current
-          else
-            @_setCurrent 0
-
       # first displayal
       @_displayImages @options.images
 
@@ -102,6 +87,45 @@ define [
         when 'images' then @_displayImages value
 
     # **private**
+    # image loading handler
+    # @param success [Boolean] true if image was loaded
+    # @param src [String] image URI
+    # @param image [Object] image data
+    _onImageLoaded: (success, src, image) => 
+      img = _.find @options.images, (source) -> _(src).endsWith source
+      idx = _.indexOf @options.images, img
+      return unless img?
+      @_pending--
+
+      node = @_container.children ":eq(#{idx})"
+      prev = @$el.prev()
+      parent = @$el.parent()
+
+      # insert into dom while setting image to allow size computation
+      $('body').append @$el
+      node.attr('src', image).addClass @options.imageClass
+      @_widths[idx] = node.width()
+
+      # insert again at its original place
+      if prev.length is 0 
+        parent.prepend @$el unless parent.length is 0
+      else
+        prev.after @$el
+      
+      # last image loaded ?
+      if @_pending is 0
+        # set container width
+        @_container.css width: sum @_widths
+        # unbound from loader
+        @unboundFrom app.router, 'imageLoaded'
+        
+        # try to keep the current position
+        if @options.current < @options.images.length
+          @_setCurrent @options.current
+        else
+          @_setCurrent 0
+
+    # **private**
     # Updates the current displayed image, with navigation animation.
     # Checks before the index validity in the `images` array. 
     # Updates the nav button state.
@@ -111,7 +135,11 @@ define [
     _setCurrent: (value, animate=false) =>
       # first check the value
       return unless value >= 0 and value < @options.images.length
-
+      # updates nav buttons.
+      @$el.find('.previous').button 'option', 'disabled', value is 0
+      @$el.find('.next').button 'option', 'disabled', value is @options.images.length-1
+      
+      console.log "#{value} #{@options.current}"
       # moves the image container
       @_container.stop()
       offset = - sum @_widths[0...value]
@@ -121,10 +149,6 @@ define [
       else
         @_container.css left: offset
 
-      # updates nav buttons.
-      @$el.find('.previous').button 'option', 'disabled', value is 0
-      @$el.find('.next').button 'option', 'disabled', value is @options.images.length-1
-      
       # if we modified the index
       if value isnt @options.current
         # updates it and triggers event
@@ -142,13 +166,17 @@ define [
       @_widths = []
       @options.images = if Array.isArray images then images else []
 
-      # displays new ones
-      for image in @options.images
-        @_container.append """<img class="#{@options.imageClass}"/>"""
-        app.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
-
-      # no images to display: set current to 0
-      @_setCurrent 0 if @options.images.length is 0
+      @_pending = @options.images.length
+      if @_pending > 0
+        # loading handler
+        @bindTo app.router, 'imageLoaded', @_onImageLoaded
+        # displays new ones
+        for image in @options.images
+          @_container.append """<img class="#{@options.imageClass}"/>"""
+          app.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
+      else
+        # no images to display: set current to 0
+        @_setCurrent 0
 
   # widget declaration
   Carousel._declareWidget 'carousel', 
