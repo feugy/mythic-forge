@@ -211,5 +211,5 @@ _instance = undefined
 class GameService
   @get: ->
     _instance ?= new _GameService()
-
+    
 module.exports = GameService

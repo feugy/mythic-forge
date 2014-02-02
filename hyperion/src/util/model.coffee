@@ -63,7 +63,7 @@ checkPropertyType = (value,  property) ->
       if value isnt null
         if 'string' is utils.type value 
           err = "#{value} isn't a valid date" if isNaN new Date(value).getTime()
-        else if 'date' isnt utils.type value
+        else if 'date' isnt utils.type(value) or isNaN value.getTime()
           err = "#{value} isn't a valid date" 
     when 'object' then err = checkObject value, property
     # array: array that contains object at each index.
@@ -122,14 +122,16 @@ getProp = (obj, path, callback) ->
   
   processStep obj
 
-filterModified = (obj, modified) ->
+filterModified = (obj, modified, _parsed = []) ->
   # do not process if already known
-  return if obj in modified
+  return if obj in _parsed
   # will be save if at least one path is modified
-  modified.push obj if obj?.isModified?()
+  if obj?.isModified?()
+    modified.push obj
+    _parsed.push obj
   if obj?._className is 'Player'
     # recurse if needed on characters
-    filterModified value, modified for value in obj.characters when value? and 'string' isnt utils.type value
+    filterModified(value, modified, _parsed) for value in obj.characters when value? and 'string' isnt utils.type value
     return 
   # do not go further if not an obj
   return unless obj?._className is 'Item' or obj?._className is 'Event'
@@ -138,12 +140,12 @@ filterModified = (obj, modified) ->
     if def.type is 'object'
       value = obj[prop]
       # recurse if needed on linked object that are resolved
-      filterModified(value, modified) if value? and 'string' isnt utils.type value
+      filterModified(value, modified, _parsed) if value? and 'string' isnt utils.type value
     else if def.type is 'array'
       values = obj[prop]
       if values
         # recurse if needed on linked object that are resolved
-        filterModified value, modified for value in values when value? and 'string' isnt utils.type value
+        filterModified(value, modified, _parsed) for value in values when value? and 'string' isnt utils.type value
 
 module.exports =
 
@@ -151,6 +153,24 @@ module.exports =
   # @return a generated Id
   generateId: =>
     new ObjectId().toString()
+
+  # Removes duplicate models from a given model array (directly modifies it)
+  #
+  # @param arr [Array<Model>] array of model that will be purged
+  purgeDuplicates: (arr) =>
+    uniq = []
+    length = arr.length
+    i = 0
+    while i < length
+      model = arr[i]
+      if model.id? and _.any(uniq, (obj) -> obj?.equals and obj.equals model)
+        # found a duplicate
+        arr.splice i, 1
+        length--
+      else
+        # first occurence
+        uniq.push model
+        i++
 
   # Enforce that a property value does not violate its corresponding definition.
   #

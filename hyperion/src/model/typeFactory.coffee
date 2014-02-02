@@ -361,11 +361,14 @@ module.exports = (typeName, spec, options = {}) ->
                 when 'array' then def = []
                 when 'object' then def = null
 
+              # checks default value
+              err = modelUtils.checkPropertyType def, prop
+              return next new Error err if err?
+
               if undefined is instance.get name
                 # use getter here because property was not defined yet
                 instance.set name, def
                 saved.push instance unless saved in instance
-                # TODO: check value type. 
 
           # removes deleted properties from instances.
           if @_deletedProps?

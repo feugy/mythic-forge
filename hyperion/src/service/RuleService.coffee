@@ -222,9 +222,11 @@ class _RuleService
   # - params [Object] the awaited parameters specification
   # - category [String] the rule category
   resolve: (args..., callback) ->
+    # generate a random request Id
+    id = utils.generateToken 6
     # end callback used to process executor results
     end = (data) =>
-      return unless data?.method is 'resolve'
+      return unless data?.method is 'resolve' and data?.id is id
       pool[0].removeListener 'message', end
       # special case: worker not ready yet. Try later.
       if data.results[0] is 'worker not ready'
@@ -239,7 +241,7 @@ class _RuleService
 
     pool[0].on 'message', end
     # delegate to executor
-    pool[0].send method: 'resolve', args:args
+    pool[0].send method: 'resolve', args:args, id: id
    
   # Execute a particular rule for a given situation.
   # As a first validation, the rule is resolved for the target.
@@ -262,16 +264,18 @@ class _RuleService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
   execute: (args..., callback) ->
+    # generate a random request Id
+    id = utils.generateToken 6
     # end callback used to process executor results
     end = (data) =>
-      return unless data?.method is 'execute'
+      return unless data?.method is 'execute' and data?.id is id
       pool[0].removeListener 'message', end
       # special case: worker not ready yet. Try later.
       if data.results[0] is 'worker not ready'
         return _.delay => 
           @execute.apply @, args.concat callback
         , 10
-      return callback null, data.results[1] unless data.results[0]?
+      return callback null, data.results[1]  unless data.results[0]?
       # in case of error, wait for the executor to be respawned
       _.delay -> 
         callback data.results[0]
@@ -279,16 +283,18 @@ class _RuleService
 
     pool[0].on 'message', end
     # delegate to executor
-    pool[0].send method: 'execute', args: args
+    pool[0].send method: 'execute', args: args, id: id
      
   # Trigger a turn by executing turn rules
   #
   # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
   # @option callback err [String] an error string. Null if no error occured.
   triggerTurn: (callback) =>
+    # generate a random request Id
+    id = utils.generateToken 6
     # end callback used to process scheduler results
     end = (data) =>
-      return unless data?.method is 'trigger'
+      return unless data?.method is 'trigger' and data?.id is id
       pool[1].removeListener 'message', end
       # special case: worker not ready yet. Try later.
       if data.results[0] is 'worker not ready'
@@ -303,7 +309,7 @@ class _RuleService
 
     pool[1].on 'message', end
     # delegate to scheduler
-    pool[1].send method: 'trigger'
+    pool[1].send method: 'trigger', id: id
 
 class RuleService
   _instance = undefined

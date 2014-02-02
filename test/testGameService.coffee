@@ -217,7 +217,7 @@ describe 'GameService tests', ->
     adminService.save 'ClientConf', {values: '(function(){console.log("hacked !")})()'}, 'test', (err) ->
       assert.isDefined err
       assert.isNotNull err
-      assert.include err, 'syntax error'
+      assert.include err.message, 'syntax error'
       #then configuration was not saved
       service.getConf 'root', null, (err, conf) ->
         return done "Can't get configuration: #{err}" if err?

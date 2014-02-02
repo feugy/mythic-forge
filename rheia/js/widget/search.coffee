@@ -52,10 +52,6 @@ define [
     _searchTimout: null
 
     # **private**
-    # result hide timeout.
-    _hideTimeout: null
-
-    # **private**
     # result show timeout.
     _showTimeout: null
 
@@ -93,12 +89,11 @@ define [
         dndType: @options.dndType
       
       # toggle results visibility
-      @$el.hover (event) =>
-        # stop closure if necessary
-        clearTimeout @_hideTimeout if @_hideTimeout?
-        @_onShowResults()
-      , (event) =>
-        @_hideTimeout = setTimeout (=> @_onHideResults()),1000
+      @$el.hover @_onShowResults,  =>
+        # cancels opening 
+        if @_showTimeout?
+          clearTimeout @_showTimeout 
+          @_showTimeout = null
 
     # Frees DOM listeners
     dispose: =>
@@ -175,22 +170,19 @@ define [
       if @options.results?.length > 0 and @_showTimeout is null and @_results.is ':hidden'
         # show results with slight delay
         @_showTimeout = setTimeout =>
-          @_results.show().transition {opacity:1}, @options.animDuration, =>
-            # in case of collapsing hide/show calls
-            @_showTimeout = null
-            @_results.show() unless @_results.is ':visible'
+          @_results.show()
+          # in case of collapsing hide/show calls
+          @_showTimeout = null
+          @_results.show() unless @_results.is ':visible'
+          # hide on click
+          $(document).one 'click', @_onHideResults
         , 200
 
     # **private**
     # Hides the result popup, or cancel opening if necessary.
     _onHideResults: =>
       if @options.results?.length > 0 and @_results.is ':visible'
-        # cancels opening 
-        if @_showTimeout?
-          clearTimeout @_showTimeout 
-          @_showTimeout = null
-        else
-          @_results.transition {opacity: 0}, @options.animDuration, => @_results.hide()
+        @_results.hide()
 
     # **private**
     # input change handler: waits a little before sending to server unless input is ENTER

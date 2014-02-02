@@ -166,6 +166,19 @@ describe 'Executable tests', ->
         assert.equal executables.length, 0
         done()
       
+  it 'should resetAll recompile all in once', (done) ->
+    # given two interdependant scripts
+    new Executable(id: 'first', content: 'module.exports = -> console.log "hello world"').save (err) ->
+      return done "Can't save first executable: #{err}" if err?
+
+      new Executable(id: 'second', content: 'require("./first")()').save (err) ->
+        return done "Can't save second executable: #{err}" if err?
+
+        # when reseting
+        Executable.resetAll true, (err) ->
+          return done "Failed to reset all executable: #{err}" if err?
+          done()
+
   describe 'given an executable', -> 
 
     beforeEach (done) ->

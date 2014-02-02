@@ -42,8 +42,9 @@ parseConf()
 
 # read again if file is changed
 fs.watch confPath, ->
-  parseConf()
-  emitter.emit 'confChanged'
+  _.defer ->
+    parseConf()
+    emitter.emit 'confChanged'
 
 # This method is intended to replace the broken typeof() Javascript operator.
 #

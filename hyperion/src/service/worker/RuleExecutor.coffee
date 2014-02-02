@@ -315,9 +315,10 @@ module.exports =
                   Class.find {_id: $in: ids}, enrich
               , (err) =>
                 return callback err if err?
-                # removes objects from mongo
+                # removes objects from mongo (without duplicates)
+                modelUtils.purgeDuplicates rule.removed
                 async.each rule.removed, (obj, end) -> 
-                  logger.debug "remove model #{obj.id}"
+                  logger.debug "remove #{obj._className} #{obj.id}"
                   obj.remove (err)-> end err
                 , (err) => 
                   return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
@@ -326,11 +327,12 @@ module.exports =
                   # looks for modified linked objects
                   modelUtils.filterModified actor, saved
                   modelUtils.filterModified target, saved
+                  modelUtils.purgeDuplicates saved
                   # saves the whole in MongoDB
                   async.forEach saved, (obj, end) -> 
                     # do not re-save models that were already removed !
-                    return end() if _.find(rule.removed, (removed) -> removed?.equals?(obj))?
-                    logger.debug "save modified model #{obj.id}, #{obj.modifiedPaths().join(',')}"
+                    return end() if _.any rule.removed, (removed) -> removed?.equals?(obj)
+                    logger.debug "save modified #{obj._className} #{obj.id}, #{obj.modifiedPaths().join(',')}"
                     obj.save end
                   , (err) => 
                     return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?

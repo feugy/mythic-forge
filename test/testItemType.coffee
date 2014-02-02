@@ -156,13 +156,13 @@ describe 'ItemType tests', ->
                 # when saving an instance with an invalid date
                 new Item(type: type, time: "invalid").save (err) ->
                   # then an error is raised
-                  assert.include err, 'not a valid date'
+                  assert.include err.message, "isn't a valid date"
 
                   # when saving the type property instance with an invalid date
                   type.setProperty 'time', 'date', "true"
                   type.save (err, saved) ->
                     # then an error is raised
-                    assert.include err, 'not a valid date'
+                    assert.include err.message, "isn't a valid date"
                     done()
 
   describe 'given a type with a property', ->

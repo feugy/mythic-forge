@@ -45,7 +45,7 @@ process.on 'uncaughtException', (err) ->
   err = if worker._errMsg? then worker._errMsg + err.stack else if err.stack? then err.stack else err
   # an exception has been caught:
   logger.warn "worker #{process.pid} caught unexpected exception: #{err}"
-  process.send method: worker._method, results: [err]
+  process.send method: worker._method, id: worker._id, results: [err]
   # let it fail: master will respawn it
   process.exit 0
 
@@ -57,7 +57,7 @@ worker = require pathUtils.resolve __dirname, process.env.module
 process.on 'message', (msg) ->
   # do not proceed if still initializing
   if !ready
-    process.send method: msg.method, results: ['worker not ready'] if msg?.method of worker
+    process.send method: msg.method, id: msg.id, results: ['worker not ready'] if msg?.method of worker
     return
   if msg?.event is 'change'
     # trigger the change as if it comes from the worker's own modelWatcher
@@ -71,10 +71,11 @@ process.on 'message', (msg) ->
       process.exit 1
   else if msg?.method of worker
     worker._method = msg.method
+    worker._id = msg.id
     # invoke the relevant worker method, adding a callback
     worker[msg.method].apply worker, (msg.args or []).concat (args...) ->
       # callback send back results to cluster master
-      process.send method: msg.method, results: args
+      process.send method: msg.method, id: msg.id, results: args
 
 # on change events, send them back to master
 modelWatcher.on 'change', (operation, className, changes, wId) ->

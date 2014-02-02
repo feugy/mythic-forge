@@ -2,8 +2,9 @@
 
 - Hyperion
   - Bugs
-    - [!!!] temper executable require after resetAll 
-    - [!!!] item in player character is still present after a map deletion
+    - [!!] Space crusade, reveal blip: actions are not detected modified on squad
+    - temper executable require after resetAll 
+    - item in player character is still present after a map deletion
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
@@ -16,8 +17,9 @@
 
 - Rheia
   - Bugs
-    - [!!] save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
-    - [!] use tileDim in hexagon and diamond map renderers
+    - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
+    - save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
+    - use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
     - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
@@ -39,6 +41,9 @@
 
 - Hyperion
   - Bugs
+    - avoid message collision between ruleService and ruleExecutor on same executed method
+    - avoid sending duplicates to Mongo on saves (fix duplicate key error)
+    - fix infinite loop while detecting model changes before save
     - allow dev reconnection on server failure
     - fetch now uses cache, to avoid referencing with two different models the same entity. Unless explicitly specified GameService.getItem(), GameService.getEvent()) for serialization reasons
     - use cache to resolve player characters

@@ -93,6 +93,9 @@ trigger = (callback, _auto = false) ->
 
     # function that updates dbs with rule's modifications
     updateDb = (rule, saved, removed, end) =>
+      # removes duplicates, and do not save removed instances
+      modelUtils.purgeDuplicates removed
+      modelUtils.purgeDuplicates saved
       # at the end, save and remove modified objects
       removeModel = (target, removeEnd) =>
         logger.debug "remove model #{target.id}"
@@ -102,7 +105,9 @@ trigger = (callback, _auto = false) ->
       # first removals
       async.forEach removed, removeModel, => 
         saveModel = (target, saveEnd) =>
-          logger.debug "save model #{target.id}"
+          # do not re-save models that were already removed !
+          return saveEnd() if _.any removed, (obj) -> obj?.equals?(target)
+          logger.debug "save #{target._className} #{target.id}"
           target.save (err) =>
             # stop a first execution error.
             saveEnd if err? then "Failed to save model #{target.id} at the end of the turn: #{err}" else undefined

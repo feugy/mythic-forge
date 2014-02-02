@@ -94,7 +94,7 @@ describe 'Player tests', ->
     new Player({email:'Joey', prefs:'(function(){console.log("hacked !")})()'}).save (err) ->
       assert.isDefined err
       assert.isNotNull err
-      assert.include err, 'syntax error'
+      assert.include err.message, 'syntax error'
       # then it was not saved
       Player.find {}, (err, docs) ->
         return done "Can't find player: #{err}" if err?

@@ -1640,3 +1640,54 @@ describe 'RuleService tests', ->
         assert.property results, 'rule32'
         assert.property results, 'rule33'
         done()
+
+  describe 'given an item and a parametrized asynchronous rule', ->
+
+    beforeEach (done) ->
+      new Executable(
+        id:'rule36', 
+        content: """Rule = require 'hyperion/model/Rule'
+          _ = require 'underscore'
+          module.exports = new (class Dumb extends Rule
+            canExecute: (actor, target, context, callback) =>
+              callback null, [
+                {name: 'id', type: 'string'}
+                {name: 'delay', type: 'integer'}
+              ] 
+            execute: (actor, target, params, context, callback) =>
+              _.delay =>
+                callback null, params.id
+              , params.delay
+          )()"""
+      ).save (err) ->
+        return done err if err?
+        new ItemType(id: 'dumber').save (err, saved) ->
+          return done err if err?
+          itemType = saved
+          # Drop existing events
+          Item.collection.drop -> Item.loadIdCache ->
+            new Item(type: itemType).save (err, saved) ->
+              return done err if err?
+              item1 = saved
+              done()
+
+    it 'should two concurrent call not be mixed', (done) ->
+      param1 = id: 'request1', delay: 100
+      param2 = id: 'request2', delay: 5
+      request1 = false
+      request2 = false
+
+      service.execute 'rule36', item1.id, item1.id, param1, 'admin', (err, results) ->
+        request1 = true
+        # then no error is raised, and first id is returned
+        assert.isNull err
+        assert.equal results, param1.id, "request1 get request2's result back"
+        # param1 will be longer than param2
+        assert.isTrue request2, "request 2 has not been processed"
+        done()
+      service.execute 'rule36', item1.id, item1.id, param2, 'admin', (err, results) ->
+        request2 = true
+        # then no error is raised, and second id is returned
+        assert.isNull err
+        assert.equal results, param2.id, "request 2 get request 1's result back"
+        assert.isFalse request1, "request 1 was already processed"
