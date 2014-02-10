@@ -22,7 +22,7 @@ middle = require '../hyperion/src/web/middle'
 front = require '../hyperion/src/web/front'
 Player = require '../hyperion/src/model/Player'
 utils = require '../hyperion/src/util/common'
-request = require 'request'
+request = require('request').defaults jar:true
 parseUrl = require('url').parse
 assert = require('chai').assert
 
@@ -34,7 +34,6 @@ describe 'Authentication tests', ->
 
   before (done) ->
     Player.collection.drop (err)->
-      return done err if err?
       front middle.app
       middle.server.listen port, 'localhost', done
 

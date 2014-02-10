@@ -44,18 +44,21 @@ mongo:
   host: localhost
   db: mythic-forge
 
-# Executable scripts
-executable:
-  source: ../proto-game/rules
-  target: ../proto-game/compiled
+# location of games files
+game: 
+  repo: '../proto-game'
 
-# Game client
-game:
-  # Must not contains or be a sibling of other paths.
-  dev: ../proto-game/source/client
-  optimized: ../proto-game/optimized
-  production: ../proto-game/final
-  save: ../proto-game/previous
+  # Executable scripts 
+  executable:
+    source: ../proto-game/rules # must be INSIDE game.repo
+    target: ../proto-game/compiled
+
+  # Client files
+  client:
+    dev: ../proto-game/source # must be INSIDE game.repo
+    optimized: ../proto-game/optimized
+    production: ../proto-game/final
+    save: ../proto-game/previous
 
 # Turns execution settings. Frequency in seconds
 turn:

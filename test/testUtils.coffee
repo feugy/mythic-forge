@@ -29,7 +29,7 @@ ruleUtils = require '../hyperion/src/util/rule'
 logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
-repository = normalize utils.confKey 'game.dev'
+repository = normalize utils.confKey 'game.repo'
 repo = null
 file1 = join repository, 'file1.txt'
 file2 = join repository, 'file2.txt'
@@ -39,10 +39,10 @@ commit = (spec, done) ->
   spec.file = [spec.file] unless Array.isArray spec.file
   spec.content = [spec.content] unless Array.isArray spec.content
   # Proceed in series, to avoid concurrent access to git repo
-  async.forEachSeries _.zip(spec.file, spec.content), (fileAndContent, next) ->
+  async.eachSeries _.zip(spec.file, spec.content), (fileAndContent, next) ->
     fs.writeFile fileAndContent[0], fileAndContent[1], (err) ->
       return next err if err?
-      repo.add fileAndContent[0].replace(repository, './client'), (err) ->
+      repo.add fileAndContent[0].replace(repository, './'), (err) ->
         next err
   , (err) ->
     return done err if err?
@@ -154,91 +154,6 @@ describe 'Utilities tests', ->
   describe 'given an initialized git repository', ->
     @timeout 5000
 
-    tag1 = 'tag1'
-    tag2 = 'tag2'
-
-    before (done) ->
-      versionUtils.initGameRepo logger, true, (err, root, rep) ->
-        return done err if err?
-        repo = rep
-        done()
-
-    it 'should history be collapse from begining', (done) ->
-
-      # given three commits
-      async.forEachSeries [
-        {file: file1, message: 'commit 1', content: 'v1'} 
-        {file: file1, message: 'commit 2', content: 'v2'} 
-        {file: file1, message: 'commit 3', content: 'v3'} 
-      ], commit, (err) ->
-        return done err if err?
-
-        # when collapsing history from begining
-        versionUtils.collapseHistory repo, tag1, (err) ->
-          return done "Failed to collapse history: #{err}" if err?
-          repo.commits (err, history) ->
-            return done "Failed to consult commits: #{err}" if err?
-            # then last two commits where collapsed
-            assert.equal 2, history.length
-            assert.equal history[0].message, "#{tag1}"
-            assert.equal history[1].message, 'commit 1'
-
-            # then a tag was added
-            repo.tags (err, tags) ->
-              return done err if err?
-              assert.deepEqual [tag1], _.pluck tags, 'name'
-              
-              # then file is still to last state
-              fs.readFile file1, 'utf8', (err, content) ->
-                return done err if err?
-                assert.equal content, 'v3'
-                done()
-
-    it 'should history be collapse from previous tag', (done) ->
-
-      # given three commits
-      async.forEachSeries [
-        {file: file2, message: 'commit 4', content: 'v1'} 
-        {file: file2, message: 'commit 5', content: 'v2'} 
-        {file: file2, message: 'commit 6', content: 'v3'} 
-      ], commit, (err) ->
-        return done err if err?
-
-        # when collapsing history from tag1
-        versionUtils.collapseHistory repo, tag2, (err) ->
-          return done "Failed to collapse history: #{err}" if err?
-          repo.commits (err, history) ->
-            return done "Failed to consult commits: #{err}" if err?
-
-            # then last three commits where collapsed
-            assert.equal 3, history.length
-            assert.equal history[0].message, "#{tag2}"
-
-            # then a tag was added
-            repo.tags (err, tags) ->
-              return done err if err?
-              assert.deepEqual [tag1, tag2], _.pluck tags, 'name'
-              
-              # then file is still to last state
-              fs.readFile file1, 'utf8', (err, content) ->
-                return done err if err?
-                assert.equal content, 'v3'
-
-                fs.readFile file2, 'utf8', (err, content) ->
-                  return done err if err?
-                  assert.equal content, 'v3'
-                  done()
-
-    it 'should collapse failed on existing tag', (done) ->
-      # when collapsing history to unknown tag
-      versionUtils.collapseHistory repo, tag2, (err) ->
-        assert.isDefined err
-        assert.equal err, "cannot reuse existing tag #{tag2}"
-        done()
-
-  describe 'given an initialized git repository', ->
-    @timeout 5000
-
     beforeEach (done) ->
       versionUtils.initGameRepo logger, true, (err, root, rep) ->
         return done err if err?
@@ -302,7 +217,7 @@ describe 'Utilities tests', ->
               assert.deepEqual _.pluck(commits, 'committed_date'), _.pluck history, 'date'
 
               # when getting file history
-              versionUtils.quickHistory repo, file1.replace(repository, './client'), (err, fileHistory) ->
+              versionUtils.quickHistory repo, file1.replace(repository, './'), (err, fileHistory) ->
                 return done err if err?
                 # then only one commit was retrieved
                 assert.equal 1, fileHistory?.length
@@ -340,8 +255,9 @@ describe 'Utilities tests', ->
                 # then both files are presents
                 assert.equal 2, restorables?.length
                 paths = _.pluck restorables, 'path'
-                assert.include paths, file1.replace(repository, 'client').replace '\\', '/'
-                assert.include paths, file2.replace(repository, 'client').replace '\\', '/'
+                repository = repository.replace /\\/g, '/'
+                assert.include paths, file1.replace(/\\/g, '/').replace "#{repository}/", ''
+                assert.include paths, file2.replace(/\\/g, '/').replace "#{repository}/", ''
                 ids = _.pluck restorables, 'id'
                 assert.equal ids[0], ids[1]
                 done()

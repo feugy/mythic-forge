@@ -35,6 +35,8 @@ describe 'ImagesService tests', ->
 
   describe 'given a item type, a field type and no image store', ->
     beforeEach (done) ->
+      unless fs.existsSync imagesPath
+        fs.mkdirSync imagesPath
       # removes any types and clean image folder
       ItemType.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache -> utils.empty imagesPath, ->
         # creates an item type

@@ -8,6 +8,11 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
   types = {}
   models = {}
   rules = {}
+  
+  # for debugging purposes
+  window.models = models
+  window.types = types
+  window.rules = rules
 
   makeRid = -> 
     "req#{Math.random()*10000}"
@@ -78,12 +83,14 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(player).to.be.an.instanceOf Atlas.Player
             expect(player.email).to.be.equal 'admin'
             # then a connected event was issued
-            expect(emitter.emitted).to.have.length 2
-            expect(emitter.emitted[1].type).to.be.equal 'connected'
-            expect(emitter.emitted[1].args[0]).to.be.deep.equal player
-            expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
-            expect(emitter.emitted[0].args[0]).to.be.equal 'creation'
-            expect(emitter.emitted[0].args[1]).to.be.deep.equal player
+            expect(emitter.emitted.length).to.be.least 2
+            msg = emitter.emitted.pop()
+            expect(msg.type).to.be.equal 'connected'
+            expect(msg.args[0]).to.be.deep.equal player
+            msg = emitter.emitted.pop()
+            expect(msg.type).to.be.equal 'modelChanged'
+            expect(msg.args[0]).to.be.equal 'creation'
+            expect(msg.args[1]).to.be.deep.equal player
             adminNS = Atlas.socket.of "/admin"
             adminNS.on 'connect', done
 
@@ -150,13 +157,15 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
 
       after (done) ->
         # remove elements
-        async.each _.values(rules).concat(_.values(models), _.values types), (obj, next) ->
+        async.eachSeries _.values(rules).concat(_.values(models), _.values types), (obj, next) ->
           rid = makeRid()
           adminNS.emit 'remove', rid, obj._className or 'Executable', obj
           adminNS.on 'remove-resp', callback = (reqId, err) ->
             return unless reqId is rid
             adminNS.removeListener 'remove-resp', callback
-            next err
+            # silent errors
+            console.error err if err?
+            next()
         , done
 
       it 'should this character added to player', (done) ->
@@ -252,6 +261,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               # then item is retrieved
               expect(items[0]).to.be.an.instanceOf Atlas.Item
               expect(items[0]).to.have.property 'id', 'tim'
+              expect(items[0]).to.have.property 'strength', 10, "tim has wrong strength"
               expect(items[0].type).to.be.an.instanceOf Atlas.ItemType
               expect(items[0].type).to.have.property 'id', 'testCharacter'
               expect(items[0]).to.have.property 'linked'
@@ -261,7 +271,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               expect(items[0].linked[0]).to.have.property 'id', 'bob'
               expect(items[0].linked[0].type).to.be.an.instanceOf Atlas.ItemType
               expect(items[0].linked[0].type).to.have.property 'id', 'testCharacter'
-              expect(items[0].linked[0]).to.have.property 'strength', 10
+              expect(items[0].linked[0]).to.have.property 'strength', 10, "bob has wrong strength"
               expect(items[0].linked[1]).to.be.an.instanceOf Atlas.Event
               expect(items[0].linked[1]).to.have.property 'id', 'evt3'
               expect(items[0].linked[1].type).to.be.an.instanceOf Atlas.EventType
@@ -331,7 +341,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               return done "Failed to consult map: #{err}" if err?
               expect(emitter.emitted).to.have.length 0
               # then contained fields are returned
-              expect(fields).to.have.length 2
+              expect(fields.length).to.be.least 2
               fields.sort (f1, f2) -> (f1.x or 0) - (f2.x or 0)
               expect(fields[0]).to.be.an.instanceOf Atlas.Field
               expect(fields[0]).to.have.property 'x', 0
@@ -447,17 +457,28 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           Atlas.ruleService.resolve character, null, (err, results) ->
             expect(err).to.exist
             expect(err.message).to.include 'No player with id john'
-            expect(results).not.to.exists
+            expect(results).not.to.exist
             done()
 
-      it 'should rules resolution not be ran in parallel', (done) ->
+      it 'should rules resolution be ran in parallel and not collide', (done) ->
+        ended = 0
         # given a rule resolution in progress
-        Atlas.ruleService.resolve player, null, done
+        Atlas.ruleService.resolve 'john', 'john', null, (err, results) ->
+          expect(err).not.to.exist
+          expect(results).to.have.property 'testRule1'
+          expect(_.keys results).to.have.lengthOf 1
+          ended++
+          end()
         # when resolving rules in parrallel
-        Atlas.ruleService.resolve player, null, (err, results) ->
-          expect(err).to.exist
-          expect(err.message).to.include 'resolution already in progress'
-          expect(results).not.to.exists
+        Atlas.ruleService.resolve 'john', 5, 2, null, (err, results) ->
+          expect(err).not.to.exist
+          expect(results).to.have.property 'testRule1'
+          expect(results).to.have.property 'testRule2'
+          expect(_.keys results).to.have.lengthOf 2
+          ended++
+          end()
+        end = ->
+          done() if ended is 2
 
       it 'should rules resolution return no results', (done) ->
         # given the enriched character model
@@ -520,22 +541,28 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         Atlas.ruleService.execute 'testRule1', player, [], (err, result) ->
           expect(err).to.exist
           expect(err.message).to.include 'does not apply any more'
-          expect(result).not.to.exists
+          expect(result).not.to.exist
           done()
-
-      it 'should rule execution not be ran in parallel', (done) ->
+          
+      it 'should rules execution be ran in parallel and not collide', (done) ->
+        ended = 0
         # given a rule resolution in progress
-        Atlas.ruleService.execute 'testRule4', player, [], done
+        Atlas.ruleService.execute 'testRule4', player, [], (err, results) ->
+          expect(err).not.to.exist
+          ended++
+          end()
         # when resolving rules in parrallel
-        Atlas.ruleService.execute 'testRule4', player, [], (err, result) ->
-          expect(err).to.exist
-          expect(err.message).to.include 'execution already in progress'
-          expect(result).not.to.exists
+        Atlas.ruleService.execute 'testRule4', player, [], (err, results) ->
+          expect(err).not.to.exist
+          ended++
+          end()
+        end = ->
+          done() if ended is 2
 
       it 'should rule execution return no result', (done) ->
         Atlas.ruleService.execute 'testRule4', player, [], (err, result) ->
           return done "Failed to execute rule over player: #{err}" if err?
-          expect(result).not.to.exists
+          expect(result).not.to.exist
           done()
 
       it 'should character be removed from a map', (done) -> 
@@ -567,23 +594,8 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
         # given the enriched character model
         Atlas.Item.findById 'john', (err, character) ->
           return done "Failed to select character: #{err}" if err?
-          # when removing character
-          adminNS.emit 'remove', makeRid(), 'Item', models.john
-          adminNS.once 'remove-resp', (reqId, err) ->
-            return done "Failed to remove character: #{err}" if err?
           
-          next = ->
-            emitter.off 'modelChanged', listener
-            # then character is not in cache anymore
-            Atlas.Item.findById 'john', (err, character) ->
-              return done "Failed to remove character: #{err}" if err?
-              expect(character).not.to.exist
-              delete models.john
-              done()
-              
-          # then a modelChanged event was issued
-          exec = 0
-          emitter.on 'modelChanged', listener = (kind, model, changes) ->
+          listener = (kind, model, changes) ->
             if model.id is player.id
               # then player is automatically updated
               expect(player.characters).to.have.length 0
@@ -597,15 +609,34 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               expect(kind).to.equal 'deletion'
               expect(model).to.deep.equal character
               next() if ++exec is 2
+          
+          next = ->
+            emitter.off 'modelChanged', listener
+            # then character is not in cache anymore
+            Atlas.Item.findById 'john', (err, character) ->
+              return done "Failed to remove character: #{err}" if err?
+              expect(character).not.to.exist
+              delete models.john
+              done()
+              
+          # when removing character
+          adminNS.emit 'remove', makeRid(), 'Item', models.john
+          adminNS.once 'remove-resp', (reqId, err) ->
+            return done "Failed to remove character: #{err}" if err?
+              
+          # then a modelChanged event was issued
+          exec = 0
+          emitter.on 'modelChanged', listener
 
     # Phantom is under test environment, where security is disabled
     if -1 is navigator.userAgent.indexOf 'PhantomJS'
-
-      it 'should unknown token not be connected', (done) ->
-        Atlas.disconnect ->
-          # given a token
-          Atlas.connect 'unknown', (err, player) ->
-            expect(err).to.be.an.instanceOf Error
-            expect(err.message).to.equal 'handshake unauthorized'
-            expect(player).not.to.exist
+      describe 'at the very end', ->
+        
+        it 'should unknown token not be connected', (done) ->
+          Atlas.disconnect ->
+            # given a token
+            Atlas.connect 'unknown', (err, player) ->
+              expect(err).to.be.an.instanceOf Error
+              expect(err.message).to.equal 'handshake unauthorized'
+              expect(player).not.to.exist
             done()

@@ -23,6 +23,7 @@ pathUtils = require 'path'
 fs = require 'fs-extra'
 http = require 'http'
 FSItem = require '../hyperion/src/model/FSItem'
+Executable = require '../hyperion/src/model/Executable'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 front = require '../hyperion/src/web/front'
@@ -36,7 +37,8 @@ notifier = require('../hyperion/src/service/Notifier').get()
 
 port = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"
-root = utils.confKey 'game.dev'
+root = utils.confKey 'game.client.dev'
+exeRoot = utils.confKey 'game.executable.source'
 repo = null
 notifications = []
 browser = null
@@ -45,10 +47,11 @@ listener = null
 describe 'Deployement tests', -> 
 
   before (done) ->
-    # reset game git repository
-    versionUtils.initGameRepo logger, true, (err) ->
-      return done "cannot reset game repo: #{err}" if err?
-      fs.mkdirs root, done
+    @timeout 5000
+    # clean destination folder
+    fs.remove utils.confKey('game.client.production'), ->
+      # reset game git repository
+      versionUtils.initGameRepo logger, true, done
 
   beforeEach (done) ->
     # given a registered notification listener
@@ -74,10 +77,17 @@ describe 'Deployement tests', ->
       # given a clean game source
       utils.remove root, (err) ->
         return done err if err?
-        fs.mkdirs root, (err) ->
+        utils.remove exeRoot, (err) ->
           return done err if err?
-          # given a valid game client in it
-          fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, done
+          fs.mkdirs root, (err) ->
+            return done err if err?
+            fs.mkdirs exeRoot, (err) ->
+              return done err if err?
+              # given an executable
+              new Executable(id: 'test', content: 'msg = "hello world"').save (err) ->
+                return done err if err?
+                # given a valid game client in it
+                fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, done
 
     it 'should coffee compilation errors be reported', (done) ->
       # given a non-compiling coffee script
@@ -88,7 +98,7 @@ describe 'Deployement tests', ->
         service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
-          assert.include err, "Parse error on line 46: Unexpected 'STRING'", "Unexpected error: #{err}"
+          assert.include err, "46:23: error: unexpected '_showTemplate'", "Unexpected error: #{err}"
           # then notifications were properly received
           assert.deepEqual notifications, [
             'DEPLOY_START'
@@ -212,12 +222,8 @@ describe 'Deployement tests', ->
         versionUtils.initGameRepo logger, (err, root, rep) ->
           return done err if err?
           repo = rep
-          repo.add [], all:true, (err) ->
-            return done err if err?
-            repo.commit 'initial', all:true, (err, stdout, stderr) ->
-              return done err if err?
-              server = http.createServer front()
-              server.listen port, 'localhost', done
+          server = http.createServer front()
+          server.listen port, 'localhost', done
       
     after (done) ->
       server.close()
@@ -312,7 +318,7 @@ describe 'Deployement tests', ->
           assert.equal tags[0].name, version
 
           # then no more save folder exists
-          save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
+          save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
           fs.exists save, (exists) ->
             assert.isFalse exists, "#{save} still exists"
             done()
@@ -351,27 +357,29 @@ describe 'Deployement tests', ->
       # given a modification on a file
       fs.copy pathUtils.join(__dirname, 'fixtures', 'common.coffee.v2'), pathUtils.join(root, 'nls', 'common.coffee'), (err) ->
         return done err if err?
-        repo.commit 'change to v2', all:true, (err, stdout, stderr) ->
+        # given a modification on an executable
+        new Executable(id: 'test').remove (err) ->
           return done err if err?
-
-          # when deploying the game client
-          service.deploy version2, 'admin', (err) ->
-            return done "Failed to deploy valid client: #{err}" if err?
-            # then the client was deployed
-            Phantom.create {}, (_browser) ->
-              browser = _browser.page
-              browser.on 'error', done
-              browser.open "#{rootUrl}/game/", ->
-                # then the resultant url is working, with template rendering and i18n usage
-                browser.waitForSelector '.container', ->
-                  browser.evaluate ->
-                    $('body').text().trim()
-                  , (body) ->
-                    assert.include body, version2
-                    assert.include body, 'Edition du monde 2'
-                    # then the deployement can be commited
-                    notifications = []
-                    service.commit 'admin', done
+          new Executable(id: 'test2', content: 'msg2 = "hi there !"').save (err) ->
+            return done err if err?
+            # when deploying the game client
+            service.deploy version2, 'admin', (err) ->
+              return done "Failed to deploy valid client: #{err}" if err?
+              # then the client was deployed
+              Phantom.create {}, (_browser) ->
+                browser = _browser.page
+                browser.on 'error', done
+                browser.open "#{rootUrl}/game/", ->
+                  # then the resultant url is working, with template rendering and i18n usage
+                  browser.waitForSelector '.container', ->
+                    browser.evaluate ->
+                      $('body').text().trim()
+                    , (body) ->
+                      assert.include body, version2
+                      assert.include body, 'Edition du monde 2'
+                      # then the deployement can be commited
+                      notifications = []
+                      service.commit 'admin', done
 
     it 'should state indicates no deployement from version 2.0.0', (done) ->
       service.deployementState (err, state) ->
@@ -393,18 +401,25 @@ describe 'Deployement tests', ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
 
-            # then notifications were properly received
-            assert.deepEqual notifications, ['VERSION_RESTORED']
-            
-            # then version is now version 1
-            service.deployementState (err, state) ->
-              return done err if err?
-              assert.isNull state?.author
-              assert.isNull state?.deployed
-              assert.isFalse state?.inProgress
-              assert.equal state?.current, version
-              assert.deepEqual state?.versions, [version2, version]
-              done()
+            # then test executable is there and not test2
+            fs.readFile pathUtils.join(exeRoot, 'test.coffee'), (err, content) ->
+              assert.isNull err, "test executable was not restored"
+              assert.equal content.toString(), 'msg = "hello world"'
+
+              assert.isFalse fs.existsSync pathUtils.join exeRoot, 'test2.coffee'
+
+              # then notifications were properly received
+              assert.deepEqual notifications, ['VERSION_RESTORED']
+              
+              # then version is now version 1
+              service.deployementState (err, state) ->
+                return done err if err?
+                assert.isNull state?.author
+                assert.isNull state?.deployed
+                assert.isFalse state?.inProgress
+                assert.equal state?.current, version
+                assert.deepEqual state?.versions, [version2, version]
+                done()
 
     it 'should last version be restored', (done) ->
       # when restoring version 2
@@ -415,18 +430,25 @@ describe 'Deployement tests', ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
             assert.equal content, originalContent, 'Version was not restored'
 
-            # then notifications were properly received
-            assert.deepEqual notifications, ['VERSION_RESTORED']
+            # then test executable was removed and test2 is there
+            fs.readFile pathUtils.join(exeRoot, 'test2.coffee'), (err, content) ->
+              assert.isNull err, "test executable was not restored"
+              assert.equal content.toString(), 'msg2 = "hi there !"'
 
-            # then version is now version 2
-            service.deployementState (err, state) ->
-              return done err if err?
-              assert.isNull state?.author
-              assert.isNull state?.deployed
-              assert.isFalse state?.inProgress
-              assert.equal state?.current, version2
-              assert.deepEqual state?.versions, [version2, version]
-              done()
+              assert.isFalse fs.existsSync pathUtils.join exeRoot, 'test.coffee'
+
+              # then notifications were properly received
+              assert.deepEqual notifications, ['VERSION_RESTORED']
+
+              # then version is now version 2
+              service.deployementState (err, state) ->
+                return done err if err?
+                assert.isNull state?.author
+                assert.isNull state?.deployed
+                assert.isFalse state?.inProgress
+                assert.equal state?.current, version2
+                assert.deepEqual state?.versions, [version2, version]
+                done()
     
     version3 = '3.0.0'
 
@@ -439,80 +461,84 @@ describe 'Deployement tests', ->
       fs.copy original, labels, (err) ->
         return done err if err?
 
-        # given a commit
-        repo.commit 'change to v3', all:true, (err, stdout, stderr) ->
+        # given a deployed game client
+        service.deploy version3, 'admin', (err) ->
           return done err if err?
+          notifications = []
+          
+          # when rollbacking
+          service.rollback 'admin', (err) ->
+            return done "Failed to rollback: #{err}" if err?
 
-          # given a deployed game client
-          service.deploy version3, 'admin', (err) ->
-            return done err if err?
-            notifications = []
-            
-            # when rollbacking
-            service.rollback 'admin', (err) ->
-              return done "Failed to rollback: #{err}" if err?
+            # then notifications were properly received
+            assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
 
-              # then notifications were properly received
-              assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
+            # then no version was made
+            repo.tags (err, tags) ->
+              return done err if err?
+              return assert.fail "Version #{version2} has been tagged" for tag in tags when tag.name is version3
 
-              # then no version was made
-              repo.tags (err, tags) ->
+              # then file still modified
+              fs.readFile labels, 'utf8', (err, newContent) ->
                 return done err if err?
-                return assert.fail "Version #{version2} has been tagged" for tag in tags when tag.name is version3
-
-                # then file still modified
-                fs.readFile labels, 'utf8', (err, newContent) ->
+                fs.readFile original, 'utf8', (err, content) ->
                   return done err if err?
-                  fs.readFile original, 'utf8', (err, content) ->
+                  assert.equal newContent, content, "File was modified"
+
+                  # then version is still version 2
+                  service.deployementState (err, state) ->
                     return done err if err?
-                    assert.equal newContent, content, "File was modified"
+                    assert.isNull state?.author
+                    assert.isNull state?.deployed
+                    assert.isFalse state?.inProgress
+                    assert.equal state?.current, version2
+                    assert.deepEqual state?.versions, [version2, version]
 
-                    # then version is still version 2
-                    service.deployementState (err, state) ->
-                      return done err if err?
-                      assert.isNull state?.author
-                      assert.isNull state?.deployed
-                      assert.isFalse state?.inProgress
-                      assert.equal state?.current, version2
-                      assert.deepEqual state?.versions, [version2, version]
+                    # then the save folder do not exists anymore 
+                    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
+                    fs.exists save, (exists) ->
+                      assert.isFalse exists, "#{save} still exists"
 
-                      # then the save folder do not exists anymore 
-                      save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
-                      fs.exists save, (exists) ->
-                        assert.isFalse exists, "#{save} still exists"
-
-                        # then the client was deployed
-                        Phantom.create {}, (_browser) ->
-                          browser = _browser.page
-                          browser.on 'error', done
-                          browser.open "#{rootUrl}/game/", ->
-                            # then the resultant url is working, with template rendering and i18n usage
-                            browser.waitForSelector '.container', ->
-                              browser.evaluate ->
-                                $('body').text().trim()
-                              , (body) ->
-                                assert.include body, version2
-                                assert.include body, 'Edition du monde 2'
-                                done()
+                      # then the client was deployed
+                      Phantom.create {}, (_browser) ->
+                        browser = _browser.page
+                        browser.on 'error', done
+                        browser.open "#{rootUrl}/game/", ->
+                          # then the resultant url is working, with template rendering and i18n usage
+                          browser.waitForSelector '.container', ->
+                            browser.evaluate ->
+                              $('body').text().trim()
+                            , (body) ->
+                              assert.include body, version2
+                              assert.include body, 'Edition du monde 2'
+                              done()
 
     it 'should version be created', (done) ->
-      # when creating version 3
-      service.createVersion version3, (err) ->
+      @timeout 5000
+      
+      # given a modification on game files
+      labels = pathUtils.join root, 'nls', 'common.coffee'
+      original = pathUtils.join __dirname, 'fixtures', 'common.coffee.v3'
+      fs.copy original, labels, (err) ->
         return done err if err?
 
-        # then notifications were properly received
-        assert.deepEqual notifications, ['VERSION_CREATED']
+        # when creating version 3
+        service.createVersion version3, 'admin', (err) ->
+          return done err if err?
 
-        # then a git version was created
-        repo.tags (err, tags) ->
-          return done "Failed to consult tags: #{err}" if err?
-          assert.equal 3, tags.length
-          assert.equal tags[0].name, version
-          done()
+          # then notifications were properly received
+          assert.deepEqual notifications, ['VERSION_CREATED']
+
+          # then a git version was created
+          repo.tags (err, tags) ->
+            return done "Failed to consult tags: #{err}" if err?
+            assert.equal 3, tags.length
+            assert.equal tags[0].name, version
+            done()
 
     it 'should existing version not be created', (done) ->
       # when creating version 3 another time
-      service.createVersion version3, (err) ->
+      service.createVersion version3, 'admin', (err) ->
         assert.isDefined err
         assert.equal err, "Cannot reuse existing version #{version3}", "unexpected error #{err}"
         done()

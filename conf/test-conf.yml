@@ -39,18 +39,21 @@ mongo:
   host: localhost
   db: mythic-forge-tests
 
-# Executable scripts
-executable:
-  source: ../tmp/rules
-  target: ../tmp/compiled
+# location of games files
+game: 
+  repo: '../tmp'
 
-# Game client
-game:
-  # Must not contains or be a sibling of other paths.
-  dev: ../tmp/source/client
-  optimized: ../tmp/optimized
-  production: ../tmp/final
-  save: ../tmp/previous
+  # Executable scripts 
+  executable:
+    source: ../tmp/rules # must be INSIDE game.repo
+    target: ../tmp/compiled
+
+  # Client files
+  client:
+    dev: ../tmp/source # must be INSIDE game.repo
+    optimized: ../tmp/optimized
+    production: ../tmp/final
+    save: ../tmp/previous
 
 # Turns execution settings. Frequency in seconds
 turn:

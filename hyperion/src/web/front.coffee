@@ -141,7 +141,7 @@ module.exports = (app = null) ->
         res.header 'Content-Type', 'text/html; charset=UTF-8'
 
     # last resort: serve static files: cache for 3 weeks if static
-    app.use "#{base}", express.static rootFolder, maxAge: if isStatic then 1814400000 else 0
+    app.use "#{base}", express.static rootFolder, maxAge: 0 #if isStatic then 1814400000 else 0
 
   # serve commun static assets
   app.use express.cookieParser utils.confKey 'server.cookieSecret'
@@ -151,8 +151,8 @@ module.exports = (app = null) ->
   app.use express.compress level:9
   
   # configure a game RIA and the administration RIA 
-  configureRIA '/game', utils.confKey('game.production'), true
-  configureRIA '/dev', utils.confKey('game.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
+  configureRIA '/game', utils.confKey('game.client.production'), true
+  configureRIA '/dev', utils.confKey('game.client.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
 
   if process.env.NODE_ENV in ['buyvm', 'simons']
     configureRIA '/rheia', './rheia-min', true

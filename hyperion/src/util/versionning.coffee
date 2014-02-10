@@ -19,10 +19,10 @@
 'use strict'
 
 _ = require 'underscore'
-utils = require '../util/common'
+{confKey, enforceFolderSync, removeSync} = require '../util/common'
 fs = require 'fs-extra'
 async = require 'async'
-pathUtil = require 'path'
+{join, resolve, normalize} = require 'path'
 git = require 'gift'
 
 quickTags = (repo, callback) ->
@@ -83,7 +83,19 @@ repoInit = false
     
 module.exports =
 
-  # Initialize game source folder and its git repository.
+  # Generate a proper Git author string, that ensure at least lastName and correct email
+  #
+  # @param player [Player] the concerned author
+  # @return the author string.
+  getAuthor: (player) ->
+    firstName = player.firstName or ''
+    lastName = player.lastName or ''
+    lastName = player.email unless lastName or firstName
+    email = player.email
+    email += '@unknown.org' unless -1 isnt email.indexOf '@'
+    "#{firstName} #{lastName} <#{email}>"
+
+  # Initialize game's git repository to store executables and game files
   # 
   # @param logger [Object] logger used to trace initialization progress
   # @param callback [Function] initialization end function. Invoked with:
@@ -103,23 +115,32 @@ module.exports =
           module.exports.initGameRepo logger, reset, callback
         , 250
 
-    root = pathUtil.resolve pathUtil.normalize utils.confKey 'game.dev'
-    repository = pathUtil.dirname root
-          
+    root = resolve normalize confKey 'game.client.dev'
+    # check game dev folder is under game.repo
+    repository = resolve normalize confKey 'game.repo'
+    throw new Error "game.client.dev must not be inside game.repo" unless 0 is root.indexOf repository
+    # check executable folder is under game.repo
+    executables = resolve normalize confKey 'game.executable.source'
+    throw new Error "game.executable.source must not be inside game.repo" unless 0 is executables.indexOf repository
+    imagesPath = resolve normalize confKey 'images.store'
+
     # enforce folders existence at startup, synchronously!
     try 
       repoInit = true
-      # force Removal if specified
+      # force removal if specified
       if reset and fs.existsSync repository
         try
-          utils.removeSync repository 
+          removeSync repository 
           logger.debug "previous git repository removed..."
         catch err
           repoInit = false
           return callback err
 
-      utils.enforceFolderSync root, false, logger
-      
+      enforceFolderSync root, false, logger
+      enforceFolderSync executables, false, logger
+      enforceFolderSync imagesPath, false, logger
+      enforceFolderSync resolve(normalize confKey 'game.executable.target'), false, logger
+
       finished = (err) ->
         if err
           repoInit = false
@@ -127,20 +148,24 @@ module.exports =
 
         # creates also the git repository
         repo = git repository
-        repo.git 'config', {}, ['--file', pathUtil.join(repository, '.git', 'config'), 'user.name', 'mythic-forge'], (err) ->
+        repo.git 'config', {}, ['--file', join(repository, '.git', 'config'), 'user.name', 'mythic-forge'], (err) ->
           if err
             repoInit = false
             return callback err
-          repo.git 'config', {}, ['--file', pathUtil.join(repository, '.git', 'config'), 'user.email', 'mythic.forge.adm@gmail.com'], (err) ->
+          repo.git 'config', {}, ['--file', join(repository, '.git', 'config'), 'user.email', 'mythic.forge.adm@gmail.com'], (err) ->
             if err
               repoInit = false
               return callback err
-            logger.debug "git repository initialized !"
-            repoInit = false
-            callback null, root, repo
+            repo.git 'config', {}, ['--file', join(repository, '.git', 'config'), 'core.autocrlf', 'false'], (err) ->
+              if err
+                repoInit = false
+                return callback err
+              logger.debug "git repository initialized !"
+              repoInit = false
+              callback null, root, repo
 
       # Performs a 'git init' if git repository do not exists
-      unless fs.existsSync pathUtil.join repository, '.git'
+      unless fs.existsSync join repository, '.git'
         logger.debug "initialize git repository at #{repository}..."
         # make repository init not parralelizable, or we'll get git errors while trying to configure user infos
         git.init repository, finished
@@ -150,56 +175,6 @@ module.exports =
     catch err
       repoInit = false
       return callback err
-      
-
-  # Collapse history, from a given version to previous tag (or begining)
-  # Will create a tag to aim at the new collasped commit.
-  # The first original commit cannot never be collapsed.
-  #
-  # @param repo [Git] Git tools configured on the right repository
-  # @param tag [String] the tag name that will be used to create the collapse
-  # @param callback [Function] collapsing end function, invoked with
-  # @option callback err [String] an error details string, or null if no error occured.
-  collapseHistory: (repo, to, callback) ->
-    # get commit id corresponding to tag
-    quickTags repo, (err, tags) ->
-      return callback "failed to check tags: #{err}" if err?
-      names = _.pluck tags, 'name'
-
-      # checks tags validity
-      return callback "cannot reuse existing tag #{to}" if to in names
-
-      finish = ->
-        # then reset to it, leaving the working copy unmodified
-        repo.git 'reset', mixed:true, from, (err, stdout, stderr) ->
-          return callback "failed to go back to revision #{from}: #{err}" if err?
-
-          # now we can add and remove everything in only one commit
-          repo.add [], all:true, (err, stdout, stderr) ->
-            return callback "failed to add the working copy: #{err}" if err?
-            repo.commit "#{to}", all:true, (err, stdout, stderr) ->
-              # ignore warnings about empty working copy
-              err = null if err? and -1 isnt stdout?.indexOf 'nothing to commit'
-              return callback "failed to commit the working copy: #{err}" if err?
-
-              # creates the tag
-              repo.create_tag to, (err) ->
-                return callback "failed to create tag: #{err}" if eff?
-                # and at last run gc to clean repo
-                repo.git 'gc', aggressive:true, prune:'tomorrow', (err, stdout, stderr) ->
-                  return callback "failed to run garbage collector: #{err}" if err?
-                  callback null
-
-      if tags.length > 0
-        # get commit is corresponding to last tag
-        from = tags.pop().id
-        finish()
-      else
-        # get first commit
-        quickHistory repo, (err, history) ->
-          return callback "failed to check history: #{err}" if err?
-          from = history.pop().id
-          finish()
 
   # The Gift `repo.tags()` is awsomely slow, because it gets full details of tags and their commits
   # This function just returned tag names and their corresponding ids

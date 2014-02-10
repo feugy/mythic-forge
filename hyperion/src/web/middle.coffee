@@ -54,7 +54,8 @@ app = express()
 noSecurity = process.env.NODE_ENV is 'test'
 
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
-app.use express.bodyParser()
+app.use express.urlencoded()
+app.use express.json()
 app.use express.methodOverride()
 app.use corser.create
   origins:[
@@ -64,7 +65,6 @@ app.use corser.create
   methods: ['GET', 'HEAD', 'POST', 'DELETE', 'PUT']
 app.use express.session secret: 'mythic-forge' # mandatory for OAuth providers
 app.use passport.initialize()
-app.use passport.session()
 
 if certPath? and keyPath?
   caPath = utils.confKey 'ssl.ca', null
@@ -170,7 +170,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
 
   if scopes?
     # OAuth2 provider
-    passport.use  new strategy
+    passport.use new strategy
       clientID: utils.confKey "authentication.#{provider}.id"
       clientSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
@@ -180,7 +180,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
 
   else
     # OAuth provider
-    passport.use new TwitterStrategy
+    passport.use new strategy
       consumerKey: utils.confKey "authentication.#{provider}.id"
       consumerSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
@@ -207,7 +207,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     else
       state = req.session.state
     redirect = redirects[state]
-
+    
     passport.authenticate(provider, (err, token) ->
       # authentication failed
       return res.redirect "#{redirect}?error=#{err}" if err?
@@ -297,7 +297,7 @@ adminNS = io.of('/admin').authorization(checkAdmin).on 'connection', (socket) ->
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
-  exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback']
+  exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback', 'createVersion']
   exposeMethods ruleService, socket, [], ['export', 'resolve', 'execute']
 
   # do not expose all playerService methods, but just disconnection with the 'kick' message

@@ -19,10 +19,10 @@
 
 _ = require 'underscore'
 async = require 'async'
-pathUtils = require 'path'
+{join, dirname, resolve, normalize} = require 'path'
 fs = require 'fs-extra'
-gift = require 'gift'
 FSItem = require '../hyperion/src/model/FSItem'
+Executable = require '../hyperion/src/model/Executable'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 service = require('../hyperion/src/service/AuthoringService').get()
@@ -30,9 +30,12 @@ notifier = require('../hyperion/src/service/Notifier').get()
 logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
-root = utils.confKey 'game.dev'
-git = gift pathUtils.dirname root
-gitRoot = pathUtils.basename root
+repoRoot = resolve normalize utils.confKey 'game.repo'
+gameFiles = resolve normalize utils.confKey 'game.client.dev'
+gameRules = resolve normalize utils.confKey 'game.executable.source'
+repo = null
+file = null
+oldPath = null
 notifications = []
         
 describe 'AuthoringService tests', -> 
@@ -40,7 +43,12 @@ describe 'AuthoringService tests', ->
   before (done) ->
     @timeout 3000
     # re-initialize game repository
-    versionUtils.initGameRepo logger, true, done
+    versionUtils.initGameRepo logger, true, (err, _root, _repo) ->
+      return done err if err?
+      repo = _repo
+      Executable.resetAll false, (err) ->
+        return done err if err?
+        service.init done
 
   notifListener = (event, args...) ->
     notifications.push args if event is 'authoring'
@@ -63,32 +71,9 @@ describe 'AuthoringService tests', ->
       return done "Cannot save file: #{err}" if err?
       # then the file was saved
       assert.ok item.equals saved
-      fs.exists pathUtils.join(root, item.path), (exists) ->
+      fs.exists join(gameFiles, item.path), (exists) ->
         assert.ok exists, "file #{item.path} wasn't created"
-        # then it was added to version control
-        git.commits (err, history) ->
-          return done "Failed to check git log: #{err}" if err?
-          assert.equal 1, history.length
-          commit = history[0]
-          assert.equal commit.author.name, 'admin'
-          assert.equal commit.author.email, 'admin@unknown.org'
-          assert.equal commit.message, 'save'
-
-          # then a notification was issued
-          assert.equal 1, notifications.length
-          notif = notifications[0]
-          assert.equal notif[0], 'committed'
-          assert.equal notif[1], item.path
-          assert.equal notif[2].author, commit.author.name
-          assert.equal notif[2].date?.getTime(), commit.committed_date?.getTime()
-          assert.equal notif[2].id, commit.id
-          assert.equal notif[2].message, commit.message
-
-          commit.tree().find "#{gitRoot}/#{item.path}", (err, obj) ->
-            return done "Failed to check git details: #{err}" if err?
-            assert.isNotNull obj
-            assert.equal obj.name, item.path
-            done()
+        done()
 
   it 'should folder be created', (done) -> 
     # given a new file
@@ -101,7 +86,7 @@ describe 'AuthoringService tests', ->
 
       # then the file was saved
       assert.ok item.equals saved
-      fs.exists pathUtils.join(root, item.path), (exists) ->
+      fs.exists join(gameFiles, item.path), (exists) ->
         assert.ok exists, "folder #{item.path} wasn't created"
         done()
 
@@ -113,11 +98,11 @@ describe 'AuthoringService tests', ->
     ]
     before (done) ->
       # given a clean game source
-      utils.remove root, ->
+      utils.remove gameFiles, ->
         # and some file in it
         async.forEach ['file1.txt', 'file2.txt', 'folder/file3.txt', 'folder/file4.txt'], (file, next) ->
-          file = pathUtils.join root, file
-          fs.mkdirs pathUtils.dirname(file), (err) ->
+          file = join gameFiles, file
+          fs.mkdirs dirname(file), (err) ->
             return next err if err?
             fs.writeFile file, '', next
         , done
@@ -137,21 +122,16 @@ describe 'AuthoringService tests', ->
         done()
 
   describe 'given an existing file', ->
-    file = null
-    oldPath = null
 
     before (done) ->
-      # re-initialize game repository
-      versionUtils.initGameRepo logger, true, (err) ->
+      fs.readFile join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
         return done err if err?
-        fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
+        file = new FSItem 'folder/image1.png', false
+        file.content = data
+        service.save file, 'admin', (err, saved) ->
           return done err if err?
-          file = new FSItem 'folder/image1.png', false
-          file.content = data
-          service.save file, 'admin', (err, saved) ->
-            return done err if err?
-            file = saved
-            done()
+          file = saved
+          done()
 
     it 'should file content be read', (done) -> 
       file.content = null
@@ -159,27 +139,14 @@ describe 'AuthoringService tests', ->
       service.read file, (err, read) ->
         return done "Cannot read file: #{err}" if err?
         # then read data is correct
-        fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
+        fs.readFile join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
           return done err if err?
           assert.equal read.content, data.toString('base64')
           done()
-
-    it 'should file content be read at last version', (done) -> 
-      service.history file, (err, read, history) ->
-        return done err if err?
-
-        # when reading the file at last version
-        service.readVersion file, history[0].id, (err, read, content) ->
-          return done "Cannot read file at version: #{err}" if err?
-          # then read data is correct
-          fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
-            return done err if err?
-            assert.equal content, data.toString('base64')
-            done()
         
     it 'should file content be updated', (done) -> 
       # given a binary content
-      fs.readFile pathUtils.join(__dirname, 'fixtures', 'image2.png'), (err, data) ->
+      fs.readFile join(__dirname, 'fixtures', 'image2.png'), (err, data) ->
         return done err if err?
         file.content = data
         # when saving it 
@@ -189,47 +156,136 @@ describe 'AuthoringService tests', ->
           assert.ok file.equals saved
           assert.equal saved.content, data.toString('base64'),
           # then the saved content is equals
-          fs.readFile pathUtils.join(root, saved.path), (err, readData) ->
+          fs.readFile join(gameFiles, saved.path), (err, readData) ->
             return done err if err?
             assert.equal readData.toString('base64'), data.toString('base64')
-            # then it was the object of two entries in version control
-            git.commits (err, history) ->
-              return done "Failed to check git log: #{err}" if err?
-              assert.equal 2, history.length
+            done()
 
-              # then a notification was issued
-              assert.equal 1, notifications.length
-              notif = notifications[0]
-              assert.equal notif[0], 'committed'
-              assert.equal notif[1], saved.path
-              assert.equal notif[2].author, history[0].author.name
-              assert.equal notif[2].date?.getTime(), history[0].committed_date?.getTime()
-              assert.equal notif[2].id, history[0].id
-              assert.equal notif[2].message, history[0].message
+    it 'should file content be moved', (done) -> 
+      # when reading the folder
+      oldPath = "#{file.path}"
+      service.move file, 'folder5/newFile', 'admin', (err, moved) ->
+        return done "Cannot move file: #{err}" if err?
+        # then new file is created
+        assert.notEqual moved.path, oldPath
+        fs.exists join(gameFiles, moved.path), (exists) ->
+          assert.isTrue exists, "file #{file.path} wasn't moved"
+          # then content is correct
+          fs.readFile join(gameFiles, moved.path), (err, data) ->
+            assert.equal moved.content, data.toString('base64'),
+            # then old one removed
+            fs.exists join(gameFiles, oldPath), (exists) ->
+              assert.isFalse exists, "file #{oldPath} wasn't removed"
+              file = moved
+              done()
 
-              async.forEach history, (commit, next) ->
-                assert.equal commit.author.name, 'admin'
-                assert.equal commit.author.email, 'admin@unknown.org'
-                assert.equal commit.message, 'save'
-                commit.tree().find "#{gitRoot}/#{file.path.replace '\\', '/'}", (err, obj) ->
-                  return done "Failed to check git details: #{err}" if err?
-                  assert.isNotNull obj
-                  assert.equal obj.name, pathUtils.dirname file.path
-                  next()
-              , done
+    it 'should file be removed', (done) -> 
+      # when removing the file
+      service.remove file, 'admin', (err, removed) ->
+        return done "Cannot remove file: #{err}" if err?
+        # then the file was removed
+        assert.ok file.equals removed
+        fs.exists join(gameFiles, file.path), (exists) ->
+          assert.isFalse exists, "file #{file.path} wasn't removed"
+          done()
+
+  describe 'given a version controled file and executable', ->
+    executable = null
+    exeContent1 = 'greetings = "hello world"'
+    exeContent2 = 'greetings = "hello world v2"'
+
+    before (done) ->
+      # cleaning executables and client files
+      utils.empty gameFiles, (err) -> 
+        return done err if err?
+        utils.empty gameRules, (err) -> 
+          return done err if err?
+          # first version of file and executable
+          fs.readFile join(__dirname, 'fixtures', 'common.coffee.v1'), (err, data) ->
+            return done err if err?
+            file = new FSItem 'common.coffee', false
+            file.content = data
+            service.save file, 'admin', (err, saved) ->
+              return done err if err?
+              executable = new Executable id: 'test', content: exeContent1
+              executable.save (err) ->
+               return done err if err?
+               # first commit
+               repo.add [gameFiles.replace(repoRoot, ''), gameRules.replace(repoRoot, '')], {A: true}, (err) ->
+                return done err if err?
+                repo.commit 'first commit', (err) ->
+                  return done err if err?
+                  # second version of file and executable
+                  fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
+                    return done err if err?
+                    file.content = data
+                    service.save file, 'admin', (err, saved) ->
+                      return done err if err?
+                      executable.content = exeContent2
+                      executable.save (err) ->
+                        return done err if err?
+                        # second commit
+                        repo.add [gameFiles.replace(repoRoot, ''), gameRules.replace(repoRoot, '')], {A: true}, (err) ->
+                          return done err if err?
+                          repo.commit 'second commit', done
+
+    it 'should file content be read at last version', (done) -> 
+      service.history file, (err, read, history) ->
+        return done err if err?
+        assert.equal history.length, 2
+        assert.equal history[0].message, 'second commit'
+
+        # when reading the file at last version
+        service.readVersion file, history[0].id, (err, read, content) ->
+          return done "Cannot read file at version: #{err}" if err?
+          # then read data is correct
+          fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
+            return done err if err?
+            assert.equal content, data.toString('base64')
+            done()
+
+    it 'should executable content be read at last version', (done) -> 
+      service.history executable, (err, read, history) ->
+        return done err if err?
+        assert.equal history.length, 2
+        assert.equal history[0].message, 'second commit'
+
+        # when reading the executable at last version
+        service.readVersion executable, history[0].id, (err, read, content) ->
+          return done "Cannot read file at version: #{err}" if err?
+          # then read data is correct
+          assert.ok executable.equals read
+          assert.equal content, new Buffer(exeContent2).toString('base64')
+          done()
 
     it 'should file content be read at first version', (done) -> 
       service.history file, (err, read, history) ->
         return done err if err?
+        assert.equal history.length, 2
+        assert.equal history[1].message, 'first commit'
 
         # when reading the file at first version
         service.readVersion file, history[1].id, (err, read, content) ->
           return done "Cannot read file at version: #{err}" if err?
           # then read data is correct
-          fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
+          fs.readFile join(__dirname, 'fixtures', 'common.coffee.v1'), (err, data) ->
             return done err if err?
             assert.equal content, data.toString('base64')
             done()
+
+    it 'should executable content be read at first version', (done) -> 
+      service.history executable, (err, read, history) ->
+        return done err if err?
+        assert.equal history.length, 2
+        assert.equal history[1].message, 'first commit'
+
+        # when reading the file at first version
+        service.readVersion executable, history[1].id, (err, read, content) ->
+          return done "Cannot read file at version: #{err}" if err?
+          # then read data is correct
+          assert.ok executable.equals read
+          assert.equal content, new Buffer(exeContent1).toString('base64')
+          done()
 
     it 'should file history be consulted', (done) ->
       # when consulting history for this file
@@ -239,101 +295,39 @@ describe 'AuthoringService tests', ->
         assert.ok file.equals read
         for i in [0..1]
           assert.instanceOf history[i].date, Date
-          assert.equal 'admin', history[i].author
-        assert.deepEqual ['save', 'save'], _.pluck history, 'message'
+          assert.equal 'mythic-forge', history[i].author
+        assert.deepEqual ['second commit', 'first commit'], _.pluck history, 'message'
         done()
 
-    it 'should file content be moved', (done) -> 
-      # when reading the folder
-      oldPath = "#{file.path}"
-      service.move file, 'folder5/newFile', 'admin', (err, moved) ->
-        return done "Cannot move file: #{err}" if err?
-        # then new file is created and old one removed
-        assert.notEqual moved.path, oldPath
-        fs.exists pathUtils.join(root, moved.path), (exists) ->
-          assert.isTrue exists, "file #{file.path} wasn't moved"
-          # then content is correct
-          fs.readFile pathUtils.join(root, moved.path), (err, data) ->
-            assert.equal moved.content, data.toString('base64'),
-            fs.exists pathUtils.join(root, oldPath), (exists) ->
-              assert.isFalse exists, "file #{oldPath} wasn't removed"
-              file = moved
-              # then it was registered into version control
-              git.commits (err, history) ->
-                return done "Failed to check git log: #{err}" if err?
-                assert.equal 3, history.length
-                commit = history[0]
-                assert.equal commit.author.name, 'admin'
-                assert.equal commit.author.email, 'admin@unknown.org'
-                assert.equal commit.message, 'move'
-
-                # then a notification was issued
-                assert.equal 1, notifications.length
-                notif = notifications[0]
-                assert.equal notif[0], 'committed'
-                assert.equal notif[1], moved.path
-                assert.equal notif[2].author, commit.author.name
-                assert.equal notif[2].date?.getTime(), commit.committed_date?.getTime()
-                assert.equal notif[2].id, commit.id
-                assert.equal notif[2].message, commit.message
-
-                # then the new path was created
-                commit.tree().find "#{gitRoot}/#{moved.path.replace '\\', '/'}", (err, obj) ->
-                  return done "Failed to check git details: #{err}" if err?
-                  assert.isNotNull obj
-                  assert.equal obj.name, pathUtils.dirname moved.path
-
-                  # then the old path was removed
-                  commit.tree().find "#{gitRoot}/#{oldPath.replace '\\', '/'}", (err, obj) ->
-                    return done "Failed to check git details: #{err}" if err?
-                    assert.isNull obj
-                    done()
-
-    it 'should file history be be kept after move', (done) ->
+    it 'should executable history be consulted', (done) ->
       # when consulting history for this file
-      service.history file, (err, read, history) ->
+      service.history executable, (err, read, history) ->
         return done "Cannot get history: #{err}" if err?
-        assert.equal 3, history.length
-        assert.ok file.equals read
+        assert.ok executable.equals read
+        assert.equal 2, history.length
         for i in [0..1]
           assert.instanceOf history[i].date, Date
-          assert.equal 'admin', history[i].author
-        assert.deepEqual ['move', 'save', 'save'], _.pluck history, 'message'
+          assert.equal 'mythic-forge', history[i].author
+        assert.deepEqual ['second commit', 'first commit'], _.pluck history, 'message'
         done()
 
-    it 'should file be removed', (done) -> 
-      # when removing the file
-      service.remove file, 'admin', (err, removed) ->
-        return done "Cannot remove file: #{err}" if err?
-        # then the file was removed
-        assert.ok file.equals removed
-        fs.exists pathUtils.join(root, file.path), (exists) ->
-          assert.isFalse exists, "file #{file.path} wasn't removed"
-
-          # then nonotification issued
-          assert.equal 0, notifications.length
-
-          # then it was removed from version control
-          git.commits (err, history) ->
-            return done "Failed to check git log: #{err}" if err?
-            assert.equal 4, history.length
-            commit = history[0]
-            assert.equal commit.author.name, 'admin'
-            assert.equal commit.author.email, 'admin@unknown.org'
-            assert.equal commit.message, 'remove'
-            commit.tree().find "#{gitRoot}/#{file.path.replace '\\', '/'}", (err, obj) ->
-              return done "Failed to check git details: #{err}" if err?
-              assert.isNull obj
-              done()
-
-    it 'should removed file appears in restorable list', (done) ->
-      # when consulting history for this file
-      service.restorables (err, restorables) ->
-        return done "Cannot get restorables: #{err}" if err?
-        assert.equal 2, restorables.length
-        assert.ok restorables[0].item.equals file, 'deleted file not found as first restorable'
-        assert.ok restorables[1].item.equals {path: oldPath}, 'moved file not found as second restorable'
-        done()
+    it 'should removed file and executable appears in restorable list', (done) ->
+      # given a removed file
+      service.remove file, 'admin', (err) ->
+        return done err if err?
+        executable.remove (err) ->
+          return done err if err?
+          repo.add [gameFiles.replace(repoRoot, ''), gameRules.replace(repoRoot, '')], {A: true}, (err) ->
+            return done err if err?
+            repo.commit 'third commit', (err) ->
+              return done err if err?
+              # when consulting history for this file
+              service.restorables (err, restorables) ->
+                return done "Cannot get restorables: #{err}" if err?
+                assert.equal 2, restorables.length
+                assert.ok restorables[1].item.equals(file), 'deleted file not found as second restorable'
+                assert.ok restorables[0].item.equals(executable), 'deleted executable not found as first restorable'
+                done()
 
   describe 'given an existing folder', ->
     folder = null
@@ -345,7 +339,7 @@ describe 'AuthoringService tests', ->
         return done err if err?
         folder = saved
         async.forEachSeries ['file1.txt', 'file2.txt'], (file, next) ->
-          item = new FSItem pathUtils.join(folder.path, file), false
+          item = new FSItem join(folder.path, file), false
           files.push item
           service.save item, 'admin', next
         , (err) ->
@@ -374,9 +368,9 @@ describe 'AuthoringService tests', ->
         return done "Cannot move folder: #{err}" if err?
         # then new folder is created and old one removed
         assert.notEqual moved.path, oldPath
-        fs.exists pathUtils.join(root, moved.path), (exists) ->
+        fs.exists join(gameFiles, moved.path), (exists) ->
           assert.isTrue exists, "folder #{folder.path} wasn't moved"
-          fs.exists pathUtils.join(root, oldPath), (exists) ->
+          fs.exists join(gameFiles, oldPath), (exists) ->
             assert.isFalse exists, "folder #{oldPath} wasn't removed"
             folder = moved
             done()
@@ -390,6 +384,6 @@ describe 'AuthoringService tests', ->
 
         # then the file was removed
         assert.ok folder.equals removed
-        fs.exists pathUtils.join(root, folder.path), (exists) ->
+        fs.exists join(gameFiles, folder.path), (exists) ->
           assert.isFalse exists, "folder #{folder.path} wasn't removed"
           done()

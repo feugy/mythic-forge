@@ -53,8 +53,9 @@ Item = typeFactory 'Item',
     type: String
     default: null
     set: (value) ->
-      # force transition to appear in modifiedPath, to allow propagation
-      @markModified 'transition'
+      if value isnt @_doc.transition
+        # force transition to appear in modifiedPath, to allow propagation
+        @markModified 'transition'
       value
 
   # For quantifiable items, available quantity
@@ -66,6 +67,7 @@ Item = typeFactory 'Item',
   typeClass: 'ItemType'
   strict: false
   middlewares:
+    
     # pre-init middleware: retrieve the map corresponding to the stored id.
     #
     # @param item [Item] the initialized item.

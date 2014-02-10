@@ -52,9 +52,13 @@ rid = null
 # @return a generated id
 generateId = -> "req#{Math.floor Math.random()*10000}"
 
-describe 'server tests', ->
+describe 'Server tests', ->
 
   before (done) ->
+    # enforce folders existence
+    utils.enforceFolderSync utils.confKey 'game.executable.source'
+    utils.enforceFolderSync utils.confKey 'game.client.dev'
+    utils.enforceFolderSync utils.confKey 'images.store'
     # given a working server
     server.listen port, 'localhost', done
 
@@ -301,7 +305,7 @@ describe 'server tests', ->
 
         beforeEach (done) ->
           # Empties the compilation and source folders content
-          utils.empty utils.confKey('executable.source'), (err) -> 
+          utils.empty utils.confKey('game.executable.source'), (err) -> 
             Executable.resetAll true, (err) -> 
               return done err if err?
               script = new Executable 
@@ -320,7 +324,7 @@ describe 'server tests', ->
                   )()"""
 
               script.save (err) ->
-                return done err if err?
+                return done "hi there! #{err}" if err?
                 done()
 
         it 'should types be searchable', (done) ->

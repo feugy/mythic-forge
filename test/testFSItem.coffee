@@ -153,7 +153,7 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
 
 # Empties the root folder and re-creates it.
 cleanRoot = (done) ->
-  root = utils.confKey 'game.dev'
+  root = utils.confKey 'game.client.dev'
   utils.remove root, (err) ->
     return done err if err?
     fs.mkdirs root, done

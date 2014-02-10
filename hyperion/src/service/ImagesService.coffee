@@ -20,21 +20,14 @@
 
 _ = require 'underscore'
 fs = require 'fs-extra'
-pathUtils = require 'path'
-utils = require '../util/common'
+{join, normalize, resolve} = require 'path'
+{confKey} = require '../util/common'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
 logger = require('../util/logger').getLogger 'service'
 
-      
-imagesPath = pathUtils.resolve pathUtils.normalize utils.confKey 'images.store'
-# enforce folder existence
-utils.enforceFolderSync imagesPath, false, logger
-# check that is not sibling of game dev
-game = pathUtils.resolve pathUtils.normalize utils.confKey 'game.dev'
-throw new Error "image.store must not be sibling or under game.dev" if 0 is pathUtils.dirname(imagesPath).indexOf pathUtils.dirname game
-
+imagesPath = resolve normalize confKey 'images.store'
 supported = ['ItemType', 'FieldType', 'EventType']
 
 # The ImagesService allow to save and remove images associated to a given model.
@@ -94,7 +87,7 @@ class _ImagesService
       proceed = (err) =>
         return callback "Failed to save image #{suffix} on model #{model.id}: #{err}" if err? and err.code isnt 'ENOENT'
         fileName = "#{model.id}-#{suffix}.#{ext}"
-        fs.writeFile pathUtils.join(imagesPath, fileName), new Buffer(imageData, 'base64'), (err) =>
+        fs.writeFile join(imagesPath, fileName), new Buffer(imageData, 'base64'), (err) =>
           return callback "Failed to save image #{suffix} on model #{model.id}: #{err}" if err?
           # updates correct attribute
           if suffix is 'type'
@@ -116,14 +109,14 @@ class _ImagesService
           model.save (err, saved) =>
             if err?
               # removes image
-              fs.unlink pathUtils.join imagesPath, fileName
+              fs.unlink join imagesPath, fileName
               return callback "Failed to save image #{suffix} on model #{model.id}: #{err}"
             # everything's fine
             callback null, saved
 
       # removes the existing file if necessary
       if existing
-        fs.unlink pathUtils.join(imagesPath, existing), proceed
+        fs.unlink join(imagesPath, existing), proceed
       else 
         proceed()
 
@@ -176,7 +169,7 @@ class _ImagesService
         else throw new Error "semove must be called with arguments (model, [idx], callback)"
 
       # removes the existing file
-      fs.unlink pathUtils.join(imagesPath, existing), (err) =>
+      fs.unlink join(imagesPath, existing), (err) =>
         return callback "Failed to remove image #{suffix} on model #{model.id}: #{err}" if err? and err.code isnt 'ENOENT'
         # updates correct attribute
         if args.length is 1

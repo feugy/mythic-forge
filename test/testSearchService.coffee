@@ -388,7 +388,7 @@ describe 'SearchService tests', ->
 
     before (done) ->
       # Empties the compilation and source folders content
-      utils.empty utils.confKey('executable.source'), (err) -> 
+      utils.empty utils.confKey('game.executable.source'), (err) -> 
         Executable.resetAll true, (err) -> 
           return done err if err?
           Map.collection.drop -> 

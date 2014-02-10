@@ -27,7 +27,7 @@ assert = require('chai').assert
 
 executable = null
 listener = null
-root =  utils.confKey 'executable.source'
+root =  utils.confKey 'game.executable.source'
 
 describe 'Executable tests', -> 
 
@@ -137,7 +137,7 @@ describe 'Executable tests', ->
     # when saving it
     executable.save (err) ->
       # then an error is reported
-      assert.include err, "Unexpected 'STRING'"
+      assert.include err, 'unexpected "hello world"'
 
       # then it's not on the file system
       Executable.find (err, executables) ->

@@ -59,7 +59,7 @@ describe 'RuleService tests', ->
       notifications.push args
     ItemType.collection.drop -> Item.collection.drop ->
       # Empties the compilation and source folders content
-      utils.empty utils.confKey('executable.source'), (err) -> 
+      utils.empty utils.confKey('game.executable.source'), (err) -> 
         FieldType.collection.drop -> Field.collection.drop ->
           EventType.collection.drop -> Event.collection.drop ->
             Map.collection.drop -> Map.loadIdCache ->

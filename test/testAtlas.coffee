@@ -29,7 +29,7 @@ utils = require '../hyperion/src/util/common'
 
 port = utils.confKey 'server.apiPort'
 rootUrl = "http://localhost:#{port}"
-root = utils.confKey 'game.dev'
+root = utils.confKey 'game.client.dev'
 
 describe 'Atlas browser tests', ->
 

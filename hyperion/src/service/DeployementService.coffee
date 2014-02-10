@@ -23,7 +23,6 @@ pathUtils = require 'path'
 coffee = require 'coffee-script'
 stylus = require 'stylus'
 fs = require 'fs-extra'
-git = require 'gift'
 async = require 'async'
 requirejs = require 'requirejs'
 utils = require '../util/common'
@@ -121,9 +120,9 @@ class _DeployementService
         callback err
 
       # first, clean to optimized destination
-      folder = pathUtils.resolve pathUtils.normalize utils.confKey 'game.optimized'
-      production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
-      save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
+      folder = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.optimized'
+      production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.production'
+      save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
 
       notifier.notify 'deployement', 'DEPLOY_START', 1, @_deployed, @_deployer
 
@@ -154,7 +153,7 @@ class _DeployementService
                     fs.mkdir save, (err) =>
                       return error "Failed to create save folder: #{err}" if err?
                       fs.copy production, save, (err) =>
-                        return error "Failed to save current production: #{err}" if err? and !(Array.isArray err) # when production do not exists
+                        return error "Failed to save current production: #{err}" if err? and err.code isnt 'ENOENT' # when production do not exists
                         logger.debug "old version saved"
                         fs.remove production, (err) =>
                           return error "Failed to clean production folder: #{err}" if err? and err.code isnt 'ENOENT'
@@ -192,7 +191,7 @@ class _DeployementService
 
   # Commit definitively the current deployement, and send 'deployment' notifications
   # with relevant step name and number: 
-  # 1 - creates a version named after version used in `deploy` and compact history (COMMIT_START)
+  # 1 - creates a version named after version used in `deploy` (COMMIT_START)
   # 2 - removes the previous game save (COMMIT_END)
   #
   # @param email [String] the author email, that must be an existing player email
@@ -208,16 +207,13 @@ class _DeployementService
       notifier.notify 'deployement', 'COMMIT_FAILED', err
       callback err
 
-    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
+    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
 
     notifier.notify 'deployement', 'COMMIT_START', 1
     
-    # first compact git history and create tag
-    versionUtils.collapseHistory repo, @_deployed, (err) =>
-      return error "Failed to collapse history: #{err}" if err?
-      logger.debug "git history compacted"
-
-      notifier.notify 'deployement', 'VERSION_CREATED', 2, @_deployed
+    # first create tag
+    @createVersion @_deployed, @_deployer, 2, (err) =>
+      return error "Failed to create version: #{err}" if err?
 
       # at least, remove save folder
       fs.remove save, (err) =>
@@ -245,8 +241,8 @@ class _DeployementService
     return callback 'Deploy not finished' if @_deployPending
     @_deployPending = true
 
-    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.save'
-    production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.production'
+    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
+    production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.production'
 
     error = (err) =>
       notifier.notify 'deployement', 'ROLLBACK_FAILED', err
@@ -311,9 +307,15 @@ class _DeployementService
   # Creates a given version of the game client.
   # 
   # @param version [String] the desired version
+  # @param email [String] the author email, that must be an existing player email
+  # @param notifNumber [Integer] notification number, default to 1
   # @param callback [Function] invoked when version is created
   # @option callback err [String] an error message, or null if no error occures
-  createVersion: (version, callback) =>
+  createVersion: (version, email, notifNumber, callback) =>
+    # default values
+    if _.isFunction notifNumber
+      callback = notifNumber
+      notifNumber = 1
     return callback 'Spaces not allowed in version names' unless -1 is version.indexOf ' '
     # get tags first
     listVersions (err, versions) =>
@@ -321,12 +323,27 @@ class _DeployementService
       # check that we know version
       return callback "Cannot reuse existing version #{version}" if version in versions
 
-      # and at last ceates the tag
-      repo.create_tag version, (err) ->
-        return callback "failed to create version: #{err}" if eff?
-        notifier.notify 'deployement', 'VERSION_CREATED', 1, version
+      require('./PlayerService').get().getByEmail email, (err, author) =>
+        return callback "Failed to get author: #{err}" if err?
+        return callback "No author with email #{email}" unless author?
+        
+        dev = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.dev'
+        rules = pathUtils.resolve pathUtils.normalize utils.confKey 'game.executable.source'
+        # add game files and executables
+        repo.add [dev, rules], {'ignore-errors': true, A:true}, (err) ->
+          return callback "Failed to add files to version: #{err}" if err?
+          # TODO use version message
+          repo.commit version, {author: versionUtils.getAuthor author}, (err, stdout) =>
+            # ignore commit warning, for example about line endings
+            err = null if err?.code is 1 and -1 isnt "#{err}".indexOf 'warning:'
+            return callback "Failed to commit: #{utils.purgeFolder err, root} #{utils.purgeFolder stdout, root}" if err?
+            
+            # and at last ceates the tag
+            repo.create_tag version, (err) ->
+              return callback "Failed to create version: #{err}" if err?
+              notifier.notify 'deployement', 'VERSION_CREATED', notifNumber, version
 
-        callback null
+              callback null
 
   # Restore a given version of the game client.
   # All modification made between the previous version and now will be lost.

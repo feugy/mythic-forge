@@ -120,7 +120,7 @@ describe 'EventType tests', ->
         # then it's in mongo anymore
         EventType.find {}, (err, types) ->
           return done err if err?
-          assert.equal types.length, 0
+          assert.equal types?.length or 0, 0
           done()
 
     it 'should type properties be created', (done) ->

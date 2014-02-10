@@ -116,54 +116,56 @@ describe 'ItemType tests', ->
       new Item(type: type).save (err, saved) ->
         return done err if err?
 
-        assert.isNull saved.time
+        setTimeout ->
+          assert.isNull saved.time
 
-        # when setting the default value to a valid string
-        type.setProperty 'time', 'date', "2012-10-12T08:00:00.000Z"
-        type.save (err, saved) ->
-          return done err if err?
-
-          # then the default value is a date
-          assert.instanceOf saved.properties.time.def, Date 
-          assert.deepEqual saved.properties.time.def, new Date("2012-10-12T08:00:00.000Z")
-          type = saved
-
-           # then a saved instance will have a date default value
-          new Item(type: type).save (err, saved) ->
+          # when setting the default value to a valid string
+          type.setProperty 'time', 'date', "2012-10-12T08:00:00.000Z"
+          type.save (err, saved) ->
             return done err if err?
 
-            assert.instanceOf saved.time, Date
-            assert.deepEqual saved.time, new Date("2012-10-12T08:00:00.000Z")
+            # then the default value is a date
+            assert.instanceOf saved.properties.time.def, Date 
+            assert.deepEqual saved.properties.time.def, new Date("2012-10-12T08:00:00.000Z")
+            type = saved
 
-            # when setting the default value to a valid date
-            time = new Date()
-            type.setProperty 'time', 'date', time
-            type.save (err, saved) ->
+             # then a saved instance will have a date default value
+            new Item(type: type).save (err, saved) ->
               return done err if err?
 
-              # then the default value is a date
-              assert.instanceOf saved.properties.time.def, Date 
-              assert.deepEqual saved.properties.time.def, time
-              type = saved
+              assert.instanceOf saved.time, Date
+              assert.deepEqual saved.time, new Date("2012-10-12T08:00:00.000Z")
 
-              # then a saved instance will have a date default value
-              new Item(type: type).save (err, saved) ->
-                return done err if err? 
+              # when setting the default value to a valid date
+              time = new Date()
+              type.setProperty 'time', 'date', time
+              type.save (err, saved) ->
+                return done err if err?
 
-                assert.instanceOf saved.time, Date
-                assert.deepEqual saved.time, time
+                # then the default value is a date
+                assert.instanceOf saved.properties.time.def, Date 
+                assert.deepEqual saved.properties.time.def, time
+                type = saved
 
-                # when saving an instance with an invalid date
-                new Item(type: type, time: "invalid").save (err) ->
-                  # then an error is raised
-                  assert.include err.message, "isn't a valid date"
+                # then a saved instance will have a date default value
+                new Item(type: type).save (err, saved) ->
+                  return done err if err? 
 
-                  # when saving the type property instance with an invalid date
-                  type.setProperty 'time', 'date', "true"
-                  type.save (err, saved) ->
+                  assert.instanceOf saved.time, Date
+                  assert.deepEqual saved.time, time
+
+                  # when saving an instance with an invalid date
+                  new Item(type: type, time: "invalid").save (err) ->
                     # then an error is raised
                     assert.include err.message, "isn't a valid date"
-                    done()
+
+                    # when saving the type property instance with an invalid date
+                    type.setProperty 'time', 'date', "true"
+                    type.save (err, saved) ->
+                      # then an error is raised
+                      assert.include err.message, "isn't a valid date"
+                      done()
+        , 500
 
   describe 'given a type with a property', ->
     beforeEach (done) ->

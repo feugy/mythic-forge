@@ -73,8 +73,8 @@ modelWatcher.on 'executableReset', (removed) ->
 loadIdCache()
 
 # Extends _registerHook to construct dynamic properties in Document constructor
-original_registerHooks = mongoose.Document::_registerHooks
-mongoose.Document::_registerHooks = ->
+original_registerHooks = mongoose.Document::$__registerHooks
+mongoose.Document::$__registerHooks = ->
   ret = original_registerHooks.apply @, arguments
   @_defineProperties()
   ret
@@ -260,7 +260,7 @@ module.exports = (typeName, spec, options = {}) ->
   # @option callback err [String] an error string, or null if no error occured
   # @option callback obj [Array] the found types. May be empty.
   AbstractType.statics.findCached = (ids, callback) ->
-    ids = _.uniq ids;
+    ids = _.uniq(ids) or [];
     notCached = []
     cached = []
     # first look into the cache (order is preserved)
@@ -314,6 +314,8 @@ module.exports = (typeName, spec, options = {}) ->
       # removes all images that starts with the id from the image store.
       id = @id
       fs.readdir imageStore, (err, files) ->
+        # during test, image folder may have been deleted
+        return if err?.code is 'ENOENT'
         for file in files when file.indexOf("#{id}-") is 0
           fs.unlink path.join imageStore, file
 
@@ -523,7 +525,7 @@ module.exports = (typeName, spec, options = {}) ->
     # Calling it with an argument indicates the the validation failed and cancel the instante save.
     AbstractType.pre 'save', (next) ->
       return next new Error "Cannot save instance #{@_className} (#{@id}) without type" unless @type?
-                    
+
       properties = @type.properties
       # get through all existing attributes
       attrs = Object.keys @_doc;
@@ -538,7 +540,7 @@ module.exports = (typeName, spec, options = {}) ->
 
       # set the default values
       for prop, value of properties
-
+      
         if undefined is @_doc[prop]
           @_doc[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
 

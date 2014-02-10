@@ -49,7 +49,7 @@ confs = []
 fsItem = null
 listener = null
 awaited = false
-gameClientRoot = utils.confKey 'game.dev'
+gameClientRoot = utils.confKey 'game.client.dev'
 
 describe 'AdminService tests', -> 
 
@@ -63,7 +63,7 @@ describe 'AdminService tests', ->
     maps = []
     event = []
     confs = []
-    utils.empty utils.confKey('executable.source'), ->
+    utils.empty utils.confKey('game.executable.source'), ->
       Executable.resetAll true, (err) -> 
         return done err if err?
         ItemType.collection.drop -> Item.collection.drop ->
@@ -190,7 +190,7 @@ describe 'AdminService tests', ->
 
   it 'should list returns fsItems in root', (done) ->
     # given a clean empty folder root
-    utils.remove pathUtils.dirname(gameClientRoot), (err) -> 
+    utils.remove gameClientRoot, (err) -> 
       return done err if err?
       authoringService.init (err) ->
         return done err if err?
@@ -346,7 +346,7 @@ describe 'AdminService tests', ->
     # when saving new executable
     service.save 'Executable', values, 'admin', (err) ->
       # then the compilation error is reported
-      assert.include err, "Unexpected 'STRING'"
+      assert.include err, 'unexpected "hello world 3"'
 
       # then the model does not exist in cache
       Executable.findCached [values.id], (err, objs) ->

@@ -269,7 +269,7 @@
             return Atlas[className].fetch [changes.id], callback
           else
             return callback null 
-        options.debug && console.log "process update for model #{model.id} (#{className})", changes
+        options.debug and console.log "process update for model #{model.id} (#{className})", changes
         # then, update the local cache
         modifiedFields = []
         for attr, value of changes

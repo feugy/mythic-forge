@@ -4,14 +4,14 @@ requirejs.onError = (err) -> throw err
 
 requirejs.config  
   paths:
-    'async': 'async-0.2.7-min'
-    'chai': 'chai-1.5.0'
+    'async': 'async-0.2.10'
+    'chai': 'chai-1.9.0'
     'backbone': 'backbone-1.0.0-min'
-    'jquery': 'jquery-2.0.0-min'
-    'mocha': 'mocha-1.9.0'
-    'socket.io': 'socket.io-0.9.10'
-    'underscore': 'underscore-1.4.4-min'
-    'underscore.string': 'underscore.string-2.3.0-min'
+    'jquery': 'jquery-2.1.0-min'
+    'mocha': 'mocha-1.17.1'
+    'socket.io': 'socket.io-0.9.11'
+    'underscore': 'underscore-1.5.2-min'
+    'underscore.string': 'underscore.string-2.3.3-min'
     
   shim:
     'async':
@@ -39,7 +39,7 @@ require [
   'async'
 ], (require, mocha, async) ->
 
-  mocha.setup ui:'bdd', bail:true
+  mocha.setup ui:'bdd'
   window.async = async
   
   # now require tests

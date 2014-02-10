@@ -354,4 +354,13 @@ emitter.relativePath = (aPath, bPath) ->
     path += pathUtils.sep unless i is stepBack-1
   "#{path}#{suffix}" 
 
+# Simple method to remove occurence of the root path from error messages
+#
+# @param err [Error|String] purged error or string
+# @param root [String] root folder path removed from string.
+# @return the pureged string.
+emitter.purgeFolder = (err, root) -> 
+  err = err.message if emitter.isA err, Error
+  err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), '' if 'string'
+
 module.exports = emitter

@@ -35,7 +35,7 @@ loggerWorker = LoggerFactory.getLogger 'worker'
   
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
-compiledRoot = pathUtils.resolve pathUtils.normalize utils.confKey 'executable.target'
+compiledRoot = pathUtils.resolve pathUtils.normalize utils.confKey 'game.executable.target'
 pathToHyperion = utils.relativePath(compiledRoot, pathUtils.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 pathToNodeModules = utils.relativePath(compiledRoot, "#{pathUtils.join __dirname, '..', '..', '..', 'node_modules'}/".replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 

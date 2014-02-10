@@ -3,8 +3,9 @@
 - Hyperion
   - Bugs
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
-    - temper executable require after resetAll 
     - item in player character is still present after a map deletion
+  - use socks.js to replace socket.io
+  - refactor configuration from json to yaml
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
@@ -13,6 +14,7 @@
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
+    - use github as authentication method
     - token expiration: no refresh on operations
 
 - Rheia
@@ -41,6 +43,7 @@
 
 - Hyperion
   - Bugs
+    - temper executable require during resetAll until all executable compilation
     - avoid message collision between ruleService and ruleExecutor on same executed method
     - avoid sending duplicates to Mongo on saves (fix duplicate key error)
     - fix infinite loop while detecting model changes before save
@@ -116,15 +119,14 @@
     - service layer
     - web layer
     - commit FSItem on save
-    - get FSItem history
-    - get FSItem version
-    - keep history when moving FSItem
-    - list deleted files
+    - get FSItem/Executable history
+    - get FSItem/Executable version
+    - list deleted FSItem/Executable
   - Authoring Service and game deployment
     - compile stylus, coffee and optimize js and css
     - move to production path and create unic url for resources
-    - compact git history and create version
-    - revert to previous version
+    - create git version (files and executables)
+    - revert to previous version (files and executables)
     - list existing versions and current
     - allow/block non-administrator login
     - return current version and deployed version

@@ -24,7 +24,7 @@ utils = require '../util/common'
 logger = require('../util/logger').getLogger 'watcher'
 EventEmitter = require('events').EventEmitter
 
-gameClientRoot = utils.confKey 'game.dev'
+gameClientRoot = utils.confKey 'game.client.dev'
 
 # The ModelWatcher track model modifications.
 # It exposes a singleton class. The unic instance is retrieved by the `get()` method.

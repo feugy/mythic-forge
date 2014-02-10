@@ -43,7 +43,7 @@ describe 'GameService tests', ->
 
   beforeEach (done) ->
     # cleans ItemTypes and Items
-    utils.empty utils.confKey('executable.source'), (err) -> 
+    utils.empty utils.confKey('game.executable.source'), (err) -> 
       return done err if err?
       Executable.resetAll true, (err) -> 
         return done err if err?

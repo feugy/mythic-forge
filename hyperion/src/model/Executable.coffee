@@ -19,7 +19,7 @@
 'use strict'
 
 _ = require 'underscore'
-fs = require 'fs'
+fs = require 'fs-extra'
 path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
@@ -54,18 +54,13 @@ hintOpts =
   node: true
 
 Item = null
-root = path.resolve path.normalize utils.confKey 'executable.source'
-compiledRoot = path.resolve path.normalize utils.confKey 'executable.target'
-encoding = utils.confKey 'executable.encoding', 'utf8'
+root = path.resolve path.normalize utils.confKey 'game.executable.source'
+compiledRoot = path.resolve path.normalize utils.confKey 'game.executable.target'
+encoding = utils.confKey 'game.executable.encoding', 'utf8'
 supported = ['.coffee', '.js']
 requirePrefix = 'hyperion'
 pathToHyperion = utils.relativePath(compiledRoot, path.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 pathToNodeModules = utils.relativePath(compiledRoot, path.join(__dirname, '..', '..', '..', 'node_modules').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
-
-utils.enforceFolderSync root, false, logger
-# check that is not sibling of game dev
-game = path.resolve path.normalize utils.confKey 'game.dev'
-throw new Error "executable.source must not be sibling or under game.dev" if 0 is path.dirname(root).indexOf path.dirname game
 
 # when receiving a change from another worker, update the executable cache
 modelWatcher.on 'change', (operation, className, changes, wId) ->
@@ -101,7 +96,7 @@ cleanNodeCache = ->
 # @param callback [Function] end callback, invoked when the compilation is done with the following parameters
 # @option callback err [String] an error message. Null if no error occured
 # @option callback executable [Executable] the compiled executable
-compileFile = (executable, silent, callback) ->
+compileFile = (executable, callback) ->
   # replace requires with references to hyperion
   content = executable.content.replace new RegExp("(require\\s*\\(?\\s*[\"'])#{requirePrefix}", 'g'), "$1#{pathToHyperion}"
   # replace requires with references to node_modules
@@ -127,37 +122,44 @@ compileFile = (executable, silent, callback) ->
     # clean require cache.
     cleanNodeCache()
 
-    process = ->
-      previousMeta = _.clone executable.meta
-      try 
-        executable.meta = 
-          kind: 'Script'
-        # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
-        # and singleton (like ModuleWatcher) will be broken.
-        obj = require pathUtils.relative __dirname, executable.compiledPath
-        if obj? and utils.isA obj, TurnRule
-          executable.meta.active = obj.active
-          executable.meta.rank = obj.rank
-          executable.meta.kind = 'TurnRule'
-        else if obj? and utils.isA obj, Rule
-          executable.meta.active = obj.active
-          executable.meta.category = obj.category
-          executable.meta.kind = 'Rule'
-        else
-          executable.meta.kind = 'Script'
-      catch err
-        return callback "failed to require executable #{executable.id}: #{err}"
-
-      # propagate change
-      unless silent
-        modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable
-        delete wasNew[executable.id]
-      # and invoke final callback
-      callback null, executable
-
     # add a name key inside default configuration if type is new
-    return process() unless wasNew[executable.id]
-    modelUtils.addConfKey executable.id, 'names', executable.id, logger, process
+    return callback null unless wasNew[executable.id]
+    modelUtils.addConfKey executable.id, 'names', executable.id, logger, callback
+
+# Require an executable, and populate its meta datas
+#
+# @param executable [Executable] the executable to require
+# @param silent [Boolean] disable change propagation if true
+# @param callback [Function] end callback, invoked when the compilation is done with the following parameters
+# @option callback err [String] an error message. Null if no error occured
+# @option callback executable [Executable] the compiled executable
+requireExecutable = (executable, silent, callback) ->
+  previousMeta = _.clone executable.meta
+  try 
+    executable.meta = 
+      kind: 'Script'
+    # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
+    # and singleton (like ModuleWatcher) will be broken.
+    obj = require pathUtils.relative __dirname, executable.compiledPath
+    if obj? and utils.isA obj, TurnRule
+      executable.meta.active = obj.active
+      executable.meta.rank = obj.rank
+      executable.meta.kind = 'TurnRule'
+    else if obj? and utils.isA obj, Rule
+      executable.meta.active = obj.active
+      executable.meta.category = obj.category
+      executable.meta.kind = 'Rule'
+    else
+      executable.meta.kind = 'Script'
+  catch err
+    return callback "failed to require executable #{executable.id}: #{err}"
+
+  # propagate change
+  unless silent
+    modelWatcher.change (if wasNew[executable.id] then 'creation' else 'update'), "Executable", executable
+    delete wasNew[executable.id]
+  # and invoke final callback
+  callback null, executable
 
 # Search inside existing executables. The following searches are supported:
 # - {id: String,RegExp]}: search by ids
@@ -269,19 +271,26 @@ class Executable
               
             # complete the executable content, and add it to the array.
             executable.content = content
-            compileFile executable, true, (err, executable) ->
+            compileFile executable, (err) ->
               return callback "Compilation failed: #{err}" if err?
               end()
 
         # each individual file must be read
-        async.forEach files, readFile, (err) -> 
-          logger.debug 'Local executables cached successfully reseted' unless err?
-          # ask to all worker to reload also
-          if cluster.isMaster
-            # to remove ids from idCache
-            modelWatcher.emit 'executableReset', removed
-            worker.send event: 'executableReset' for id, worker of cluster.workers
-          callback err
+        async.each files, readFile, (err) -> 
+          return callback err if err?
+
+          # know, require files
+          async.each _.values(executables), (executable, next) ->
+            requireExecutable executable, true, next
+          , (err) ->
+            logger.debug 'Local executables cached successfully reseted' unless err?
+            # ask to all worker to reload also
+            if cluster.isMaster
+              # to remove ids from idCache
+              modelWatcher.emit 'executableReset', removed
+              worker.send event: 'executableReset' for id, worker of cluster.workers
+            callback err
+
 
   # Find existing executables.
   #
@@ -367,7 +376,10 @@ class Executable
       return callback "Error while saving executable #{@id}: #{err}" if err?
       logger.debug "executable #{@id} successfully saved"
       # Trigger the compilation.
-      compileFile @, false, callback
+      compileFile @, (err) =>
+        return callback err if err?
+        # and require immediately
+        requireExecutable @, false, callback
 
   # Remove an existing executable.
   # 
