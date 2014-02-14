@@ -125,10 +125,10 @@ getProp = (obj, path, callback) ->
 filterModified = (obj, modified, _parsed = []) ->
   # do not process if already known
   return if obj in _parsed
+  _parsed.push obj
   # will be save if at least one path is modified
   if obj?.isModified?()
     modified.push obj
-    _parsed.push obj
   if obj?._className is 'Player'
     # recurse if needed on characters
     filterModified(value, modified, _parsed) for value in obj.characters when value? and 'string' isnt utils.type value

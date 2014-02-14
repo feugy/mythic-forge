@@ -297,7 +297,6 @@ module.exports =
               async.eachSeries [Item, Event, Player, Field, Map], (Class, next) =>
                 # no more ids
                 return next() if ids.length is 0
-
                 enrich = (err, results) =>
                   return next "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                   # replace found result into rule.removed array
