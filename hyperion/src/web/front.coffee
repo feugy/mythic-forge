@@ -61,6 +61,7 @@ module.exports = (app = null) ->
   # 
   # @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
   registerConf = (base) ->
+    logger.debug "register configuration endpoint for client #{base}"
     app.get "#{base}/conf.js", (req, res, next) ->
       locale = req.params.locale || null
       gameService.getConf base, req.params.locale || null, (err, conf) ->
@@ -78,6 +79,7 @@ module.exports = (app = null) ->
   # redirect incoming request that are not authentified or allowed. Default to null.
   # @param
   configureRIA = (base, rootFolder, isStatic = false, securedRedirect = null) ->
+    logger.debug "register RIA for #{base} at root #{rootFolder} (secured: #{securedRedirect} static: #{isStatic})"
 
     if securedRedirect?
       # if RIA is secured, register first a security filter

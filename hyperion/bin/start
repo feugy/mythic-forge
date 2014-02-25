@@ -14,6 +14,18 @@ if (apiPort === staticPort) {
   front(middle.app);
 } else {
   // or create separate server
-  front().listen(staticPort);
+  front().listen(staticPort, function(err) {
+    if (err) {
+      console.error('failed to start separate static server:', err);
+      process.exit(1);
+    }
+    console.log('separated static server started on port', staticPort);
+  });
 }
-middle.server.listen(apiPort);
+middle.server.listen(apiPort, function(err) {
+  if (err) {
+    console.error('failed to start api server:', err);
+    process.exit(1);
+  }
+  console.log('api server started on port', apiPort);
+});

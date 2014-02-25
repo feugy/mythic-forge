@@ -5,13 +5,19 @@ logger:
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10
   levels: 
+    # Do not exceed 10 characters !
     service: warn
+    executor: warn
+    scheduler: warn
     model: warn
     web: warn
+    webSocket: warn
+    watcher: warn
+    worker: warn
     console: all
 
 # Server's configuration
-server:
+server:  
   host: mythic-forge.com
   staticPort: 8080
   apiPort: 8080
@@ -34,20 +40,23 @@ mongo:
   host: 10.0.0.1
   db: mythic
   user: mythic
-  password: !!!!!  
+  password: !!!!!!
 
-# Executable scripts
-executable:
-  source: /home/feugy/demo/rules
-  target: /home/feugy/demo/compiled
+# location of games files
+game: 
+  repo: /home/feugy/deephulk
 
-# Game client
-game:
-  # Must not contains or be a sibling of other paths.
-  dev: /home/feugy/demo/source/client
-  optimized: /home/feugy/demo/optimized
-  production: /home/feugy/demo/final  
-  save: /home/feugy/demo/previous  
+  # Executable scripts 
+  executable:
+    source: /home/feugy/deephulk/rules # must be INSIDE game.repo
+    target: /home/feugy/deephulk/compiled
+
+  # Client files
+  client:
+    dev: /home/feugy/deephulk/source # must be INSIDE game.repo
+    optimized: /home/feugy/deephulk/optimized
+    production: /home/feugy/deephulk/final
+    save: /home/feugy/deephulk/previous
 
 # Turns execution settings. Frequency in seconds
 turn:
@@ -55,4 +64,4 @@ turn:
 
 # Images file storage
 images:
-  store: /home/feugy/demo/images
+  store: /home/feugy/deephulk/images

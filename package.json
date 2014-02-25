@@ -13,7 +13,7 @@
     "corser": "1.2.0",
     "express": "3.4.8",
     "fs-extra": "0.8.1",
-    "gift": "https://github.com/feugy/gift/tarball/master",
+    "gift": "0.2.0",
     "jshint": "2.4.3",
     "js-yaml": "3.0.1",
     "moment": "2.5.1",
