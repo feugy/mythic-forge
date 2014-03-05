@@ -1,1 +1,1 @@
-web: npm start
+web: node hyperion\bin\start
