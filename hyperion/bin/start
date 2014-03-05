@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 var utils = require('../lib/util/common');
 var http = require('http');
-var apiPort = utils.confKey('server.apiPort');
-var staticPort = utils.confKey('server.staticPort');
+var apiPort = utils.confKey('server.apiPort', process.env.PORT);
+var staticPort = utils.confKey('server.staticPort', process.env.PORT);
 
 // Start within the same server if necessary
-
 var front = require('../lib/web/front');
 // And the api server
 var middle = require('../lib/web/middle');

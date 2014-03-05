@@ -1,0 +1,65 @@
+# Logger's levels.
+logger:
+  path: console
+  defaultLevel: debug
+  dateFormat: YYYY-MM-DDTHH:mm:ss
+  nameMaxLength: 10
+  levels: 
+    # Do not exceed 10 characters !
+    service: debug
+    executor: debug
+    scheduler: warn
+    model: debug
+    web: debug
+    webSocket: warn
+    watcher: debug
+    worker: debug
+    console: all
+
+# Server's configuration
+server:  
+  host: deep-hulk.herokuapp.com
+  cookieSecret: Hey monkey donkey !
+
+# Authentication details
+authentication:
+  tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  # Key usable on mythic-forge.com domain with SSL
+  google:
+    id: 750195776526-mo5tvhku8nig3hdfcrqdmeu5t970ssvp.apps.googleusercontent.com
+    secret: _gYg5gAnVChSvilEzmyAUMHu
+  twitter:
+    id: ZgC2E9e623mkj8W0auA
+    secret: eYkJjLGwthMHybjauOaBcmDRYNKVUXeIRlhLD0kKFXg
+
+# MongoDB connection
+mongo:
+
+# location of games files
+game: 
+  repo: /tmp/deephulk
+
+  # Executable scripts 
+  executable:
+    source: /tmp/deephulk/rules # must be INSIDE game.repo
+    target: /tmp/deephulk/compiled
+
+  # Client files
+  client:
+    dev: /tmp/deephulk/source # must be INSIDE game.repo
+    optimized: /tmp/deephulk/optimized
+    production: /tmp/deephulk/final
+    save: /tmp/deephulk/previous
+
+# Turns execution settings. Frequency in seconds
+turn:
+  frequency: 1
+
+# Images file storage
+images:
+  store: /tmp/deephulk/images
+
+# s3 settings
+s3:
+  key: AKIAIWCTL44OHFYMHGMA
+  bucket: deep-hulk

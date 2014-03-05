@@ -29,7 +29,10 @@ db = utils.confKey 'mongo.db'
 
 # Connect to the 'mythic-forge' database. Will be created if necessary.
 # The connection is exported.
-url = "mongodb://#{host}:#{port}/#{db}"
+if process.env.MONGOHQ_URL?
+  url = process.env.MONGOHQ_URL
+else
+  url = "mongodb://#{host}:#{port}/#{db}" 
 options = 
   user: utils.confKey('mongo.user', null)
   pass: utils.confKey('mongo.password', null)
