@@ -19,6 +19,7 @@ logger:
 # Server's configuration
 server:  
   host: 'deep-hulk.herokuapp.com'
+  bindingPort: 80
   cookieSecret: Hey monkey donkey !
 
 # Authentication details
