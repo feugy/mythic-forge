@@ -18,7 +18,7 @@ logger:
 
 # Server's configuration
 server:  
-  host: deep-hulk.herokuapp.com
+  host: 'deep-hulk.herokuapp.com'
   cookieSecret: Hey monkey donkey !
 
 # Authentication details
@@ -33,7 +33,7 @@ authentication:
     secret: eYkJjLGwthMHybjauOaBcmDRYNKVUXeIRlhLD0kKFXg
 
 # MongoDB connection
-mongo:
+mongo: {}
 
 # location of games files
 game: 
