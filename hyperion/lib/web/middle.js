@@ -18,7 +18,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var GoogleStrategy, LocalStrategy, LoggerFactory, TwitterStrategy, adminNS, adminService, app, authoringService, caPath, certPath, checkAdmin, corser, deployementService, exposeMethods, express, fs, gameService, getRedirect, http, https, imagesService, io, keyPath, logger, moment, noSecurity, notifier, opt, passport, playerService, registerOAuthProvider, ruleService, searchService, server, updateNS, urlParse, utils, watcher, _,
+var GoogleStrategy, LocalStrategy, LoggerFactory, TwitterStrategy, adminNS, adminService, app, authoringService, bindingPort, caPath, certPath, checkAdmin, corser, deployementService, exposeMethods, express, fs, gameService, getRedirect, host, http, https, imagesService, io, keyPath, logger, moment, noSecurity, notifier, opt, passport, playerService, registerOAuthProvider, ruleService, searchService, server, staticPort, updateNS, urlParse, utils, watcher, _,
   __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
   __slice = [].slice;
 
@@ -82,6 +82,12 @@ app = express();
 
 noSecurity = process.env.NODE_ENV === 'test';
 
+host = utils.confKey('server.host');
+
+staticPort = utils.confKey('server.staticPort', process.env.PORT || '');
+
+bindingPort = utils.confKey('server.bindingPort', process.env.PORT || '');
+
 app.use(express.cookieParser(utils.confKey('server.cookieSecret')));
 
 app.use(express.urlencoded());
@@ -91,7 +97,7 @@ app.use(express.json());
 app.use(express.methodOverride());
 
 app.use(corser.create({
-  origins: ["http://" + (utils.confKey('server.host')) + ":" + (utils.confKey('server.staticPort', '')), "http://" + (utils.confKey('server.host')) + ":" + (utils.confKey('server.bindingPort', ''))],
+  origins: ["http://" + host + ":" + staticPort, "http://" + host + ":" + bindingPort],
   methods: ['GET', 'HEAD', 'POST', 'DELETE', 'PUT']
 }));
 
@@ -125,7 +131,7 @@ io.set('log level', 0);
 getRedirect = function(req) {
   var url;
   url = urlParse(req.headers.referer != null ? req.headers.referer : "http://" + req.headers.host);
-  return "http://" + (utils.confKey('server.host')) + ":" + (utils.confKey('server.bindingPort', utils.confKey('server.staticPort'))) + url.pathname;
+  return "http://" + host + ":" + (bindingPort || staticPort) + url.pathname;
 };
 
 exposeMethods = function(service, socket, connected, except) {

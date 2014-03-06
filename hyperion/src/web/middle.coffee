@@ -52,6 +52,9 @@ keyPath = utils.confKey 'ssl.key', null
 app = express() 
 
 noSecurity = process.env.NODE_ENV is 'test'
+host = utils.confKey 'server.host'
+staticPort = utils.confKey 'server.staticPort', process.env.PORT or ''
+bindingPort = utils.confKey 'server.bindingPort', process.env.PORT or ''
 
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.urlencoded()
@@ -59,8 +62,8 @@ app.use express.json()
 app.use express.methodOverride()
 app.use corser.create
   origins:[
-    "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.staticPort', ''}"
-    "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', ''}"
+    "http://#{host}:#{staticPort}"
+    "http://#{host}:#{bindingPort}"
   ]
   methods: ['GET', 'HEAD', 'POST', 'DELETE', 'PUT']
 app.use express.session secret: 'mythic-forge' # mandatory for OAuth providers
@@ -90,7 +93,7 @@ io.set 'log level', 0 # only errors
 # @return string to redirect on
 getRedirect = (req) ->
   url = urlParse if req.headers.referer? then req.headers.referer else "http://#{req.headers.host}"
-  "http://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'}#{url.pathname}"
+  "http://#{host}:#{bindingPort or staticPort}#{url.pathname}"
 
 # This methods exposes all service methods in a given namespace.
 # The first parameter of all mehods is interpreted as a request id, used inside response to allow client to distinguish calls.

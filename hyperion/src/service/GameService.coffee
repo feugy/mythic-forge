@@ -35,7 +35,7 @@ ruleUtils = require '../util/rule'
 ruleService = require('./RuleService').get()
 logger = require('../util/logger').getLogger 'service'
 
-port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort'
+port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort', process.env.PORT
 host = utils.confKey 'server.host'
 
 baseUrl = "http://#{host}"
