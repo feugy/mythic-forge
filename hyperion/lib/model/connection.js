@@ -28,15 +28,13 @@ utils = require('../util/common');
 
 logger = require('../util/logger').getLogger('model');
 
-host = utils.confKey('mongo.host', 'localhost');
-
-port = utils.confKey('mongo.port', 27017);
-
-db = utils.confKey('mongo.db');
-
 if (process.env.MONGOHQ_URL != null) {
   url = process.env.MONGOHQ_URL;
+  db = "mongoHQ";
 } else {
+  host = utils.confKey('mongo.host', 'localhost');
+  port = utils.confKey('mongo.port', 27017);
+  db = utils.confKey('mongo.db');
   url = "mongodb://" + host + ":" + port + "/" + db;
 }
 

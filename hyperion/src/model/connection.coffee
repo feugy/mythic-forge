@@ -23,15 +23,15 @@ mongodb = require 'mongodb'
 utils = require '../util/common'
 logger = require('../util/logger').getLogger 'model'
 
-host = utils.confKey 'mongo.host', 'localhost'
-port = utils.confKey 'mongo.port', 27017
-db = utils.confKey 'mongo.db' 
-
 # Connect to the 'mythic-forge' database. Will be created if necessary.
 # The connection is exported.
 if process.env.MONGOHQ_URL?
   url = process.env.MONGOHQ_URL
+  db = "mongoHQ"
 else
+  host = utils.confKey 'mongo.host', 'localhost'
+  port = utils.confKey 'mongo.port', 27017
+  db = utils.confKey 'mongo.db' 
   url = "mongodb://#{host}:#{port}/#{db}" 
 options = 
   user: utils.confKey('mongo.user', null)
