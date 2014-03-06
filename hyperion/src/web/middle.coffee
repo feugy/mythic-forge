@@ -55,6 +55,7 @@ noSecurity = process.env.NODE_ENV is 'test'
 host = utils.confKey 'server.host'
 staticPort = utils.confKey 'server.staticPort', process.env.PORT or ''
 bindingPort = utils.confKey 'server.bindingPort', process.env.PORT or ''
+apiPort = utils.confKey 'server.apiPort', process.env.PORT or ''
 
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.urlencoded()
@@ -176,7 +177,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     passport.use new strategy
       clientID: utils.confKey "authentication.#{provider}.id"
       clientSecret: utils.confKey "authentication.#{provider}.secret"
-      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or apiPort}/auth/#{provider}/callback"
     , verify
 
     args = session: false, scope: scopes
@@ -186,7 +187,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
     passport.use new strategy
       consumerKey: utils.confKey "authentication.#{provider}.id"
       consumerSecret: utils.confKey "authentication.#{provider}.secret"
-      callbackURL: "#{if certPath? then 'https' else 'http'}://#{utils.confKey 'server.host'}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}/auth/#{provider}/callback"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or server.apiPort}/auth/#{provider}/callback"
     , verify
 
     args = {}

@@ -36,12 +36,13 @@ ruleService = require('./RuleService').get()
 logger = require('../util/logger').getLogger 'service'
 
 port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort', process.env.PORT
+apiPort = utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort', process.env.PORT
 host = utils.confKey 'server.host'
 
 baseUrl = "http://#{host}"
 # port 80 must be omitted, to allow images resolution on client side.
 baseUrl += ":#{port}" if port isnt 80
-apiBaseUrl = "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort'}"
+apiBaseUrl = "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{apiPort}"
 
 # merge two JSON object by putting into the result object a deep coy of all original attributes
 #

@@ -18,7 +18,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var ClientConf, Event, EventType, Executable, Field, FieldType, GameService, Item, ItemType, apiBaseUrl, async, baseUrl, certPath, host, logger, merge, pathUtils, port, ruleService, ruleUtils, utils, _, _GameService, _instance,
+var ClientConf, Event, EventType, Executable, Field, FieldType, GameService, Item, ItemType, apiBaseUrl, apiPort, async, baseUrl, certPath, host, logger, merge, pathUtils, port, ruleService, ruleUtils, utils, _, _GameService, _instance,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 async = require('async');
@@ -53,6 +53,8 @@ logger = require('../util/logger').getLogger('service');
 
 port = utils.confKey('server.bindingPort', utils.confKey('server.staticPort', process.env.PORT));
 
+apiPort = utils.confKey('server.bindingPort', utils.confKey('server.apiPort', process.env.PORT));
+
 host = utils.confKey('server.host');
 
 baseUrl = "http://" + host;
@@ -61,7 +63,7 @@ if (port !== 80) {
   baseUrl += ":" + port;
 }
 
-apiBaseUrl = "" + ((certPath = utils.confKey('ssl.certificate', null) != null) ? 'https' : 'http') + "://" + host + ":" + (utils.confKey('server.bindingPort', utils.confKey('server.apiPort')));
+apiBaseUrl = "" + ((certPath = utils.confKey('ssl.certificate', null) != null) ? 'https' : 'http') + "://" + host + ":" + apiPort;
 
 merge = function(result, original) {
   var attr, value, _results;

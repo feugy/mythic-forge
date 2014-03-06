@@ -18,7 +18,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var GoogleStrategy, LocalStrategy, LoggerFactory, TwitterStrategy, adminNS, adminService, app, authoringService, bindingPort, caPath, certPath, checkAdmin, corser, deployementService, exposeMethods, express, fs, gameService, getRedirect, host, http, https, imagesService, io, keyPath, logger, moment, noSecurity, notifier, opt, passport, playerService, registerOAuthProvider, ruleService, searchService, server, staticPort, updateNS, urlParse, utils, watcher, _,
+var GoogleStrategy, LocalStrategy, LoggerFactory, TwitterStrategy, adminNS, adminService, apiPort, app, authoringService, bindingPort, caPath, certPath, checkAdmin, corser, deployementService, exposeMethods, express, fs, gameService, getRedirect, host, http, https, imagesService, io, keyPath, logger, moment, noSecurity, notifier, opt, passport, playerService, registerOAuthProvider, ruleService, searchService, server, staticPort, updateNS, urlParse, utils, watcher, _,
   __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
   __slice = [].slice;
 
@@ -87,6 +87,8 @@ host = utils.confKey('server.host');
 staticPort = utils.confKey('server.staticPort', process.env.PORT || '');
 
 bindingPort = utils.confKey('server.bindingPort', process.env.PORT || '');
+
+apiPort = utils.confKey('server.apiPort', process.env.PORT || '');
 
 app.use(express.cookieParser(utils.confKey('server.cookieSecret')));
 
@@ -202,7 +204,7 @@ registerOAuthProvider = function(provider, strategy, verify, scopes) {
     passport.use(new strategy({
       clientID: utils.confKey("authentication." + provider + ".id"),
       clientSecret: utils.confKey("authentication." + provider + ".secret"),
-      callbackURL: "" + (certPath != null ? 'https' : 'http') + "://" + (utils.confKey('server.host')) + ":" + (utils.confKey('server.bindingPort', utils.confKey('server.apiPort'))) + "/auth/" + provider + "/callback"
+      callbackURL: "" + (certPath != null ? 'https' : 'http') + "://" + host + ":" + (bindingPort || apiPort) + "/auth/" + provider + "/callback"
     }, verify));
     args = {
       session: false,
@@ -212,7 +214,7 @@ registerOAuthProvider = function(provider, strategy, verify, scopes) {
     passport.use(new strategy({
       consumerKey: utils.confKey("authentication." + provider + ".id"),
       consumerSecret: utils.confKey("authentication." + provider + ".secret"),
-      callbackURL: "" + (certPath != null ? 'https' : 'http') + "://" + (utils.confKey('server.host')) + ":" + (utils.confKey('server.bindingPort', utils.confKey('server.apiPort'))) + "/auth/" + provider + "/callback"
+      callbackURL: "" + (certPath != null ? 'https' : 'http') + "://" + host + ":" + (bindingPort || server.apiPort) + "/auth/" + provider + "/callback"
     }, verify));
     args = {};
   }
