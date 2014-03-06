@@ -9,8 +9,21 @@ logger:
     console: all
 
 # Path used by deployement service to optimise Rheia
-game:
-  dev: ./rheia
-  optimized: ./rheia-optimized
-  production: ./rheia-min
-  save: ./rheia-previous  
+# location of games files
+game: 
+  repo: .
+
+  # Executable scripts 
+  executable:
+    source: .
+    target: .
+
+  # Client files
+  client:
+    dev: ./rheia
+    optimized: ./rheia-optimized
+    production: ./rheia-min
+    save: ./rheia-previous  
+
+images:
+  store: .

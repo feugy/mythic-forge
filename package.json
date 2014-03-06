@@ -44,7 +44,6 @@
   },
   "scripts": {
     "start": "node hyperion/bin/start",
-    "postinstall": "gulp build",
     "test": "gulp test"
   },
   "bin": {

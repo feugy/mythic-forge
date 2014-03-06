@@ -1,0 +1,54 @@
+
+/*
+  Copyright 2010,2011,2012 Damien Feugas
+  
+    This file is part of Mythic-Forge.
+
+    Myth is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Myth is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser Public License for more details.
+
+    You should have received a copy of the GNU Lesser Public License
+    along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
+ */
+'use strict';
+var conn, type, typeFactory;
+
+typeFactory = require('./typeFactory');
+
+conn = require('./connection');
+
+type = require('../util/common').type;
+
+module.exports = conn.model('clientConf', typeFactory('ClientConf', {
+  values: {
+    type: {},
+    "default": function() {
+      return {};
+    }
+  }
+}, {
+  middlewares: {
+    init: function(next, conf) {
+      this.__origvalues = JSON.stringify(conf.values || {});
+      return next();
+    },
+    save: function(next) {
+      var err;
+      try {
+        JSON.parse('string' === type(this._doc.values) ? this._doc.values : JSON.stringify(this._doc.values || {}));
+        next();
+        return this.__origvalues = JSON.stringify(this._doc.values || {});
+      } catch (_error) {
+        err = _error;
+        return next(new Error("JSON syntax error for 'values': " + err));
+      }
+    }
+  }
+}));
