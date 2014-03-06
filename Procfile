@@ -1,1 +1,0 @@
-web: node hyperion\bin\start
