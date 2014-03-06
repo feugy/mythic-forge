@@ -33,6 +33,7 @@ else
   port = utils.confKey 'mongo.port', 27017
   db = utils.confKey 'mongo.db' 
   url = "mongodb://#{host}:#{port}/#{db}" 
+  
 options = 
   user: utils.confKey('mongo.user', null)
   pass: utils.confKey('mongo.password', null)

@@ -50,16 +50,22 @@ idCache = {};
 caches = {};
 
 loadIdCache = function(callback) {
-  var db, host, pass, port, user;
+  var db, host, pass, port, url, user;
   if (callback == null) {
     callback = null;
   }
-  host = utils.confKey('mongo.host', 'localhost');
-  port = utils.confKey('mongo.port', 27017);
-  db = utils.confKey('mongo.db');
-  user = utils.confKey('mongo.user', null);
-  pass = utils.confKey('mongo.password', null);
-  return MongoClient.connect("mongodb://" + ((user != null) && (pass != null) ? "" + user + ":" + pass + "@" : '') + host + ":" + port + "/" + db, function(err, db) {
+  if (process.env.MONGOHQ_URL != null) {
+    url = process.env.MONGOHQ_URL;
+    db = "mongoHQ";
+  } else {
+    host = utils.confKey('mongo.host', 'localhost');
+    port = utils.confKey('mongo.port', 27017);
+    db = utils.confKey('mongo.db');
+    user = utils.confKey('mongo.user', null);
+    pass = utils.confKey('mongo.password', null);
+    url = "mongodb://" + ((user != null) && (pass != null) ? "" + user + ":" + pass + "@" : '') + host + ":" + port + "/" + db;
+  }
+  return MongoClient.connect(url, function(err, db) {
     if (err != null) {
       throw new Error("Failed to connect to mongo to get ids: " + err);
     }

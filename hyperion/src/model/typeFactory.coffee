@@ -40,13 +40,18 @@ caches = {}
 
 # load ids of all existing models from database
 loadIdCache = (callback = null) ->
-  host = utils.confKey 'mongo.host', 'localhost'
-  port = utils.confKey 'mongo.port', 27017
-  db = utils.confKey 'mongo.db'
-  user = utils.confKey 'mongo.user', null
-  pass = utils.confKey 'mongo.password', null
+  if process.env.MONGOHQ_URL?
+    url = process.env.MONGOHQ_URL
+    db = "mongoHQ"
+  else
+    host = utils.confKey 'mongo.host', 'localhost'
+    port = utils.confKey 'mongo.port', 27017
+    db = utils.confKey 'mongo.db' 
+    user = utils.confKey 'mongo.user', null
+    pass = utils.confKey 'mongo.password', null
+    url = "mongodb://#{if user? and pass? then "#{user}:#{pass}@" else ''}#{host}:#{port}/#{db}" 
 
-  MongoClient.connect "mongodb://#{if user? and pass? then "#{user}:#{pass}@" else ''}#{host}:#{port}/#{db}", (err, db) ->
+  MongoClient.connect url, (err, db) ->
     throw new Error "Failed to connect to mongo to get ids: #{err}" if err?
     idCache = {}
     # get ids in each collections

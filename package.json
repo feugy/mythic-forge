@@ -51,7 +51,7 @@
     "mf-deploy": "./hyperion/bin/deploy"
   },
   "licence": "LGPL v3",
-  "engine": {
-    "node": "0.9.5"
+  "engines": {
+    "node": "0.10.26"
   }
 }
