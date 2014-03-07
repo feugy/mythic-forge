@@ -23,12 +23,13 @@ define [
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/script.html'
-  'text!tpl/script.tpl'
+  'text!tpl/new-script-coffee.tpl'
+  'text!tpl/new-script-js.tpl'
   'utils/validators'
   'view/BaseEditionView'
   'model/Executable'
   'widget/advEditor'
-], ($, i18n, i18nEdition, template, emptyScript, validators, BaseEditionView, Executable) ->
+], ($, i18n, i18nEdition, template, emptyScriptCoffee, emptyScriptJs, validators, BaseEditionView, Executable) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
@@ -72,7 +73,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable content: emptyScript, lang: @_lang
+      @model = new Executable lang: @_lang content: if @_lang is 'js' then emptyScriptJs else emptyScriptCoffee
 
     # **private**
     # Gets values from rendering and saved them into the edited object.

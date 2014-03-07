@@ -446,7 +446,7 @@ optimize = (folder, callback) ->
 
   utils.find folder, /^.*\.html$/i, requireMatcher, (err, results) ->
     return callback "failed to identify html page including requirejs: #{err}" if err?
-    return callback 'no html page including requirej found' if results.length is 0
+    return callback 'no html page including requirejs found' if results.length is 0
     # choose the least path length
     main = _.min results, (path) -> path.length
 

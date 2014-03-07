@@ -37,6 +37,7 @@
     "gulp": "3.5.2",
     "gulp-clean": "0.2.4",
     "gulp-coffee": "1.4.1",
+    "gulp-stylus": "0.0.14",
     "gulp-util": "2.2.14",
     "phantom-proxy": "0.1.792",
     "request": "2.33.0",
@@ -44,11 +45,8 @@
   },
   "scripts": {
     "start": "node hyperion/bin/start",
+    "postinstall": "gulp cleanBuild deploy",
     "test": "gulp test"
-  },
-  "bin": {
-    "mf-start": "./hyperion/bin/start",
-    "mf-deploy": "./hyperion/bin/deploy"
   },
   "licence": "LGPL v3",
   "engines": {
