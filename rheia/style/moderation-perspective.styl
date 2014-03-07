@@ -23,14 +23,13 @@
 
 
   > .left 
-    display box
-    box-orient vertical
+    display flex
+    flex-direction column
 
     .map-container
-      box-flex 1
+      flex-grow 1
       overflow-y auto
       overflow-x hidden
-      height 1px // Firefox bug: must have an height to overflow
 
   .toolbar
 

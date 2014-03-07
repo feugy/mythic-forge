@@ -36,18 +36,18 @@
 .admin.perspective
 
   > .left
-    box-flex 0
+    flex-grow 0
     width 350px
 
   > .right
-    box-flex 1
+    flex-grow 1
 
   .view
     border 1px solid borderColor
     border-radius 5px
     box-shadow 0 5px 10px shadowColor
     padding 15px
-    box-flex 1
+    flex-grow 1
 
     > h1
       box-sizing border-box
@@ -60,7 +60,7 @@
         margin-right 0.7em
 
   .deploy.view
-    box-flex 0
+    flex-grow 0
 
     > div
       margin-bottom 0.5em
@@ -117,7 +117,7 @@
       background-color red
 
   .time.view
-    box-flex 0
+    flex-grow 0
 
     .time
       display inline-block
@@ -130,17 +130,17 @@
     margin-top 1em
 
   .logs.view
-    display box
-    box-orient vertical
+    display flex
+    flex-direction column
 
     .logs-panel
       margin-top 0
       background-color black
       display block
-      box-flex 1
-      height 1px
+      flex-grow 1
       overflow auto
       padding 0.5em
+      box-sizing border-box
 
       .log
         font-family 'Courrier Sans'

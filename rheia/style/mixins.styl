@@ -40,37 +40,6 @@ perspective()
 
 box-sizing()
   vendor-prefix 'box-sizing' arguments
-
-box-flex()
-  vendor-prefix 'box-flex' arguments
-
-box-ordinal-group()
-  vendor-prefix 'box-ordinal-group' arguments
-
-box-pack()
-  vendor-prefix 'box-pack' arguments
-
-box-direction()
-  vendor-prefix 'box-direction' arguments
-
-box-align()
-  vendor-prefix 'box-align' arguments
-
-box-orient()
-  vendor-prefix 'box-orient' arguments
-
-// Flexible box model compatibility
-display(value)
-  if value == box
-    display -webkit-box
-    display -moz-box
-    display box
-  else if value == inline-box
-    display -webkit-inline-box
-    display -moz-inline-box
-    display inline-box
-  else
-    display value
   
 // Positionnate the current selector to take all available space inside parent.
 // Parent must be positionnate, because the current selector wil be absolute

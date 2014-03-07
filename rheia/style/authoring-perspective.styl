@@ -23,15 +23,13 @@
   
   > .left
     width 250px
-    display box
+    display flex
 
     .explorer
       iconSize = 18px
       overflow auto
-      box-flex 1
-      // firefox fix: to allow overflow, must have an height, event unrelevant
-      height 1px
-
+      flex-grow 1
+      
       .file
       h1
         hoverable()
@@ -99,7 +97,7 @@
     .ui-tabs .ui-tabs-panel
       overflow hidden
       padding 2px 0 0
-      display box
+      display flex
 
     .ui-tabs-nav
       for icon, idx in file stylus coffee javascript html svg css
@@ -112,7 +110,7 @@
   .view.file:not(.icon)
     position relative
     width 100%
-    box-flex 1
+    flex-grow 1
 
     .content.adv-editor
       margin 0
