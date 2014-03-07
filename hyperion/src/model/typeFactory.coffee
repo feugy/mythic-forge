@@ -30,7 +30,7 @@ logger = require('../util/logger').getLogger 'model'
 utils = require '../util/common'
 modelUtils = require '../util/model'
 
-imageStore = utils.confKey 'images.store'
+imageStore = utils.confKey 'game.image'
 
 # cache of used ids for all managed type cache, populated at startup
 idCache = {}

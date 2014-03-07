@@ -147,7 +147,7 @@ module.exports = (app = null) ->
 
   # serve commun static assets
   app.use express.cookieParser utils.confKey 'server.cookieSecret'
-  app.use '/images', express.static utils.confKey('images.store'), maxAge: 1814400000
+  app.use '/images', express.static utils.confKey('game.image'), maxAge: 1814400000
   # serve static pages from the docs folder
   app.use express.static 'docs'
   app.use express.compress level:9
@@ -156,7 +156,7 @@ module.exports = (app = null) ->
   configureRIA '/game', utils.confKey('game.client.production'), true
   configureRIA '/dev', utils.confKey('game.client.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
 
-  if process.env.NODE_ENV in ['buyvm', 'simons']
+  if utils.confKey 'minified', false
     configureRIA '/rheia', './rheia-min', true
   else
     configureRIA '/rheia', './rheia'

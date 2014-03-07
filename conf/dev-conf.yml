@@ -46,7 +46,7 @@ mongo:
 
 # location of games files
 game: 
-  repo: '../proto-game'
+  repo: ../proto-game
 
   # Executable scripts 
   executable:
@@ -60,10 +60,12 @@ game:
     production: ../proto-game/final
     save: ../proto-game/previous
 
+  # Images storage
+  image: ../proto-game/images
+
 # Turns execution settings. Frequency in seconds
 turn:
   frequency: 1
 
-# Images file storage
-images:
-  store: ../proto-game/images
+# Use minified rheia
+minified: false

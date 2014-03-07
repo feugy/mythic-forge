@@ -122,7 +122,7 @@ module.exports =
     # check executable folder is under game.repo
     executables = resolve normalize confKey 'game.executable.source'
     throw new Error "game.executable.source must not be inside game.repo" unless 0 is executables.indexOf repository
-    imagesPath = resolve normalize confKey 'images.store'
+    imagesPath = resolve normalize confKey 'game.image'
 
     # enforce folders existence at startup, synchronously!
     try 

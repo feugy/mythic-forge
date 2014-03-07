@@ -41,7 +41,7 @@ mongo:
 
 # location of games files
 game: 
-  repo: '../tmp'
+  repo: ../tmp
 
   # Executable scripts 
   executable:
@@ -55,10 +55,12 @@ game:
     production: ../tmp/final
     save: ../tmp/previous
 
+  # Images storage
+  image: ../tmp/images
+
 # Turns execution settings. Frequency in seconds
 turn:
   frequency: 5
 
-# Images file storage
-images:
-  store: ../tmp/images
+# Use minified rheia
+minified: true

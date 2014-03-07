@@ -4,6 +4,7 @@
   - Bugs
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
+  - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - use socks.js to replace socket.io
   - refactor configuration from json to yaml
   - cache evinction on inutility and size

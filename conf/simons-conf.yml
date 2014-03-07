@@ -58,10 +58,12 @@ game:
     production: /home/feugy/deephulk/final
     save: /home/feugy/deephulk/previous
 
+  # Images storage
+  image: /home/feugy/deephulk/images
+
 # Turns execution settings. Frequency in seconds
 turn:
   frequency: 1
 
-# Images file storage
-images:
-  store: /home/feugy/deephulk/images
+# Use minified rheia
+minified: true

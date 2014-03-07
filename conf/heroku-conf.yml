@@ -52,13 +52,15 @@ game:
     production: /tmp/deephulk/final
     save: /tmp/deephulk/previous
 
+  # Images storage
+  image: /tmp/deephulk/images
+
 # Turns execution settings. Frequency in seconds
 turn:
   frequency: 1
 
-# Images file storage
-images:
-  store: /tmp/deephulk/images
+# Use minified rheia
+minified: false
 
 # s3 settings
 s3:

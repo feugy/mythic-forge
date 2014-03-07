@@ -25,5 +25,5 @@ game:
     production: ./rheia-min
     save: ./rheia-previous  
 
-images:
-  store: .
+  # Images
+  image: .

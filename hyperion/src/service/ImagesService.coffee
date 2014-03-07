@@ -27,11 +27,11 @@ FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
 logger = require('../util/logger').getLogger 'service'
 
-imagesPath = resolve normalize confKey 'images.store'
+imagesPath = resolve normalize confKey 'game.image'
 supported = ['ItemType', 'FieldType', 'EventType']
 
 # The ImagesService allow to save and remove images associated to a given model.
-# It saved all images in a folder, which path is read in configuration at key `images.store`.
+# It saved all images in a folder, which path is read in configuration at key `game.image`.
 # Images are renamed with the id of the given type, and a suffix (`type` or the instance image id).
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
 class _ImagesService
