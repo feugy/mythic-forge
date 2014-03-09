@@ -25,6 +25,7 @@
     "passport-twitter": "1.0.2",
     "password-hash": "1.2.1",
     "requirejs": "2.1.10",
+    "sanitizer": "0.1.1",
     "socket.io": "https://github.com/feugy/socket.io/tarball/master",
     "stylus": "0.42.2",
     "underscore": "1.5.2",
