@@ -21,7 +21,6 @@
 - Rheia
   - Bugs
     - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
-    - save hotkey misapplied on tabs, after some tabs have been closed (index misplaced?) 
     - use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
     - after version change, version list is empty

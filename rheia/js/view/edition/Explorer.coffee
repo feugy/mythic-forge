@@ -80,7 +80,7 @@ define [
     switch kind
       when 'Rule'
         # group by category
-        grouped = _(collection.models).groupBy (model) -> model.meta.category || rootCategory
+        grouped = _(collection.models).groupBy (model) -> model.meta?.category || rootCategory
 
         # sort categories
         grouped = utils.sortAttributes grouped
@@ -92,7 +92,7 @@ define [
       when 'TurnRule' 
         # sort by meta's rank
         return _.chain(collection.models).map((model) -> 
-          {criteria:model.meta.rank, value:model}
+          {criteria:model.meta?.rank, value:model}
         ).sortBy((model) ->
           model.criteria
         ).pluck('value').value()
@@ -186,9 +186,9 @@ define [
           rules = []
           turnRules = []
           for executable in Executable.collection.models
-            if executable.meta.kind is 'TurnRule'
+            if executable.meta?.kind is 'TurnRule'
               turnRules.push executable
-            else if executable.meta.kind is 'Rule'
+            else if executable.meta?.kind is 'Rule'
               rules.push executable
             else
               scripts.push executable
@@ -244,7 +244,7 @@ define [
         when ClientConf.collection 
           if operation isnt 'update' then category = 'ClientConf'
       if category is null and utils.isA element, Executable
-        category = element.meta.kind
+        category = element.meta?.kind
 
       return unless category?
 
@@ -259,21 +259,21 @@ define [
           rules = []
           turnRules = []
           for executable in Executable.collection.models
-            if executable.meta.kind is 'TurnRule'
+            if executable.meta?.kind is 'TurnRule'
               turnRules.push executable
-            else if executable.meta.kind is 'Rule'
+            else if executable.meta?.kind is 'Rule'
               rules.push executable
             else
               scripts.push executable
           models = sortCollection 
-            models: if element.meta.kind is 'Rule' then rules else if element.meta.kind is 'TurnRule' then turnRules else scripts
-          , element.meta.kind
+            models: if element.meta?.kind is 'Rule' then rules else if element.meta?.kind is 'TurnRule' then turnRules else scripts
+          , element.meta?.kind
         else 
           models = sortCollection collection
 
         # compute the insertion index
-        if collection is Executable.collection and element.meta.kind is 'Rule'
-          category = element.meta.category or rootCategory
+        if collection is Executable.collection and element.meta?.kind is 'Rule'
+          category = element.meta?.category or rootCategory
           idx = models[category].indexOf element
           unless category is rootCategory
             ruleContainer = @$el.find 'dd[data-category="Rule"]'

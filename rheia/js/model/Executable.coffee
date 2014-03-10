@@ -51,6 +51,13 @@ define [
     # Local cache for models.
     @collection: new _Executables @
 
+    # Executable constructor, which init meta.
+    #
+    # @param attr [Object] serialized attributes for this executable
+    constructor: (attr) ->
+      @meta = {}
+      super attr
+
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Executable'
