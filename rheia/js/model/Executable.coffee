@@ -53,10 +53,10 @@ define [
 
     # Executable constructor, which init meta.
     #
-    # @param attr [Object] serialized attributes for this executable
-    constructor: (attr) ->
-      @meta = {}
-      super attr
+    # @param attributes [Object] serialized attributes for this executable
+    constructor: (attributes) ->
+      attributes.meta or= {}
+      super attributes
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
