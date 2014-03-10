@@ -20,12 +20,13 @@
 
 define [
   'jquery'
+  'underscore'
   'moment'
   'i18n!nls/common'
   'i18n!nls/widget'
   'widget/base'
   'widget/instanceList'
-],  ($, moment, i18n, i18nWidget, Base) ->
+],  ($, _, moment, i18n, i18nWidget, Base) ->
 
   i18n = $.extend true, i18n, i18nWidget
 
@@ -70,7 +71,7 @@ define [
       switch @options.type
         when 'string'
           # simple text input
-          rendering = $("""<input type="text" value="#{@options.value}"/>""").appendTo @$el
+          rendering = $("""<input type="text" value="#{_.escape @options.value}"/>""").appendTo @$el
           rendering.on 'keyup', @_onChange
           unless isNull
             @options.value = rendering.val()
@@ -80,7 +81,7 @@ define [
 
         when 'text'
           # textarea
-          rendering = $("""<textarea>#{@options.value or ''}</textarea>""").appendTo @$el
+          rendering = $("""<textarea>#{_.escape @options.value or ''}</textarea>""").appendTo @$el
           rendering.on 'keyup', @_onChange
           unless isNull 
             @options.value = rendering.val()
