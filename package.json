@@ -46,7 +46,7 @@
   },
   "scripts": {
     "start": "node hyperion/bin/start",
-    "postinstall": "gulp cleanBuild deploy",
+    "postinstall": "gulp cleanBuild",
     "test": "gulp test"
   },
   "licence": "LGPL v3",
