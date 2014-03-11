@@ -256,8 +256,9 @@
     #
     # @param className [String] updated model class name
     # @param changes [Object] raw new values (always contains id)
-    # @param  callback [Function] construction end callback, invoked with argument:
+    # @param  callback [Function] construction end callback, invoked with two arguments:
     # @option callback error [Error] an Error object, or null if no error occured
+    # @option callback model [Model] the updated cached model
     Atlas.modelUpdate = (className, changes, callback = ->) ->
       return callback null unless className of models
       # first, get the cached model and quit if not found
@@ -266,10 +267,10 @@
         unless model?
           # update on an unexisting model: fetch it if possible
           if Atlas[className]._fetchMethod?
-            return Atlas[className].fetch [changes.id], callback
+            return Atlas[className].fetch [changes.id], (err, models) -> callback err, models?[0]
           else
             return callback null 
-        options.debug && console.log "process update for model #{model.id} (#{className})", changes
+        options.debug and console.log "process update for model #{model.id} (#{className})", changes
         # then, update the local cache
         modifiedFields = []
         for attr, value of changes
@@ -284,7 +285,7 @@
           options.debug and console.log "end of update for model #{model.id} (#{className})", modifiedFields, err
           if modifiedFields.length isnt 0 and !err?
             eventEmitter.emit 'modelChanged', 'update', model, modifiedFields 
-          callback err
+          callback err, model
 
         # enrich specific models properties
         if modifiedFields.length isnt 0 and className is 'Player' and 'characters' of changes
@@ -460,12 +461,14 @@
       # @option err [Error] an Error object or null if no error occured
       # @option models [Array<Model>] the matching models, may be empty if no model matched given ids
       @findCached: (ids, callback = ->) ->
+        copy = ids.concat []
         result = []
-        for id, model of models[@_className] when id in ids
-          result.push model
+        for id, model of models[@_className] when id in copy
           # do not search already found ids
-          ids.splice ids.indexOf(id), 1
-          break if ids.lenght is 0
+          copy.splice copy.indexOf(id), 1
+          # keep order
+          result[ids.indexOf id] = model
+          break if copy.lenght is 0
 
         _.defer => callback null, result
 
@@ -488,7 +491,7 @@
           return unless reqId is rid
           Atlas.gameNS.removeListener "#{@_fetchMethod}-resp", process
           return callback err if err?
-          async.each results, (raw, next) =>
+          async.map results, (raw, next) =>
             @findById raw.id, (err, model) =>
               return next err if err?
               if model?
@@ -497,10 +500,7 @@
               else
                 # add new model to local cache
                 new Atlas[@_className] raw, next
-          , (err) =>
-            return callback err if err?
-            @findCached _.pluck(results, 'id'), (err, results) =>
-              callback err, results
+          , callback
         Atlas.gameNS.emit @_fetchMethod, rid, ids
 
       # Model constructor: load the model from raw JSON
@@ -511,11 +511,13 @@
       # @option model [Model] the built model
       constructor: (raw, callback = ->) ->
         super raw, (err) =>
-          return callback err if err?
-          # store inside models
-          models[@constructor._className][@id] = @
+          if err?
+            delete models[@constructor._className][@id]
+            return callback err 
           eventEmitter.emit 'modelChanged', 'creation', @
           callback null, @
+        # store inside models immediately
+        models[@constructor._className][@id] = @
     
     #-----------------------------------------------------------------------------
     # Model enrichment methods
