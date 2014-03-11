@@ -88,9 +88,9 @@ define [
       @$el.addClass('type-tree').empty()
       # creates categories, and fill with relevant models
       for category in @_categories
-        content = @options.content?.filter (model) -> model?._className is category.id or model?.kind is category.id or model?.kind is null and category.id is 'Script'
+        content = @options.content?.filter (model) -> model?._className is category.id or model?.meta?.kind is category.id or model?.meta?.kind is null and category.id is 'Script'
         # discard category unless there is content or were told not to do
-        continue unless content?.length > 0 or !@options.hideEmpty
+        continue unless content?.length > 0 or not @options.hideEmpty
 
         categoryClass = utils.dashSeparated(category.id)
         @$el.append """<dt class="#{if @options.openAtStart then 'open' else ''}">

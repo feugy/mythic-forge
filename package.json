@@ -35,7 +35,7 @@
   "devDependencies": {
     "chai": "1.9.0",
     "mocha": "1.17.1",
-    "gulp": "3.5.2",
+    "gulp": "3.5.5",
     "gulp-clean": "0.2.4",
     "gulp-coffee": "1.4.1",
     "gulp-stylus": "0.0.14",
