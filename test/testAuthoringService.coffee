@@ -19,7 +19,7 @@
 
 _ = require 'underscore'
 async = require 'async'
-{join, dirname, resolve, normalize} = require 'path'
+{join, dirname, resolve, normalize, sep} = require 'path'
 fs = require 'fs-extra'
 FSItem = require '../hyperion/src/model/FSItem'
 Executable = require '../hyperion/src/model/Executable'
@@ -209,25 +209,25 @@ describe 'AuthoringService tests', ->
               return done err if err?
               executable = new Executable id: 'test', content: exeContent1
               executable.save (err) ->
-               return done err if err?
-               # first commit
-               repo.add [gameFiles.replace(repoRoot, ''), gameRules.replace(repoRoot, '')], {A: true}, (err) ->
                 return done err if err?
-                repo.commit 'first commit', (err) ->
+                # first commit
+                repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
                   return done err if err?
-                  # second version of file and executable
-                  fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
+                  repo.commit 'first commit', (err) ->
                     return done err if err?
-                    file.content = data
-                    service.save file, 'admin', (err, saved) ->
+                    # second version of file and executable
+                    fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
                       return done err if err?
-                      executable.content = exeContent2
-                      executable.save (err) ->
+                      file.content = data
+                      service.save file, 'admin', (err, saved) ->
                         return done err if err?
-                        # second commit
-                        repo.add [gameFiles.replace(repoRoot, ''), gameRules.replace(repoRoot, '')], {A: true}, (err) ->
+                        executable.content = exeContent2
+                        executable.save (err) ->
                           return done err if err?
-                          repo.commit 'second commit', done
+                          # second commit
+                          repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
+                            return done err if err?
+                            repo.commit 'second commit', done
 
     it 'should file content be read at last version', (done) -> 
       service.history file, (err, read, history) ->
@@ -317,7 +317,7 @@ describe 'AuthoringService tests', ->
         return done err if err?
         executable.remove (err) ->
           return done err if err?
-          repo.add [gameFiles.replace(repoRoot, ''), gameRules.replace(repoRoot, '')], {A: true}, (err) ->
+          repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
             return done err if err?
             repo.commit 'third commit', (err) ->
               return done err if err?
