@@ -99,7 +99,10 @@ class _RuleService
           # use master pid if it comes from the master
           wId = if wId? then wId else process.pid
           for id, worker of cluster.workers when worker.process.pid isnt wId
-            worker.send event: 'change', args:[operation, className, changes, wId]
+            try
+              worker.send event: 'change', args:[operation, className, changes, wId]
+            catch err
+              # silent error: if a worker is closed, it will be automatically restarted
 
       # propagate time changes
       ruleUtils.timer.on 'change', (time) ->
@@ -241,7 +244,10 @@ class _RuleService
 
     pool[0].on 'message', end
     # delegate to executor
-    pool[0].send method: 'resolve', args:args, id: id
+    try
+      pool[0].send method: 'resolve', args:args, id: id
+    catch err
+      callback "Executor process dead: #{err}"
    
   # Execute a particular rule for a given situation.
   # As a first validation, the rule is resolved for the target.
@@ -283,7 +289,11 @@ class _RuleService
 
     pool[0].on 'message', end
     # delegate to executor
-    pool[0].send method: 'execute', args: args, id: id
+    try
+      pool[0].send method: 'execute', args: args, id: id
+    catch err
+      callback "Executor process dead: #{err}"
+
      
   # Trigger a turn by executing turn rules
   #
@@ -309,7 +319,10 @@ class _RuleService
 
     pool[1].on 'message', end
     # delegate to scheduler
-    pool[1].send method: 'trigger', id: id
+    try
+      pool[1].send method: 'trigger', id: id
+    catch err
+      callback "Scheduler process dead: #{err}"
 
 class RuleService
   _instance = undefined

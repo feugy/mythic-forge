@@ -57,7 +57,10 @@ worker = require pathUtils.resolve __dirname, process.env.module
 process.on 'message', (msg) ->
   # do not proceed if still initializing
   if !ready
-    process.send method: msg.method, id: msg.id, results: ['worker not ready'] if msg?.method of worker
+    try
+      process.send method: msg.method, id: msg.id, results: ['worker not ready'] if msg?.method of worker
+    catch err
+      # silent error during init
     return
   if msg?.event is 'change'
     # trigger the change as if it comes from the worker's own modelWatcher
@@ -75,7 +78,12 @@ process.on 'message', (msg) ->
     # invoke the relevant worker method, adding a callback
     worker[msg.method].apply worker, (msg.args or []).concat (args...) ->
       # callback send back results to cluster master
-      process.send method: msg.method, id: msg.id, results: args
+      try
+        process.send method: msg.method, id: msg.id, results: args
+      catch err
+        # master probably dead.
+        console.error "worker #{process.pid}, module #{process.env.module} failed to return message: #{err}"
+        process.exit 1
 
 # on change events, send them back to master
 modelWatcher.on 'change', (operation, className, changes, wId) ->

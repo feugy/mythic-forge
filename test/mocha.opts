@@ -2,4 +2,4 @@
 --reporter list
 --compilers coffee:coffee-script/register
 --colors
---timeout 10000
+--timeout 5000
