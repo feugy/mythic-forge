@@ -135,7 +135,7 @@ describe 'Deployement tests', ->
         service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
-          assert.include err, 'no html page including requirej found', "Unexpected error: #{err}"
+          assert.include err, 'no html page including requirejs found', "Unexpected error: #{err}"
           # then notifications were properly received
           assert.deepEqual notifications, [
             'DEPLOY_START'
@@ -155,7 +155,7 @@ describe 'Deployement tests', ->
         service.deploy version, 'admin', (err) ->
           # then an error is reported
           assert.isNotNull err
-          assert.include err, 'no html page including requirej found', "Unexpected error: #{err}"
+          assert.include err, 'no html page including requirejs found', "Unexpected error: #{err}"
           # then notifications were properly received
           assert.deepEqual notifications, [
             'DEPLOY_START'

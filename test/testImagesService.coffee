@@ -26,7 +26,7 @@ utils = require '../hyperion/src/util/common'
 assert = require('chai').assert
 service = require('../hyperion/src/service/ImagesService').get()
 
-imagesPath = require('../hyperion/src/util/common').confKey 'images.store'
+imagesPath = require('../hyperion/src/util/common').confKey 'game.image'
 
 iType = null
 fType = null

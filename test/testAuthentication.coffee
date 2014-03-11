@@ -47,7 +47,7 @@ describe 'Authentication tests', ->
     token = null
     lastConnection = null
 
-    describe 'given a Twitter account', ->
+    describe.skip 'given a Twitter account', ->
 
       twitterUser = "MythicForgeTest"
       twitterPassword = "toto1818"

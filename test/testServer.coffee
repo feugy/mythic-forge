@@ -58,7 +58,7 @@ describe 'Server tests', ->
     # enforce folders existence
     utils.enforceFolderSync utils.confKey 'game.executable.source'
     utils.enforceFolderSync utils.confKey 'game.client.dev'
-    utils.enforceFolderSync utils.confKey 'images.store'
+    utils.enforceFolderSync utils.confKey 'game.image'
     # given a working server
     server.listen port, 'localhost', done
 
@@ -422,7 +422,7 @@ describe 'Server tests', ->
       @bail true
 
       before (done) ->
-        ItemType.collection.drop -> utils.empty utils.confKey('images.store'), -> ItemType.loadIdCache ->
+        ItemType.collection.drop -> utils.empty utils.confKey('game.image'), -> ItemType.loadIdCache ->
           new ItemType(id: 'character').save (err, saved) ->
             return done err if err?
             character = saved
@@ -460,7 +460,7 @@ describe 'Server tests', ->
             # then the description image is updated in model
             assert.equal saved.descImage, "#{character.id}-type.png"
             # then the file exists and is equal to the original file
-            file = pathUtils.join utils.confKey('images.store'), saved.descImage
+            file = pathUtils.join utils.confKey('game.image'), saved.descImage
             assert.ok fs.existsSync file
             assert.equal fs.readFileSync(file).toString(), data.toString()
 
@@ -500,7 +500,7 @@ describe 'Server tests', ->
             assert.equal saved.images[0].width, 0
             assert.equal saved.images[0].height, 0
             # then the file exists and is equal to the original file
-            file = pathUtils.join utils.confKey('images.store'), saved.images[0].file
+            file = pathUtils.join utils.confKey('game.image'), saved.images[0].file
             assert.ok fs.existsSync file
             assert.equal fs.readFileSync(file).toString(), data.toString()
 

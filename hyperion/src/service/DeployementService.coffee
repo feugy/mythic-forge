@@ -304,7 +304,7 @@ class _DeployementService
 
         callback null, result
 
-  # Creates a given version of the game client.
+  # Creates a given version of the game client, its corresponding rules and images.
   # 
   # @param version [String] the desired version
   # @param email [String] the author email, that must be an existing player email
@@ -329,8 +329,9 @@ class _DeployementService
         
         dev = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.dev'
         rules = pathUtils.resolve pathUtils.normalize utils.confKey 'game.executable.source'
+        images = pathUtils.resolve pathUtils.normalize utils.confKey 'game.image'
         # add game files and executables
-        repo.add [dev, rules], {'ignore-errors': true, A:true}, (err) ->
+        repo.add [dev, rules, images], {'ignore-errors': true, A:true}, (err) ->
           return callback "Failed to add files to version: #{err}" if err?
           # TODO use version message
           repo.commit version, {author: versionUtils.getAuthor author}, (err, stdout) =>
