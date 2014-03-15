@@ -78,19 +78,21 @@ define [
 
       # avoid to much logs
       if @_count > limit
-        @_logs.children(':first').remove()
+        @_logs.children(':last').remove()
       else
         @_count++
 
       # date name level parameter : message
       vals = (if _.isObject arg then JSON.stringify arg else arg?.toString() for arg in details.args)
+
+      # put at first line and the compute height
       lineHeight = $("""<div class="log #{details.level}">
         <span class="date">#{moment().format i18n.logs.dateFormat}</span>
         <span class="name">#{_.pad details.name, i18n.logs.nameMaxLength}</span>
         <span class="level">#{_.pad details.level, i18n.logs.levelMaxLength}</span>
         <span class="message">#{vals.join ' '}</span>
-        </div>""").appendTo(@_logs).outerHeight()
+        </div>""").prependTo(@_logs).outerHeight()
 
       pos = @_logs.scrollTop()
-      # scroll to bottom, only if the scroller is already at bottom
-      @_logs.scrollTop height+lineHeight if pos+lineHeight >= height
+      # scroll to top, only if the scroller is already at top
+      @_logs.scrollTop 0 if pos < height
