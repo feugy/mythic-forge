@@ -66,10 +66,6 @@ Player = typeFactory 'Player',
   # **Not propagated by modelWatcher nor returned by AdminService**
   token: String
 
-  # id of the current socket used.
-  # **Not propagated by modelWatcher nor returned by AdminService**
-  socketId: String
-
   # cookie used to access game developpment zone 
   # **Not propagated by modelWatcher nor returned by AdminService**
   key: String
@@ -161,13 +157,11 @@ Player.statics.purge = (player) ->
     delete player._doc.password
     delete player._doc.token 
     delete player._doc.key
-    delete player._doc.socketId
   else 
     # plain raw object
     delete player.password
     delete player.token 
     delete player.key
-    delete player.socketId
   player
 
 module.exports = conn.model 'player', Player

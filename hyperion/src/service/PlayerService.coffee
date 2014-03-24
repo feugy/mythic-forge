@@ -221,7 +221,7 @@ class _PlayerService
           unless idx is -1
             @connectedList.splice idx, 1
             notifier.notify 'players', 'disconnect', saved, 'expired'
-          callback "Expired token"
+          callback "expiredToken"
       else 
         # change token for security reason
         player.token = utils.generateToken 24

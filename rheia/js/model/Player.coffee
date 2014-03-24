@@ -158,7 +158,7 @@ define [
     _onPlayerEvent: (event, player) =>
       switch event
         when 'connect'
-          @connected.push player.email
+          @connected.push player.email unless player.email in @connected
           @trigger 'connectedPlayersChanged', [player.email], []
         when 'disconnect'
           idx = @connected.indexOf player.email
@@ -213,5 +213,4 @@ define [
       attrs = super()
       if Array.isArray attrs.characters
         attrs.characters = _.map attrs.characters, (character) -> character?.id
-      console.log attrs
       attrs

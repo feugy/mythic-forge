@@ -9,7 +9,7 @@ requirejs.config
     'backbone': 'backbone-1.0.0-min'
     'jquery': 'jquery-2.1.0-min'
     'mocha': 'mocha-1.17.1'
-    'socket.io': 'socket.io-0.9.11'
+    'socket.io': 'socket.io-1.0.0-pre'
     'underscore': 'underscore-1.5.2-min'
     'underscore.string': 'underscore.string-2.3.3-min'
     
@@ -17,7 +17,7 @@ requirejs.config
     'async':
       exports: 'async'
     'atlas':
-      deps: ['async', 'jquery', 'socket.io', 'underscore']
+      deps: ['jquery', 'underscore']
       exports: 'factory'
     'chai':
       exports: 'chai'
@@ -28,8 +28,6 @@ requirejs.config
       exports: '$'
     'mocha':
       exports: 'mocha'
-    'socket.io':
-      exports: 'io'
     'underscore': 
       exports: '_'
       
@@ -37,11 +35,13 @@ require [
   'require'
   'mocha'
   'async'
-], (require, mocha, async) ->
+  'socket.io'
+], (require, mocha, async, io) ->
 
   mocha.setup ui:'bdd'
   window.async = async
-  
+  window.io = io
+
   # now require tests
   require [
    'test/atlas'

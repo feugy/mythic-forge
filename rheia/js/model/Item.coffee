@@ -159,6 +159,8 @@ define [
     # @return a serialized version of this model
     _serialize: => 
       result = super()
+      result.map = result.map._serialize() if result.map?._serialize
+      result.type = result.type?.id or result.type
       delete result.transition unless @_transitionChanged
       result
 

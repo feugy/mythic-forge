@@ -18,6 +18,7 @@ var gutil = require('gulp-util');
 var clean = require('gulp-clean');
 var stylus = require('gulp-stylus');
 var coffee = require('gulp-coffee');
+var plumber = require('gulp-plumber');
 var requirejs = require('requirejs');
 var async = require('async');
 var fs = require('fs-extra');
@@ -37,9 +38,13 @@ gulp.task('clean', function(){
 
 function build() {
   return gulp.src(sources)
+    .pipe(plumber({
+      errorHandler: function(err) {
+        gutil.log(err);
+        gutil.beep();
+      }
+    }))
     .pipe(coffee({bare: true}))
-      .on('error', gutil.log)
-      .on('error', gutil.beep)
     .pipe(gulp.dest(dest));
 }
 

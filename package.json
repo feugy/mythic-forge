@@ -26,23 +26,23 @@
     "password-hash": "1.2.1",
     "requirejs": "2.1.10",
     "sanitizer": "0.1.1",
-    "socket.io": "https://github.com/feugy/socket.io/tarball/master",
+    "socket.io": "1.0.0-pre",
     "stylus": "0.42.2",
     "underscore": "1.5.2",
-    "underscore.string": "2.3.3",
-    "ws": "0.4.31"
+    "underscore.string": "2.3.3"
   },
   "devDependencies": {
     "chai": "1.9.0",
     "mocha": "1.17.1",
-    "gulp": "3.5.5",
+    "gulp": "3.5.6",
     "gulp-clean": "0.2.4",
     "gulp-coffee": "1.4.1",
+    "gulp-plumber": "0.5.6",
     "gulp-stylus": "0.0.14",
     "gulp-util": "2.2.14",
     "phantom-proxy": "0.1.792",
     "request": "2.33.0",
-    "socket.io-client": "0.9.11"
+    "socket.io-client": "1.0.0-pre"
   },
   "scripts": {
     "start": "node hyperion/bin/start",

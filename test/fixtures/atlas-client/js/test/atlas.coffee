@@ -91,7 +91,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(msg.type).to.be.equal 'modelChanged'
             expect(msg.args[0]).to.be.equal 'creation'
             expect(msg.args[1]).to.be.deep.equal player
-            adminNS = Atlas.socket.of "/admin"
+            adminNS = Atlas.socket.io.socket "/admin"
             adminNS.on 'connect', done
 
     describe 'given some types, models and rules', ->

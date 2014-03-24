@@ -174,7 +174,7 @@ describe 'PlayerService tests', ->
         service.getByToken token, (err) ->
           # then an error is send
           assert.isNotNull err
-          assert.equal 'Expired token', err
+          assert.equal 'expiredToken', err
           assert.equal 1, notifications.length
           assert.equal 'disconnect', notifications[0][0]
           assert.isTrue saved.equals(notifications[0][1]), 'notification do not contains disconnected player'

@@ -4,7 +4,7 @@
   # 
   # - async@0.2.7
   # - jquery@2.0.0
-  # - socket.io@0.9.10
+  # - socket.io@1.0.0-pre
   # - underscore@1.4.4
   #
   # Atlas needs an event bus to propagate changes on models
@@ -143,8 +143,8 @@
       connected = false
         
       Atlas.socket = io.connect conf.apiBaseUrl+'/', 
-        query:"token=#{token}"
-        'force new connection': true
+        query:"token=#{token}", 
+        transports: ['websocket', 'polling', 'flashsocket']
 
       Atlas.socket.on 'close', => console.log "connect_failed", arguments
 
@@ -157,11 +157,14 @@
       Atlas.socket.on 'disconnect', (reason) =>
         connecting = false
         connected = false
-        Atlas.gameNS?.removeAllListeners()
-        Atlas.updateNS?.removeAllListeners()
         return if isLoggingOut
-        callback new Error if reason is 'booted' then 'kicked' else 'disconnected'
-    
+        options.debug and console.log "disconnected for #{reason}"
+        callback new Error 'disconnected'
+      
+      Atlas.socket.io.on 'reconnect_attempt', ->
+        # don't forget to set connecting flag again for error handling
+        connecting = true
+
       Atlas.socket.on 'connect', => 
         raw = null
         # in parallel, get connected user and wired namespaces
@@ -172,7 +175,7 @@
               return end err if err?
               raw = result
               # update socket.io query to allow reconnection with new token value
-              Atlas.socket.socket.options.query = "token=#{raw.token}"
+              Atlas.socket.io.opts.query = "token=#{raw.token}"
               end()
           (end) ->
             # wired both namespaces
@@ -180,18 +183,16 @@
               {attr:'gameNS', ns:'game'}
               {attr:'updateNS', ns:'updates'}
             ], (spec, next) ->
-              Atlas[spec.attr] = Atlas.socket.of "/#{spec.ns}"
+              Atlas[spec.attr] = Atlas.socket.io.socket "/#{spec.ns}"
               Atlas[spec.attr].on 'connect', next
-              Atlas[spec.attr].on 'connect_failed', next
+              Atlas[spec.attr].on 'connect_error', next
             , end
         ], (err) ->
           connecting = false
           connected = !err?
           return callback err if err?
-          # enrich player before sending him
+          # enrich player before keeping him in cache
           player = new Atlas.Player raw, (err) ->
-            # update socket.io query to allow reconnection with new token value
-            Atlas.socket.socket.options.query = "token=#{player.token}"
             eventEmitter.emit 'connected', player
             callback err, player
         

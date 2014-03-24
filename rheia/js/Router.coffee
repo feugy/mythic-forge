@@ -38,7 +38,7 @@ requirejs.config
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
     'nls': '../nls'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
-    'socket.io': 'lib/socket.io-0.9.11-min'
+    'socket.io': 'lib/socket.io-1.0.0-pre'
     'text': 'lib/text-2.0.0-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'tpl': '../template'
@@ -92,12 +92,13 @@ window.app = {}
 
 # Mapping between socket.io error reasons and i18n error messages
 errorMapping = 
-  kicked: 'disconnected'
-  disconnected: 'networkFailure'
+  'unauthorized': 'unauthorized'
+  'invalidToken': 'invalidToken'
+  'expiredToken': 'expiredToken'
+  'disconnected': 'disconnected'
+  'kicked': 'kicked'
   'Wrong credentials': 'wrongCredentials'
   'Missing credentials': 'wrongCredentials'
-  'Expired token': 'expiredToken'
-  unauthorized: 'insufficientRights'
   'Deployment in progress': 'deploymentInProgress'
   '^.* not authorized$': 'clientAccessDenied'
 
@@ -143,7 +144,7 @@ define [
   # simple flag to avoid loading multiple perspective at the same time
   perspectiveLoading = false
   isLoggingOut = false
-  connected = false
+  connecting = false
 
   $(window).on 'beforeunload', () ->
     isLoggingOut = true
@@ -158,56 +159,64 @@ define [
   # the connect function will try to connect with server. 
   # 
   # @param token [String] the autorization token, obtained during authentication
-  # @param callback [Function] invoked when all namespaces have been connected.
-  # @param errorCallback [Function] invoked when connection cannot be established, or is lost:
-  # @option errorCallback err [String] the error detailed case, or null if no error occured
-  connect = (token, callback, errorCallback) ->
+  # @param callback [Function] invoked when all namespaces have been connected, with arguments
+  # @option callback err [String] the error detailed case, or null if no error occured
+  connect = (token, callback) ->
     isLoggingOut = false
-    connected = true
+    connecting = true
 
     # wire logout facilities
-    app.router.on 'logout', => 
+    app.router.on 'logout', -> 
       localStorage.removeItem 'app.token'
       isLoggingOut = true
       socket.emit 'logout'
       app.router.navigate 'login', trigger: true
 
-    socket = io.connect conf.apiBaseUrl, {query:"token=#{token}"}
+    socket = io.connect conf.apiBaseUrl, query:"token=#{token}", transports: ['websocket', 'polling', 'flashsocket']
 
+    # only report error during connection phase
     socket.on 'error', (err) ->
-      errorCallback err if connected
+      if connecting
+        connecting = false 
+        callback err 
 
     socket.on 'disconnect', (reason) ->
-      connected = false 
-      app.sockets[name].removeAllListeners() for name of app.sockets
       return if isLoggingOut
       console.log "disconnected for #{reason}"
+      # TODO plus moyen de savoir pourquoi on a été décconnecté
       if reason is 'booted'
         document.cookie = "key=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/"
-      errorCallback if reason is 'booted' then 'kicked' else 'disconnected'
+      callback 'disconnected'
 
-    socket.on 'connect', -> 
+    socket.io.on 'reconnect_attempt', ->
+      # don't forget to set connecting flag again for error handling
+      connecting = true
+
+    socket.on 'connect', (err) ->
+      return if err?
+      # close previous error (for example connection lost message)
+      $('#loginError').dialog 'close'
+
+      connecting = false 
       # On connection, retrieve current connected player immediately
-      socket.emit 'getConnected', (err, player) =>
+      socket.emit 'getConnected', (err, player) ->
         # stores the token to allow re-connection
         app.player = player
         localStorage.setItem 'app.token', player.token
         # set cookie for dev access if admin
         if player.key
-          console.log 'set dev cookie', player.key
           document.cookie = "key=#{player.key}; max-age=#{1000*60*60*24}; path=/"
         # update socket.io query to allow reconnection with new token value
-        socket.socket.options.query = "token=#{player.token}"
+        socket.io.opts.query = "token=#{player.token}"
 
+      # connect on existing namespaces
       names = Object.keys app.sockets
-
       async.forEach names, (name, next) ->
-        app.sockets[name] = socket.of "/#{name}"
+        return next null if app.sockets[name]?
+        app.sockets[name] = socket.io.socket "/#{name}"
         app.sockets[name].on 'connect', next
-        app.sockets[name].on 'connect_failed', next
-      , (err) ->
-        return errorCallback err if err?
-        callback()
+        app.sockets[name].on 'connect_error', next
+      , callback
 
   class Router extends Backbone.Router
 
@@ -304,10 +313,13 @@ define [
       if redirect?
         localStorage.removeItem 'app.redirect'
         return window.location.pathname = redirect
+
       # Connects token
-      connect token, =>
+      connect token, (err) =>
         # removes previous error
         $('#loginError').dialog 'close'
+        # something goes wrong !
+        return @_onLoginError err.toString().replace('error ', '') if err?
 
         # do not recreates singletons in case of reconnection
         if $('body > .layout').length is 0
@@ -329,9 +341,6 @@ define [
         # reset Backbone.history internal state to allow re-running current route
         Backbone.history.fragment = null
         @navigate current, trigger:true
-      , (err) =>
-        # something goes wrong !
-        @_onLoginError err.replace('handshake ', '').replace('error ', '')
 
     # **private**
     # Invoked when the login mecanism failed. Display details to user and go back to login

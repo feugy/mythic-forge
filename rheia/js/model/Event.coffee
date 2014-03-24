@@ -161,4 +161,5 @@ define [
     _serialize: => 
       attrs = super()
       attrs.from = attrs.from?.id or null
+      attrs.type = attrs.type?.id or attrs.type 
       attrs

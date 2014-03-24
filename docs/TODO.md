@@ -5,7 +5,6 @@
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
-  - use socks.js to replace socket.io
   - refactor configuration from json to yaml
   - cache evinction on inutility and size
   - test images for field types and event types
@@ -19,6 +18,7 @@
     - token expiration: no refresh on operations
 
 - Rheia
+  - on reconnection, errors are not handled
   - Bugs
     - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
     - use tileDim in hexagon and diamond map renderers
@@ -176,6 +176,7 @@
     - rules retrieval
     - map items modification propagation
     - secured websocket
+    - use socket.io 1.0.0-pre
 
 - Rheia
   - Bugs
