@@ -1046,7 +1046,7 @@ describe 'RuleService tests', ->
             select: (callback) =>
               setTimeout => 
                 throw new Error @id+' throw error'
-              , 0
+              , 5
             execute: (target, callback) =>
               callback null
           )()"""
@@ -1135,7 +1135,7 @@ describe 'RuleService tests', ->
             execute: (target, callback) =>
               setTimeout => 
                 throw new Error @id+' throw error'
-              , 0
+              , 5
           )()"""
       script.save (err) ->
         return done err if err?
@@ -1381,7 +1381,7 @@ describe 'RuleService tests', ->
             canExecute: (actor, target, context, callback) =>
               setTimeout => 
                 throw new Error @id+' throw error'
-              , 0
+              , 5
             execute: (actor, target, params, context, callback) =>
               callback null, null
           )()"""
@@ -1429,7 +1429,7 @@ describe 'RuleService tests', ->
             execute: (actor, target, params, context, callback) =>
               setTimeout => 
                 throw new Error @id+' throw error'
-              , 0
+              , 5
           )()"""
       script.save (err) ->
         return done err if err?
