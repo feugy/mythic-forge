@@ -36,14 +36,6 @@ EventType = typeFactory 'EventType',
   typeProperties: true
   instanceClass: 'Event'
   hasImages: true
-  middlewares:
-
-    # add a name key inside default configuration if type is new
-    #
-    # @param next [Function] function that must be called to proceed with other middleware.
-    save: (next) -> 
-      return next() unless @isNew 
-      modelUtils.addConfKey @id, 'names', @id, logger, next
 
 # Export the Class.
 module.exports = conn.model 'eventType', EventType

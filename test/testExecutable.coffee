@@ -18,7 +18,6 @@
 ###
 
 Executable = require '../hyperion/src/model/Executable'
-ClientConf = require '../hyperion/src/model/ClientConf'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 utils = require '../hyperion/src/util/common'
 pathUtils = require 'path'
@@ -51,13 +50,10 @@ describe 'Executable tests', ->
     executable = new Executable id: id, content: content
     
     awaited = false
-    confChanged = false
 
     # then a creation event was issued
     listener = (operation, className, instance) ->
-      if operation is 'update' and className is 'ClientConf'
-        confChanged = true
-      else if operation is 'creation' and className is 'Executable'
+      if operation is 'creation' and className is 'Executable'
         assert.ok executable.equals instance
         awaited = true
     watcher.on 'change', listener
@@ -77,14 +73,8 @@ describe 'Executable tests', ->
         assert.equal executables[0].content, content
         assert.equal executables[0].lang, 'coffee'
         assert.propertyVal executables[0].meta, 'kind', 'Script'
-        # then a new configuration key was added
-        ClientConf.findById 'default', (err, conf) ->
-          err = 'not found' unless err? or conf?
-          return done "Failed to get conf: #{err}" if err?
-          assert.equal conf.values?.names?[id], id
-          assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
-          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
-          done()
+        assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
+        done()
 
   it 'should js executable be created', (done) ->
     # given a JS new executable
@@ -93,13 +83,10 @@ describe 'Executable tests', ->
     executable = new Executable id: id, lang: 'js', content: content
 
     awaited = false
-    confChanged = false
 
     # then a creation event was issued
     listener = (operation, className, instance) ->
-      if operation is 'update' and className is 'ClientConf'
-        confChanged = true
-      else if operation is 'creation' and className is 'Executable'
+      if operation is 'creation' and className is 'Executable'
         assert.ok executable.equals instance
         awaited = true
     watcher.on 'change', listener
@@ -120,13 +107,8 @@ describe 'Executable tests', ->
         assert.equal executables[0].lang, 'js'
         assert.propertyVal executables[0].meta, 'kind', 'Script'
         # then a new configuration key was added
-        ClientConf.findById 'default', (err, conf) ->
-          err = 'not found' unless err? or conf?
-          return done "Failed to get conf: #{err}" if err?
-          assert.equal conf.values?.names?[id], id
-          assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
-          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
-          done()
+        assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
+        done()
         
   it 'should executable compilation error be reported', (done) -> 
     # given a new executable with compilation error
@@ -200,14 +182,11 @@ describe 'Executable tests', ->
           assert.equal executables.length, 0
           done()
 
-    it 'should executable be updated', (done) ->      
-      confChanged = false
+    it 'should executable be updated', (done) ->
       execChanges = null
 
       # then a creation event was issued
       listener = (operation, className, changes) ->
-        if operation is 'update' and className is 'ClientConf'
-          confChanged = true 
         if operation is 'update' and className is 'Executable'
           execChanges = changes
       watcher.on 'change', listener
@@ -224,7 +203,6 @@ describe 'Executable tests', ->
           assert.equal executables[0].content, newContent
           assert.equal executables[0].id, 'test2'
           assert.propertyVal executables[0].meta, 'kind', 'Script'
-          assert.isFalse confChanged, 'watcher was invoked for client configuration'
           assert.isNotNull execChanges, "watcher was't invoked for executable: #{execChanges}"
           done()
 

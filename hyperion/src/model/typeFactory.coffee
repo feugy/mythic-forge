@@ -120,9 +120,6 @@ mongoose.Document::isModified = (path) ->
     compareArrayProperty @, 'characters'
     compareObjProperty @, 'prefs'
 
-  # detect modifications on arbitrary objects
-  compareObjProperty @, 'values' if @_className is 'ClientConf'
-
   originalIsModified.apply @, arguments
 
 # Initialize dynamic properties from type when needed

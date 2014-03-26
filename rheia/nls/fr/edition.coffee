@@ -96,6 +96,8 @@ define
     lang: 'Language'
     coffee: 'CoffeeScript'
     js: 'JavaScript'
+    editedValues: '>>>>>>>>>> Vos valeurs:\n'
+    remoteValues: '\n<<<<<<<<<< Valeurs du serveur:\n'
 
   tips:
     addProperty: 'Ajoute une nouvelle propriété'

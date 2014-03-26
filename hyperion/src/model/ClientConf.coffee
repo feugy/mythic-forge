@@ -19,6 +19,7 @@
 'use strict'
 
 typeFactory = require './typeFactory'
+yaml = require 'js-yaml'
 conn = require './connection'
 {type} = require '../util/common'
 
@@ -26,26 +27,18 @@ conn = require './connection'
 # locale will be the id, other values will be stored arbitrary
 module.exports = conn.model 'clientConf', typeFactory 'ClientConf', 
   
-  # configuration's values: plain json.
-  values:
-    type: {}
-    default: -> {} # use a function to force instance variable
+  # configuration's values: plain yaml.
+  values: 
+    type: String
+    default: -> ""
 ,
   middlewares:
 
-    # Save original value for further comparisons.
-    init: (next, conf) ->
-      # store original value
-      @__origvalues = JSON.stringify conf.values or {}
-      next()
-
-    # Save middleware, to check that no injection is done through values
+    # Save middleware, to check that values are safe YAML
     save: (next) ->
       try
-        JSON.parse if 'string' is type @_doc.values then @_doc.values else JSON.stringify @_doc.values or {}
+        yaml.safeLoad @_doc.values
         next()
-        # once saved, store new original value
-        @__origvalues = JSON.stringify @_doc.values or {}
       catch err
-        # Not a valid JSON
-        next new Error "JSON syntax error for 'values': #{err}"
+        # Not a valid YAML
+        next new Error "YAML syntax error for 'values': #{err}"

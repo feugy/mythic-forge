@@ -36,12 +36,6 @@ FieldType = typeFactory 'FieldType',
     default: -> []
 , 
   hasImages: true
-  middlewares:
-
-    # add a name key inside default configuration if type is new
-    #
-    # @param next [Function] function that must be called to proceed with other middleware.
-    save: (next) -> modelUtils.addConfKey @id, 'names', @id, logger, next
 
 # Export the Class.
 module.exports = conn.model 'fieldType', FieldType

@@ -20,7 +20,6 @@
 Map = require '../hyperion/src/model/Map'
 Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
-ClientConf = require '../hyperion/src/model/ClientConf'
 utils = require '../hyperion/src/util/common'
 typeFactory = require '../hyperion/src/model/typeFactory'
 assert = require('chai').assert
@@ -50,13 +49,10 @@ describe 'Map and Field tests', ->
     id = 'map1'
     map = new Map {id: id}
     awaited = false
-    confChanged = false
 
     # then a creation event was issued
     listener = (operation, className, instance)->
-      if operation is 'update' and className is 'ClientConf'
-        confChanged = true
-      else if operation is 'creation' and className is 'Map'
+      if operation is 'creation' and className is 'Map'
         assert.ok map.equals instance
         awaited = true
     watcher.on 'change', listener
@@ -72,14 +68,8 @@ describe 'Map and Field tests', ->
         assert.equal docs.length, 1
         # then it's values were saved
         assert.equal docs[0].id, id
-        # then a new configuration key was added
-        ClientConf.findById 'default', (err, conf) ->
-          err = 'not found' unless err? or conf?
-          return done "Failed to get conf: #{err}" if err?
-          assert.equal conf.values?.names?[id], id
-          assert.isTrue awaited, 'watcher was\'nt invoked for new map'
-          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
-          done()
+        assert.isTrue awaited, 'watcher was\'nt invoked for new map'
+        done()
 
   describe 'given a map', ->
 
@@ -106,14 +96,11 @@ describe 'Map and Field tests', ->
           done()
 
     it 'should map be updated', (done) ->
-      confChanged = false
       awaited = false
       
       # then a modification event was issued
       listener = (operation, className, instance) ->
-        if operation is 'update' and className is 'ClientConf'
-          confChanged = true 
-        else if operation is 'update' and className is 'Map'
+        if operation is 'update' and className is 'Map'
           assert.ok map.equals instance
           assert.equal instance.id, 'map2'
           assert.equal instance.kind, 'square'
@@ -131,7 +118,6 @@ describe 'Map and Field tests', ->
           assert.equal docs[0].id, 'map2'
           assert.equal docs[0].kind, 'square'
           assert.ok awaited, 'watcher wasn\'t invoked'
-          assert.isFalse confChanged, 'watcher was invoked for client configuration'
           done()
 
     it 'should field be created', (done) ->

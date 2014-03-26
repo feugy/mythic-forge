@@ -19,7 +19,6 @@
 
 Event = require '../hyperion/src/model/Event'
 EventType = require '../hyperion/src/model/EventType'
-ClientConf = require '../hyperion/src/model/ClientConf'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 assert = require('chai').assert
@@ -70,13 +69,10 @@ describe 'EventType tests', ->
     id = 'talk'
     type = new EventType id: id
     awaited = false
-    confChanged = false
 
     # then a creation event was issued
     listener = (operation, className, instance)->
-      if operation is 'update' and className is 'ClientConf'
-        confChanged = true
-      else if operation is 'creation' and className is 'EventType'
+      if operation is 'creation' and className is 'EventType'
         assert.ok type.equals instance
         awaited = true
     watcher.on 'change', listener
@@ -91,14 +87,8 @@ describe 'EventType tests', ->
         assert.equal types.length, 1
         # then it's values were saved
         assert.equal types[0].id, id
-        # then a new configuration key was added
-        ClientConf.findById 'default', (err, conf) ->
-          err = 'not found' unless err? or conf?
-          return done "Failed to get conf: #{err}" if err?
-          assert.equal conf.values?.names?[id], id
-          assert.isTrue awaited, 'watcher was\'nt invoked for new type'
-          assert.isTrue confChanged, 'watcher was\'nt invoked for configuration'
-          done()
+        assert.isTrue awaited, 'watcher was\'nt invoked for new type'
+        done()
 
   describe 'given a type with a property', ->
     beforeEach (done) ->
@@ -139,14 +129,11 @@ describe 'EventType tests', ->
           done()
 
     it 'should type properties be updated', (done) ->
-      confChanged = false
       awaited = false
       
       # then a modification event was issued
       listener = (operation, className, instance) ->
-        if operation is 'update' and className is 'ClientConf'
-          confChanged = true 
-        else if operation is 'update' and className is 'EventType'
+        if operation is 'update' and className is 'EventType'
           assert.ok type.equals instance
           awaited = true
       watcher.on 'change', listener
@@ -162,7 +149,6 @@ describe 'EventType tests', ->
         assert.equal saved.properties.content?.type, 'integer'
         assert.equal saved.properties.content?.def, 10
         assert.ok awaited, 'watcher wasn\'t invoked'
-        assert.isFalse confChanged, 'watcher was invoked for client configuration'
         done()
 
     it 'should type properties be removed', (done) ->

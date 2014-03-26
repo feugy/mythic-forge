@@ -121,10 +121,7 @@ compileFile = (executable, callback) ->
     executables[executable.id] = executable
     # clean require cache.
     cleanNodeCache()
-
-    # add a name key inside default configuration if type is new
-    return callback null unless wasNew[executable.id]
-    modelUtils.addConfKey executable.id, 'names', executable.id, logger, callback
+    callback null
 
 # Require an executable, and populate its meta datas
 #

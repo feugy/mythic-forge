@@ -71,7 +71,7 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new ClientConf()
-      @model.values = example: 'this is an example value'
+      @model.values = "example: 'this is an example value'"
 
     # Indicates wether or not this object can be removed.
     # Default configuration cannot be removed.
@@ -99,7 +99,7 @@ define [
     # call to `fillRendering`. 
     _specificRender: =>
       @_editor = @$el.find('.values').advEditor(
-        mode: 'json'
+        mode: 'yaml'
       ).on('change', @_onChange
       ).data 'advEditor'
 
@@ -107,13 +107,13 @@ define [
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
       super()
-      @model.values = JSON.parse @_editor.options.text
+      @model.values = @_editor.options.text
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      displayed = if @_mergedValues? then @_mergedValues else @model.values or {}
-      @_editor.setOption 'text', JSON.stringify displayed, null, '\t'
+      displayed = if @_mergedValues? then @_mergedValues else @model.values or ""
+      @_editor.setOption 'text', displayed
       @_mergedValues = null
       super()
 
@@ -137,7 +137,7 @@ define [
 
       # merge values if necessary
       return unless @canSave()
-      @_mergedValues = $.extend true, {}, saved.values, JSON.parse @_editor.options.text
+      @_mergedValues = i18n.labels.editedValues+@_editor.options.text+i18n.labels.remoteValues+saved.values
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -153,17 +153,6 @@ define [
       comparable.push
         name: 'values'
         original: @model.values
-        current: JSON.parse(@_editor.options.text) or {}
+        current: @_editor.options.text or ""
 
       comparable
-
-    # **private**
-    # Allows to compute the rendering's validity.
-    # 
-    # @return true if all rendering's fields are valid
-    _specificValidate: =>
-      try 
-        JSON.parse @_editor.options.text
-        []
-      catch err
-        [msg: _.sprintf i18n.msgs.invalidConfValues]

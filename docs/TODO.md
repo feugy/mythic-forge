@@ -5,7 +5,6 @@
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
-  - refactor configuration from json to yaml
   - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
@@ -69,7 +68,7 @@
   - Event type CRUD
   - Event CRUD with link to from, creation and update dates
   - Logger refactoring, override console standard functions and send logs to admin clients
-  - Central configuration and i18n utility for clients (types, rules, others...)
+  - Central configuration and i18n utility for clients (types, rules, others...) in YAML
   - Players 
     - CRUD with AdminService
     - password management and protection for manually provided accounts
@@ -264,16 +263,16 @@
       - static fields and description image
       - instance images
       - image carousel in explorer
-    - Rule
+    - Rule/TurnRule/Scripts
       - categories in explorer
       - static fields (name, category) with validation
       - rule body
       - rule CRUD
       - rule special behaviour when renaming
       - try to reload executable when initializing executables on requirejs errors
-    - TurnRule
-    - Scripts
-    - choose and display script/rule language
+      - written in JavaScript or CoffeeScript
+    - Client configuration
+      - written in YAML
   - administration perspective
     - create and restore game client versions
     - display externally triggered deployements
@@ -327,6 +326,7 @@
   - create and automate tests
 
 # Consequent changes
+  - mongoDB instead MySQL, NodeJS instead Java
   - no more distinction between Items and Actors
   - no more event on actors
   - no more link between rules and actors
@@ -334,14 +334,14 @@
   - event-kind properties
   - date-kind properties
   - connect with Google, Twitter
-  - FSItem history management, with revert to previous and restore
   - drop from Item/Event/Player tabs
   - sprite management for animations and transition
-  - rules in CoffeeScript
+  - rules in CoffeeScript and Javascript
   - isomorphic rules: can partially be executed on client to increase reactivity
   - WebSocket everywhere: increase speed
   - rendering template for events
   - live log displayal on Rheia
-  - faster game client optimization process
-  - game client files history, with possible rollback (even for removed/renamed files)
+  - faster game client optimization process, automatic versionning
+  - game client files and rules history, with possible rollback (even for removed/renamed files)
   - a central configuration and i18n file for clients to store types names, rules results, and any labels
+  - much more fast and reliable
