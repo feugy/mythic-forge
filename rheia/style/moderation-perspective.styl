@@ -30,8 +30,10 @@
       flex-grow 1
       overflow-y auto
       overflow-x hidden
+      z-index 0
 
   .toolbar
+    z-index 1
 
     .search
       box-sizing border-box
@@ -197,6 +199,7 @@
   .loadable
     cursor pointer
     display inline-block
+    user-select none
     
   .loadable:hover
     box-shadow: 0 0 10px 5px #AAA

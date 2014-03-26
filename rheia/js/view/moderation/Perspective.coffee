@@ -355,6 +355,11 @@ define [
       # gets type list and display popup while.
       Class.collection.on 'reset', listLoaded
       Class.collection.fetch()
+
+      selectLoadable = (event) ->
+        popup.find('.loadable').removeClass 'selected'
+        $(event.target).closest('.loadable').addClass 'selected'
+
       popup = utils.popup(title, message, null, [
         text: i18n.buttons.ok
         click: (event) => 
@@ -390,9 +395,11 @@ define [
           <div class='errors'></div>
           <div class='loader'></div>"""
 
-      ).on 'click', '.loadable', (event) =>
-        popup.find('.loadable').removeClass 'selected'
-        $(event.target).closest('.loadable').addClass 'selected'
+      ).on('click', '.loadable', selectLoadable
+      ).on 'dblclick', '.loadable', (event) =>
+        selectLoadable event
+        # close popup
+        popup.parent().find('button').click()
 
       # creates id validator
       validator = new validators.Regexp 

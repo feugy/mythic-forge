@@ -29,9 +29,6 @@ define [
   'widget/instanceTree'
   'jquery-ui'
 ], ($, _, i18n, parser, utils, Base) ->
-
-  # once search is used, increment the jquery-ui overley z-index
-  $.ui.dialog.maxZ = 5001
   
   # The search widget displays a search field, a line for results number, and a popup
   # for search results.

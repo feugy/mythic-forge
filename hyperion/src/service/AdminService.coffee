@@ -112,7 +112,8 @@ class _AdminService
       when 'Player' then modelClass = Player
       when 'Item' 
         populateTypeAndSave = (model) ->
-          ItemType.findCached [model?.type?.id], (err, types) ->
+          # resolve type in db
+          ItemType.findCached [model?.type?.id or model?.type], (err, types) ->
             return callback "Failed to save item #{values.id}. Error while resolving its type: #{err}" if err?
             return callback "Failed to save item #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1    
             # Do the replacement.
@@ -120,7 +121,7 @@ class _AdminService
             _save model
 
         if 'id' of values and Item.isUsed values.id
-          # resolve type
+          # retreive previous values
           return Item.findCached [values.id], (err, models) ->
             return callback "Unexisting Item with id #{values.id}: #{err}", modelName if err? or models.length is 0
             model = models[0]
@@ -130,10 +131,10 @@ class _AdminService
               model[key] = value unless key in ['id', 'type', 'map']
 
             # update map value
-            if model.map?.id isnt values.map?.id
-              if values.map?.id
+            if model.map?.id isnt (values.map?.id or values.map)
+              if values.map?.id or values.map?
                 # resolve map
-                return Map.findCached [values.map.id], (err, maps) ->
+                return Map.findCached [values.map.id or values.map], (err, maps) ->
                   return callback "Failed to save item #{values.id}. Error while resolving its map: #{err}" if err?
                   return callback "Failed to save item #{values.id} because there is no map with id #{item.map}" unless maps.length is 1  
                   model.map = maps[0]
@@ -149,7 +150,7 @@ class _AdminService
 
       when 'Event' 
         populateTypeAndSave = (model) ->
-          EventType.findCached [model?.type?.id], (err, types) ->
+          EventType.findCached [model?.type?.id or model?.type], (err, types) ->
             return callback "Failed to save event #{values.id}. Error while resolving its type: #{err}" if err?
             return callback "Failed to save event #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1    
             # Do the replacement.
