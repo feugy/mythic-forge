@@ -560,8 +560,8 @@ makeCacheable = (folder, main, version, callback) ->
                 pattern: /<\s*link([^>]*)href\s*=\s*(["'])(.*(?=\2))\2/gi
                 replace: "<link$1href=\"#{timestamp}/$3\""
               ,
-                pattern: /<\s*script([^>]*)data-timestamp(.*(?=\2))\2([^>]*)src\s*=\s*(["'])(.*(?=\2))\2/gi
-                replace: "<script$1src=\"#{timestamp}/$3\""
+                pattern: /<\s*script([^>]*)data-timestamp([^>]*)src\s*=\s*(["'])(.*(?=\2))\2/gi
+                replace: "<script$1src=\"#{timestamp}/$4\""
               ,
                 pattern: /\{\{version\}\}/g
                 replace: version
