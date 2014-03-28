@@ -44,7 +44,7 @@ notifications = []
 browser = null
 listener = null
 
-describe.only 'Deployement tests', -> 
+describe 'Deployement tests', -> 
 
   before (done) ->
     @timeout 5000

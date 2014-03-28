@@ -17,9 +17,9 @@
     - token expiration: no refresh on operations
 
 - Rheia
-  - on reconnection, errors are not handled
   - Bugs
     - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
+    - set nls default values to avoid browser failure with non-french locale
     - use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
     - after version change, version list is empty
