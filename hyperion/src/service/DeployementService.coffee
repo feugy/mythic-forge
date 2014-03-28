@@ -25,6 +25,7 @@ stylus = require 'stylus'
 fs = require 'fs-extra'
 async = require 'async'
 requirejs = require 'requirejs'
+cheerio = require 'cheerio'
 utils = require '../util/common'
 versionUtils = require '../util/versionning'
 logger = require('../util/logger').getLogger 'service'
@@ -546,28 +547,28 @@ makeCacheable = (folder, main, version, callback) ->
             # replaces links from main html file
             fs.readFile newMain, (err, content) ->
               return callback "failed to read new main file: #{err}" if err?
-              content = content.toString()
               
               logger.debug "replace links inside #{newMain}"
-              # <script data-main="" src="" />
-              specs = [
-                pattern: /<\s*script([^>]*)data-main\s*=\s*(["'])(.*(?=\2))\2([^>]*)src\s*=\s*(["'])(.*(?=\5))\5/gi
-                replace: "<script$1data-main=\"#{timestamp}/$3\"$4src=\"#{timestamp}/$6\""
-              ,
-                pattern: /<\s*script([^>]*)src\s*=\s*(["'])(.*(?=\2))\2([^>]*)data-main\s*=\s*(["'])(.*(?=\5))\5/gi
-                replace: "<script$1src=\"#{timestamp}/$3\"$4data-main=\"#{timestamp}/$6\""
-              ,
-                pattern: /<\s*link([^>]*)href\s*=\s*(["'])(.*(?=\2))\2/gi
-                replace: "<link$1href=\"#{timestamp}/$3\""
-              ,
-                pattern: /<\s*script\s*data-timestamp([^>]*)src\s*=\s*(["'])(.*(?=\2))\2/gi
-                replace: "<script$1src=\"#{timestamp}/$3\""
-              ,
-                pattern: /\{\{version\}\}/g
-                replace: version
-              ]
-              content = content.replace spec.pattern, spec.replace for spec in specs
-              fs.writeFile newMain, content, (err) ->
+              # replace version as plain string and load as HTML document
+              $ = cheerio.load content.toString().replace /\{\{version\}\}/g, version
+
+              for script in $ 'script,link'
+                script = $ script
+
+                # replace script's source unless conf.js or external
+                source = script.attr 'src'
+                unless not source? or /conf\.js$/.test(source) or /^http/.test source
+                  script.attr 'src', "#{timestamp}/#{source}"
+
+                # replace link's source unless external
+                source = script.attr 'href'
+                script.attr 'href', "#{timestamp}/#{source}" unless not source? or /^http/.test source
+
+                # replace data-main for requirejs
+                source = script.attr 'data-main'
+                script.attr 'data-main', "#{timestamp}/#{source}" if source?
+
+              fs.writeFile newMain, $.html(), (err) ->
                 return callback "failed to write new main file: #{err}" if err?
                 logger.debug "#{newMain} rewritten"
                 callback null, dest

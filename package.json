@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "async": "0.2.10",
+    "cheerio": "0.13.1",
     "coffee-script": "1.7.1",
     "corser": "1.2.0",
     "express": "3.4.8",
