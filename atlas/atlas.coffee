@@ -184,8 +184,8 @@
               {attr:'updateNS', ns:'updates'}
             ], (spec, next) ->
               Atlas[spec.attr] = Atlas.socket.io.socket "/#{spec.ns}"
-              Atlas[spec.attr].on 'connect', next
-              Atlas[spec.attr].on 'connect_error', next
+              Atlas[spec.attr].once 'connect', next
+              Atlas[spec.attr].once 'connect_error', next
             , end
         ], (err) ->
           connecting = false
