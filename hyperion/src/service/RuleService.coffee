@@ -50,6 +50,7 @@ pool = []
 # @option options module [String] path (relative to the launcher) of the spawned script
 spawn = (poolIdx, options) ->
   worker = cluster.fork options
+  worker.setMaxListeners 150
   pool[poolIdx] = worker
 
   # relaunch immediately dead worker
@@ -247,6 +248,7 @@ class _RuleService
     try
       pool[0].send method: 'resolve', args:args, id: id
     catch err
+      pool[0].removeListener 'message', end
       callback "Executor process dead: #{err}"
    
   # Execute a particular rule for a given situation.
@@ -292,6 +294,7 @@ class _RuleService
     try
       pool[0].send method: 'execute', args: args, id: id
     catch err
+      pool[0].removeListener 'message', end
       callback "Executor process dead: #{err}"
 
      
@@ -322,6 +325,7 @@ class _RuleService
     try
       pool[1].send method: 'trigger', id: id
     catch err
+      pool[1].removeListener 'message', end
       callback "Scheduler process dead: #{err}"
 
 class RuleService

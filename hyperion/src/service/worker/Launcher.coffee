@@ -93,7 +93,7 @@ modelWatcher.on 'change', (operation, className, changes, wId) ->
     process.send event: 'change', args: [operation, className, changes, process.pid]
   catch err
     # master probably dead.
-    console.error "worker #{process.pid}, module #{process.env.module} failed to relay change due to: #{err}"
+    console.error "worker #{process.pid}, module #{process.env.module} failed to relay change #{operation} #{className} due to: #{err}"
     process.exit 1
 
 # on notification, send them back to master
