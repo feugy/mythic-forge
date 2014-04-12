@@ -97,9 +97,9 @@ errorMapping =
   'expiredToken': 'expiredToken'
   'disconnected': 'disconnected'
   'kicked': 'kicked'
-  'Wrong credentials': 'wrongCredentials'
-  'Missing credentials': 'wrongCredentials'
-  'Deployment in progress': 'deploymentInProgress'
+  'wrongCredentials': 'wrongCredentials'
+  'missingCredentials': 'wrongCredentials'
+  'deploymentInProgress': 'deploymentInProgress'
   '^.* not authorized$': 'clientAccessDenied'
 
 define [

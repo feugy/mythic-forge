@@ -309,6 +309,9 @@ module.exports = (typeName, spec, options = {}) ->
   AbstractType.post 'remove', ->
     # updates the cache
     delete caches[typeName][@id]
+
+    # to avoid circular dependencies, replace links by their ids in properties
+    modelUtils.processLinks @, @type.properties if options.instanceProperties
         
     # broadcast deletion
     modelWatcher.change 'deletion', typeName, @
