@@ -4,6 +4,8 @@
   - Bugs
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
+  - JSON properties in Item/Event types
+  - [!] interpreted yaml in conf at model loading
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - cache evinction on inutility and size
   - test images for field types and event types
@@ -33,6 +35,7 @@
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
 
 - Atlas
+  - image cache evinction (notably when item/field/event type changes)
   - manage labels in clientConf
   - provide widget library with Image service
   - package as library

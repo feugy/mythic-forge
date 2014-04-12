@@ -198,7 +198,7 @@ class _GameService
     ids.push locale.replace /_\w*$/, '' if locale? and -1 isnt locale.indexOf '_'
 
     # get default client configuration
-    def = ClientConf.findCached ids, (err, confs) =>
+    ClientConf.findCached ids, (err, confs) =>
       return callback "Failed to load client configurations: #{err}" if err?
       def = _.findWhere confs, _id:'default'
       result = {}

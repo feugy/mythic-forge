@@ -383,7 +383,7 @@ LoggerFactory.on 'log', (details) ->
 # Configure also a strategy for manually created accounts.
 # Browser will be redirected to success Url with a `token` parameter in case of success 
 # Browser will be redirected to success Url with a `err` parameter in case of failure
-passport.use new LocalStrategy playerService.authenticate
+passport.use new LocalStrategy playerService.authenticate, 
 registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
 
@@ -393,7 +393,7 @@ registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFro
 # It needs `username` and `password` form parameters
 # Once authenticated, browser is redirected with autorization token in url parameter
 app.post '/auth/login', (req, res, next) ->
-  passport.authenticate('local', (err, token, details) ->
+  passport.authenticate('local', {badRequestMessage: "missingCredentials"}, (err, token, details) ->
     # authentication failed
     err = details.message if token is false
     # depending on the requested result, redirect or send redirection in json

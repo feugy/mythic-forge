@@ -387,7 +387,7 @@ describe 'Authentication tests', ->
           # then the success page is displayed
           url = parseUrl res.headers.location
           assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 isnt url.query.indexOf('Wrong%20credentials'), "unexpected error #{url.query}"
+          assert.ok -1 isnt url.query.indexOf('wrongCredentials'), "unexpected error #{url.query}"
           done()   
 
       it 'should unknown user not be authenticated', (done) ->
@@ -404,7 +404,7 @@ describe 'Authentication tests', ->
           # then the success page is displayed
           url = parseUrl res.headers.location
           assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 isnt url.query.indexOf('Wrong%20credentials'), "unexpected error #{url.query}"
+          assert.ok -1 isnt url.query.indexOf('wrongCredentials'), "unexpected error #{url.query}"
           done()   
 
       it 'should user not be authenticated without password', (done) ->
@@ -420,5 +420,6 @@ describe 'Authentication tests', ->
           # then the success page is displayed
           url = parseUrl res.headers.location
           assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 isnt url.query.indexOf('Missing%20credentials'), "unexpected error #{url.query}"
+          console.log url.query
+          assert.ok -1 isnt url.query.indexOf('missingCredentials'), "unexpected error #{url.query}"
           done()  

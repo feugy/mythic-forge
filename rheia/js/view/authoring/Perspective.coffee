@@ -417,6 +417,8 @@ define [
 
       # Read its content
       reader = new FileReader()
+      # reset for further reuse
+      @$el.find('.file-upload > input').val ''
       
       reader.onload = (event) =>
         # once read, create the FSItem.
@@ -426,7 +428,7 @@ define [
           # Removes the descriptor and put in utf8 because save will translate it into base64
           content: atob event.target.result.replace /^data:.*;base64,/, ''
         # and save it on server
-        @_createInProgress.save()
+        @_createInProgress.save (err) => console.log "failed to save #{path}:", err if err?
 
       # read data from file as base64 string
       reader.readAsDataURL file

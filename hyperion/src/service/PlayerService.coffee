@@ -82,8 +82,8 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the created player.
   register: (email, password, callback) =>
-    return callback 'Email is mandatory' unless email
-    return callback 'Password is mandatory' unless password
+    return callback 'missingEmail' unless email
+    return callback 'missingPassword' unless password
     logger.info "Register new player with email: #{email}"
     # check email unicity
     @getByEmail email, false, (err, player) ->
@@ -108,7 +108,7 @@ class _PlayerService
     @getByEmail email, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
       # check player existence and password correctness
-      return callback null, false, {type:'error', message:'Wrong credentials'} if player is null or !player.checkPassword password
+      return callback null, false, {type:'error', message:'wrongCredentials'} if player is null or !player.checkPassword password
       # update the saved token and last connection date
       @_setTokens player, 'Manual', callback
 
@@ -209,7 +209,7 @@ class _PlayerService
       # no player found
       return callback null, null unless player?
       # not an admin during a deployement: not authorinzed
-      return callback 'Deployment in progress', null if deployementService.deployedVersion()? and !player.isAdmin
+      return callback 'deploymentInProgress', null if deployementService.deployedVersion()? and !player.isAdmin
 
       # check expiration date
       if player.lastConnection.getTime()+expiration*1000 < new Date().getTime()

@@ -82,7 +82,7 @@ describe 'PlayerService tests', ->
     service.register 'Jack', '', (err, player) ->
       # then an error is returned
       assert.isNotNull err
-      assert.equal 'Password is mandatory', err, "unexpected error: #{err}"
+      assert.equal 'missingPassword', err, "unexpected error: #{err}"
       done()
 
   it 'should email be mandatory during registration', (done) ->
@@ -90,7 +90,7 @@ describe 'PlayerService tests', ->
     service.register '', 'toto', (err, player) ->
       # then an error is returned
       assert.isNotNull err
-      assert.equal 'Email is mandatory', err, "unexpected error: #{err}"
+      assert.equal 'missingEmail', err, "unexpected error: #{err}"
       done()
 
   describe 'given an existing player', ->
