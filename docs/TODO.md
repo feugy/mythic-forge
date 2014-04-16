@@ -20,6 +20,9 @@
 
 - Rheia
   - Bugs
+    - [!!] player prefs not updated in visualization
+    - [!!] player token invalidated after player edition
+    - [!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
     - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
     - set nls default values to avoid browser failure with non-french locale
     - use tileDim in hexagon and diamond map renderers

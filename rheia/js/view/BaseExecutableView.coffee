@@ -85,7 +85,7 @@ define [
                 """<li 
                       data-rule="#{ruleId}" 
                       data-params="#{JSON.stringify result[0].params}"
-                    >#{conf.names[ruleId] or ruleId}</li>"""
+                    >#{ruleId}</li>"""
             )
           @_menu.append html.join ' '
 
