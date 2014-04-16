@@ -71,6 +71,24 @@ define [
       return utils.instanceName @model if confirm
       "#{_.truncate utils.instanceName(@model), 15}<div class='uid'>(#{@model.id or '~'})</div>"
 
+    # Returns the view's action bar, and creates it if needed.
+    #
+    # @return the action bar rendering.
+    getActionBar: =>
+      bar = super()
+      # adds specific buttons
+      if bar.find('.copy').length is 0
+        $('<a class="copy"></a>')
+          .attr('title', i18n.tips.copy)
+          .button(
+            icons: 
+              primary: 'copy small'
+            text: false
+          ).appendTo(bar).click (event) =>
+            event?.preventDefault()
+            app.router.trigger 'copy', @model
+      bar
+
     # **private**
     # Gets values from rendering and saved them into the edited object.
     # Fills properties from properties widgets

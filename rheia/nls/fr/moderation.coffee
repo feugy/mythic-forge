@@ -26,6 +26,8 @@ define
     createItem: 'Création d\'un objet'
     createEvent: 'Création d\'un évènement'
     shadowObj: 'Operation impossible'
+    copyItem: 'Copie d\'un objet'
+    copyEvent: 'Copie d\'un évènement'
 
   labels: 
     maps: 'Cartes'
@@ -63,6 +65,7 @@ define
     kick: 'Kickass !'
 
   tips:
+    copy: 'Dupliquer'
     newItem: 'Créer un nouvel objet'
     newEvent: 'Créer un nouvel évènement'
     newPlayer: 'Créer un nouvel compte joueur'

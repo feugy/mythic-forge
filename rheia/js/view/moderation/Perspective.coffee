@@ -63,6 +63,68 @@ define [
       horizontalTileNum: 8
       angle: 0
 
+  # Opens a popup to select instance id.
+  # A validator expect to have a value for id.
+  # Id unicity is checked on server
+  #
+  # @param title [String] popup's title
+  # @param message [String] popup's message
+  # @param check [Function] invoked when user close popup by clicking. 
+  # Takes the popup as first argument, and returns false to prevent closing.
+  # @param process [Function] invoked when id was validated on server and no error found
+  # Takes id as first argument.
+  # @return the created popup
+  openIdPopup = (title, message, check, process) ->
+    popup = utils.popup(title, message, null, [
+      text: i18n.buttons.ok
+      click: (discard) => 
+        return true if discard
+        validator.validate()
+        # Do not proceed unless no validation error and selected type
+        return false unless check(popup) and validator.errors.length is 0
+        id = popup.find('.id').val()
+
+        # ask server if id is free
+        rid = utils.rid()
+        app.sockets.admin.on 'isIdValid-resp', listener = (reqId, err) =>
+          return unless rid is reqId
+          app.sockets.admin.removeListener 'isIdValid-resp', listener
+          return popup.find('.errors').first().empty().append i18n.msgs.alreadyUsedId if err
+          validator.dispose()
+          # now we can opens the view tab
+          popup.dialog 'close'
+          popup.off 'click', '.loadable'
+          input.off 'keyup'
+          process id
+
+        app.sockets.admin.emit 'isIdValid', rid, id
+        false
+    ]).addClass('choose-type').append """
+        <div class="id-container">
+          <label>#{i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
+          <input type='text' class='id' value='#{utils.generateId()}'/>
+        </div>
+        <div class='errors'></div>"""
+    
+    # creates id validator
+    validator = new validators.Regexp 
+      required: true
+      invalidError: i18n.msgs.invalidId
+      regexp: i18n.constants.uidRegex
+    , i18n.labels.id, input = popup.find('.id'), 'keyup' 
+
+    # displays error on keyup. Binds after validator creation to validate first
+    input.focus()
+    input.on 'keyup', (event) =>
+      # displays error on keyup
+      container = popup.find('.errors').first()
+      container.empty()
+      if validator.errors.length
+        container.append error.msg for error in validator.errors
+
+    # returns popup
+    popup
+
   # The moderation perspective shows real maps, and handle items, event and players
   class ModerationPerspective extends TabPerspective
     
@@ -95,12 +157,17 @@ define [
     _creationType: null
 
     # **private**
+    # used to store copied Event/Item and passed as argument to the BaseLinkedView
+    _copy: null
+
+    # **private**
     # inhibit zoom handler to avoid looping when updating view rendering
     _inhibitZoom: false
     
     # The view constructor.
     constructor: ->
       super 'moderation'
+      @_copy = null
 
       utils.onRouterReady =>
         # bind to global events
@@ -115,6 +182,7 @@ define [
         @bindTo Item.collection, 'update', @_onUpdateItem
         @bindTo Item.collection, 'remove', @_onRemoveFieldOrItem
         @bindTo app.router, 'embodyChanged', @_onRefreshEmbodiment
+        @bindTo app.router, 'copy', @_onCopy
 
         @bindTo app.router, 'searchResults', (err, instances, results) =>
           return unless instances is true
@@ -126,6 +194,9 @@ define [
 
         # retrieve map list
         Map.collection.fetch()
+
+      # copy hotkey
+      $(document).on("keydown.#{@cid}", {keys:'ctrl+shift+c'}, @_onCopyHotKey)
 
     # The `render()` method is invoked by backbone to display view content at screen.
     # Draws the login form.
@@ -225,15 +296,16 @@ define [
             view = new ItemView id, new Item type: @_creationType
             @_creationType = null
           else
-            view = new ItemView id
+            view = new ItemView id, @_copy
         when 'Event'
           if @_creationType?
             view = new EventView id, new Event type: @_creationType
             @_creationType = null
           else
-            view = new EventView id
+            view = new EventView id, @_copy
         when 'Player'
           view = new PlayerView id
+      @_copy = null
       view
 
     # **private**
@@ -360,62 +432,26 @@ define [
         popup.find('.loadable').removeClass 'selected'
         $(event.target).closest('.loadable').addClass 'selected'
 
-      popup = utils.popup(title, message, null, [
-        text: i18n.buttons.ok
-        click: (event) => 
-          event?.preventDefault()
-          validator.validate()
+      popup = openIdPopup title, message, (popup) => 
+          # check
           selected = popup.find '.loadable.selected'
-          # Do not proceed unless no validation error and selected type
-          return false unless selected.length is 1 and validator.errors.length is 0
-          @_creationType = Class.collection.get selected.data 'id'
-          id = popup.find('.id').val()
+          if selected.length is 1
+            @_creationType = Class.collection.get selected.data 'id'
+            true
+          else
+            false
+        , (id) =>
+          # process
+          console.log "type #{@_creationType?.id} selected for new object"
+          app.router.trigger 'open', (if isItem then 'Item' else 'Event'), id
 
-          # ask server if id is free
-          rid = utils.rid()
-          app.sockets.admin.on 'isIdValid-resp', listener = (reqId, err) =>
-            return unless rid is reqId
-            app.sockets.admin.removeListener 'isIdValid-resp', listener
-            return popup.find('.errors').first().empty().append i18n.msgs.alreadyUsedId if err
-            validator.dispose()
-            # now we can opens the view tab
-            popup.dialog 'close'
-            popup.off 'click', '.loadable'
-            input.off 'keyup'
-            console.log "type #{@_creationType?.id} selected for new object"
-            app.router.trigger 'open', (if isItem then 'Item' else 'Event'), id
-
-          app.sockets.admin.emit 'isIdValid', rid, id
-          false
-      ]).addClass('name-choose-popup choose-type').append("""
-          <div class="id-container">
-            <label>#{i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
-            <input type='text' class='id' value='#{utils.generateId()}'/>
-          </div>
-          <div class='errors'></div>
-          <div class='loader'></div>"""
-
-      ).on('click', '.loadable', selectLoadable
-      ).on 'dblclick', '.loadable', (event) =>
-        selectLoadable event
-        # close popup
-        popup.parent().find('button').click()
-
-      # creates id validator
-      validator = new validators.Regexp 
-        required: true
-        invalidError: i18n.msgs.invalidId
-        regexp: i18n.constants.uidRegex
-      , i18n.labels.id, input = popup.find('.id'), 'keyup' 
-
-      # displays error on keyup. Binds after validator creation to validate first
-      input.focus()
-      input.on 'keyup', (event) =>
-        # displays error on keyup
-        container = popup.find('.errors').first()
-        container.empty()
-        if validator.errors.length
-          container.append error.msg for error in validator.errors
+      popup.addClass('name-choose-popup').
+        append("<div class='loader'></div>").
+        on('click', '.loadable', selectLoadable).
+        on 'dblclick', '.loadable', (event) =>
+          selectLoadable event
+          # close popup
+          popup.parent().find('button').click()
 
     # **private**
     # Handler invoked when a tab was added to the widget. Make tab draggable to affect instance.
@@ -477,3 +513,34 @@ define [
       utils.popup i18n.titles.shadowObj, i18n.msgs.shadowObj, 'warning', [text: i18n.buttons.ok]
       # relaunches search
       @_searchWidget?.triggerSearch true
+
+    # **private**
+    # Copy hotkey handler. Opens the copy into a new tab
+    #
+    # @param event [Event] keyboard event
+    _onCopyHotKey: (event) =>
+      return unless @$el.is ':visible'
+      event?.preventDefault()
+      event?.stopImmediatePropagation()
+      # tries to save current
+      return false unless @_tabs?.options.selected isnt -1
+      console.log "#{@className} copy current tab ##{@_tabs.options.selected} by hotkey"
+      @_onCopy @_views[@_tabs.options.selected]?.model
+      false
+
+    # **private**
+    # Copy an Item or an Event. Ask for id with a popup, and opens a new tab.
+    #
+    # @param event [Event] keyboard event
+    _onCopy: (copy) =>
+      return unless copy._className in ['Item', 'Event']
+      # ask for an id
+      type = copy._className
+      openIdPopup i18n.titles["copy#{type}"], i18n.msgs.chooseId, (popup) -> 
+        true
+      , (id) =>
+        # Trigger copy
+        console.log "copy {@className} #{copy.id} to #{id}"
+        @_copy = new copy.constructor copy.toJSON()
+        @_copy.id = null
+        app.router.trigger 'open', copy._className, id
