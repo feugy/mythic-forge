@@ -121,6 +121,8 @@ define [
       container.empty()
       if validator.errors.length
         container.append error.msg for error in validator.errors
+      else if event.keyCode is 13
+        popup.parent().find('button').click()
 
     # returns popup
     popup
