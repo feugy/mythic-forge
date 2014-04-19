@@ -70,8 +70,8 @@ Item = typeFactory 'Item',
     
     # pre-init middleware: retrieve the map corresponding to the stored id.
     #
-    # @param item [Item] the initialized item.
     # @param next [Function] function that must be called to proceed with other middleware.
+    # @param item [Item] the initialized item.
     init: (next, item) ->
       return next() unless item.map?
       # loads the type from local cache

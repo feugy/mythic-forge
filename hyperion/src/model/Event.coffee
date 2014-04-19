@@ -48,8 +48,8 @@ Event = typeFactory 'Event',
 
     # pre-init middleware: retrieve the Item corresponding to the stored from id.
     #
-    # @param item [Item] the initialized item.
     # @param next [Function] function that must be called to proceed with other middleware.
+    # @param event [Item] the initialized event.
     init: (next, event) ->
       return next() unless event.from?
       # loads the type, but not from local cache to be able to modify it without side effects

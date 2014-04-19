@@ -23,6 +23,17 @@ yaml = require 'js-yaml'
 conn = require './connection'
 {type} = require '../util/common'
 
+# Parse YAML string source into _values model attributes.
+#
+# @param model [ClientConf] the concerned configuration
+# @param source [String] the latestest YAML source
+parseSource = (model, source) ->
+  try
+    model._values = yaml.safeLoad source or ""
+  catch err
+    # silently fails on error: save will be refused later
+    model._values = {error: "invalid YAML source: #{err}"}
+
 # Define the schema for configuration values.
 # locale will be the id, other values will be stored arbitrary
 ClientConf = typeFactory 'ClientConf', 
@@ -33,14 +44,18 @@ ClientConf = typeFactory 'ClientConf',
     default: -> ""
     set: (value) ->
       # on each source modification, parse it and update values
-      try
-        @_values = yaml.safeLoad value
-      catch err
-        # silently fails on error: save will be refused later
-        @_values = {error: "invalid YAML source: #{err}"}
+      parseSource @, value
       value
 ,
   middlewares:
+
+    # pre-init middleware: parse configuration
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    # @param conf [ClientConf] the initialized configuration.
+    init: (next, conf) ->
+      parseSource @, @source
+      next()
 
     # Save middleware, to check that values are safe YAML
     save: (next) ->
