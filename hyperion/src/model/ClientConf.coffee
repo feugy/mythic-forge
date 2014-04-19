@@ -54,7 +54,7 @@ ClientConf = typeFactory 'ClientConf',
     # @param next [Function] function that must be called to proceed with other middleware.
     # @param conf [ClientConf] the initialized configuration.
     init: (next, conf) ->
-      parseSource @, @source
+      parseSource @, conf.source
       next()
 
     # Save middleware, to check that values are safe YAML

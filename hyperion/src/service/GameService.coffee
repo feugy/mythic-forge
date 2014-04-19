@@ -201,6 +201,7 @@ class _GameService
       return callback "Failed to load client configurations: #{err}" if err?
       def = _.findWhere confs, _id:'default'
       result = {}
+
       # first merge with empty configuration
       merge result, def.values if def?
       
