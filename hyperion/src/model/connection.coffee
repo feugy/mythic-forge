@@ -51,9 +51,6 @@ module.exports = mongoose.createConnection url, {}, (err) ->
 # @param idCach [Object] object in which ids are stored (as key) with value 1
 # @param callback  [Function] invoked when finished with error as first argument (or null otherwise)
 module.exports.loadIdCache = (idCache, callback = null) ->
-  unless process.env.MONGOHQ_URL?
-    url = "mongodb://#{host}:#{port}/#{db}" 
-
   MongoClient.connect url, (err, db) ->
     if err?
       err = new Error "Failed to connect to mongo to get ids: #{err}" 
