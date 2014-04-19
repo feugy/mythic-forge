@@ -65,7 +65,7 @@ module.exports.loadIdCache = (idCache, callback = null) ->
         idCache[obj._id] = 1 for obj in results
         next()
     , (err) ->
-      throw new Error "Failed to retrieve ids of collection #{name}: #{err}" if err? and not callback?
+      throw new Error "Failed to retrieve ids of collection: #{err}" if err? and not callback?
       # end the connection
       db.close()
       if err?
