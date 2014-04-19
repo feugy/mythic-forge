@@ -5,9 +5,7 @@
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
   - JSON properties in Item/Event types
-  - [!] interpreted yaml in conf at model loading
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
-  - cache evinction on inutility and size
   - test images for field types and event types
   - Documentation
   - Rule engine
@@ -48,6 +46,7 @@
 
 - Hyperion
   - Bugs
+    - model cache retains old object version: clean worker model cache when any thread failed
     - temper executable require during resetAll until all executable compilation
     - avoid message collision between ruleService and ruleExecutor on same executed method
     - avoid sending duplicates to Mongo on saves (fix duplicate key error)
@@ -74,7 +73,8 @@
   - Event type CRUD
   - Event CRUD with link to from, creation and update dates
   - Logger refactoring, override console standard functions and send logs to admin clients
-  - Central configuration and i18n utility for clients (types, rules, others...) in YAML
+  - Central configuration and i18n utility for clients (types, rules, others...) in YAML, modifiable as string and readable as JSON
+  - Model cache evinction on fixed duration and thread crash
   - Players 
     - CRUD with AdminService
     - password management and protection for manually provided accounts

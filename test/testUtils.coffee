@@ -23,6 +23,7 @@ async = require 'async'
 {join, sep, normalize, resolve} = require 'path'
 git = require 'gift'
 moment = require 'moment'
+FieldType = require '../hyperion/src/model/FieldType'
 utils = require '../hyperion/src/util/common'
 versionUtils = require '../hyperion/src/util/versionning'
 ruleUtils = require '../hyperion/src/util/rule'
@@ -150,7 +151,58 @@ describe 'Utilities tests', ->
         assert.equal events[0].year(), moment().year() + 1
         done()
       , 3100
+
+  describe 'given a clean model cache', ->
+
+    beforeEach (done) ->
+      # empty field types.
+      FieldType.collection.drop -> FieldType.loadIdCache done
+
+    it 'should be loaded into cache at creation', (done) ->
+      now = moment()
+      type = new FieldType id:'montain'
+      type.save (err) ->
+        return done err if err?
+        assert.closeTo moment(FieldType.cachedSince 'montain').diff(now), 0, 50
+        done()
+
+    it 'should cache since be refreshed at update', (done) ->
+      now = moment()
+      type = new FieldType id:'montain'
+      type.save (err, type) ->
+        return done err if err?
+        _.delay ->
+          type.descImage = 'toto.png'
+          save = moment()
+          type.save (err) ->
+            return done err if err?
+            assert.isTrue save.diff(now) >= 100
+            assert.closeTo moment(FieldType.cachedSince 'montain').diff(save), 0, 50
+            done()
+        , 100
+
+    it 'should cache be cleared at deletion', (done) ->
+      type = new FieldType id:'montain'
+      type.save (err, type) ->
+        return done err if err?
+        _.delay ->
+          type.remove (err) ->
+            return done err if err?
+            assert.equal FieldType.cachedSince('montain'), 0
+            done()
+        , 100
       
+    it 'should cache be evicted after a while', (done) ->
+      @timeout 1000
+      type = new FieldType id:'montain'
+      type.save (err, type) ->
+        return done err if err?
+        _.delay ->
+          return done err if err?
+          assert.equal FieldType.cachedSince('montain'), 0
+          done()
+        , 700
+
   describe 'given an initialized git repository', ->
     @timeout 5000
 

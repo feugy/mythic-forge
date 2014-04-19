@@ -27,6 +27,7 @@ utils = require '../util/common'
 Rule = require '../model/Rule'
 ruleUtils = require '../util/rule'
 Executable = require '../model/Executable'
+Map = require '../model/Map'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
 LoggerFactory = require '../util/logger'
@@ -55,7 +56,14 @@ spawn = (poolIdx, options) ->
 
   # relaunch immediately dead worker
   worker.on 'exit', (code, signal) ->
-    return if worker.suicide
+    # evict model cache for main and other threads
+    Map.cleanModelCache()
+    for id, other of cluster.workers when other isnt worker
+      try
+        worker.send event: 'modelReset'
+      catch err
+        # silent error: if a worker is closed, it will be automatically restarted
+    # respawn dead worker
     spawn poolIdx, options
     loggerWorker.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
 

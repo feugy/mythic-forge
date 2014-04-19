@@ -42,4 +42,4 @@ define [
 
     # **private**
     # List of properties that must be defined in this instance.
-    _fixedAttributes: ['values']
+    _fixedAttributes: ['source']

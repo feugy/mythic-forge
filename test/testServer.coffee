@@ -323,9 +323,7 @@ describe 'Server tests', ->
                       callback null, 'target renamed'
                   )()"""
 
-              script.save (err) ->
-                return done "hi there! #{err}" if err?
-                done()
+              script.save done
 
         it 'should types be searchable', (done) ->
           # given a connected socket.io client

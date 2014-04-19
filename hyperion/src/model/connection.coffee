@@ -19,7 +19,8 @@
 'use strict'
 
 mongoose = require 'mongoose'
-mongodb = require 'mongodb'
+async = require 'async'
+MongoClient = require('mongodb').MongoClient
 utils = require '../util/common'
 logger = require('../util/logger').getLogger 'model'
 
@@ -32,15 +33,42 @@ else
   host = utils.confKey 'mongo.host', 'localhost'
   port = utils.confKey 'mongo.port', 27017
   db = utils.confKey 'mongo.db' 
-  url = "mongodb://#{host}:#{port}/#{db}" 
-  
-options = 
-  user: utils.confKey('mongo.user', null)
-  pass: utils.confKey('mongo.password', null)
-delete options.user unless options.user
-delete options.pass unless options.pass
+  user = utils.confKey('mongo.user', null)
+  pass = utils.confKey('mongo.password', null)
+  url = "mongodb://#{if user? and pass? then "#{user}:#{pass}@" else ''}#{host}:#{port}/#{db}" 
 
-# opens the connection
-module.exports = mongoose.createConnection url, options, (err) ->
+# load ids of all existing models from database
+
+# exports the connection
+module.exports = mongoose.createConnection url, {}, (err) ->
   throw new Error "Unable to connect to MongoDB: #{err}" if err?
   logger.info "Connection established with MongoDB on database #{db}"
+
+# opens a dedicated connection to load all table ids.
+# connection is immediately closed afterward.
+# If no callback is provided, errors will be raised.
+#
+# @param idCach [Object] object in which ids are stored (as key) with value 1
+# @param callback  [Function] invoked when finished with error as first argument (or null otherwise)
+module.exports.loadIdCache = (idCache, callback = null) ->
+  unless process.env.MONGOHQ_URL?
+    url = "mongodb://#{host}:#{port}/#{db}" 
+
+  MongoClient.connect url, (err, db) ->
+    if err?
+      err = new Error "Failed to connect to mongo to get ids: #{err}" 
+      if callback? then callback err else throw err
+    # get ids in each collections
+    async.forEach ['players', 'items', 'itemtypes', 'events', 'eventtypes', 'maps', 'fieldtypes', 'clientconfs'], (name, next) ->
+      db.collection(name).find({},fields: _id:1).toArray (err, results) ->
+        return next err if err?
+        idCache[obj._id] = 1 for obj in results
+        next()
+    , (err) ->
+      throw new Error "Failed to retrieve ids of collection #{name}: #{err}" if err? and not callback?
+      # end the connection
+      db.close()
+      if err?
+        err = new Error "Failed to retrieve ids: #{err}" 
+        throw err unless callback?
+      callback?(err)

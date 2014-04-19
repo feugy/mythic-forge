@@ -36,6 +36,11 @@ authentication:
 # MongoDB connection
 mongo: {}
 
+# Model cache eviction parameters (in milliseconds)
+cache:
+  frequency: 1000
+  maxAge: 5000
+
 # location of games files
 game: 
   repo: /tmp/deephulk

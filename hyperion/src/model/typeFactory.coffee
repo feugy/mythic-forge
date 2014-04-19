@@ -23,7 +23,7 @@ _ = require 'underscore'
 fs = require 'fs'
 path = require 'path'
 async = require 'async'
-MongoClient = require('mongodb').MongoClient
+conn = require './connection'
 Executable = require '../model/Executable'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
@@ -34,37 +34,14 @@ imageStore = utils.confKey 'game.image'
 
 # cache of used ids for all managed type cache, populated at startup
 idCache = {}
+conn.loadIdCache idCache
+
 # Bunch of inmemory caches.
-# contain for each managed class an associative array in which model ids are keys and model are values
+# contain for each managed class (name as string) an associative array in which:
+# - key is model ids
+# - value is an object with "model" property (the model itself) "since" property (timestamp of last save)
 caches = {}
-
-# load ids of all existing models from database
-loadIdCache = (callback = null) ->
-  if process.env.MONGOHQ_URL?
-    url = process.env.MONGOHQ_URL
-    db = "mongoHQ"
-  else
-    host = utils.confKey 'mongo.host', 'localhost'
-    port = utils.confKey 'mongo.port', 27017
-    db = utils.confKey 'mongo.db' 
-    user = utils.confKey 'mongo.user', null
-    pass = utils.confKey 'mongo.password', null
-    url = "mongodb://#{if user? and pass? then "#{user}:#{pass}@" else ''}#{host}:#{port}/#{db}" 
-
-  MongoClient.connect url, (err, db) ->
-    throw new Error "Failed to connect to mongo to get ids: #{err}" if err?
-    idCache = {}
-    # get ids in each collections
-    async.forEach ['players', 'items', 'itemtypes', 'events', 'eventtypes', 'maps', 'fieldtypes', 'clientconfs'], (name, next) ->
-      db.collection(name).find({},fields: _id:1).toArray (err, results) ->
-        return next err if err?
-        idCache[obj._id] = 1 for obj in results
-        next()
-    , (err) ->
-      throw new Error "Failed to retrieve ids of collection #{name}: #{err}" if err?
-      # end the connection
-      db.close()
-      callback() if callback?
+modelUtils.evictModelCache caches, utils.confKey('cache.frequency'), utils.confKey 'cache.maxAge'
 
 # update local cache when removing an instance or creating one
 modelWatcher.on 'change', (operation, className, changes) ->
@@ -74,8 +51,6 @@ modelWatcher.on 'change', (operation, className, changes) ->
     delete idCache[changes.id]
 modelWatcher.on 'executableReset', (removed) ->
   delete idCache[id] for id in removed when id of idCache
-
-loadIdCache()
 
 # Extends _registerHook to construct dynamic properties in Document constructor
 original_registerHooks = mongoose.Document::$__registerHooks
@@ -171,7 +146,8 @@ module.exports = (typeName, spec, options = {}) ->
           # partial update
           # do not use setter to avoid marking the instance as modified.
           for attr, value of changes when !(attr in ['id', '__v'])
-            instance = caches[typeName][changes.id]
+            caches[typeName][changes.id].since = new Date().getTime()
+            instance = caches[typeName][changes.id].model
             instance._doc[attr] = value  
             if "__orig#{attr}" of instance
               if _.isArray instance["__orig#{attr}"]
@@ -268,7 +244,7 @@ module.exports = (typeName, spec, options = {}) ->
     # first look into the cache (order is preserved)
     for id in ids 
       if id of caches[typeName]
-        cached.push caches[typeName][id]
+        cached.push caches[typeName][id].model
       else
         notCached.push id
     return _.defer(-> callback null, cached) if notCached.length is 0
@@ -276,8 +252,7 @@ module.exports = (typeName, spec, options = {}) ->
     @find {_id: $in: notCached}, (err, results) =>
       return callback err if err?
       # keep the original order
-      callback null, (caches[typeName][id] for id in ids when caches[typeName][id]?)
-
+      callback null, (caches[typeName][id].model for id in ids when caches[typeName][id]?)
 
   # Load the different ids from MongoDB.
   # **Warning:** this method uses it's own dedicated MongoDB connection. 
@@ -286,7 +261,21 @@ module.exports = (typeName, spec, options = {}) ->
   # @param callback [Function] loading end callback.
   AbstractType.statics.loadIdCache = (callback) ->
     throw new Error 'Never use it in production!' if process.env.NODE_ENV isnt 'test'
-    loadIdCache callback
+    idCache = {}
+    conn.loadIdCache idCache, callback
+
+  # Check if a model is cached, and since when
+  #
+  # @returns the timestamp since when a model is cached.
+  AbstractType.statics.cachedSince = (id) ->
+    if id of caches[typeName] then caches[typeName][id].since else 0
+
+  # Clean model cache for this model class or all cached models
+  #
+  # @param all [Boolean] true (default) to clean all models, false to clean models of this class
+  AbstractType.statics.cleanModelCache = (all = true) ->
+    for className of caches
+      caches[className] = {} if className is typeName or all
 
   # Indicates whether or not an id is used
   #
@@ -298,12 +287,12 @@ module.exports = (typeName, spec, options = {}) ->
   # post-init middleware: populate the cache
   AbstractType.post 'init', ->
     # store in cache
-    caches[typeName][@id] = @
+    caches[typeName][@id] = model:@, since: new Date().getTime()
   
   # post-save middleware: update cache
   AbstractType.post 'save',  ->
     # now that the instance was properly saved, update the cache.
-    caches[typeName][@id] = @
+    caches[typeName][@id] = model:@, since: new Date().getTime()
     
   # post-remove middleware: now that the type was properly removed, update the cache.
   AbstractType.post 'remove', ->
@@ -484,7 +473,7 @@ module.exports = (typeName, spec, options = {}) ->
         cachedIds = if breakCycles then [] else _.intersection ids, _.keys caches[spec.name]
         if cachedIds.length > 0
           # immediately add cached entities
-          linked = linked.concat (caches[spec.name][id] for id in cachedIds)
+          linked = linked.concat (caches[spec.name][id].model for id in cachedIds)
         # quit if no more ids to read
         return end() if cachedIds.length is ids.length
         # read remaining ids from DB

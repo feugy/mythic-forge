@@ -25,20 +25,33 @@ conn = require './connection'
 
 # Define the schema for configuration values.
 # locale will be the id, other values will be stored arbitrary
-module.exports = conn.model 'clientConf', typeFactory 'ClientConf', 
-  
-  # configuration's values: plain yaml.
-  values: 
+ClientConf = typeFactory 'ClientConf', 
+
+  # configuration's source: plain yaml.
+  source: 
     type: String
     default: -> ""
+    set: (value) ->
+      # on each source modification, parse it and update values
+      try
+        @_values = yaml.safeLoad value
+      catch err
+        # silently fails on error: save will be refused later
+        @_values = {error: "invalid YAML source: #{err}"}
+      value
 ,
   middlewares:
 
     # Save middleware, to check that values are safe YAML
     save: (next) ->
       try
-        yaml.safeLoad @_doc.values
+        yaml.safeLoad @_doc.source
         next()
       catch err
         # Not a valid YAML
-        next new Error "YAML syntax error for 'values': #{err}"
+        next new Error "YAML syntax error for 'source': #{err}"
+
+# Define a virtual getter on configuration parsed values, for immediate use.
+ClientConf.virtual('values').get -> @_values or {}
+
+module.exports = conn.model 'clientConf', ClientConf

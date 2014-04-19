@@ -50,7 +50,7 @@ define [
 
     # **private**
     # Merge values used when receiving an external modification
-    _mergedValues: null
+    _mergedSource: null
 
     # **private**
     # Widget to edit configuration values
@@ -63,7 +63,7 @@ define [
     constructor: (id) ->
       super id, 'client-conf'
       console.log "creates client configuration edition view for #{@model.id}"
-      @_mergedValues = null
+      @_mergedSource = null
       # Closes external changes warning after 5 seconds
       @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
 
@@ -71,7 +71,7 @@ define [
     # Effectively creates a new model.
     _createNewModel: =>
       @model = new ClientConf()
-      @model.values = "example: 'this is an example value'"
+      @model.source = "example: 'this is an example value'"
 
     # Indicates wether or not this object can be removed.
     # Default configuration cannot be removed.
@@ -98,7 +98,7 @@ define [
     # Allows subclass to add specific widgets right after the template was rendered and before first 
     # call to `fillRendering`. 
     _specificRender: =>
-      @_editor = @$el.find('.values').advEditor(
+      @_editor = @$el.find('.source').advEditor(
         mode: 'yaml'
       ).on('change', @_onChange
       ).data 'advEditor'
@@ -107,14 +107,14 @@ define [
     # Gets values from rendering and saved them into the edited object.
     _fillModel: =>
       super()
-      @model.values = @_editor.options.text
+      @model.source = @_editor.options.text
       
     # **private**
     # Updates rendering with values from the edited object.
     _fillRendering: =>
-      displayed = if @_mergedValues? then @_mergedValues else @model.values or ""
+      displayed = if @_mergedSource? then @_mergedSource else @model.source or ""
       @_editor.setOption 'text', displayed
-      @_mergedValues = null
+      @_mergedSource = null
       super()
 
     # **private**
@@ -137,7 +137,7 @@ define [
 
       # merge values if necessary
       return unless @canSave()
-      @_mergedValues = i18n.labels.editedValues+@_editor.options.text+i18n.labels.remoteValues+saved.values
+      @_mergedSource = i18n.labels.editedValues+@_editor.options.text+i18n.labels.remoteValues+saved.source
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -151,8 +151,8 @@ define [
       comparable = super()
 
       comparable.push
-        name: 'values'
-        original: @model.values
+        name: 'source'
+        original: @model.source
         current: @_editor.options.text or ""
 
       comparable

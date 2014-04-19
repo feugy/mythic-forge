@@ -27,6 +27,7 @@ _ = require 'underscore'
 modelWatcher = require('../../model/ModelWatcher').get()
 notifier = require('../Notifier').get()
 Executable = require '../../model/Executable'
+Map = require '../../model/Map'
 LoggerFactory = require '../../util/logger'
 logger = LoggerFactory.getLogger 'worker'
 
@@ -72,6 +73,8 @@ process.on 'message', (msg) ->
       return ready = true unless err?
       logger.error "Failed to initialize worker's executable cache: #{err}"
       process.exit 1
+  else if msg?.event is 'modelReset'
+    Map.cleanModelCache()
   else if msg?.method of worker
     worker._method = msg.method
     worker._id = msg.id

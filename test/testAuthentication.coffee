@@ -420,6 +420,5 @@ describe 'Authentication tests', ->
           # then the success page is displayed
           url = parseUrl res.headers.location
           assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          console.log url.query
           assert.ok -1 isnt url.query.indexOf('missingCredentials'), "unexpected error #{url.query}"
           done()  

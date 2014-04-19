@@ -25,6 +25,9 @@ Model = require('mongoose').Model
 watcher = require('../model/ModelWatcher').get()
 utils = require '../util/common'
 
+# cache eviction timeout, to avoid triggering multiple eviction loops
+eviction = null
+
 # string and text: null or type is string
 checkString = (val, property) ->
   unless val is null or 'string' is utils.type val
@@ -366,3 +369,25 @@ module.exports =
     return false unless 'string' is utils.type id
     return false unless id.match /^[\w$-]+$/
     true
+
+  # Evict models from cache that were loaded since a long time
+  # Recursively triggers itself periodically. 
+  # Inneffective if called multiple times: only the first call launches the period, and only the process exit will end it.
+  #
+  # @param caches [Object] inmemory caches.
+  # Contains for each managed class (name as string) an associative array in which:
+  # - key is model ids
+  # - value is an object with "model" property (the model itself) "since" property (timestamp of last save)
+  # @param frequency [Number] eviction check frequency in milliseconds
+  # @param maxAge [Number] maximum age  check frequency in milliseconds
+  evictModelCache: (caches, frequency, maxAge) ->
+    return if eviction?
+    evict = ->
+      limit = new Date().getTime() - maxAge
+      for className, models of caches
+        # in a given model class, delete cached when since is bellow now - maxAge
+        delete models[id] for id, cached of models when cached.since < limit
+      # recursive execution at next start
+      eviction = _.delay evict, frequency
+    # first execution
+    evict()

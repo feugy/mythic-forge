@@ -83,8 +83,8 @@ describe 'AdminService tests', ->
                   {clazz: Executable, args: {id: 'rule2', content:'# world'}, store: executables}
                   {clazz: Map, args: {id: 'map1', kind:'square'}, store: maps}
                   {clazz: Map, args: {id: 'map2', kind:'diamond'}, store: maps}
-                  {clazz: ClientConf, args: {id:'default', values: "names:\n  plain: 'plain'"}, store: confs}
-                  {clazz: ClientConf, args: {id:'fr', values: "names:\n  plain: 'plaine'\n  river: 'rivière'"}, store: confs}
+                  {clazz: ClientConf, args: {id:'default', source: "names:\n  plain: 'plain'"}, store: confs}
+                  {clazz: ClientConf, args: {id:'fr', source: "names:\n  plain: 'plaine'\n  river: 'rivière'"}, store: confs}
                 ]
                 create = (def) ->
                   return done() unless def?
@@ -414,7 +414,7 @@ describe 'AdminService tests', ->
 
   it 'should save create new configuration', (done) ->
     # given new values
-    values = {id: 'jp', values: "names:\n  river: 'kawa'"}
+    values = {id: 'jp', source: "names:\n  river: 'kawa'"}
    
     # then a creation event was issued
     listener = (operation, className, instance)->
@@ -430,7 +430,8 @@ describe 'AdminService tests', ->
       assert.ok model?
       assert.ok model.id?
       assert.equal model.id, values.id
-      assert.deepEqual model.values.names, values.values.names
+      assert.equal model.values?.names?.river, 'kawa'
+      assert.equal model.source, values.source
 
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
@@ -941,9 +942,9 @@ describe 'AdminService tests', ->
   it 'should save update existing configuration', (done) ->
     # given a change on existing values
     conf = confs[1].toJSON()
-    values = yaml.safeLoad conf.values
+    values = yaml.safeLoad conf.source
     values.names.montain = 'montagne'
-    conf.values = yaml.safeDump values
+    conf.source = yaml.safeDump values
 
     # then an update event was issued
     listener = (operation, className, instance) ->
@@ -959,8 +960,8 @@ describe 'AdminService tests', ->
 
       # then the created values are returned
       assert.equal confs[1].id, model.id, 'Saved model doesn\'t match parameters'
-      assert.equal  confs[1].values, model.values,
-      assert.equal 'montagne', yaml.safeLoad(model.values)?.names?.montain
+      assert.equal confs[1].source, model.source
+      assert.equal model.values?.names?.montain, 'montagne'
       
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->

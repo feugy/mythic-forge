@@ -51,7 +51,8 @@ describe 'Atlas browser tests', ->
             browser = proxy.page
 
             browser.on 'error', (err, stack)->
-              return done "#{err}\n#{_.map(stack, (s) -> "#{s.file}:#{s.line}").join '\n'}"
+              # do not report mocha's assertion errors
+              #return done "#{err}\n#{_.map(stack, (s) -> "#{s.file}:#{s.line}").join '\n'}" unless err.toString()[0..13] is 'AssertionError'
             browser.on 'consoleMessage', (message) -> console.log message
 
             browser.open "#{rootUrl}/dev/", ->

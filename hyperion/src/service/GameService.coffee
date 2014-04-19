@@ -19,7 +19,6 @@
 'use strict'
 
 async = require 'async'
-yaml = require 'js-yaml'
 _ = require 'underscore'
 Item = require '../model/Item'
 Event = require '../model/Event'
@@ -202,20 +201,13 @@ class _GameService
       return callback "Failed to load client configurations: #{err}" if err?
       def = _.findWhere confs, _id:'default'
       result = {}
-      if def?
-        try
-          # first mrege with empty configuration
-          merge result, yaml.safeLoad def.values
-        catch exc
-          return callback "Failed to parse default configuration: #{exc}"
+      # first merge with empty configuration
+      merge result, def.values if def?
       
       confs = _.chain(confs).without(def).sortBy('_id').value()
       # then merge remaining locale specific configurations, ending by sublocales
-      for spec in confs
-        try
-          merge result, yaml.safeLoad spec.values
-        catch exc
-          return callback "Failed to parse #{spec.id} configuration: #{exc}"
+      merge result, spec.values for spec in confs
+        
       # at last, add default configuration values
       merge result, conf
       # return resulting configuration

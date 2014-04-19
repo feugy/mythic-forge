@@ -43,6 +43,11 @@ mongo:
   host: localhost
   db: mythic-forge
 
+# Model cache eviction parameters (in milliseconds)
+cache:
+  frequency: 1000
+  maxAge: 5000
+
 # location of games files
 game: 
   repo: ../proto-game
