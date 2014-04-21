@@ -41,14 +41,22 @@ Executable.resetAll false, (err) ->
   logger.error "Failed to initialize worker's executable cache: #{err}"
   process.exit 1
 
-# manage worker unexpected failure
-process.on 'uncaughtException', (err) ->
-  err = if worker._errMsg? then worker._errMsg + err.stack else if err.stack? then err.stack else err
-  # an exception has been caught:
-  logger.warn "worker #{process.pid} caught unexpected exception: #{err}"
-  process.send method: worker._method, id: worker._id, results: [err] unless err?.code is 'EPIPE'
-  # let it fail: master will respawn it
-  process.exit 0
+# Listen to worker 'uncaughtException' message: allows to properly respond to master.
+# Must be manually unregistered.
+#
+# @param method [String] worker method for which the catch is operated
+# @param is [String] message id for which the catch is operated
+# @return the catch handler function to unregister in case of success
+catchException = (method, id) ->
+  handler = (err) ->
+    err = if worker._errMsg? then worker._errMsg + err.stack else if err.stack? then err.stack else err
+    # an exception has been caught:
+    logger.warn "worker #{process.pid} caught unexpected exception for #{method} (#{id}): #{err}"
+    process.send method: method, id: id, results: [err] unless err?.code is 'EPIPE'
+    # let it fail: master will respawn it
+    process.exit 0
+  process.on 'uncaughtException', handler
+  handler
 
 # now that the latest uncaughtException handler have been registered, requires the worker
 # that may intercept himself its own failures
@@ -76,10 +84,10 @@ process.on 'message', (msg) ->
   else if msg?.event is 'modelReset'
     Map.cleanModelCache()
   else if msg?.method of worker
-    worker._method = msg.method
-    worker._id = msg.id
+    handler = catchException msg.method, msg.id
     # invoke the relevant worker method, adding a callback
     worker[msg.method].apply worker, (msg.args or []).concat (args...) ->
+      process.removeListener 'uncaughtException', handler
       # callback send back results to cluster master
       try
         process.send method: msg.method, id: msg.id, results: args

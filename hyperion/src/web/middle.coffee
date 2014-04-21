@@ -147,7 +147,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
 
           # add return callback to incoming arguments
           args.push ->
-            logger.debug "returning #{method} response #{if arguments[0]? then arguments[0] else ''}"
+            logger.debug "returning #{method} #{reqId} response #{if arguments[0]? then arguments[0] else ''}"
             # returns the callback arguments
             returnArgs = Array.prototype.slice.call arguments
             # first response parameters are always method name and request id
