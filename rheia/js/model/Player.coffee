@@ -213,4 +213,6 @@ define [
       attrs = super()
       if Array.isArray attrs.characters
         attrs.characters = _.map attrs.characters, (character) -> character?.id
+      # to avoid invalidating existing token
+      delete attrs.token
       attrs

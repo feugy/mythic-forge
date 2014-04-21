@@ -237,8 +237,6 @@ define [
       # update view title
       @$el.find('> h1').html @_getRenderData().title
 
-      console.log @model.provider, @model.password
-
       @_passwordChanged = @_isNew
       @_charactersWidget.setOption 'value', @model.characters?.concat() or []
       @_providerWidget.val @model.provider

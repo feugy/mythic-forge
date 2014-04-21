@@ -18,8 +18,6 @@
 
 - Rheia
   - Bugs
-    - [!!] player prefs not updated in visualization
-    - [!!] player token invalidated after player edition
     - [!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
     - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
     - set nls default values to avoid browser failure with non-french locale
@@ -185,6 +183,7 @@
 
 - Rheia
   - Bugs
+    - player token invalidated after player edition
     - when update received on an item moderation view, displayed image is wrong
     - moderation map does not shows item movement when specified transition isn't found
     - remove linked in moderation view does not really remove link in db
