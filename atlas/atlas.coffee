@@ -117,7 +117,7 @@
       # @return a generated id
       rid: -> 
         id = "#{Math.floor Math.random()*10000}"
-        "req#{('0' for i in [0..5-id.length]).join()}#{id}"
+        "req#{('0' for i in [0..5-id.length]).join ''}#{id}"
       
     #-----------------------------------------------------------------------------
     # Connection to server
@@ -1063,7 +1063,7 @@
           callback: callback
         params = requests[rid]
         params.actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
-
+        
         if args.length is 1
           # execute over a player
           options.debug and console.log "execute rule #{params.name} for player #{params.actorId}"
@@ -1134,7 +1134,7 @@
         callback = requests[reqId].callback
         # reset to allow further calls.
         delete requests[reqId]
-
+        
         return callback null, result unless err?
         options.debug and console.error "Fail to execute rule: #{err}" 
         return callback new Error "Fail to execute rule: #{err}" 
@@ -1161,6 +1161,11 @@
       # **private**
       # Image local cache, that store Image objects
       _cache: {}
+      
+      # **private**
+      # Image data local cache, that store Image objects. 
+      # Retention to 3 seconds only because it cost a lot of memory
+      _dataCache: {}
       
       # **private**
       # Timestamps added to image request to server, avoiding cache
@@ -1209,13 +1214,21 @@
       # @return the base 64 corresponding image data
       getImageString: (key) ->
         return null unless key of @_cache
+        # reuse data cache if possible
+        return @_dataCache[key] if key of @_dataCache
         canvas = $("<canvas></canvas>")[0]
         canvas.width = @_cache[key].width
         canvas.height = @_cache[key].height
         # Copy the image contents to the canvas
         ctx = canvas.getContext '2d'
         ctx.drawImage @_cache[key], 0, 0
-        canvas.toDataURL 'image/png'
+        data = canvas.toDataURL 'image/png'
+        # store in data cache for 3 seconds
+        @_dataCache[key] = data
+        _.delay =>
+          delete @_dataCache[key]
+        , 3000
+        data
       
       # **private**
       # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
