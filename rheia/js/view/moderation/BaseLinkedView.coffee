@@ -90,6 +90,18 @@ define [
       bar
 
     # **private**
+    # Allows subclass to add specific errors to be displayed when validating.
+    # Check that Json fields are valid 
+    #
+    # @return an empty array of errors by default.
+    _specificValidate: =>
+      errors = []
+      for name, prop of @model?.type?.properties when prop.type is 'json' and @_propWidgets[name]?
+        for err in @_propWidgets[name].options.errors
+          errors.push msg: "#{name} : #{err?.msg}" 
+      errors
+
+    # **private**
     # Gets values from rendering and saved them into the edited object.
     # Fills properties from properties widgets
     _fillModel: =>

@@ -154,7 +154,7 @@ define [
     #
     # @return errors of sprite widgets
     _specificValidate: =>
-      errors = []
+      errors = super()
       # we need to performs spriteImage widget validation
       for sprite in @_imageWidgets
         errors = errors.concat sprite.options.errors

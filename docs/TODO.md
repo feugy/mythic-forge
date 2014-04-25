@@ -4,7 +4,6 @@
   - Bugs
     - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
-  - JSON properties in Item/Event types
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - test images for field types and event types
   - Documentation
@@ -73,6 +72,7 @@
   - Logger refactoring, override console standard functions and send logs to admin clients
   - Central configuration and i18n utility for clients (types, rules, others...) in YAML, modifiable as string and readable as JSON
   - Model cache evinction on fixed duration and thread crash
+  - JSON properties in Item/Event types, and JSON rules parameters
   - Players 
     - CRUD with AdminService
     - password management and protection for manually provided accounts
@@ -263,6 +263,7 @@
       - sprites, with percent size of map tile size
       - validation
       - quantity management
+      - JSON properties
     - EventType
     - FieldType
       - static fields and description image
@@ -309,6 +310,7 @@
       - display tooltip on object/array properties
       - update 'array'/'object' properties when removing an item/event
       - ability to embody an item
+      - check JSON propeties validity
     - Events 
       - CRUD
       - sort event by update date in properties

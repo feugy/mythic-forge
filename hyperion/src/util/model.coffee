@@ -30,22 +30,38 @@ eviction = null
 
 # string and text: null or type is string
 checkString = (val, property) ->
-  unless val is null or 'string' is utils.type val
-    "'#{val}' isn't a valid #{property.type}" 
-  else 
-    null
+  return null if val is null or 'string' is utils.type val
+  "'#{val}' isn't a valid #{property.type}" 
 
 # object: null or string (id) or object with a collection that have the good name.    
 checkObject = (val, property) ->
-  if val is null or 'string' is utils.type val
-    null
-  else if 'object' is utils.type val
-    unless val?.collection?.name is "#{property.def.toLowerCase()}s" or property.def.toLowerCase() is 'any' and utils.isA val, Model
-      "#{val} isn't a valid #{property.def}" 
-    else
-      null
-  else
+  return null if val is null or 'string' is utils.type val
+  return "#{val} isn't a valid #{property.def}" unless 'object' is utils.type val
+  unless val?.collection?.name is "#{property.def.toLowerCase()}s" or property.def.toLowerCase() is 'any' and utils.isA val, Model
     "#{val} isn't a valid #{property.def}" 
+  else
+    null
+
+# Json: null or plain json object (stringify/parse roundtrip)
+checkJSON = (val, property) ->
+  return null if val is null
+  return "JSON #{property.type} only accepts arrays and object" unless utils.type(val) in ['array', 'object']
+  try
+    previous = []
+    check = (val) ->
+      throw 'circular reference are not valid JSON values' if val in previous
+      switch utils.type val
+        when 'array' 
+          previous.push val
+          check v for v,i in val
+        when 'object' 
+          previous.push val
+          check v for k,v of val
+        when 'function' then throw 'function are not valid JSON values' 
+    check val
+  catch err
+    return "#{property.type} doesn't hold a valid JSON object"
+  null
 
 checkPropertyType = (value,  property) ->
   err = null
@@ -77,6 +93,7 @@ checkPropertyType = (value,  property) ->
         err = "#{value} isn't a valid array of #{property.def}"
     when 'string' then err = checkString value, property
     when 'text' then err = checkString value, property
+    when 'json' then err = checkJSON value, property
     else err = "#{property.type} isn't a valid type"
   err
 
@@ -179,7 +196,7 @@ module.exports =
   #
   # @param value [Object] the checked value.
   # @param property [Object] the property definition
-  # @option property type [String] the awaited type. Could be: string, text, boolean, integer, float, date, time, datetime, array or object
+  # @option property type [String] the awaited type. Could be: string, text, boolean, integer, float, date, time, datetime, array, object or json
   # @option property def [Object] the default value. For array and objects, indicate the class of the awaited linked objects.
   # @return null if value is correct, an error string otherwise
   checkPropertyType: checkPropertyType
@@ -187,7 +204,7 @@ module.exports =
   # Within a rule execution, checks that passed parameters do not violate constraints of awaited parameters.
   # Expected parameters must at least contain:
   # - name: [String] the parameter name (a valid Javascript identifier)
-  # - type: [String] the value expected type, that can be: string, text, boolean, integer, float, date, time, datetime, object
+  # - type: [String] the value expected type, that can be: string, text, boolean, integer, float, date, time, datetime, object, json
   #
   # Optionnal constraints may include:
   # - min: [Number/Date] minimum accepted value (included) for integer, float, date, time and datetime
@@ -204,6 +221,8 @@ module.exports =
   # property aimed by 'path' constraint) 
   # The awaited values are object ids for events and unquantifiable items or JSON object with object id ('id' attribute)
   # and quantity ('qty' attribute) for quantifiable items
+  #
+  # The 'json' parameters only accepts plain JS object values. Use numMin/numMax to allow multiple values 
   #
   # @param actual [Array] Array of execution parameter values
   # @param expected [Array] Array of parameter constraints

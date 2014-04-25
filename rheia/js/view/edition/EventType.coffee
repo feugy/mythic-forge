@@ -244,6 +244,20 @@ define [
         }, i18n.labels.propertyUidField, $(uidName), null
 
     # **private**
+    # Allows subclass to add specific errors to be displayed when validating.
+    # Check that Json fields are valid 
+    #
+    # @return an empty array of errors by default.
+    _specificValidate: =>
+      errors = []
+      for uidName, prop of @_editedProperties when prop.type is 'json'
+        editor = @$el.find(".properties .uidName[value='#{uidName}']").parents('tr').find('.defaultValue').data 'property'
+        if editor?.options?.errors
+          for err in editor.options.errors
+            errors.push msg: "#{uidName} : #{err?.msg}" 
+      errors
+
+    # **private**
     # Some properties changed, either its name, type or its default value.
     # Updates view's property values
     # 

@@ -76,13 +76,17 @@ define [
       @_editor = ace.edit node[0]
       session = @_editor.getSession()
       
-      session.on 'change', => 
+      session.on 'change', _.debounce => 
         # update inner value and fire change event
         @options.text = @_editor.getValue()
         @$el.trigger 'change', @options.text
-
+      , 100
+      
       # configure it
       session.setUseSoftTabs true
+      # remove annotation if widget is disabled
+      session.on 'tokenizerUpdate', =>
+        session.clearAnnotations() if @options.disabled
 
       @_editor.setScrollSpeed 5
 
@@ -103,6 +107,7 @@ define [
       @setOption 'tabSize', @options.tabSize
       @setOption 'theme', @options.theme
       @setOption 'mode', @options.mode
+      @setOption 'disabled', @options.disabled
             
       # creates prompt
       @_prompt = $(prompt).appendTo @$el
@@ -142,8 +147,7 @@ define [
     # @param key [String] the set option's key
     # @param value [Object] new value for this option    
     setOption: (key, value) =>
-      console.log "set option #{key}"
-      return unless key in ['text', 'mode', 'theme', 'tabSize']
+      return unless key in ['text', 'mode', 'theme', 'tabSize', 'disabled']
       switch key
         when 'text' 
           # keeps the undo manager
@@ -164,6 +168,11 @@ define [
         when 'mode'
           @options.mode = value
           @_editor.getSession().setMode "ace/mode/#{value}"
+        when 'disabled'
+          @options.disabled = value
+          @$el.toggleClass 'disabled', value
+          @_editor.setReadOnly @options.disabled
+          @_editor.getSession().clearAnnotations() if value
    
     # **private**
     # Show the find/replace prompt with an animation (Css)
@@ -234,3 +243,6 @@ define [
     # number of spaces used to replace tabs, 2 by default.
     # read-only: use `setOption('tabSize')` to modify.
     tabSize: 2
+
+    # Set to temporary disable edition content
+    disabled: false

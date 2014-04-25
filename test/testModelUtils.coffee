@@ -31,6 +31,9 @@ Event = require '../hyperion/src/model/Event'
 # integer value tests
 describe 'Model utilities tests', ->
 
+  circular = {one: 1, two:2}
+  circular.three = circular
+        
   describe 'checkParameters() tests', ->
 
     it 'should multiple parameters be checked', (done) ->
@@ -420,6 +423,33 @@ describe 'Model utilities tests', ->
             modelUtils.checkParameters {p1: [now, now]}, expected, null, null, (err) ->
               assert.isNull err
               done()
+    ,
+      type: 'json'
+      values: [18, -1.2, '', null, undefined, new Date(), {test:()->}, true, [1], [{test:()->}], circular]
+
+      'should fail on few occurences than expected': (done) ->
+        now = moment().toDate()
+        modelUtils.checkParameters {p1: {one:1, two:2}}, [name: 'p1', type: 'json', numMin: 2], null, null, (err) ->
+          assert.isNotNull err
+          assert.include err, 'p1: expected at least 2 value(s)'
+          done()
+     
+      'should fail on more occurences than expected': (done) ->
+        now = moment().toDate()
+        modelUtils.checkParameters {p1: [{one:1}, {two:2}, {three:3}]}, [name: 'p1', type: 'json', numMax: 2], null, null, (err) ->
+          assert.isNotNull err
+          assert.include err, 'p1: expected at most 2 value(s)'
+          done() 
+
+      'should accept array values': (done) ->
+        modelUtils.checkParameters {p1: [{one:1}]}, [name: 'p1', type: 'json'], null, null, (err) ->
+          assert.isNull err
+          done()   
+
+      'should accept object values': (done) ->
+        modelUtils.checkParameters {p1: {one:1, two:2}}, [name: 'p1', type: 'json'], null, null, (err) ->
+          assert.isNull err
+          done()     
     ]
 
     for fixture in fixtures
@@ -433,7 +463,7 @@ describe 'Model utilities tests', ->
                   # then an error is raised
                   assert.isNotNull err
                   if value?
-                    assert.include err, "isn't a valid #{fixture.type}"
+                    assert.ok err.match new RegExp("isn't a valid #{fixture.type}|doesn't hold a valid|only accepts"), err
                   else
                     assert.include err, 'missing parameter p1'
                   done()
@@ -618,8 +648,6 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: {id:s1.id, qty:2}}, [name: 'p1', type: 'object', property: {from: 'target', path: 'linked'}], b2, e1, (err) ->
           assert.isNull err
           done()
-
-      # TODO test quantifiable and unquantifiable
       
   describe 'checkPropertyType() tests',  ->
     property = {}
@@ -637,7 +665,7 @@ describe 'Model utilities tests', ->
             if 'accepted' is spec.status
               assert.ok err is null or err is undefined
             else 
-              assert.ok 0 <= err?.indexOf('isn\'t a valid')
+              assert.ok err?.match /isn't a valid|doesn't hold a valid|only accepts/
 
     describe 'given an integer definition', generateTest 'integer', 10, [
       {name: 'null', value: null, status: 'accepted'}
@@ -791,4 +819,23 @@ describe 'Model utilities tests', ->
       {name: 'an object', value: {test:true}, status: 'rejected'}
       {name: 'an object array', value: [{test:true}], status: 'rejected'}
       {name: 'an empty array', value: [], status: 'accepted'}
+    ]
+
+    # json value tests
+    describe 'given an json definition', generateTest 'json', {}, [
+      {name: 'null', value: null, status: 'accepted'}
+      {name: 'an integer', value: 4, status: 'rejected'}
+      {name: 'zero', value: 0, status: 'rejected'}
+      {name: 'a float', value: -0.4, status: 'rejected'}
+      {name: 'a string', value: 'hi !', status: 'rejected'}
+      {name: 'an empty string', value: '', status: 'rejected'}
+      {name: 'true', value: true, status: 'rejected'}
+      {name: 'false', value: false, status: 'rejected'}
+      {name: 'a date', value: new Date(), status: 'rejected'}
+      {name: 'an Item', value: new Item(), status: 'rejected'}
+      {name: 'an Item array', value: [new Item()], status: 'rejected'}
+      {name: 'an object', value: {test:true}, status: 'accepted'}
+      {name: 'an object array', value: [{test:true}], status: 'accepted'}
+      {name: 'an empty array', value: [], status: 'accepted'}
+      {name: 'a recursive object', value: circular, status: 'rejected'}
     ]

@@ -84,6 +84,7 @@ define
       date: 'date'
       object: 'objet'
       array: "tableau d'objets"
+      json: "objet/tableau Json"
     mapKind: 'Type'
     mapKinds: [
       {name: 'Hexagonale', value:'hexagon'}

@@ -103,6 +103,49 @@ describe 'Event tests', ->
         assert.equal event.content, '---'
         done()
 
+  describe 'given a type with json property and an event', ->
+
+    beforeEach (done) ->
+      type = new EventType id:'talk'
+      type.setProperty 'preferences', 'json', {help:true}
+      type.save (err, saved) ->
+        return done err if err?
+        Event.collection.drop -> Event.loadIdCache ->
+          event = new Event {type: type}
+          event.save done
+
+    it 'should not accept invalid JSON property', (done) ->
+      # when modifying the Json value with invalid JSON
+      event.preferences = 10
+
+      event.save (err)->
+        assert.isNotNull err
+        assert.match err, /json only accepts arrays and object/
+        done()
+
+    it 'should modelWatcher detect modification on JSON property', (done) ->
+      awaited = false
+      # given a listening watcher
+      watcher.once 'change', (operation, className, instance)->
+        assert.equal className, 'Event'
+        assert.equal operation, 'update'
+        assert.ok event.equals instance
+        # then a change was detected on preferences
+        assert.deepEqual Object.keys(instance), ['id', 'updated', 'preferences']
+        awaited = true
+
+      # when modifying the Json value
+      event.preferences.help = true
+      event.preferences.count = 1
+
+      event.save (err, event)->
+        return done "Can't save event: #{err}" if err?
+
+        # then value was updated
+        assert.deepEqual event.preferences, help:true, count: 1
+        assert.ok awaited, "watcher wasn't invoked"
+        done()
+
   describe 'given an Event', ->
 
     beforeEach (done) ->

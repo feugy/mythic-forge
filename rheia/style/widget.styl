@@ -172,12 +172,25 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     color errorColor
 
 // property
+.property-widget
+
+  .adv-editor
+    border 1px solid borderColor
+    height 150px
+    width auto
+    position relative
+    transition height 250ms
+
+  .adv-editor.disabled
+    height 16px
+
 .property-widget.validation-error
   border-color none
   
   > input[type=text]
   > input[type=number]
   > textarea
+  > .adv-editor
     border-color errorColor
 
 // Carousel
@@ -452,6 +465,11 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 
 .adv-editor 
   overflow hidden
+
+  *
+    font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
+    font-size 12px
+    line-height 16px      
   
   .ace_editor
     width 100%
@@ -466,7 +484,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     right 25px
     top -150px
     transition all 250ms
-    z-index 1
+    z-index 10
 
     .replace
       margin-top 2px
@@ -506,3 +524,6 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 
   .prompt.and-replace .replace
     display block
+
+.adv-editor.disabled
+  opacity 0.5

@@ -30,7 +30,6 @@ define [
   'view/BaseExecutableView'
   'model/Player'
   'widget/property'
-  'widget/advEditor'
 ], ($, _, moment, utils, validators, i18n, i18nModeration, template, BaseExecutableView, Player) ->
 
   i18n = $.extend true, i18n, i18nModeration
@@ -96,7 +95,7 @@ define [
 
     # **private**
     # Widget to edit user preferences
-    _prefsEditor: null
+    _prefsWidget: null
 
     # The view constructor.
     #
@@ -123,10 +122,6 @@ define [
     getTitle: (confirm = false) => 
       return @_emailWidget?.options.value or @model.email if confirm
       "#{_.truncate (@_emailWidget?.options.value or @model.email), 15}<div class='uid'>&nbsp;</div>"
-
-    # Called by the TabPerspective each time the view is showned.
-    shown: =>
-      @_prefsEditor?.resize()
       
     # **private**
     # Effectively creates a new model.
@@ -206,10 +201,11 @@ define [
       ).on('change', @_onChange
       ).data 'property'
 
-      @_prefsEditor = @$el.find('.prefs .field').advEditor(
-        mode: 'json'
+      @_prefsWidget = @$el.find('.prefs.field').property(
+        type: 'json'
+        allowNull: false
       ).on('change', @_onChange
-      ).data 'advEditor'
+      ).data 'property'
 
       super()
       
@@ -228,7 +224,7 @@ define [
       @model.firstName = @_firstNameWidget.options.value
       @model.lastName = @_lastNameWidget.options.value
       @model.lastConnection = @_lastConnectionWidget.options.value or null
-      @model.prefs = JSON.parse @_prefsEditor.options.text
+      @model.prefs = @_prefsWidget.options.value
 
     # **private**
     # Updates rendering with values from the edited object.
@@ -245,7 +241,7 @@ define [
       @_firstNameWidget.setOption 'value', @model.firstName or ''
       @_lastNameWidget.setOption 'value', @model.lastName or ''
       @_lastConnectionWidget.setOption 'value', @model.lastConnection
-      @_prefsEditor.setOption 'text', JSON.stringify @model.prefs or {}, null, '\t'
+      @_prefsWidget.setOption 'value', @model.prefs
 
       # Hide password if provider exists
       @$el.find('.password').toggle !(@model.provider?)
@@ -297,7 +293,7 @@ define [
       ,
         name: 'prefs'
         original: @model.prefs
-        current: JSON.parse(@_prefsEditor.options.text) or {}
+        current: @_prefsWidget.options.value
 
       if @_passwordChanged
         comparable.push
@@ -336,11 +332,7 @@ define [
     # 
     # @return true if all rendering's fields are valid
     _specificValidate: =>
-      try 
-        JSON.parse @_prefsEditor.options.text
-        []
-      catch err
-        [msg: _.sprintf i18n.msgs.invalidPrefs]
+      (msg: "#{i18n.labels.prefs} : #{err?.msg}" for err in @_prefsWidget.options.errors)
 
     # **private**
     # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.

@@ -79,7 +79,7 @@ compareArrayProperty = (instance, prop) ->
 # @param instance [Object] Mongoose instance which is analyzed and may be marked as modified
 # @param prop [String] name of the compared properties
 compareObjProperty = (instance, prop) ->
-  original = instance["_orig#{prop}"] or "{}"
+  original = instance["__orig#{prop}"] or "{}"
   current = JSON.stringify instance[prop] or {}
   instance.markModified prop unless original is current
     
@@ -87,8 +87,10 @@ originalIsModified = mongoose.Document::isModified
 mongoose.Document::isModified = (path) ->
   # detect modification on dynamic arrays
   if @type?.properties?
-    for prop, value of @type.properties when value.type is 'array'
-      compareArrayProperty @, prop 
+    for prop, value of @type.properties 
+      switch value.type 
+        when 'array' then compareArrayProperty @, prop 
+        when 'json' then compareObjProperty @, prop 
 
   # detect modification on characters array
   if @_className is 'Player' 
