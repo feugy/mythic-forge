@@ -194,9 +194,10 @@ module.exports = (typeName, spec, options = {}) ->
 
   # Extends original Mongoose toJSON method to add className and changing _id to id.
   options.toJSON = 
-    # avoid pruning empty json objects (can be default values of properties)
-    minimize: false
-    transform: (doc, ret, options) ->
+    transform: (doc, ret, opts) ->
+      if options.typeProperties
+        # avoid pruning empty json objects (can be default values of properties)
+        ret.properties = doc.properties
       ret._className = doc._className
       # special case of plain json property that is ignored by mongoose.utils.clone()
       if doc._className is 'Player'
