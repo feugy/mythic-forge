@@ -58,26 +58,6 @@ staticPort = utils.confKey 'server.staticPort', process.env.PORT or ''
 bindingPort = utils.confKey 'server.bindingPort', process.env.PORT or ''
 apiPort = utils.confKey 'server.apiPort', process.env.PORT or ''
 
-# Transforms models into plain JSON, using their toJSON() method
-# Goes deeper into arrays and objects to find models
-# Do NOT send circular trees !
-#
-# @param args [Object|Array] models to transform to plain JSON
-# @return the corresponding plain JSON
-plainObjects = (args) ->
-  isArray = 'array' is utils.type args
-  unless isArray
-    args = [args] 
-  for arg, i in args 
-    if 'array' is utils.type arg
-      args[i] = plainObjects arg
-    if 'object' is utils.type(arg) 
-      if 'function' is utils.type arg.toJSON
-        args[i] = arg.toJSON()
-      else
-        arg[attr] = plainObjects([val])[0] for attr, val of arg
-  if isArray then args else args[0]
-
 # stores email corresponding to socket ids
 sid = {}
 
@@ -154,7 +134,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
             returnArgs.splice 0, 0, "#{method}-resp", reqId
             # expand errors
             returnArgs[2] = returnArgs[2].message if utils.isA returnArgs?[2], Error
-            socket.emit.apply socket, plainObjects returnArgs
+            socket.emit.apply socket, utils.plainObjects returnArgs
 
           # invoke the service layer with arguments 
           logger.debug "processing #{method} #{reqId} message with arguments #{originalArgs}"
@@ -338,7 +318,7 @@ adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->
 
   # add a message to returns connected list
   socket.on 'connectedList', (reqId) ->
-    socket.emit 'connectedList-resp', reqId, plainObjects playerService.connectedList
+    socket.emit 'connectedList-resp', reqId, utils.plainObjects playerService.connectedList
 
 # socket.io `updates` namespace 
 #
@@ -351,7 +331,7 @@ updateNS = io.of('/updates')
 
 watcher.on 'change', (operation, className, changes) ->
   logger.debug "broadcast of #{operation} on #{changes.id} (#{className})"
-  updateNS.emit operation, className, plainObjects changes
+  updateNS.emit operation, className, utils.plainObjects changes
   # also update sid if isAdmin status is modified
   if className is 'Player' 
     if operation is 'update' and changes.isAdmin?
@@ -366,9 +346,9 @@ watcher.on 'change', (operation, className, changes) ->
 
 notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
   if scope is 'time' 
-    updateNS?.emit 'change', 'time', plainObjects details[0] 
+    updateNS?.emit 'change', 'time', utils.plainObjects details[0] 
   else
-    adminNS?.emit?.apply adminNS, plainObjects [scope, event].concat details
+    adminNS?.emit?.apply adminNS, utils.plainObjects [scope, event].concat details
 
 # send all log within admin namespace
 LoggerFactory.on 'log', (details) ->

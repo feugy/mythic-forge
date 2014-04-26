@@ -157,6 +157,26 @@ describe 'ItemType tests', ->
                       done()
         , 500
 
+  it 'should default properties values be kept by plainObjects', (done) ->
+    # given a type with JSON property
+    type = new ItemType id: 'river'
+    type.setProperty 'mission', 'json', {}
+    type.setProperty 'players', 'json', []
+    type.setProperty 'empty', 'json', null
+    type.setProperty 'existing', 'json', coucou:true
+    type.save (err, type) -> 
+      return done err if err?
+
+      # when transforming into plain objects
+      result = utils.plainObjects type
+
+      # then all empty properties are still here
+      assert.deepEqual result.properties.mission, type: 'json', def: {}
+      assert.deepEqual result.properties.players, type: 'json', def: []
+      assert.deepEqual result.properties.empty, type: 'json', def: null
+      assert.deepEqual result.properties.existing, type: 'json', def: coucou:true
+      done()
+
   describe 'given a type with a property', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.

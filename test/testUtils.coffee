@@ -91,6 +91,25 @@ describe 'Utilities tests', ->
       assert.ok code < 58 or code > 64, "characters #{char} (#{code}) is forbidden"
     done()
 
+  it 'should plainObjects keep empty objects', ->
+    tree = 
+      subObj: 
+        empty: {}
+        emptyArray: []
+      subArray: [
+        {},
+        []
+      ]
+    # when transforming into plain objects
+    result = utils.plainObjects tree
+
+    # then all empty properties are still here
+    assert.deepEqual result.subObj.empty, {}
+    assert.deepEqual result.subObj.emptyArray, []
+    assert.lengthOf result.subArray, 2
+    assert.deepEqual result.subArray[0], {}
+    assert.deepEqual result.subArray[1], []
+
   describe 'given timer configured every seconds', ->
     @timeout 4000
 

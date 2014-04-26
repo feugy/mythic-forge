@@ -194,6 +194,8 @@ module.exports = (typeName, spec, options = {}) ->
 
   # Extends original Mongoose toJSON method to add className and changing _id to id.
   options.toJSON = 
+    # avoid pruning empty json objects (can be default values of properties)
+    minimize: false
     transform: (doc, ret, options) ->
       ret._className = doc._className
       # special case of plain json property that is ignored by mongoose.utils.clone()
@@ -359,7 +361,8 @@ module.exports = (typeName, spec, options = {}) ->
                 when 'array' then def = []
                 when 'object' then def = null
 
-              # check default values              err = modelUtils.checkPropertyType def, prop
+              # check default values              
+              err = modelUtils.checkPropertyType def, prop
               return next new Error err if err?
 
               # if property isn't defined: set default

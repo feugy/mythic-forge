@@ -363,4 +363,25 @@ emitter.purgeFolder = (err, root) ->
   err = err.message if emitter.isA err, Error
   err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), '' if 'string'
 
+
+# Transforms models into plain JSON, using their toJSON() method
+# Goes deeper into arrays and objects to find models
+# Do NOT send circular trees !
+#
+# @param args [Object|Array] models to transform to plain JSON
+# @return the corresponding plain JSON
+emitter.plainObjects = (args) ->
+  isArray = 'array' is emitter.type args
+  unless isArray
+    args = [args] 
+  for arg, i in args 
+    if 'array' is emitter.type arg
+      args[i] = emitter.plainObjects arg
+    if 'object' is emitter.type(arg) 
+      if 'function' is emitter.type arg.toJSON
+        args[i] = arg.toJSON()
+      else
+        arg[attr] = emitter.plainObjects([val])[0] for attr, val of arg
+  if isArray then args else args[0]
+
 module.exports = emitter

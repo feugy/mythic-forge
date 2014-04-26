@@ -236,7 +236,6 @@ define [
       for name in names
         unless name is 'id' or Object.getOwnPropertyDescriptor(@, name)?
           ((name) =>
-          
             Object.defineProperty @, name,
               enumerable: true
               configurable: true
