@@ -344,7 +344,19 @@ module.exports = (typeName, spec, options = {}) ->
     # pre-save middleware: update type instances' properties if needed.
     AbstractType.pre 'save', (next) ->
       return next() unless @_updatedProps? or @_deletedProps?
-      
+
+      # check default values
+      if @_updatedProps?
+        for name in @_updatedProps
+          prop = @properties[name]
+          def = prop.def
+          switch prop.type
+            when 'array' then def = []
+            when 'object' then def = null
+
+          err = modelUtils.checkPropertyType def, prop
+          return next new Error err if err?
+
       # get type instances
       require("./#{options.instanceClass}").find {type: @id}, (err, instances) =>
         return next new Error "Failed to update type instances: #{err}" if err?
@@ -359,11 +371,8 @@ module.exports = (typeName, spec, options = {}) ->
                 when 'array' then def = []
                 when 'object' then def = null
 
-              # checks default value
-              err = modelUtils.checkPropertyType def, prop
-              return next new Error err if err?
-
-              if undefined is instance.get name
+              # if property isn't defined or value isn't compatible, set default
+              if undefined is instance.get(name) or modelUtils.checkPropertyType(instance.get(name), prop)?
                 # use getter here because property was not defined yet
                 instance.set name, def
                 saved.push instance unless saved in instance

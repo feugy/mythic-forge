@@ -57,7 +57,7 @@ gulp.task('cleanBuild', ['clean'], function(){
 });
 
 // Run all tests
-gulp.task('test', function(callback){
+gulp.task('test', ['cleanBuild'], function(callback){
   var cmd = "mocha"
   if (isWin) {
     cmd += '.cmd';

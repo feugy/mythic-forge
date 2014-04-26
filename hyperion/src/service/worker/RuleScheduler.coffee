@@ -39,8 +39,6 @@ nextTurn= () ->
 
 inProgress = false
 commitSuicide = false
-# avoid quitting on failures.
-process.removeAllListeners 'uncaughtException'
 
 # Trigger a turn by executing turn rules
 #
@@ -49,6 +47,10 @@ process.removeAllListeners 'uncaughtException'
 # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
 trigger = (callback, _auto = false) ->
   return callback if inProgress
+
+  # avoid quitting on failures.
+  process.removeAllListeners 'uncaughtException'
+
   inProgress = true
   logger.debug 'triggers turn rules...'
   notifier.notify 'turns', 'begin'
@@ -66,6 +68,7 @@ trigger = (callback, _auto = false) ->
     callback null
     # commit suicide if an error was recovered
     process.exit 0 if commitSuicide
+      
 
   # read all existing executables. @todo: use cached rules.
   Executable.find (err, executables) =>
