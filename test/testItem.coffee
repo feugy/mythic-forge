@@ -362,3 +362,39 @@ describe 'Item tests', ->
         assert.equal item.id, saved.affluents[0]
         assert.ok awaited, 'watcher wasn\'t invoked'
         done()
+
+  describe 'given a type with json property', -> 
+
+    beforeEach (done) ->
+      type = new ItemType id: 'squad'
+      type.setProperty 'name', 'string', ''
+      type.setProperty 'prefs', 'json', {}
+      type.save (err, saved) ->
+        return done err if err?
+        type = saved
+        done()
+
+    it 'should modification on json property be detected', (done) ->
+      # given an item
+      new Item(name: 'crimson', prefs:{imperium:true}, type:type).save (err, item) ->
+        return done err if err?
+
+        # when modifying its name
+        item.name = 'crimson2'
+
+        # then only name is detected as modified
+        assert.isTrue item.isModified 'name'
+        assert.isFalse item.isModified 'prefs'
+
+        # when modifying its prefs
+        item.prefs = imperium:false
+
+        # then both properties are detected as modified
+        assert.isTrue item.isModified 'name'
+        assert.isTrue item.isModified 'prefs'
+
+        item.save (err, result) ->
+          return done err if err?
+          assert.equal result.name, 'crimson2'
+          assert.deepEqual result.prefs, imperium:false
+          done()

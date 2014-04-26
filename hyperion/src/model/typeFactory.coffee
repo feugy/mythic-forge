@@ -157,7 +157,7 @@ module.exports = (typeName, spec, options = {}) ->
                 instance["__orig#{attr}"] = _.map value or [], (o) -> if 'object' is utils.type(o) and o?.id? then o.id else o
               else
                 # arbitrary JSON
-                instance["__orig#{attr}"] = value
+                instance["__orig#{attr}"] = JSON.stringify value or {}
       when 'deletion' 
         delete caches[typeName][changes.id]
 
@@ -197,7 +197,7 @@ module.exports = (typeName, spec, options = {}) ->
     transform: (doc, ret, opts) ->
       if options.typeProperties
         # avoid pruning empty json objects (can be default values of properties)
-        ret.properties = doc.properties
+        ret.properties = _.extend {}, doc.properties
       ret._className = doc._className
       # special case of plain json property that is ignored by mongoose.utils.clone()
       if doc._className is 'Player'
@@ -407,7 +407,11 @@ module.exports = (typeName, spec, options = {}) ->
     AbstractType.post 'init', ->
       @_defineProperties()
       # for each array property, add a save with linked ids to allow further comparisons
-      @["__orig#{name}"] = @[name]?.concat() or [] for name, spec of @type.properties when spec.type is 'array'
+      for name, spec of @type.properties 
+        if spec.type is 'array'
+          @["__orig#{name}"] = @[name]?.concat() or [] 
+        else if spec.type is 'json'
+          @["__orig#{name}"] = JSON.stringify @[name] or {}
 
     # This method retrieves linked objects in properties.
     # All `object` and `array` properties are resolved. 
@@ -568,8 +572,11 @@ module.exports = (typeName, spec, options = {}) ->
       @_doc.type = saveType?.id
       next()
       # for each array property, add a save with linked ids to allow further comparisons
-      for name, spec of saveType.properties when spec.type is 'array'
-        @["__orig#{name}"] = @_doc[name]?.concat() or []
+      for name, spec of saveType.properties 
+        if spec.type is 'array'
+          @["__orig#{name}"] = @_doc[name]?.concat() or []
+        else if spec.type is 'json'
+          @["__orig#{name}"] = JSON.stringify @_doc[name] or {}
       # restore save to allow reference reuse.
       @_doc.type = saveType
       # propagate modifications

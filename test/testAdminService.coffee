@@ -457,7 +457,7 @@ describe 'AdminService tests', ->
       listener = (operation, className, instance) ->
         return unless className is 'ItemType'
         assert.equal operation, 'update'
-        assert.ok itemTypes[1].equals instance, 'In watcher, changed instance doesn`t mathc parameters'
+        assert.ok itemTypes[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
         awaited = true
       watcher.on 'change', listener
 
