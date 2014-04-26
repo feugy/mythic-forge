@@ -145,11 +145,11 @@ module.exports = (typeName, spec, options = {}) ->
       when 'update'
         # if comming from your process, no need to updated
         unless wId is process.pid
+          caches[typeName][changes.id].since = new Date().getTime()
+          instance = caches[typeName][changes.id].model
           # partial update
           # do not use setter to avoid marking the instance as modified.
           for attr, value of changes when !(attr in ['id', '__v'])
-            caches[typeName][changes.id].since = new Date().getTime()
-            instance = caches[typeName][changes.id].model
             instance._doc[attr] = value  
             if "__orig#{attr}" of instance
               if _.isArray instance["__orig#{attr}"]
@@ -417,8 +417,8 @@ module.exports = (typeName, spec, options = {}) ->
     # All `object` and `array` properties are resolved. 
     # Properties that aims at unexisting objects are reset to null.
     # Works in two modes: 
-    # - read only from DB: it ensure not returning cyclic model trees, but same entity may be presented by two different models
-    # - read both in DB and cache: ensure entity uniquness, but may return cyclic model trees
+    # - read only from DB (breakCycles = true): it ensure not returning cyclic model trees, but same entity may be presented by two different models
+    # - read both in DB and cache (breakCycles = false): ensure entity uniquness, but may return cyclic model trees
     #
     # @param breakCycles [Boolean] true to break entities cycle, default to false
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
@@ -426,7 +426,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @option callback instance [Object] the root instance on which linked objects were resolved.
     AbstractType.methods.fetch = (breakCycles, callback) ->
       if _.isFunction breakCycles
-        [callback, breakCycles] = [breakCycles, false]
+        [callback, breakCycles] = [breakCycles, true]
       AbstractType.statics.fetch [this], breakCycles, (err, instances) =>
         callback err, instances?[0] or null
 
@@ -440,7 +440,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @option callback instances [Array<Object>] the instances on which linked objects were resolved.
     AbstractType.statics.fetch = (instances, breakCycles, callback) ->
       if _.isFunction breakCycles
-        [callback, breakCycles] = [breakCycles, false]
+        [callback, breakCycles] = [breakCycles, true]
       ids = []
       # identify each linked properties 
       for instance in instances
@@ -478,8 +478,8 @@ module.exports = (typeName, spec, options = {}) ->
       linked = []
       async.forEach [{name: 'Item', clazz:require('./Item')}, {name: 'Event', clazz:require('./Event')}], (spec, end) ->
         # two modes: 
-        # - read only from DB: it ensure not returning cyclic model trees, but same entity may be presented by two different models
-        # - read both in DB and cache: ensure entity uniquness, but may return cyclic model trees
+        # - read only from DB (breakCycles = true): it ensure not returning cyclic model trees, but same entity may be presented by two different models
+        # - read both in DB and cache (breakCycles = false): ensure entity uniquness, but may return cyclic model trees
         cachedIds = if breakCycles then [] else _.intersection ids, _.keys caches[spec.name]
         if cachedIds.length > 0
           # immediately add cached entities
