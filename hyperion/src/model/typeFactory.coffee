@@ -426,7 +426,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @option callback instance [Object] the root instance on which linked objects were resolved.
     AbstractType.methods.fetch = (breakCycles, callback) ->
       if _.isFunction breakCycles
-        [callback, breakCycles] = [breakCycles, true]
+        [callback, breakCycles] = [breakCycles, false]
       AbstractType.statics.fetch [this], breakCycles, (err, instances) =>
         callback err, instances?[0] or null
 
@@ -440,7 +440,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @option callback instances [Array<Object>] the instances on which linked objects were resolved.
     AbstractType.statics.fetch = (instances, breakCycles, callback) ->
       if _.isFunction breakCycles
-        [callback, breakCycles] = [breakCycles, true]
+        [callback, breakCycles] = [breakCycles, false]
       ids = []
       # identify each linked properties 
       for instance in instances

@@ -28,6 +28,8 @@ EventType = require '../model/EventType'
 FieldType = require '../model/FieldType'
 Executable = require '../model/Executable'
 ClientConf = require '../model/ClientConf'
+Player = require '../model/Player'
+playerService = require('./PlayerService').get()
 
 utils = require '../util/common'
 pathUtils = require 'path'
@@ -72,7 +74,7 @@ class _GameService
     types = []
     # search in each possible type category
     async.forEach [ItemType, EventType, FieldType], (clazz, next) =>
-      clazz.find {_id: {$in: ids}}, (err, docs) =>
+      clazz.find {_id: $in: ids}, (err, docs) =>
         # quit at first error
         return callback err, null if err?
         types = types.concat docs
@@ -88,8 +90,8 @@ class _GameService
   # @option callback events [Array<Item>] list of retrieved items. May be empty.
   getItems: (ids, callback) =>
     logger.debug "Consult items with ids: #{ids}"
-    Item.find {_id: {$in: ids}}, (err, items) ->
-      return callback err, null if err?
+    Item.find {_id: $in: ids}, (err, items) ->
+      return callback err, [] if err?
       # break cyclic dependencies, to avoid serialization errors
       Item.fetch items, true, callback
 
@@ -97,15 +99,32 @@ class _GameService
   # Each linked objects are resolved, but cyclic dependencies are broken.
   #
   # @param ids [Array<String>] array of ids
-  # @param callback [Function] callback executed when items where retrieved. Called with parameters:
+  # @param callback [Function] callback executed when events where retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback events [Array<Event>] list of retrieved events. May be empty.
   getEvents: (ids, callback) =>
     logger.debug "Consult events with ids: #{ids}"
-    Event.find {_id: {$in: ids}}, (err, events) ->
-      return callback err, null if err?
+    Event.find {_id: $in: ids}, (err, events) ->
+      return callback err, [] if err?
       # break cyclic dependencies, to avoid serialization errors
       Event.fetch events, true, callback
+
+  # Retrieve public information on players from their emails. 
+  # Data returned are: email, lastConnection, firstName, lastName, and a connected boolean
+  #
+  # @param emails [Array<String>] list of consulted emails
+  # @param callback [Function] callback executed when players where retrieved. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback events [Array<Object>] list of retrieved players (plain objects. May be empty.
+  getPlayers: (emails, callback) =>
+    logger.debug "Consult players with emails: #{emails}"
+    Player.find {email: $in: emails}, (err, players) ->
+      return callback err, [] if err?
+      callback null, (for player in players
+        player = player.publicFields()
+        player.connected = player.email in playerService.connectedList
+        player
+      )
 
   # Retrieve all items that belongs to a map within given coordinates.
   #

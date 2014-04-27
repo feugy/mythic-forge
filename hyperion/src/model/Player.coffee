@@ -146,6 +146,17 @@ Player = typeFactory 'Player',
 Player.methods.checkPassword = (clearPassword) ->
   encryptor.verify clearPassword, @password
 
+# Utility method to expose only public information:
+# - email
+# - firstName
+# - lastName
+# - lastConnection
+# 
+# @param clearPassword [String] the clear tested value
+# @return true if passwords matched, false otherwise
+Player.methods.publicFields = () ->
+  _.pick @toJSON(), 'email', 'firstName', 'lastName', 'lastConnection'
+
 # Simple utility method that removes from passed parameter attirbutes that must be kept on server
 #
 # @param player [Object] purged Mongoose model or plain object

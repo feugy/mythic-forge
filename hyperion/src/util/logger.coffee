@@ -61,7 +61,6 @@ init = ->
   if conf.path isnt 'console'
     isConsole = false
     fs.mkdirsSync pathUtils.dirname conf.path 
-    fs.writeFileSync conf.path, '' unless !fs.existsSync conf.path
     # opens file stream
     output = fs.createWriteStream conf.path, flags: 'a', encodinf: 'utf8'
   else

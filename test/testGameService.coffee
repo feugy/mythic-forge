@@ -21,6 +21,7 @@ fs = require 'fs-extra'
 pathUtils = require 'path'
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
+Player = require '../hyperion/src/model/Player'
 Map = require '../hyperion/src/model/Map'
 Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
@@ -29,6 +30,7 @@ utils = require '../hyperion/src/util/common'
 Executable = require '../hyperion/src/model/Executable'
 service = require('../hyperion/src/service/GameService').get()
 adminService = require('../hyperion/src/service/AdminService').get()
+playerService = require('../hyperion/src/service/PlayerService').get()
 assert = require('chai').assert
      
 type = null
@@ -222,4 +224,53 @@ describe 'GameService tests', ->
       service.getConf 'root', null, (err, conf) ->
         return done "Can't get configuration: #{err}" if err?
         assert.isUndefined conf.method
+        done()
+
+  describe 'given two players', ->
+
+    before (done) ->
+      # given two players
+      Player.collection.drop (err)->
+        return done err if err?
+        new Player(email: 'james', password:'j@m3s', firstName: 'Dean', lastName: 'James', lastConnection: new Date(), characters: ['123456'], token:'a1b2', prefs: hi: 'hello').save (err) ->
+          return done err if err?
+          new Player(email: 'mm', password:'m@rI', firstName: 'Monroe', lastName: 'Marylin', lastConnection: new Date(), characters: ['789456'], token:'a1b2', prefs: hi: 'Bonjour').save (err) ->
+            done err
+
+    # Restore admin player for further tests
+    after (done) ->
+      new Player(email:'admin', password: 'admin', isAdmin:true).save done
+
+    it 'should player public data be consulted', (done) ->
+      # given an admin player connected
+      playerService.connectedList = ['james']
+
+      # when requesting info on these players
+      service.getPlayers ['james', 'mm', 'unknown'], (err, players) ->
+        return done err if err?
+
+        assert.lengthOf players, 2
+
+        # then players data are available
+        assert.equal players[0].email, 'james'
+        assert.equal players[0].firstName, 'Dean'
+        assert.equal players[0].lastName, 'James'
+        assert.instanceOf players[0].lastConnection, Date
+        assert.isTrue players[0].connected
+        assert.notProperty players[0], 'password'
+        assert.notProperty players[0], 'characters'
+        assert.notProperty players[0], 'token'
+        assert.notProperty players[0], 'prefs'
+        assert.notProperty players[0], 'key'
+
+        assert.equal players[1].email, 'mm'
+        assert.equal players[1].firstName, 'Monroe'
+        assert.equal players[1].lastName, 'Marylin'
+        assert.instanceOf players[1].lastConnection, Date
+        assert.isFalse players[1].connected
+        assert.notProperty players[1], 'password'
+        assert.notProperty players[1], 'characters'
+        assert.notProperty players[1], 'token'
+        assert.notProperty players[1], 'prefs'
+        assert.notProperty players[1], 'key'
         done()
