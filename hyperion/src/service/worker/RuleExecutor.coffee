@@ -283,7 +283,7 @@ module.exports =
           rule.removed = []
           # check parameters
           modelUtils.checkParameters parameters, applicable.params, actor, target, (err) =>
-            return callback "Invalid parameter for #{rule.id}: #{err}" if err?
+            return callback err if err?
 
             # message used in case of uncaught exception
             @_errMsg = "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}:"
