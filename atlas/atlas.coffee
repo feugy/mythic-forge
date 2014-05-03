@@ -50,6 +50,7 @@
     connected = false
     connecting = false
     player = null
+    playersCache = {}
       
     # Atlas global namespace
     Atlas = 
@@ -564,6 +565,8 @@
       Atlas.Map.findById id, (err, map) ->
         return callback err if err?
         if map?
+          # if map only has its Id, try to enrich it
+          _.extend map, item.map if not map.kind? and item.map.kind?
           # already cached
           item.map = map
           return callback null
@@ -1270,6 +1273,48 @@
 
     # Only provide a singleton of ImageService
     Atlas.imageService = new ImageService()
+
+    #-----------------------------------------------------------------------------
+    # Other utilities
+
+    # Consult public details of given players.
+    # Maintain a local cache of 5 seconds to allow multiple repetitive calls.
+    # Unknown emails will be ignored.
+    #
+    # @param emails [Array<String>] list of player email to consult
+    # @param callback [Function] retrieval end callback, invoked with arguments
+    # @option callback err [Error] an Error object, or null if no error occured
+    # @option callback players [Array<Object>] List of corresponding players, 
+    # with only public informations: email, firstName, lastName, lastConnection, connected
+    Atlas.getPlayers = (emails, callback) =>
+      return callback new Error 'Not connected' unless connected
+      # delay to let other calls being respond in order to use cache
+      rid = utils.rid()
+  
+      Atlas.gameNS.on 'getPlayers-resp', process = (reqId, err, results) =>
+        return unless reqId is rid
+        Atlas.gameNS.removeListener 'getPlayers-resp', process
+        return callback err if err?
+        
+        now = new Date().getTime()
+        # add player results in cache
+        playersCache[result.email] = model: result, since: now for result in results
+
+        # get results from cache
+        callback null, (playersCache[email].model for email in emails when email of playersCache)
+
+      # cache eviction
+      limit = new Date().getTime() - 5000
+      delete playersCache[email] for email, cached of playersCache when cached.since < limit 
+
+      # first check in cache
+      notCached = _.compact _.difference emails, _.keys playersCache
+      if notCached.length is 0
+        # all is in cache ! invoke with an empty array to avoid changing since values
+        _.defer => process rid, null, []
+      else
+        # ask only needed object from server
+        Atlas.gameNS.emit 'getPlayers', rid, notCached
 
     # return created namespace
     Atlas

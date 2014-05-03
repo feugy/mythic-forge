@@ -242,14 +242,14 @@ module.exports =
         return next "invalid name or type within expected parameter #{JSON.stringify param}"
 
       # look for parameter value
-      return next "missing parameter #{param.name}" unless actual?[param.name]?
+      return next "missingParameter #{param.name}" unless actual?[param.name]?
       values =  if Array.isArray actual[param.name] then actual[param.name] else [actual[param.name]]
 
       # number of awaited occurences
       min = if param.numMin? then param.numMin else 1
       max = if param.numMax? then param.numMax else 1
-      return next "#{param.name}: expected at least #{min} value(s)" if values.length < min
-      return next "#{param.name}: expected at most #{max} value(s)" if values.length > max
+      return next "tooFew #{param.name} #{min}" if values.length < min
+      return next "tooMany #{param.name} #{max}" if values.length > max
 
       # value checking, that may be delayed if we need to resolve property possible values
       process = (possibles) ->
@@ -257,25 +257,25 @@ module.exports =
           # check value's type, except for 'object'
           unless param.type is 'object'
             err = checkPropertyType value, param 
-            return next "#{param.name}: #{err}" if err?
+            return next "typeError #{param.name} #{err}" if err?
 
           # specific types checks:
           switch param.type
             when 'integer', 'float'
               if 'number' is utils.type param.min
-                return next "#{param.name}: #{value} is lower than #{param.min}" if value < param.min
+                return next "underMin #{param.name} #{param.min}" if value < param.min
               if 'number' is utils.type param.max
-                return next "#{param.name}: #{value} is higher than #{param.max}" if value > param.max
+                return next "overMax #{param.name} #{param.max}" if value > param.max
             when 'date', 'time', 'datetime'
               if 'date' is utils.type param.min
-                return next "#{param.name}: #{value} is lower than #{param.min}" if value.getTime() < param.min.getTime()
+                return next "underMin #{param.name} #{param.min}" if value.getTime() < param.min.getTime()
               if 'date' is utils.type param.max
-                return next "#{param.name}: #{value} is higher than #{param.max}" if value.getTime() > param.max.getTime()
+                return next "overMax #{param.name} #{param.max}" if value.getTime() > param.max.getTime()
             when 'string'
               if Array.isArray param.within
-                return next "#{param.name}: #{value} is not a valid option" unless value in param.within
+                return next "unallowedValue #{param.name} #{value}" unless value in param.within
               if 'string' is utils.type param.match
-                return next "#{param.name}: #{value} does not match conditions" unless new RegExp(param.match).test value
+                return next "unallowedValue #{param.name}" unless new RegExp(param.match).test value
             when 'object'
               # may be only strings (ids) or object with 'id' and 'qty' attribute
               id = null
@@ -285,17 +285,17 @@ module.exports =
               else if 'object' is utils.type(value) and 'string' is utils.type(value.id) and 'number' is utils.type(value.qty)
                 id = value.id
                 qty = value.qty
-                return next "#{param.name}: quantity must be a positive number" if qty <= 0
+                return next "negativeQuantity #{param.name} #{id}" if qty <= 0
               else
                 return next "#{param.name}: #{JSON.stringify value} isn't a valid object id or id+qty"
 
               # check id is in possible values
               objValue = _.find possibles, (obj) -> id is obj?.id
-              return next "#{param.name}: #{id} is not a valid option" unless objValue?
+              return next "unallowedValue #{param.name} #{id}" unless objValue?
 
               # check quantity 
-              return next "#{param.name}: #{id} is missing quantity" if objValue.type.quantifiable and qty is null
-              return next "#{param.name}: not enought #{id} to honor quantity #{qty}" if qty > objValue.quantity
+              return next "missingQuantity #{param.name} #{id}" if objValue.type.quantifiable and qty is null
+              return next "notEnoughtFor #{param.name} #{id} #{qty}" if qty > objValue.quantity
 
         # everything was fine.
         next null
