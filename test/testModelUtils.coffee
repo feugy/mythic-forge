@@ -87,13 +87,13 @@ describe 'Model utilities tests', ->
       modelUtils.checkParameters null, [name: 'p1', type: 'boolean'], null, null, (err) ->
         # then an error is raised
         assert.isNotNull err
-        assert.include err, 'missingParameter p1'
+        assert.include err, 'p1Missing'
 
         # when checking undefined actual parameters
         modelUtils.checkParameters undefined, [name: 'p1', type: 'boolean'], null, null, (err) ->
           # then an error is raised
           assert.isNotNull err
-          assert.include err, 'missingParameter p1'
+          assert.include err, 'p1Missing'
           done()
 
     it 'should fail on missing parameter', (done) ->
@@ -101,7 +101,7 @@ describe 'Model utilities tests', ->
       modelUtils.checkParameters {}, [name: 'p1', type: 'boolean'], null, null, (err) ->
         # then an error is raised
         assert.isNotNull err
-        assert.include err, 'missingParameter p1'
+        assert.include err, 'p1Missing'
         done()
 
     fixtures = [
@@ -111,23 +111,23 @@ describe 'Model utilities tests', ->
       'should fail if value is lower than min': (done) ->
         modelUtils.checkParameters {p1: 10}, [name: 'p1', type: 'integer', min: 20], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'underMin p1 20'
+          assert.include err, 'p1UnderMin 20'
           done()
 
       'should fail if value is higher than max': (done) ->
         modelUtils.checkParameters {p1: 10}, [name: 'p1', type: 'integer', max: -5], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'overMax p1 -5'
+          assert.include err, 'p1OverMax -5'
           done()
 
       'should fail if value is out of bounds': (done) ->
         expected = [name: 'p1', type: 'integer', min: 0, max: 5]
         modelUtils.checkParameters {p1: 10}, expected, null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'overMax p1 5'
+          assert.include err, 'p1OverMax 5'
           modelUtils.checkParameters {p1: -5}, expected, null, null, (err) ->
             assert.isNotNull err
-            assert.include err, 'underMin p1 0'
+            assert.include err, 'p1UnderMin 0'
             done()
 
       'should accept value within bounds': (done) ->
@@ -142,13 +142,13 @@ describe 'Model utilities tests', ->
       'should fail on few occurences than expected': (done) ->
         modelUtils.checkParameters {p1: 10}, [name: 'p1', type: 'integer', numMin: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
    
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: [10,11,12]}, [name: 'p1', type: 'integer', numMax: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done()
    
       'should accept optionnal values': (done) ->
@@ -175,23 +175,23 @@ describe 'Model utilities tests', ->
       'should fail if value is lower than min': (done) ->
         modelUtils.checkParameters {p1: -10.5}, [name: 'p1', type: 'float', min: 1.5], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'underMin p1 1.5'
+          assert.include err, 'p1UnderMin 1.5'
           done()
 
       'should fail if value is higher than max': (done) ->
         modelUtils.checkParameters {p1: 10.1}, [name: 'p1', type: 'float', max: -0.1], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'overMax p1 -0.1'
+          assert.include err, 'p1OverMax -0.1'
           done()
 
       'should fail if value is out of bounds': (done) ->
         expected = [name: 'p1', type: 'float', min: 0, max: 5]
         modelUtils.checkParameters {p1: 20.2}, expected, null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'overMax p1 5'
+          assert.include err, 'p1OverMax 5'
           modelUtils.checkParameters {p1: -0.9}, expected, null, null, (err) ->
             assert.isNotNull err
-            assert.include err, 'underMin p1 0'
+            assert.include err, 'p1UnderMin 0'
             done()
 
       'should accept value within bounds': (done) ->
@@ -206,13 +206,13 @@ describe 'Model utilities tests', ->
       'should fail on few occurences than expected': (done) ->
         modelUtils.checkParameters {p1: 10}, [name: 'p1', type: 'float', numMin: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
    
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: [10,11,12]}, [name: 'p1', type: 'float', numMax: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done()
    
       'should accept optionnal values': (done) ->
@@ -239,7 +239,7 @@ describe 'Model utilities tests', ->
       'should fail if value is not within possibilities': (done) ->
         modelUtils.checkParameters {param2: 'stuff'}, [name: 'param2', type: 'string', within: ['one', 'two']], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'unallowedValue param2'
+          assert.include err, 'param2UnallowedValue'
           done()
  
       'should accept value within possibilities': (done) ->
@@ -250,7 +250,7 @@ describe 'Model utilities tests', ->
       'should fail if value does not match regular expression': (done) ->
         modelUtils.checkParameters {param2: 'stuff'}, [name: 'param2', type: 'string', match: '^.{1,3}$'], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'unallowedValue param2'
+          assert.include err, 'param2UnallowedValue'
           done()
 
       'should accept value that match regular expression': (done) ->
@@ -261,13 +261,13 @@ describe 'Model utilities tests', ->
       'should fail on few occurences than expected': (done) ->
         modelUtils.checkParameters {p1: 'stuff'}, [name: 'p1', type: 'string', numMin: 3], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 3'
+          assert.include err, 'p1TooFew 3'
           done()
    
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: ['one', 'two', 'three', 'four']}, [name: 'p1', type: 'string', numMax: 3], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 3'
+          assert.include err, 'p1TooMany 3'
           done()
    
       'should accept optionnal values': (done) ->
@@ -294,13 +294,13 @@ describe 'Model utilities tests', ->
       'should fail on few occurences than expected': (done) ->
         modelUtils.checkParameters {p1: 'stuff'}, [name: 'p1', type: 'text', numMin: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
    
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: ['one', 'two', 'three']}, [name: 'p1', type: 'text', numMax: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done()
    
       'should accept optionnal values': (done) ->
@@ -327,13 +327,13 @@ describe 'Model utilities tests', ->
       'should fail on few occurences than expected': (done) ->
         modelUtils.checkParameters {p1: false}, [name: 'p1', type: 'boolean', numMin: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
    
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: [false, true, true]}, [name: 'p1', type: 'boolean', numMax: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done()
    
       'should accept optionnal values': (done) ->
@@ -360,13 +360,13 @@ describe 'Model utilities tests', ->
       'should fail if value is lower than min': (done) ->
         modelUtils.checkParameters {p1: new Date()}, [name: 'p1', type: 'date', min: moment().add('d', 1).toDate()], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'underMin'
+          assert.include err, 'p1UnderMin'
           done()
 
       'should fail if value is higher than max': (done) ->
         modelUtils.checkParameters {p1: new Date()}, [name: 'p1', type: 'date', max: moment().subtract('d', 1).toDate()], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'overMax'
+          assert.include err, 'p1OverMax'
           done()
 
       'should fail if value is out of bounds': (done) ->
@@ -374,10 +374,10 @@ describe 'Model utilities tests', ->
         expected = [name: 'p1', type: 'date', min: now.clone().subtract('h', 1).toDate(), max: now.clone().add('h', 1).toDate()]
         modelUtils.checkParameters {p1: now.clone().subtract('h', 2).toDate()}, expected, null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'underMin'
+          assert.include err, 'p1UnderMin'
           modelUtils.checkParameters {p1: now.clone().add('h', 2).toDate()}, expected, null, null, (err) ->
             assert.isNotNull err
-            assert.include err, 'overMax'
+            assert.include err, 'p1OverMax'
             done()
 
       'should accept value within bounds': (done) ->
@@ -394,14 +394,14 @@ describe 'Model utilities tests', ->
         now = moment().toDate()
         modelUtils.checkParameters {p1: now}, [name: 'p1', type: 'date', numMin: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
      
       'should fail on more occurences than expected': (done) ->
         now = moment().toDate()
         modelUtils.checkParameters {p1: [now, now, now]}, [name: 'p1', type: 'date', numMax: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done()
    
       'should accept optionnal values': (done) ->
@@ -431,14 +431,14 @@ describe 'Model utilities tests', ->
         now = moment().toDate()
         modelUtils.checkParameters {p1: {one:1, two:2}}, [name: 'p1', type: 'json', numMin: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
      
       'should fail on more occurences than expected': (done) ->
         now = moment().toDate()
         modelUtils.checkParameters {p1: [{one:1}, {two:2}, {three:3}]}, [name: 'p1', type: 'json', numMax: 2], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done() 
 
       'should accept array values': (done) ->
@@ -465,7 +465,7 @@ describe 'Model utilities tests', ->
                   if value?
                     assert.ok err.match new RegExp("isn't a valid #{fixture.type}|doesn't hold a valid|only accepts"), err
                   else
-                    assert.include err, 'missingParameter p1'
+                    assert.include err, 'p1Missing'
                   done()
             )(value)
 
@@ -571,13 +571,13 @@ describe 'Model utilities tests', ->
       it 'should fail on few occurences than expected', (done) ->
         modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', numMin: 2, within: [b1.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooFew p1 2'
+          assert.include err, 'p1TooFew 2'
           done()
      
       it 'should fail on more occurences than expected', (done) ->
         modelUtils.checkParameters {p1: [b1.id, b1.id, b1.id]}, [name: 'p1', type: 'object', numMax: 2, within: [b1.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, 'tooMany p1 2'
+          assert.include err, 'p1TooMany 2'
           done()
    
       it 'should accept optionnal values', (done) ->
@@ -601,37 +601,37 @@ describe 'Model utilities tests', ->
       it 'should fail on value not within awaited values', (done) ->
         modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', within: [b2.id, b3.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, "unallowedValue p1 #{b1.id}"
+          assert.include err, "p1UnallowedValue #{b1.id}"
           done()
 
       it 'should fail on value not within dynamic actor property', (done) ->
         modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'compose'}], b2, null, (err) ->
           assert.isNotNull err
-          assert.include err, "unallowedValue p1 #{b1.id}"
+          assert.include err, "p1UnallowedValue #{b1.id}"
           done()
 
       it 'should fail on value not within dynamic target property', (done) ->
         modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', property: {from: 'target', path: 'parts'}], null, b2, (err) ->
           assert.isNotNull err
-          assert.include err, "unallowedValue p1 #{b1.id}"
+          assert.include err, "p1UnallowedValue #{b1.id}"
           done()
 
       it 'should fail on missing quantity for quantifiable value', (done) ->
         modelUtils.checkParameters {p1: s1.id}, [name: 'p1', type: 'object', property: {from: 'actor', path: 'linked'}], e1, null, (err) ->
           assert.isNotNull err
-          assert.include err, "missingQuantity p1 #{s1.id}"
+          assert.include err, "p1MissingQuantity #{s1.id}"
           done()
 
       it 'should fail on negative quantity for quantifiable value', (done) ->
         modelUtils.checkParameters {p1: {id:s1.id, qty:0}}, [name: 'p1', type: 'object', within: [s1.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, "negativeQuantity p1 #{s1.id}"
+          assert.include err, "p1NegativeQuantity #{s1.id}"
           done()
 
       it 'should fail when requesting more than possible quantity for quantifiable value', (done) ->
         modelUtils.checkParameters {p1: {id:s1.id, qty:10}}, [name: 'p1', type: 'object', within: [s1.id]], null, null, (err) ->
           assert.isNotNull err
-          assert.include err, "notEnoughtFor p1 #{s1.id} 10"
+          assert.include err, "p1NotEnoughtFor #{s1.id} 10"
           done()
 
       it 'should accept value within fixed possibilities', (done) ->
