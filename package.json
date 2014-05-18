@@ -27,7 +27,7 @@
     "password-hash": "1.2.1",
     "requirejs": "2.1.10",
     "sanitizer": "0.1.1",
-    "socket.io": "1.0.0-pre",
+    "socket.io": "1.0.0-pre2",
     "stylus": "0.42.2",
     "underscore": "1.5.2",
     "underscore.string": "2.3.3"
@@ -43,7 +43,7 @@
     "gulp-util": "2.2.14",
     "phantom-proxy": "0.1.792",
     "request": "2.33.0",
-    "socket.io-client": "1.0.0-pre"
+    "socket.io-client": "1.0.0-pre2"
   },
   "scripts": {
     "start": "node hyperion/bin/start",
