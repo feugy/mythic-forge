@@ -168,8 +168,7 @@ describe 'PlayerService tests', ->
       player.save (err, saved) ->
         return done err if err?
         player = saved
-        service.connectedList = {}
-        service.connectedList[player.email] = player.lastConnection
+        service.connectedList = [player.email]
 
         # when retrieving the player by token
         service.getByToken token, (err) ->
@@ -195,8 +194,7 @@ describe 'PlayerService tests', ->
 
     it 'should disconnect reset token to null', (done) ->
       # given a connected account
-      service.connectedList = {}
-      service.connectedList[player.email] = new Date()
+      service.connectedList = [player.email]
       # when disconneting the player
       service.disconnect player.email, '', (err, account) ->
         return done "Can't disconnect: #{err}" if err?
