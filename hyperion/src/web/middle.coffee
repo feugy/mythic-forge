@@ -271,11 +271,12 @@ io.on 'connection', (socket) ->
   # message to get connected player
   socket.on 'getConnected', (callback) ->
     playerService.getByEmail email, false, (err, player) =>
-      # purge only password and avoid recursive object tree
-      player = utils.plainObjects player
-      delete player.password
-      # return key to rheia
-      callback err, player
+      # avoid recursive object tree
+      json = utils.plainObjects player
+      # return key (dev zone access) and token (reconnection) to rheia and purge only password
+      delete json.password
+      json.key = key
+      callback err, json
 
   # message to manually logout the connected player
   socket.on 'logout', ->

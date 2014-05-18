@@ -66,10 +66,6 @@ Player = typeFactory 'Player',
   # **Not propagated by modelWatcher nor returned by AdminService**
   token: String
 
-  # cookie used to access game developpment zone 
-  # **Not propagated by modelWatcher nor returned by AdminService**
-  key: String
-
   # password, only used for manually provided accounts
   # **Not propagated by modelWatcher nor returned by AdminService**
   password: 
@@ -167,12 +163,10 @@ Player.statics.purge = (player) ->
     # Mongoose proxy
     delete player._doc.password
     delete player._doc.token 
-    delete player._doc.key
   else 
     # plain raw object
     delete player.password
     delete player.token 
-    delete player.key
   player
 
 module.exports = conn.model 'player', Player

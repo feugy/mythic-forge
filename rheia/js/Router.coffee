@@ -302,6 +302,9 @@ define [
       else 
         if params?.redirect?
           localStorage.setItem 'app.redirect', decodeURIComponent params.redirect
+        else
+          localStorage.removeItem 'app.redirect'
+          
         form = $('#loginStock').detach()
         $('body').empty().append new LoginView(form).render().$el
 
