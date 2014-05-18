@@ -4,7 +4,7 @@
   # 
   # - async@0.2.7
   # - jquery@2.0.0
-  # - socket.io@1.0.0-pre
+  # - socket.io@1.0.0-pre2
   # - underscore@1.4.4
   #
   # Atlas needs an event bus to propagate changes on models
