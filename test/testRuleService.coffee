@@ -1461,7 +1461,7 @@ describe 'RuleService tests', ->
         service.execute 'rule23', item1.id, item1.id, {p1: item1}, 'admin', (err, results) ->
           # then the error is reported
           assert.isNotNull err
-          assert.include err, 'Invalid parameter for rule23'
+          assert.include err, "missing 'within' constraint"
           done()
 
     it 'should parameterized rule be executed', (done) ->

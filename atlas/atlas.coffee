@@ -1100,7 +1100,7 @@
         
         if err?
           options.debug and console.error "Fail to resolve rules: #{err}" 
-          return callback new Error "Fail to resolve rules: #{err}" 
+          return callback new Error err
 
         # enrich targets with models
         async.each _.keys(results), (ruleId, next) ->
@@ -1140,7 +1140,7 @@
         
         return callback null, result unless err?
         options.debug and console.error "Fail to execute rule: #{err}" 
-        return callback new Error "Fail to execute rule: #{err}" 
+        return callback new Error err
 
     # Only provide a singleton of RuleService
     Atlas.ruleService = new RuleService()

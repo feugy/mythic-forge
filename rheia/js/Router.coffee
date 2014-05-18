@@ -38,7 +38,7 @@ requirejs.config
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
     'nls': '../nls'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
-    'socket.io': 'lib/socket.io-1.0.0-pre'
+    'socket.io': 'lib/socket.io-1.0.0-pre2'
     'text': 'lib/text-2.0.0-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'tpl': '../template'
@@ -189,6 +189,8 @@ define [
       callback 'disconnected'
 
     socket.io.on 'reconnect_attempt', ->
+      return if isLoggingOut
+      console.log "reconnection attempt"
       # don't forget to set connecting flag again for error handling
       connecting = true
 

@@ -60,6 +60,8 @@ apiPort = utils.confKey 'server.apiPort', process.env.PORT or ''
 
 # stores email corresponding to socket ids
 sid = {}
+# keeps timer that claim client logged out when socket is closed
+expiration = {}
 
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.urlencoded()
@@ -226,8 +228,8 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
 io.use (socket, callback) ->
   # allways allo access without security
   return callback null if noSecurity
-  # check if a token has been sent
-  token = socket.request.query?.token
+  # check if a token has been sent (TODO query for socket.io <= 1.0.0-pre1)
+  token = socket.request._query?.token or socket.request.query?.token
   if 'string' isnt utils.type(token) or token.length is 0
     logger.debug "socket #{socket.id} received invalid token #{token}"
     return callback new Error 'invalidToken' 
@@ -250,37 +252,50 @@ io.use (socket, callback) ->
 io.on 'connection', (socket) ->
   # always use admin without security
   details = unless noSecurity then sid[socket.id] else email:'admin', isAdmin:true
+
+  email = details.email
   # set inactivity
-  playerService.activity details.email
-  logger.debug "socket #{socket.id} established for user #{details.email}" 
+  playerService.activity email
+  logger.debug "socket #{socket.id} established for user #{email}" 
 
   # on each connection, generate a key for dev access
   if details.isAdmin
     key = utils.generateToken 24
-    notifier.notify 'admin-connect', details.email, key
+    notifier.notify 'admin-connect', email, key
   else
     key = null
 
+  # clear expiration timeer
+  clearTimeout expiration[email] if email of expiration
+
   # message to get connected player
   socket.on 'getConnected', (callback) ->
-    playerService.getByEmail details.email, false, (err, player) =>
+    playerService.getByEmail email, false, (err, player) =>
+      # purge only password and avoid recursive object tree
+      player = utils.plainObjects player
+      delete player.password
       # return key to rheia
-      player.key = key if key? and player?
       callback err, player
-    socket.removeAllListeners()
 
   # message to manually logout the connected player
   socket.on 'logout', ->
-    logger.debug "received logout for user #{details.email}" 
-    # manually disconnect and clear the sid (disconnect event isn't fired)
-    socket.disconnect true
+    logger.info "received logout for user #{email}" 
+    # manually disconnect and clear the sid to avoid expiration
     delete sid[socket.id]
-    playerService.disconnect details.email, 'logout'
+    socket.disconnect true
+    playerService.disconnect email, 'logout'
 
   # don't forget to clean up connected socket email
   socket.on 'disconnect', ->
-    logger.debug "socket #{socket.id} closed user #{details.email}" 
-    delete sid[socket.id]
+    logger.debug "socket #{socket.id} closed user #{email}"
+    # in case of manual logout, socket.id isn't in sid and we don't need expiration
+    if socket.id of sid 
+      delete sid[socket.id]
+      # if client does not returns in within 10 seconds, consider it disconnected
+      expiration[email] = _.delay =>
+        logger.info "claim for logout for user #{email}"
+        playerService.disconnect email, 'logout'
+      , 10000
 
 # socket.io `game` namespace 
 #
@@ -318,7 +333,7 @@ adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->
 
   # add a message to returns connected list
   socket.on 'connectedList', (reqId) ->
-    socket.emit 'connectedList-resp', reqId, utils.plainObjects playerService.connectedList
+    socket.emit 'connectedList-resp', reqId, playerService.connectedList
 
 # socket.io `updates` namespace 
 #

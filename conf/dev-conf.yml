@@ -69,7 +69,7 @@ game:
 
 # Turns execution settings. Frequency in seconds
 turn:
-  frequency: 1
+  frequency: 0
 
 # Use minified rheia
 minified: false

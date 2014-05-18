@@ -147,6 +147,7 @@
     - session expiration
     - restrict rheia access to administrators only
     - test password management of manually registered players
+    - detect client disconnection and claim for logout after 10 seconds
   - Rule engine 
     - restrict rule resolution to given categories
     - restrict rule resolution to given rule id

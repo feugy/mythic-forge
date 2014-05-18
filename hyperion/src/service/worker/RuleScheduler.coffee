@@ -59,7 +59,8 @@ trigger = (callback, _auto = false) ->
     logger.debug 'end of turn'
     notifier.notify 'turns', 'end'
     # trigger the next turn
-    if _auto and !commitSuicide
+    # disable if frequency isn't strictly positive
+    if _auto and !commitSuicide and frequency > 0
       _.delay ->
         trigger callback, true
       , nextTurn()
