@@ -51,7 +51,7 @@ pool = []
 # @option options module [String] path (relative to the launcher) of the spawned script
 spawn = (poolIdx, options) ->
   worker = cluster.fork options
-  worker.setMaxListeners 150
+  worker.setMaxListeners 0
   pool[poolIdx] = worker
 
   # relaunch immediately dead worker

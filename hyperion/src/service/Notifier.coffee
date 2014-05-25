@@ -27,6 +27,8 @@ module.exports = class Notifier
   _instance = undefined
   @get: ->
     _instance ?= new _Notifier()
+    _instance.setMaxListeners 0
+    _instance
 
 # The Notifier allows services to send notifications across the server and administration
 # clients.

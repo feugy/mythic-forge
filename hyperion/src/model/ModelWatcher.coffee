@@ -96,7 +96,7 @@ class ModelWatcher
   _instance = undefined
   @get: ->
     _instance ?= new _ModelWatcher()
-    _instance.setMaxListeners 150
+    _instance.setMaxListeners 0
     _instance
 
 module.exports = ModelWatcher

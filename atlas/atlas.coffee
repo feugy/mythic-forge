@@ -1019,7 +1019,8 @@
       resolve: (args..., restriction, callback = ->) =>
         rid = utils.rid()
         requests[rid] = 
-          restriction: restriction
+          restriction: if _.isArray restriction then restriction.sort().join ',' else restriction
+          resolve: true
           callback: callback
         params = requests[rid]
         params.actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
@@ -1027,18 +1028,18 @@
         if args.length is 1
           # resolve for player
           options.debug and console.log "resolve rules for player #{params.actorId}"
-          Atlas.gameNS.emit 'resolveRules', rid, params.actorId, params.restriction
+          Atlas.gameNS.emit 'resolveRules', rid, params.actorId, restriction
         else if args.length is 2
           # resolve for actor over a target
           params.targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
           options.debug and console.log "resolve rules for #{params.actorId} and target #{params.targetId}"
-          Atlas.gameNS.emit 'resolveRules', rid, params.actorId, params.targetId, params.restriction
+          Atlas.gameNS.emit 'resolveRules', rid, params.actorId, params.targetId, restriction
         else if args.length is 3
           # resolve for actor over a tile
           params.x = args[1]
           params.y = args[2]
           options.debug and console.log "resolve rules for #{params.actorId} at #{params.x}:#{params.y}"
-          Atlas.gameNS.emit 'resolveRules', rid, params.actorId, params.x, params.y, params.restriction
+          Atlas.gameNS.emit 'resolveRules', rid, params.actorId, params.x, params.y, restriction
         else 
           return _.defer -> callback new Error "Can't resolve rules with arguments #{JSON.stringify arguments, null, 2}"
 
@@ -1062,6 +1063,7 @@
         rid = utils.rid()
         requests[rid] = 
           name: ruleName
+          execute: true
           params: params
           callback: callback
         params = requests[rid]
@@ -1079,10 +1081,20 @@
         else 
           return _.defer -> callback new Error "Can't execute rules with arguments #{JSON.stringify arguments, null, 2}"
         
-      # Indicates that service is busy
-      # @return true if a resolution or execution is already in progress
-      isBusy: => 
-        return true for key of requests 
+      # Indicates that service is currently resolving or executing a given rule
+      #
+      # @param conditions [Object] an object of condition to check:
+      # @option conditions resolved [Array<String>|String] optionnal resolved restriction. if null check any rule resolution
+      # @option conditions executed [String] optionnal rule name. if null check any rule execution
+      # @return true if busy condition are successful (that is, a resolution or execution is already in progress).
+      isBusy: ({resolved, executed} = {})=> 
+        # check resolution
+        if resolved?
+          # flatten restriction arrays
+          resolved = resolved.sort().join ',' if _.isArray resolved
+        return true for rid, req of requests when req.resolve and (not resolved? or req.restriction is resolved)
+        # check execution
+        return true for rid, req of requests when req.execute and (not executed? or req.name is executed)
         return false
       
       # **private**
