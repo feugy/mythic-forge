@@ -8,6 +8,7 @@
   - test images for field types and event types
   - Documentation
   - Rule engine
+    - [!!!] Handle 'No matching document found' version errors while executing rule and revert execution
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
@@ -17,25 +18,21 @@
 
 - Rheia
   - Bugs
-    - [!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
-    - set nls default values to avoid browser failure with non-french locale
+    - [!!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
+    - [!!] revert file to version is broken, rule/script versionning not implemented
+    - [!] set nls default values to avoid browser failure with non-french locale
     - use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
-    - after version change, version list is empty
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - map navigation and zoom - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - Documentation
   - Authoring perspective
-    - multiple file search & replace
-    - single file search & replace
+    - [!] multiple file search
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
 
 - Atlas
-  - image cache evinction (notably when item/field/event type changes)
-  - manage labels in clientConf
-  - provide widget library with Image service
-  - package as library
+  - package as library for es6, common JS and require
   - Documentation
 
 # Done
@@ -183,6 +180,8 @@
 
 - Rheia
   - Bugs
+    - image carousel in field type not properly working with exotic image sizes
+    - double numeric contols in newest firfox for number properties
     - player token invalidated after player edition
     - when update received on an item moderation view, displayed image is wrong
     - moderation map does not shows item movement when specified transition isn't found

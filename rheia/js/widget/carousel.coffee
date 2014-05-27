@@ -33,10 +33,6 @@ define [
   class Carousel extends Base
 
     # **private**
-    # individual widths of displayed images
-    _widths: []
-
-    # **private**
     # how many image are still loading
     _pending: 0
 
@@ -47,7 +43,6 @@ define [
     # builds rendering
     constructor: (element, options) ->
       super element, options
-      @_widths= []
 
       # creates a container for images, and two navigation buttons
       @$el.addClass('carousel').append """
@@ -98,24 +93,11 @@ define [
       @_pending--
 
       node = @_container.children ":eq(#{idx})"
-      prev = @$el.prev()
-      parent = @$el.parent()
 
-      # insert into dom while setting image to allow size computation
-      $('body').append @$el
       node.attr('src', image).addClass @options.imageClass
-      @_widths[idx] = node.width()
 
-      # insert again at its original place
-      if prev.length is 0 
-        parent.prepend @$el unless parent.length is 0
-      else
-        prev.after @$el
-      
       # last image loaded ?
       if @_pending is 0
-        # set container width
-        @_container.css width: sum @_widths
         # unbound from loader
         @unboundFrom app.router, 'imageLoaded'
         
@@ -124,6 +106,7 @@ define [
           @_setCurrent @options.current
         else
           @_setCurrent 0
+
 
     # **private**
     # Updates the current displayed image, with navigation animation.
@@ -139,10 +122,13 @@ define [
       @$el.find('.previous').button 'option', 'disabled', value is 0
       @$el.find('.next').button 'option', 'disabled', value is @options.images.length-1
       
-      console.log "#{value} #{@options.current}"
       # moves the image container
       @_container.stop()
-      offset = - sum @_widths[0...value]
+      # compute offset needed
+      children = @_container.children()
+      offset = 0
+      for img, idx in @options.images when idx < value
+        offset -= $(children[0]).outerWidth true
 
       if animate
         @_container.animate {left: offset}, @options.speed
@@ -162,8 +148,7 @@ define [
     # @param images [Array<String>] the new image array (contains url strings)
     _displayImages: (images) =>
       # removes previous images
-      @_container.empty().attr 'width', 0
-      @_widths = []
+      @_container.empty()
       @options.images = if Array.isArray images then images else []
 
       @_pending = @options.images.length
