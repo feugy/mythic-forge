@@ -158,7 +158,8 @@ define [
         # displays new ones
         for image in @options.images
           @_container.append """<img class="#{@options.imageClass}"/>"""
-          app.router.trigger 'loadImage', "/images/#{image}" if image isnt null 
+          if image? and image isnt ""
+            app.router.trigger 'loadImage', "/images/#{image}" 
       else
         # no images to display: set current to 0
         @_setCurrent 0

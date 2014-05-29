@@ -31,7 +31,6 @@ define [
 
   # check that current browser support numeric inputs
   supportNumeric = $('<input type="number">').attr('type') is 'number'
-  console.log "supportNumeric", supportNumeric
   i18n = $.extend true, i18n, i18nWidget
 
   # The property widget allows to display and edit a type's property. 
