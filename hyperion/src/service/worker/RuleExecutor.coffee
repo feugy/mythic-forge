@@ -111,10 +111,10 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, current, call
                 if wholeRule
                   result = rule: rule
                 else
+                  # do not send fully fetched target: it may contained reference to actor and then cause a stack explosion
+                  if target?._className in ['Event', 'Item']
+                    modelUtils.processLinks target, target.type.properties, false
                   result = category: rule.category
-                # do not send fully fetched target: it may contained reference to actor and then cause a stack explosion
-                if target?._className in ['Event', 'Item']
-                  modelUtils.processLinks target, target.type.properties, false
                 result.target = target
                 result.params = parameters
                 results[rule.id] = [] unless rule.id of results
