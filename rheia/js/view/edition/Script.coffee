@@ -73,7 +73,7 @@ define [
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
-      @model = new Executable lang: @_lang content: if @_lang is 'js' then emptyScriptJs else emptyScriptCoffee
+      @model = new Executable lang: @_lang,content: if @_lang is 'js' then emptyScriptJs else emptyScriptCoffee
 
     # **private**
     # Gets values from rendering and saved them into the edited object.

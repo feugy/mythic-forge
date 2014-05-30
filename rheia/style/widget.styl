@@ -198,6 +198,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   navDim = 16px
   user-select none
   display flex
+  align-items center
 
   .mask 
     overflow hidden
@@ -209,10 +210,11 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   .container 
     position absolute
     display flex
+    align-items flex-start
 
   .thumbnail 
-    width auto
-    height imageDim
+    width imageDim
+    height auto
 
   .thumbnail[data-src='null']
     background-color black
