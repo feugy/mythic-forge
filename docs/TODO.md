@@ -2,7 +2,6 @@
 
 - Hyperion
   - Bugs
-    - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - test images for field types and event types
@@ -39,6 +38,7 @@
 
 - Hyperion
   - Bugs
+    - modified linked model (not linked to actor nor target) not detected as modified and not saved by rules
     - model cache retains old object version: clean worker model cache when any thread failed
     - temper executable require during resetAll until all executable compilation
     - avoid message collision between ruleService and ruleExecutor on same executed method

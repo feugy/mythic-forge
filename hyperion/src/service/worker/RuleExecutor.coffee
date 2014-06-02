@@ -324,12 +324,14 @@ module.exports =
                   obj.remove (err)-> end err
                 , (err) => 
                   return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-                  # adds new objects to be saved
-                  saved = [].concat rule.saved
-                  # looks for modified linked objects
-                  modelUtils.filterModified actor, saved
-                  modelUtils.filterModified target, saved
+                  
+                  saved = []
+                  # looks for modified linked objects, for every saved object
+                  modelUtils.filterModified obj, saved for obj in [actor, target].concat rule.saved
+                  # removes duplicates and sort to save new objects first
                   modelUtils.purgeDuplicates saved
+                  saved.sort (o1, o2) -> if o1.id? and not o2.id? then 1 else if o2.id? and not o1.id? then -1 else 0
+
                   # saves the whole in MongoDB
                   async.forEach saved, (obj, end) -> 
                     # do not re-save models that were already removed !

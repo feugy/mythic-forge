@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/feugy/mythic-forge.png)](https://travis-ci.org/feugy/mythic-forge)
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/feugy/mythic-forge/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
+[![Dependency Status](https://gemnasium.com/feugy/mythic-forge.svg)](https://gemnasium.com/feugy/mythic-forge)
+                    
 # Welcome !
 
 Mythic-forge is an online gaming platform for Web developpers.

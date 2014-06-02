@@ -79,61 +79,6 @@ describe 'RuleService tests', ->
     notifier.removeListener notifier.NOTIFICATION, listener
     done()
 
-  it 'should linked object be modified and saved by a rule', (done) ->
-    # given a rule that need links resolution
-    script = new Executable 
-      id:'rule3', 
-      content: """Rule = require 'hyperion/model/Rule'
-        class DriveLeft extends Rule
-          canExecute: (actor, target, context, callback) =>
-            target.fetch ->
-              callback null, if target.pilot.equals actor then [] else null
-          execute: (actor, target, params, context, callback) =>
-            target.fetch ->
-              target.x++
-              target.pilot.x++
-              callback null, 'driven left'
-        module.exports = new DriveLeft()"""
-    script.save (err) ->
-      # given a character type and a car type
-      return done err if err?
-      type1 = new ItemType id: 'character'
-      type1.setProperty 'name', 'string', ''
-      type1.save (err, saved) ->
-        return done err if err?
-        type1 = saved
-        type2 = new ItemType id: 'car'
-        type2.setProperty 'pilot', 'object', 'Item'
-        type2.save (err, saved) ->
-          return done err if err?
-          type2 = saved
-          # given 3 items
-          new Item({x:9, y:0, type: type1, name:'Michel Vaillant'}).save (err, saved) ->
-            return done err if err?
-            item1 = saved
-            new Item({x:9, y:0, type: type2, pilot:item1}).save (err, saved) ->
-              return done err if err?
-              item2 = saved
-              
-              # given the rules that are applicable for a target 
-              service.resolve item1.id, item2.id, null, 'admin', (err, results)->
-                return done "Unable to resolve rules: #{err}" if err?
-                return done 'the rule3 was not resolved' unless 'rule3' of results
-
-                # when executing this rule on that target
-                service.execute 'rule3', item1.id, item2.id, {}, 'admin', (err, result)->
-                  return done "Unable to execute rules: #{err}" if err?
-
-                  # then the rule is executed.
-                  expect(result).to.equal 'driven left'
-                  # then the item was modified on database
-                  Item.find {x:10}, (err, items) =>
-                    return done "Unable to retrieve items: #{err}" if err?
-                    expect(items).to.have.lengthOf 2
-                    for item in items
-                      expect(item).to.have.property 'x', 10
-                    done()
-
   it 'should rule create new objects', (done) ->
     # given a rule that creates an object
     script = new Executable
@@ -287,6 +232,123 @@ describe 'RuleService tests', ->
                   expect(existing).to.be.null
                   done()
 
+  it 'should linked object be modified and saved by a rule', (done) ->
+    # given a rule that need links resolution
+    script = new Executable 
+      id:'rule3', 
+      content: """Rule = require 'hyperion/model/Rule'
+        class DriveLeft extends Rule
+          canExecute: (actor, target, context, callback) =>
+            target.fetch ->
+              callback null, if target.pilot.equals actor then [] else null
+          execute: (actor, target, params, context, callback) =>
+            target.fetch ->
+              target.x++
+              target.pilot.x++
+              callback null, 'driven left'
+        module.exports = new DriveLeft()"""
+    script.save (err) ->
+      # given a character type and a car type
+      return done err if err?
+      type1 = new ItemType id: 'character'
+      type1.setProperty 'name', 'string', ''
+      type1.save (err, saved) ->
+        return done err if err?
+        type1 = saved
+        type2 = new ItemType id: 'car'
+        type2.setProperty 'pilot', 'object', 'Item'
+        type2.save (err, saved) ->
+          return done err if err?
+          type2 = saved
+          # given 3 items
+          new Item({x:9, y:0, type: type1, name:'Michel Vaillant'}).save (err, saved) ->
+            return done err if err?
+            item1 = saved
+            new Item({x:9, y:0, type: type2, pilot:item1}).save (err, saved) ->
+              return done err if err?
+              item2 = saved
+              
+              # given the rules that are applicable for a target 
+              service.resolve item1.id, item2.id, null, 'admin', (err, results)->
+                return done "Unable to resolve rules: #{err}" if err?
+                return done 'the rule3 was not resolved' unless 'rule3' of results
+
+                # when executing this rule on that target
+                service.execute 'rule3', item1.id, item2.id, {}, 'admin', (err, result)->
+                  return done "Unable to execute rules: #{err}" if err?
+
+                  # then the rule is executed.
+                  expect(result).to.equal 'driven left'
+                  # then the item was modified on database
+                  Item.find {x:10}, (err, items) =>
+                    return done "Unable to retrieve items: #{err}" if err?
+                    expect(items).to.have.lengthOf 2
+                    for item in items
+                      expect(item).to.have.property 'x', 10
+                    done()
+
+  it 'should linked object (not to actor or target) be modified and saved by a rule', (done) ->
+    # given a rule that modifies linked objects
+    script = new Executable 
+      id:'rule3', 
+      content: """Rule = require 'hyperion/model/Rule'
+        Item = require 'hyperion/model/Item'
+
+        class ModifyLinked extends Rule
+          canExecute: (actor, target, context, callback) =>
+            callback null, if actor.equals target then [] else null
+          execute: (actor, target, params, context, callback) =>
+            Item.findCached ['containable_2'], (err, [item]) =>
+              return callback err if err?
+              item.num = 2;
+              @saved.push item
+              item.fetch (err, item) =>
+                return callback err if err?
+                item.content.num = 3;
+                callback null
+        module.exports = new ModifyLinked()"""
+    script.save (err) ->
+      return done err if err?
+      # given a containable type
+      type1 = new ItemType id: 'containable'
+      type1.setProperty 'content', 'object', 'Item'
+      type1.setProperty 'num', 'integer', 0
+      type1.save (err, saved) ->
+        return done err if err?
+        type1 = saved
+        # given 4 items
+        new Item({id:'containable_3', type: type1}).save (err, saved) ->
+          return done err if err?
+          item3 = saved
+          new Item({id:'containable_2', type: type1, content: item3}).save (err, saved) ->
+            return done err if err?
+            item2 = saved
+            new Item({id:'containable_1', type: type1, content: item2}).save (err, saved) ->
+              return done err if err?
+              item1 = saved
+              new Item({id:'root', type: type1, content: item1}).save (err, saved) ->
+                return done err if err?
+                item0 = saved
+
+                # given the rules that are applicable for a target 
+                service.resolve item0.id, item0.id, null, 'admin', (err, results)->
+                  return done "Unable to resolve rules: #{err}" if err?
+                  return done 'the rule3 was not resolved' unless 'rule3' of results
+
+                  # when executing this rule on that target
+                  service.execute 'rule3', item0.id, item0.id, {}, 'admin', (err, result)->
+                    return done "Unable to execute rules: #{err}" if err?
+
+                    # then the item was modified on database
+                    Item.where('num').gte(1).exec (err, items) =>
+                      return done "Unable to retrieve items: #{err}" if err?
+                      expect(items).to.have.lengthOf 2
+                      expect(items[0]).to.have.property 'id', 'containable_3'
+                      expect(items[0]).to.have.property 'num', 3
+                      expect(items[1]).to.have.property 'id', 'containable_2'
+                      expect(items[1]).to.have.property 'num', 2
+                      done()
+                                 
   describe 'given a player, an event and a dumb rule', ->
 
     beforeEach (done) ->
