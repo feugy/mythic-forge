@@ -24,7 +24,7 @@ server:
 
 # Authentication details
 authentication:
-  tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  tokenLifeTime: 0 # number of seconds during wich tokens are valid, 0 means no expiration
   # Key usable on mythic-forge.com domain with SSL
   google:
     id: 750195776526-mo5tvhku8nig3hdfcrqdmeu5t970ssvp.apps.googleusercontent.com

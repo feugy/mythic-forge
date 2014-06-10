@@ -12,13 +12,11 @@
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
   - Security
     - register users from Facebook
-    - use github as authentication method
-    - token expiration: no refresh on operations
 
 - Rheia
   - Bugs
     - [!!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
-    - [!!] revert file to version is broken, rule/script versionning not implemented
+    - [!!] revert file to version is broken, rule/PPscript versionning not implemented
     - [!] set nls default values to avoid browser failure with non-french locale
     - use tileDim in hexagon and diamond map renderers
     - noticeable slowdown in Firefox
@@ -135,12 +133,13 @@
     - kick users after inactivity
     - register users from Google
     - register users from Twitter
+    - register users from Github
     - register user manually
     - enforce user existence and rights at socket.io handshake
     - disable security for tests
     - re-authent user after disconnection
     - manual user logout 
-    - session expiration
+    - session expiration on last connection date, that can be disabled from configuration
     - restrict rheia access to administrators only
     - test password management of manually registered players
     - detect client disconnection and claim for logout after 10 seconds

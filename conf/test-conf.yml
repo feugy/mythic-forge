@@ -31,6 +31,9 @@ authentication:
   twitter:
     id: LosYMjbW1mompu5Dxkg3Bw
     secret: COQe0t413fAcMRlU5eK7ZthPxolV5nf2tfs442lZUU
+  github:
+    id: dd1794b0ed5c0acbb275
+    secret: 866c01643bdaf643195b5eb202c63ffd17f58af1
 
 # SSL certificates. Do not specify them to use plain Http.
 

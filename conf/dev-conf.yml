@@ -24,7 +24,7 @@ server:
 
 # Authentication details
 authentication:
-  tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  tokenLifeTime: 0 # number of seconds during wich tokens are valid, 0 means no expiration
   # Key usable on localhost domain with SSL
   google:
     id: 750195776526.apps.googleusercontent.com
@@ -32,6 +32,9 @@ authentication:
   twitter:
     id: DMpozBM7Vt90TLxwMGA
     secret: D8RgRXt9yV32nOxEQjo6NjhanbzpgGKmh6Ap9HHUN4
+  github:
+    id: 0ac7a95c128c88f9da85
+    secret: a53b38b55fae6b07b78c2a1c2effbab910ffb731
 
 # SSL certificates. Do not specify them to use plain Http.
 ssl:

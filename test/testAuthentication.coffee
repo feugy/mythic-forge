@@ -334,6 +334,132 @@ describe 'Authentication tests', ->
                     assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
                     done()
 
+    describe 'given a Github account', ->
+
+      githubUser = 'mythic.forge.test@gmail.com'
+      githubPassword = 'toto1818'
+
+      it 'should Github user be enrolled', (done) ->
+        @timeout 20000
+
+        # when requesting the github authentication page
+        request "#{rootUrl}/auth/github", (err, res, body) ->
+          return done err if err?
+          # then the github authentication page is displayed
+          assert.equal res.request.uri.host, 'github.com', "Wrong host: #{res.request.uri.host}"
+          assert.ok -1 != body.indexOf('id="login_field"'), 'No login found in response'
+          assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+
+          # forge form to log-in
+          form = 
+            authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+            login: githubUser
+            password: githubPassword
+            commit: 'Sign in'
+            return_to: body.match(/name\s*=\s*"return_to"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+
+          # when registering with test account
+          request 
+            uri: 'https://github.com/session'
+            method: 'POST'
+            form: form
+            followAllRedirects: true
+          , (err, res, body) ->
+            return done err if err?
+
+            # then the success page is displayed
+            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            token = parseUrl(res.request.uri.href).query.replace 'token=', ''
+            assert.isNotNull token
+
+            # then account has been created and populated
+            Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
+              return done "Failed to find created account in db: #{err}" if err? or saved is null
+              assert.isUndefined saved.firstName, 
+              assert.isDefined saved.id
+              assert.equal saved.lastName, 'mythic-forge-test'
+              assert.equal saved.token, token, 'wrong token'
+              assert.isNotNull saved.lastConnection
+              lastConnection = saved.lastConnection
+              done()
+
+      it 'should existing logged-in Github user be immediately authenticated', (done) ->
+        @timeout 10000
+        # give github some time to update its state before retrying
+        _.delay ->
+          # when requesting the github authentication page while a github user is already logged-in
+          request "#{rootUrl}/auth/github", (err, res, body) ->
+            return done err if err?
+            # then the success page is displayed
+            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            assert.ok -1 is JSON.stringify(body).indexOf('Invalid Credentials'), "Wrong credentials during authentication"
+            token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+            assert.isNotNull token2
+            assert.notEqual token2, token
+            token = token2
+            # then account has been updated with new token
+            Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
+              return done "Failed to find created account in db: #{err}" if err?
+              assert.equal saved.token, token2, 'wrong token'
+              assert.isNotNull saved.lastConnection
+              assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+              done()  
+        , 500  
+
+      it 'should existing Github user be authenticated after log-in', (done) ->
+        @timeout 20000
+
+        # given an existing but not logged in github account
+        request 'https://github.com/logout', (err, res, body) ->
+          return done err if err?
+
+          request
+            uri: 'https://github.com/logout'
+            method: 'POST'
+            form:
+              authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+          , (err, res, body) ->
+            return done err if err?
+
+            # when requesting the github authentication page
+            request "#{rootUrl}/auth/github", (err, res, body) ->
+              return done err if err?
+              # then the github authentication page is displayed
+              assert.equal res.request.uri.host, 'github.com', "Wrong host: #{res.request.uri.host}"
+              assert.ok -1 != body.indexOf('id="login_field"'), 'No login found in response'
+              assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+
+              # forge form to log-in
+              form = 
+                authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+                login: githubUser
+                password: githubPassword
+                commit: 'Sign in'
+                return_to: body.match(/name\s*=\s*"return_to"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+
+              # when registering with test account
+              request 
+                uri: 'https://github.com/session'
+                method: 'POST'
+                form: form
+                followAllRedirects: true
+              , (err, res, body) ->
+                return done err if err?
+
+                # then the success page is displayed
+                assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                assert.isNotNull token2
+                assert.notEqual token2, token
+
+                # then account has been created and populated
+                Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
+                  return done "Failed to find created account in db: #{err}" if err? or saved is null
+                  assert.equal saved.token, token2, 'wrong token'
+                  assert.isNotNull saved.lastConnection
+                  assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                  done()
+
     describe 'given a manually created player', ->
 
       player = null

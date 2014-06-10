@@ -9,7 +9,7 @@ requirejs.config
     'backbone': 'backbone-1.0.0-min'
     'jquery': 'jquery-2.1.0-min'
     'mocha': 'mocha-1.17.1'
-    'socket.io': 'socket.io-1.0.0-pre2'
+    'socket.io': 'socket.io-1.0.4-min'
     'underscore': 'underscore-1.5.2-min'
     'underscore.string': 'underscore.string-2.3.3-min'
     

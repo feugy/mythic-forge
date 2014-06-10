@@ -63,6 +63,7 @@ define
     login: 'Entrer'
     google: 'Google'
     twitter: 'Twitter'
+    github: 'Github'
     yes: 'Oui'
     no: 'Non'
     ok: 'Ok'

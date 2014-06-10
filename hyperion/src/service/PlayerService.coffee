@@ -27,7 +27,14 @@ deployementService = require('./DeployementService').get()
 notifier = require('../service/Notifier').get()
 logger = require('../util/logger').getLogger 'service'
 
-expiration = utils.confKey 'authentication.tokenLifeTime'
+# init configuration dependent variables
+expiration = 0
+init = ->
+  expiration = utils.confKey 'authentication.tokenLifeTime'
+    
+# on configuration change, reinit
+utils.on 'confChanged', init
+init()
 
 _instance = undefined
 module.exports = class PlayerService
@@ -46,7 +53,6 @@ class _PlayerService
   # Ensure admin account existence.
   constructor: ->
     @connectedList = []
-    @activity = _.throttle @activity, 60000
 
     Player.findOne {email:'admin'}, (err, result) =>
       throw "Unable to check admin account existence: #{err}" if err?
@@ -54,25 +60,6 @@ class _PlayerService
       new Player(email:'admin', password: 'admin', isAdmin:true).save (err) =>
         throw "Unable to create admin account: #{err}" if err?
         logger.warn '"admin" account has been created with password "admin". Please change it immediately'
-        
-
-  # Update the last connection date of a given player
-  # Throttle to one minute to avoid too much db access
-  #
-  # @param email [String] email of the concerned player
-  activity: (email) =>
-    Player.findOne {email: email}, (err, player) =>
-      return if err? or player is null # ignore errors
-      # set to a minute ago, because we are using debounce.
-      now = new moment()  
-      now.milliseconds 0
-      now.subtract 'seconds', 60
-      player.lastConnection = now.toDate()
-      # usefull for reconnection case
-      unless email in @connectedList
-        @connectedList.push email
-        notifier.notify 'players', 'connect', player
-      player.save()
 
   # Create a new player account. Check the email unicity before creation. 
   #
@@ -143,6 +130,37 @@ class _PlayerService
       # update the saved token and last connection date
       @_setTokens player, 'Google', callback
 
+  # Authenticate a Github account: if account does not exists, creates it, or returns the existing one
+  # Usable with passport-oauth2.
+  #
+  # @param accessToken [String] OAuth2 access token
+  # @param refreshToken [String] OAuth2 refresh token
+  # @param profile [Object] Google profile details.
+  # @option profile emails [Array] array of user's e-mails
+  # @option profile name [Object] contains givenName (first name) and familyName (last name)
+  # @param callback [Function] callback executed when player was authenticated. Called with parameters:
+  # @option callback err [String] an error string, or null if no error occured
+  # @option callback token [String] the generated access token.
+  authenticatedFromGithub: (accessToken, refreshToken, profile, callback) =>
+    id = profile.id
+    return callback 'No id found in profile' unless id?
+    logger.debug "Authenticate Github player with id: #{id}"
+    
+    # check user existence
+    @getByEmail id, false, (err, player) =>
+      return callback "Failed to check player existence: #{err}" if err?
+      # Create or update account
+      unless player?
+        logger.info "Register Github player with id: #{id}"
+        player = new Player
+          email: id
+          provider: 'Github'
+          firstName: profile.displayName
+          lastName: profile.username
+
+      # update the saved token and last connection date
+      @_setTokens player, 'Github', callback
+
   # Authenticate a Twitter account: if account does not exists, creates it, or returns the existing one
   # Usable with passport-twitter.
   #
@@ -211,8 +229,8 @@ class _PlayerService
       # not an admin during a deployement: not authorinzed
       return callback 'deploymentInProgress', null if deployementService.deployedVersion()? and !player.isAdmin
 
-      # check expiration date
-      if player.lastConnection.getTime()+expiration*1000 < new Date().getTime()
+      # check expiration date if required
+      if expiration > 0 and player.lastConnection.getTime()+expiration*1000 < new Date().getTime()
         # expired token: set it to null
         player.token = null
         player.save (err, saved) =>
@@ -242,6 +260,10 @@ class _PlayerService
       return callback "No player with email #{email} found" unless player?
       # set token to null
       player.token = null
+      # avoid milliseconds to simplify usage
+      now = new Date()
+      now.setMilliseconds 0
+      player.lastConnection = now
       player.save (err, saved) =>
         return callback "Failed to reset player's token: #{err}" if err?
         # send disconnection event
@@ -267,7 +289,7 @@ class _PlayerService
     # avoid milliseconds to simplify usage
     now = new Date()
     now.setMilliseconds 0
-    player.set 'lastConnection', now
+    player.lastConnection = now
     player.save (err, newPlayer) =>
       return callback "Failed to update player: #{err}" if err?
       logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email}"

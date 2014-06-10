@@ -31,6 +31,7 @@ SocketServer = require 'socket.io'
 corser = require 'corser'
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 TwitterStrategy = require('passport-twitter').Strategy
+GithubStrategy = require('passport-github').Strategy
 LocalStrategy = require('passport-local').Strategy
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
@@ -117,8 +118,6 @@ exposeMethods = (service, socket, connected = [], except = []) ->
     unless method in except
       do(method) ->
         socket.on method, ->
-          # reset inactivity
-          playerService.activity email
           originalArgs = Array.prototype.slice.call arguments
           args = originalArgs.slice 1
           # first parameter is always request id
@@ -171,28 +170,25 @@ checkAdmin = (socket, callback) ->
 # @param strategy [Passport.Strategy] the strategy class involved
 # @param verify [Function] Function used to enroll users from provider's response.
 # @param scopes [Array] OAuth2 scopes sent to provider. Null for OAuth providers
-registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
-
+registerOAuthProvider = (provider, Strategy, verify, scopes = null) ->
   if scopes?
     # OAuth2 provider
-    passport.use new strategy
+    strategy = new Strategy 
       clientID: utils.confKey "authentication.#{provider}.id"
       clientSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or apiPort}/auth/#{provider}/callback"
     , verify
-
     args = session: false, scope: scopes
-
   else
     # OAuth provider
-    passport.use new strategy
+    strategy = new Strategy
       consumerKey: utils.confKey "authentication.#{provider}.id"
       consumerSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or server.apiPort}/auth/#{provider}/callback"
     , verify
-
     args = {}
 
+  passport.use strategy
   redirects = []
 
   app.get "/auth/#{provider}", (req, res, next) ->
@@ -203,7 +199,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
       args.state = id
     else 
       req.session.state = id
-    passport.authenticate(provider, args) req, res, next
+    passport.authenticate(strategy.name, args) req, res, next
 
   app.get "/auth/#{provider}/callback", (req, res, next) ->
     # reuse redirection url
@@ -213,7 +209,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
       state = req.session.state
     redirect = redirects[state]
     
-    passport.authenticate(provider, (err, token) ->
+    passport.authenticate(strategy.name, (err, token) ->
       # authentication failed
       return res.redirect "#{redirect}?error=#{err}" if err?
       res.redirect "#{redirect}?token=#{token}"
@@ -254,8 +250,6 @@ io.on 'connection', (socket) ->
   details = unless noSecurity then sid[socket.id] else email:'admin', isAdmin:true
 
   email = details.email
-  # set inactivity
-  playerService.activity email
   logger.debug "socket #{socket.id} established for user #{email}" 
 
   # on each connection, generate a key for dev access
@@ -382,6 +376,7 @@ LoggerFactory.on 'log', (details) ->
 passport.use new LocalStrategy playerService.authenticate, 
 registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
+registerOAuthProvider 'github', GithubStrategy, playerService.authenticatedFromGithub, ['user:email']
 
 # `POST /auth/login`
 #

@@ -135,7 +135,7 @@ define [
           # console.log "update property #{key}"
 
       # emit a change.
-      model.trigger 'update', model, this, changes
+      model.trigger 'update', model, changes
       # propagates changes on collection to global change event
       app.router.trigger 'modelChanged', 'update', model
 

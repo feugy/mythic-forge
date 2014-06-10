@@ -23,7 +23,7 @@ ItemType = require '../hyperion/src/model/ItemType'
 utils = require '../hyperion/src/util/common'
 service = require('../hyperion/src/service/PlayerService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
-assert = require('chai').assert
+expect = require('chai').expect
      
 player = null
 type = null
@@ -71,26 +71,26 @@ describe 'PlayerService tests', ->
     service.register 'Jack', 'toto', (err, player) ->
       return done "Can't register: #{err}" if err?
       # then a player is returned
-      assert.equal 'Jack', player.email
-      assert.isNotNull player.password
-      assert.notEqual 'toto', player.password
-      assert.equal 0, player.characters.length
+      expect(player.email).to.equal 'Jack'
+      expect(player.password).not.to.exist
+      expect(player.password).not.to.equal 'toto'
+      expect(player.characters).to.have.lengthOf 0
       done()
 
   it 'should password be mandatory during registration', (done) ->
     # when registering an account without password
     service.register 'Jack', '', (err, player) ->
       # then an error is returned
-      assert.isNotNull err
-      assert.equal 'missingPassword', err, "unexpected error: #{err}"
+      expect(err).to.exist
+      expect(err).to.equal 'missingPassword'
       done()
 
   it 'should email be mandatory during registration', (done) ->
     # when registering an account without email
     service.register '', 'toto', (err, player) ->
       # then an error is returned
-      assert.isNotNull err
-      assert.equal 'missingEmail', err, "unexpected error: #{err}"
+      expect(err).to.exist
+      expect(err).to.equal 'missingEmail'
       done()
 
   describe 'given an existing player', ->
@@ -116,8 +116,9 @@ describe 'PlayerService tests', ->
       # when registering with used email
       service.register player.email, 'toto', (err, account) ->
         # then an error is triggered
-        assert.equal "Email #{player.email} is already used", err
-        assert.ok null is account
+        expect(err).to.exist
+        expect(err).to.include "Email #{player.email} is already used"
+        expect(account).to.be.null
         done()
          
     it 'should getByEmail returned player without character resolved', (done) ->
@@ -125,13 +126,13 @@ describe 'PlayerService tests', ->
       service.getByEmail player.email, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
-        assert.isNotNull account
-        assert.ok player.equals account
-        assert.equal 1, account.characters.length 
-        # then the character was retrieved
-        assert.ok item2.equals account.characters[0]
+        expect(account).to.exist
+        expect(account).to.satisfy (obj) -> player.equals obj
+        # then the character was retrievedobj
+        expect(account.characters).to.have.lengthOf 1
+        expect(account.characters[0]).to.satisfy (obj) -> item2.equals obj
         # then the character linked has not been resolved
-        assert.equal item1.id, account.characters[0].friends[0]
+        expect(account.characters[0].friends[0]).to.equal item1.id
         done()  
        
     it 'should getByEmail returned player with character resolved', (done) ->
@@ -139,13 +140,13 @@ describe 'PlayerService tests', ->
       service.getByEmail player.email, true, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
-        assert.isNotNull account
-        assert.ok player.equals account
-        assert.equal 1, account.characters.length 
-        # then the character was retrieved
-        assert.ok item2.equals account.characters[0]
-        # then the character linked has been resolved
-        assert.ok item1.equals account.characters[0].friends[0]
+        expect(account).to.exist
+        expect(account).to.satisfy (obj) -> player.equals 
+        # then the character was retrievedobj
+        expect(account.characters).to.have.lengthOf 1
+        expect(account.characters[0]).to.satisfy (obj) -> item2.equals obj
+        # then the character linked has not been resolved
+        expect(account.characters[0].friends[0]).to.satisfy (obj) -> item1.equals obj
         done()   
 
     it 'should getByToken returned player', (done) ->
@@ -153,18 +154,18 @@ describe 'PlayerService tests', ->
       service.getByToken token, (err, account) ->
         return done "Can't get by token: #{err}" if err?
         # then the player was retrieved
-        assert.isNotNull account
-        assert.ok player.equals account
+        expect(account).to.exist
+        expect(account).to.satisfy (obj) -> player.equals obj
         # then token changed
-        assert.notEqual token, account.token
-        assert.equal date.getTime(), account.lastConnection.getTime()
+        expect(account.token).not.to.equal token
+        expect(account.lastConnection.getTime()).to.equal date.getTime()
         token = account.token
         done()
 
     it 'should getByToken not returned expired player', (done) ->
       # given a expired token
-      player.token= token
-      player.lastConnection= expiredDate
+      player.token = token
+      player.lastConnection = expiredDate
       player.save (err, saved) ->
         return done err if err?
         player = saved
@@ -173,23 +174,53 @@ describe 'PlayerService tests', ->
         # when retrieving the player by token
         service.getByToken token, (err) ->
           # then an error is send
-          assert.isNotNull err
-          assert.equal 'expiredToken', err
-          assert.equal 1, notifications.length
-          assert.equal 'disconnect', notifications[0][0]
-          assert.isTrue saved.equals(notifications[0][1]), 'notification do not contains disconnected player'
+          expect(err).to.exist
+          expect(err).to.equal 'expiredToken'
+          expect(notifications).to.have.lengthOf 1
+          expect(notifications[0][0]).to.equal 'disconnect'
+          expect(notifications[0][1]).to.satisfy (obj) -> saved.equals obj
+          expect(notifications[0][2]).to.equal 'expired'
           # then token was removed in database
           Player.findOne {email:player.email}, (err, saved) ->
             return done err if err?
-            assert.isNull saved.token
+            expect(saved.token).to.be.null
             done()    
+
+    it 'should not check expiration if not needed', (done) ->
+      # given a null expiration period
+      original = utils.confKey
+      utils.confKey = (args...) -> 
+        if args[0] is 'authentication.tokenLifeTime' then 0 else original.apply utils, args
+      utils.emit 'confChanged'
+
+      # given a expired token
+      player.token = token
+      player.lastConnection = expiredDate
+      player.save (err, saved) ->
+        return done err if err?
+        player = saved
+        service.connectedList = [player.email]
+
+        # when retrieving the player by token
+        service.getByToken token, (err, account) ->
+          return done "Can't get by token: #{err}" if err?
+          # then the player was retrieved
+          expect(account).to.exist
+          expect(account).to.satisfy (obj) -> player.equals obj
+          # then token changed
+          expect(account.token).not.to.equal token
+          expect(account.lastConnection.getTime()).to.equal expiredDate
+          token = account.token
+          # reset previous utility
+          utils.confKey = original
+          done()
 
     it 'should disconnect failed on unknown email', (done) ->
       # when retrieving the player by token
       service.disconnect 'toto', '', (err, account) ->
         # then an error is send
-        assert.isNotNull err
-        assert.equal 'No player with email toto found', err
+        expect(err).to.exist
+        expect(err).to.equal 'No player with email toto found'
         done()    
 
     it 'should disconnect reset token to null', (done) ->
@@ -199,14 +230,14 @@ describe 'PlayerService tests', ->
       service.disconnect player.email, '', (err, account) ->
         return done "Can't disconnect: #{err}" if err?
         # then the player was returned without token
-        assert.isNotNull account
-        assert.ok player.equals account
-        assert.isNull account.token
-        assert.equal 1, notifications.length
-        assert.equal 'disconnect', notifications[0][0]
-        assert.isTrue account.equals(notifications[0][1]), 'notification do not contains disconnected player'
+        expect(account).to.exist
+        expect(account).to.satisfy (obj) -> player.equals obj
+        # then token changed
+        expect(account.token).not.to.exist
+        expect(notifications).to.have.lengthOf 1
+        expect(notifications).to.deep.equal [['disconnect', account, '']]
         # then token was removed in database
         Player.findOne {email:player.email}, (err, saved) ->
           return done err if err?
-          assert.isNull saved.token
+          expect(saved.token).to.be.null
           done()    

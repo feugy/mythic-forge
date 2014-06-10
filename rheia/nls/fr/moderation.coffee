@@ -48,6 +48,8 @@ define
     ,
       value: 'Twitter', label: 'Twitter'
     ,
+      value: 'Github', label: 'Github'
+    ,
       value: null, label: 'Manuel'
     ]
     password: 'Mot de passe'
