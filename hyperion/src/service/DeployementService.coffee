@@ -396,7 +396,7 @@ compileStylus = (sheet, callback) ->
   fs.readFile sheet, (err, content) =>
     return callback "failed to read content for #{sheet}: #{err}" if err?
     # try to compile it (allow to include from the same folder)
-    stylus(content.toString()).set('compress'; 'true').set('paths', [parent]).render (err, css) ->
+    stylus(content.toString(), {compress: true}).include(parent).render (err, css) ->
       return callback "#{sheet}: #{err}" if err?
       # writes destination file
       fs.writeFile destination, css, (err) =>
