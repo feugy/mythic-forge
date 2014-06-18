@@ -29,7 +29,7 @@
     "requirejs": "2.1.14",
     "sanitizer": "0.1.1",
     "socket.io": "1.0.4",
-    "stylus": "0.43.1",
+    "stylus": "0.46.3",
     "underscore": "1.6.0",
     "underscore.string": "2.3.3"
   },

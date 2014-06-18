@@ -1,0 +1,506 @@
+@import 'constant'  
+
+html
+body
+body > div
+  height 100%
+  padding 0
+  overflow hidden
+  user-select none
+  cursor normal
+
+html
+body
+  font-family textFont
+  font-size textSize
+  color textColor
+  background mainBackground
+  overflow auto
+
+#disclaimer
+  width 50%
+  height 180px
+  margin 25% auto
+  p
+    margin 0.5em 0
+  a
+    color alertColor
+
+.fa
+  font-size textSize*0.9
+  padding-right 0.5em  
+
+a, a:visited, a:link, a:hover
+  text-decoration none
+  color textColor
+  cursor pointer
+
+body > div 
+  width mainWidth 
+  margin 0 auto
+
+  progress
+    display block
+    width 250px
+    margin 25% auto 0 auto
+
+for i in(1..6)
+  h{i}
+    font-family headingFont
+    font-size headingSize*(1+(i - 1)*-0.15)
+    margin-bottom unit(20*(1+(i - 1)*-0.15) , 'px') 
+
++selection()
+	background alertColor
+
+#copyright 
+  flex 1 0 75%
+  order 10
+  bottom 60px
+  font-size 70%
+  border-top 1px solid alertColor
+  margin 0 50px
+  padding 0
+  user-select text   
+  z-index 0
+
+  p, a
+    color logTimeColor
+
+.order
+.explanation
+  font-style italic
+  color hoverColor
+
+//------------------------------------------------------------------------------
+// Common layering
+
+.login
+.home
+.configure
+.end
+.rules
+  display flex
+  flex-flow row wrap
+  align-items center
+
+  > div > .alert
+  > div > span > .alert
+    top 50px
+    position relative
+
+  > *:not(aside):not(.mini-panel)
+    flex 1
+    padding 2%
+    position relative
+    box-sizing border-box
+    height 100%
+
+  > aside
+    width 40%
+    height 100%
+    order 1
+    margin-right 2%
+    display flex
+    flex-direction column
+    justify-content center
+    background-image url('../image/column.png')
+    background-size auto 100%
+    background-repeat no-repeat
+    background-position center
+    z-index 0
+
+.login
+.home
+.configure
+.end
+.rules
+.discover
+  background-image  url('../image/bg-home.png')
+  background-size 100% auto
+  background-repeat no-repeat
+  background-position center right
+
+  .app-title
+    background url('../image/title.png')
+    background-size auto 100%
+    background-repeat no-repeat
+    background-position center center
+    color transparent
+    height 250px
+    top 35%
+    position absolute
+    width 100%
+    border-bottom none
+
+  .mini-panel
+    position absolute
+    top 0
+    left 10%
+    z-index 1
+
+    .content
+      applyMiniPanelSkin()
+    
+      > *
+        display inline-flex
+
+//------------------------------------------------------------------------------
+// Login specificities
+
+.login
+
+  .providers
+    display flex
+    justify-content space-between
+    width 100%
+    margin 0.5em 0 1em
+
+  .btn-social
+    padding 6px 12px 6px 44px
+    margin-bottom 0
+    font-size 14px
+    font-weight normal
+    line-height 1.428571429
+    text-align center
+    white-space nowrap
+    vertical-align middle
+    cursor pointer
+    border 1px solid transparent
+    border-radius 4px
+    user-select none
+    box-shadow 0 0 2px alertColor
+
+    .fa
+      padding-right 0
+
+  .manual
+    margin 0.5em
+
+//------------------------------------------------------------------------------
+// End specificities
+
+.end
+
+  article:not(aside):not(.mini-panel)
+    margin 50px 5%
+    height auto
+
+    .result
+      font-size headingSize
+      margin 15px auto
+      width 65%
+
+      thead > tr
+        text-shadow headingShadow
+        background-color rgba(white, 0.3)
+
+      td, th
+        vertical-align middle
+        padding 0.15em 1em
+        text-align center
+
+      .squad img
+        width 50px
+
+      tbody 
+        tr.current
+          color alertColor
+        tr:nth-child(even) td
+          background-color rgba(white, 0.1)
+          
+//------------------------------------------------------------------------------
+// Home specificities
+
+.home
+
+  .mini-panel 
+    .btn
+      font-size 80%
+      margin-left 1em
+
+  aside
+    text-align center
+    
+    .new-game
+      align-self center
+  
+  .empty-list
+    text-align center
+    color alertColor
+
+  .my-games
+  .free-games
+    display flex
+    flex-direction column
+    
+    h2
+      flex-shrink 0
+    ul
+      overflow auto
+  
+  .my-games
+    transition-delay 250ms
+    
+    .short-game
+      cursor pointer
+
+  .free-games
+    transition-delay 500ms
+
+    a
+      font-size textSize*0.8
+      padding 6px 1em
+      margin-left 1em
+
+  .create-game
+  .join-game
+    box-sizing border-box
+    position absolute
+    top 20%
+    left 0
+    width 90%
+
+    .btn
+      margin 0 0.5em
+
+    .rule-params
+      margin-bottom 1em
+
+    .ng-hide-add
+    .ng-hide-remove
+      transition line-height 150ms
+      display block!important
+
+    .ng-hide
+      line-height 0
+
+    .mission
+      margin-top 1.5em
+      font-style italic
+      font-size 80%
+
+//------------------------------------------------------------------------------
+// Configuration specificities
+
+.configure
+
+  .details
+    margin-top 10%
+    position relative
+
+    p 
+      margin 0.5em 0
+
+    .schema
+      display block
+      height 280px
+      width 350px
+      margin 1em auto 0
+      box-shadow inset 0 0 8px 5px #112B00
+      background-repeat no-repeat
+      background-size cover
+      border-radius 10px
+
+  .select-equipment
+    margin-bottom 1em
+
+  form
+    margin 1em 0
+  
+  > aside
+    width 45%
+
+    > .frame
+      
+      > div > img
+        display inline-block
+        width 50px
+        margin 0 0 -1em 1em
+  
+//------------------------------------------------------------------------------
+// Rules specificities
+
+.rules
+.discover
+
+  > div 
+
+    .content
+      position absolute
+      left 0
+      top 10%
+      width 90%
+      max-height 75%
+      margin 50px
+      overflow auto
+      z-index 1
+      applyAlertSkin()
+
+      > *:first-child
+        margin-top -0
+    
+      div:not(.imaged)
+        text-align justify
+        margin 1.5em 0
+
+  > aside h2
+    border-bottom-color grey
+
+  p
+    margin 0.5em 0
+
+  article
+    h1, h2, h3
+      text-shadow headingShadow
+      border-bottom 1px solid hoverColor
+      color hoverColor
+      padding 0.25em
+      margin 1em 0 0.5em
+
+  .imaged
+    display flex
+    align-items center
+
+    > *:not(img)
+      flex 1
+      order 1
+      margin 0
+    img
+      order 1
+      margin-left 50px
+      box-shadow inset 0 0 8px 5px #112B00
+      border-radius 10px
+
+  .imaged.right img
+    order 0
+    margin-left 0
+    margin-right 50px
+
+  strong
+    font-weight bolder
+    text-decoration underline
+
+  ol, ul
+    padding 0.3em 0 0.5em 1em
+
+    > li
+      padding-top 0.2em
+
+  ul > li
+    list-style-type square
+
+  ol > li
+    list-style-type upper-roman
+
+  dl
+    > dt
+      margin-top 1em
+      font-weight bold
+      font-size 120%
+    > dd
+      margin 0.5em 0 0 2em
+
+  table
+    width 100%
+    table-layout fixed
+    text-align center
+
+    th
+      background rgba(black, 0.5)
+      border-bottom 1px solid alertColor
+      color hoverColor
+    td
+      background rgba(hoverColor, 0.3)
+    tr > *
+      padding 0.3em
+    tr > *:not(:last-child)
+      border-right 1px solid alertColor
+
+  > aside
+    width 30%
+
+    .nav
+      position fixed
+      top 0
+      margin 5% 30px 0 30px 
+      padding 25px 30px
+
+      h2
+        font-size textSize
+        display block
+//------------------------------------------------------------------------------
+// Discover specificities
+
+.discover
+  overflow-y auto
+  padding-right 20px
+
+  > #copyright
+    position absolute
+    bottom 0
+    right 20px
+
+  > div.root
+    text-align center
+    flex 1 0 100%
+    margin-bottom 100px
+    position relative
+    z-index 0
+
+    > .btn
+      margin-top 50px
+      font-size headingSize
+      font-family headingFont
+      padding 1em 2em
+      text-shadow headingShadow
+    
+    article
+      margin-top 50px
+      position relative
+      z-index 1
+      applyAlertSkin()
+      
+      > h2
+        margin-top 0
+
+      p 
+        text-align left
+        font-size 115%
+
+    .app-title
+      position fixed
+      pointer-events none
+
+//------------------------------------------------------------------------------
+// Aside animations
+
+movable = {
+  '.login': '.login-frame'
+  '.rules': '.nav.animated'
+  '.home': 'aside > *'
+  '.configure': 'aside > *'
+}
+
+for selector, moved in movable
+  {selector} {moved}
+    opacity 1
+    top 0
+    transition opacity fallDuration, top fallDuration
+
+  {selector}.ng-enter {moved}
+  {selector}.ng-leave {moved}
+    opacity 0
+    top -1000px
+
+fadable = '.create-game' '.join-game' '.rules > div .content'
+
+for faded in fadable
+  {faded}.ng-hide-add
+  {faded}.ng-hide-remove
+    transition opacity fromRightDuration, left fromRightDuration
+    display block!important
+
+  {faded}.ng-hide
+    opacity 0
+    left -500px

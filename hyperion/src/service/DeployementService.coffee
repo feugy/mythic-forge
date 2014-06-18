@@ -163,7 +163,7 @@ class _DeployementService
                             logger.debug "client moved to production folder"
 
                             # cleans optimization folders
-                            async.forEach [folder, temp, result], fs.remove, (err) =>
+                            async.each [folder, temp, result], fs.remove, (err) =>
                               notifier.notify 'deployement', 'DEPLOY_END', 7
                               @_deployPending = false
                               # ignore removal errors
@@ -174,7 +174,7 @@ class _DeployementService
               notifier.notify 'deployement', 'COMPILE_COFFEE', 3
               utils.find folder, /^.*\.coffee?$/, (err, results) =>
                 return _optimize() if err? or results.length is 0
-                async.forEach results, (script, next) =>
+                async.each results, (script, next) =>
                   compileCoffee script, next
                 , (err) =>
                   return error "Failed to compile coffee scripts: #{err}" if err?
@@ -184,11 +184,14 @@ class _DeployementService
             notifier.notify 'deployement', 'COMPILE_STYLUS', 2
             utils.find folder, /^.*\.styl(us)?$/, (err, results) =>
               return _compileCoffee() if err? or results.length is 0
-              async.forEach results, (sheet, next) =>
+              async.each results, (sheet, next) =>
                 compileStylus sheet, next
               , (err) =>
                 return error "Failed to compile stylus sheets: #{err}" if err?
-                _compileCoffee()
+                # at last, removes all the original
+                async.each results, fs.remove, (err) =>
+                  return callback "failed to delete stylus file: #{err}" if err?
+                  _compileCoffee()
 
   # Commit definitively the current deployement, and send 'deployment' notifications
   # with relevant step name and number: 
@@ -395,16 +398,14 @@ compileStylus = (sheet, callback) ->
   # read the sheet
   fs.readFile sheet, (err, content) =>
     return callback "failed to read content for #{sheet}: #{err}" if err?
+
     # try to compile it (allow to include from the same folder)
-    stylus(content.toString(), {compress: true}).include(parent).render (err, css) ->
+    stylus(content.toString(), {compress: true, cache: false}).include(parent).render (err, css) ->
       return callback "#{sheet}: #{err}" if err?
       # writes destination file
       fs.writeFile destination, css, (err) =>
         return callback "failed to write #{destination}: #{err}" if err?
-        # at last, removes the original
-        fs.remove sheet, (err) =>
-          return callback "failed to delete #{sheet}: #{err}" if err?
-          callback null
+        callback null
 
 # Tries to compile coffee script, and to creates its compiled js equivalent.
 # Source file is removed
@@ -533,7 +534,7 @@ makeCacheable = (folder, main, version, callback) ->
         return callback "failed to copy to timestamped folder: #{err}" if err?
         
         # removes main file and build.txt
-        async.forEach ['build.txt', pathUtils.basename main], (file, next) ->
+        async.each ['build.txt', pathUtils.basename main], (file, next) ->
           fs.remove pathUtils.join(timestamped, file), next
         , (err) ->
           return callback "failed to remove none-cached files: #{err}" if err?
