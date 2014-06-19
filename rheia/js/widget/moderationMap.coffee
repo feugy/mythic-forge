@@ -333,5 +333,8 @@ define [
           event.preventDefault()
           @$el.trigger 'itemClicked', @_itemWidgets[id].options.model
 
+        # remove field tip
+        @_hovered.tip?.remove();
+
   # widget declaration
   ModerationMap._declareWidget 'moderationMap', $.fn.authoringMap.defaults

@@ -65,6 +65,10 @@ define
     empty: "affectez un objet par drag'n drop"
     unbind: "délier de l'objet"
 
+  authoringMap:
+    tipPos: "x: %s y: %s"
+    tipObj: "%s (#%s)"
+
   advEditor:
     find: 'Rechercher :'
     replaceBy: 'Remplacer par :'

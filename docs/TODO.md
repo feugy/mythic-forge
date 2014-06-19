@@ -19,9 +19,7 @@
     - [!!] revert file to version is broken, rule/PPscript versionning not implemented
     - [!] set nls default values to avoid browser failure with non-french locale
     - use tileDim in hexagon and diamond map renderers
-    - noticeable slowdown in Firefox
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
-    - map navigation and zoom - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - Documentation
   - Authoring perspective
@@ -250,6 +248,7 @@
       - multiple affectation
       - zoom, toggle markers and toggle grid commands
       - choose tile size and use it in display
+      - display hovered field position, type and image num
     - Search
       - input query with help and validation
       - display result and navigates
