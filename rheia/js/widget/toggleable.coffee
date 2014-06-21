@@ -70,8 +70,10 @@ define [
         w: parent.scrollLeft() + parent.outerWidth true
         h: parent.scrollTop() + parent.outerHeight true
 
-      top -= top+dim.h+10 - win.h if top+dim.h > win.h
-      left -= left+dim.w+10 - win.w if left+dim.w > win.w
+      console.log "toggleable", left, top, win, dim 
+      top -= top+dim.h+10 - win.h if dim.h < win.h and top+dim.h > win.h
+      left -= left+dim.w+10 - win.w if dim.w < win.w and left+dim.w > win.w
+      console.log "open at", left, top
 
       @options.open = true
       @$el.css(
@@ -83,7 +85,8 @@ define [
         # attaches hover handler and automatic close if nothing happens
         @$el.on 'mouseenter.toggleable', => @_onMouseIn()
         @$el.on 'mouseleave.toggleable', => @_onMouseOut()
-        @_closeTimeout = setTimeout (=> @_onMouseOut()), @options.firstShowDelay
+        if @options.firstShowDelay > 0
+          @_closeTimeout = setTimeout (=> @_onMouseOut()), @options.firstShowDelay
       
       if @options.closeOnClickDocument
         # closes on document click

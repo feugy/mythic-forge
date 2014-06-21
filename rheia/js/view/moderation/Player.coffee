@@ -336,7 +336,9 @@ define [
 
     # **private**
     # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
-    _notifyExternalChange: =>
+    #
+    # @param changed [Object] new updated values
+    _notifyExternalChange: (changed) =>
       @_emptyExternalChange()
       if @$el.find('.external-change *').length is 0
         @$el.find('.external-change').append "<p>#{i18n.msgs.playerExternalChange}</p>"

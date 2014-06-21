@@ -69,12 +69,16 @@ define [
       @$el.addClass('search').append """<input type="text"/>
         <div class="ui-icon ui-icon-search"></div>
         <div class="ui-icon small help"></div>
+        <div class="help-content tooltip">#{@options.helpTip}</div> 
         <div class="nb-results"></div>
         <div class="error"></div>
         <div class="results"></div>"""
 
-      # help tooltip
-      @$el.find('.help').attr 'title', @options.helpTip
+      # help tooltip, made with toggleable
+      tip = @$el.find('.help-content').toggleable(closeOnOut: false, firstShowDelay: 0).data 'toggleable'
+      help = @$el.find('.help').mouseover (event) => 
+        {left, top} = help.offset()
+        tip.open left, top
       
       # bind on input changes and click events
       @$el.find('input').keyup @_onChange

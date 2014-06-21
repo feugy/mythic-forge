@@ -274,7 +274,6 @@ class _SearchService
     return callback "Failed to parse query: #{err}" if err?
 
     results = []
-
     # second, enhance the query for mongoDB
     @_enhanceInstanceQuery query, (err) =>
       return callback "Failed to enhance query: #{err}" if err?

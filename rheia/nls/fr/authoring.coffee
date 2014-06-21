@@ -41,7 +41,7 @@ define
   msgs:
     newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b> :'
     newFile: 'Veuillez choisir un nom (avec extension) pour le fichier dans <b>%s</b> :'
-    renameFolder: 'Veuillez choisir un nouveau nom ou chemin pour le dossier:'
+    renameFolder: 'Veuillez choisir un nouveau nom ou chemin pour le dossier :'
     renameFile: 'Veuillez choisir un nouveau nom ou chemin pour le fichier :'
     removeFileConfirm: "<p>Voulez-vous vraiment supprimer le fichier <b>%s</b> ?</p>"
     removeFolderConfirm: "<p>Voulez-vous vraiment supprimer le dosser <b>%s</b> et tout son contenu ?</p>"

@@ -60,17 +60,31 @@ select
   padding 0.5em 1em
 
 .tooltip
-  padding 0.5em
+  padding 0.5em 
+  cursor default
 
-.tooltip *
-  font-size fontSize*0.8
-  padding 0.25em 0.5em
-  cursor normal
+  *
+    font-size fontSize*0.8
 
-.tooltip ul
-  margin-left 1em
-  list-style square
+  p
+    padding 0.25em 0.5em
 
+  ul
+    margin-left 1em
+    list-style square
+
+  dfn
+  var
+    display inline-block
+    font-family "Courier New"
+    padding 2px
+
+  dfn
+    margin 1px
+
+  var
+    background-color hoverColor
+    
 .menu.open
 .menu.toggleable 
 .tooltip

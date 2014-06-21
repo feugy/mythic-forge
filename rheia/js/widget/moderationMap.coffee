@@ -207,15 +207,13 @@ define [
         id = $(event.target).closest('li').data 'id'
         @_dragged.push @_itemWidgets[id].options.model if @_itemWidgets[id]?
       else
-        console.log pos
         # drag from the map
         for id, widget of @_itemWidgets
           if widget.options.coordinates.x is pos.x and widget.options.coordinates.y is pos.y
             @_dragged.push widget.options.model
-        console.log @_dragged
 
       if @_dragged.length is 1
-        console.debug "moves instance #{@_dragged[0].id}"
+        console.log "moves instance #{@_dragged[0].id}"
         # creates a drag handler inside body
         moved = utils.dragHelper(@_dragged[0]).appendTo $('body')
         

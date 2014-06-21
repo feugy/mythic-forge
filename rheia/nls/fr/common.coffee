@@ -69,6 +69,7 @@ define
     ok: 'Ok'
     cancel: 'Annuler'
     logout: 'Sortir'
+    applyRule: 'Appliquer...'
 
   validator:
     required: 'la valeur de "%s" est requise'
@@ -94,10 +95,12 @@ define
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2014 Damien Feugas'
     confirmUnload: 'Au moins une vue de la perspective %1s à été modifiée.'
+    invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
+    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"
 
   errors:
     wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'
-    unauthorized: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, il va falloir trimer un peu !</p>"
+    unauthorized: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, merci de contacter l'auteur du jeu.</p>"
     expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter.</p>'
     invalidToken: '<p>Ce jeton de session est invalide.</p><p>Veuillez vous reconnecter.</p>'
     disconnected: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants : dès que le serveur sera joignable, vous serez automatiquement reconnecté.</p>'

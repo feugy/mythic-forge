@@ -17,7 +17,6 @@
   - Bugs
     - [!!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
     - [!!] revert file to version is broken, rule/PPscript versionning not implemented
-    - [!] set nls default values to avoid browser failure with non-french locale
     - use tileDim in hexagon and diamond map renderers
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
@@ -201,6 +200,7 @@
     - FSItem move popup does not close on ok
     - item's map changes not displayed in moderation (when map was previously not existing)
     - fix rule/turn rule active/category/rank changes
+  - provide english default labels, and french translation
   - handle rule requires
   - perspective loader
   - login page
