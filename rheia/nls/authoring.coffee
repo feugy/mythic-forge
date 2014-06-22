@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -38,6 +38,7 @@ define
       renameFSItem: 'Rename/move "%s"'
       removeFSItem: 'Remove "%s"'
       commitDetails: '%3$s: %1$s (%2$s)'
+      commitDetailsLast: 'current: %1$s'
       history: 'history'
 
     msgs:
@@ -51,6 +52,7 @@ define
       fsItemCreationFailed: "<p><b>%1$s</b> cannot be saved on server:</p><p>%2$s</p>" 
       restorables: "<p>This is the whole list of removed/renamed files.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
       noRestorables: "<p>No files to restore.</p>"
+      fileExternalChange: "This file has been externally modified. Its content was updated"
 
     tips:
       newFolder: 'Creates a new folder in the selected parent or at root'

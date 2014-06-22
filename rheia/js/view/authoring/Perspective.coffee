@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -80,10 +80,6 @@ define [
     _historyList: null
 
     # **private**
-    # 1 second timeout before getting history of currently displayed file
-    _historyTimeout: null
-
-    # **private**
     # FSItem created to catch server error while creating
     _createInProgress: null
 
@@ -98,12 +94,6 @@ define [
       @bindTo @_explorer, 'create', @_onChooseFileName
       @bindTo @_explorer, 'remove', @_onRemove
       @bindTo app.router, 'serverError', @_onServerError
-      @bindTo FSItem.collection, 'reset', =>
-        # removes all views
-        while @_views.length > 0
-          @_forceClose
-          @_views[0].model.off 'history', @_onUpdateHistory
-          @tryCloseTab @_views[0]
       @bindTo FSItem.collection, 'add', @_onItemCreated
       # removes history update handler
       @bindTo FSItem.collection, 'remove', (item) => 
@@ -274,7 +264,6 @@ define [
       # bind changes to update tab
       view.on 'change', @_onUpdateFileBar
       view.model.on 'history', @_onUpdateHistory
-      view.model.on 'version', @_onChangeVersion
 
     # **private**
     # Item creation/move handler: prompt for name, creates the FSItem and opens it if it's a file, or moves the FSItem
@@ -358,29 +347,25 @@ define [
     #
     # @param withHistory [Boolean] true to retrieve file history. Default to false
     _onUpdateFileBar: (withHistory = false)=>
-      clearTimeout @_historyTimeout if @_historyTimeout and withHistory is true
-       
       @_saveButton._setOption 'disabled', true
       @_removeButton._setOption 'disabled', true
-      @_historyList.attr 'disabled', 'disabled'
-      @_historyList.empty()
 
       view= @_views?[@_tabs.options.selected]
       # no view selected (after a deletion for example)
-      return unless view?
+      unless view?
+        @_historyList.attr 'disabled', 'disabled'
+        return @_historyList.empty()
 
       @_saveButton._setOption 'disabled', !view.canSave()
       @_removeButton._setOption 'disabled', !view.canRemove()
 
-      # disable history if modification pending, and get history if needed
-      if view.canSave()
-        @_historyList.attr 'disabled', 'disabled'
-      else
-        @_historyList.removeAttr 'disabled'
-
       if withHistory is true
-        @_historyList.empty()
-        @_historyTimeout = setTimeout (-> view.model.fetchHistory()), 1000
+        @_historyList.removeAttr('disabled').empty()
+        # history already fetched
+        if view.model.history?
+          @_onUpdateHistory view.model 
+        else
+          view.model.fetchHistory()
 
     # **private**
     # Selection handler inside the file explorer.
@@ -448,7 +433,8 @@ define [
       html = ""
       for commit in file.history
         date = moment(commit.date).format i18n.constants.dateTimeFormat
-        html += "<option value='#{commit.id}'>#{_.sprintf i18n.labels.commitDetails, date, commit.author, commit.message}</option>" 
+        message = _.sprintf (if commit.id then i18n.labels.commitDetails else i18n.labels.commitDetailsLast), date, commit.author, commit.message
+        html += "<option value='#{commit.id}'>#{message}</option>" 
       @_historyList.append html
 
     # **private**
@@ -456,6 +442,7 @@ define [
     _onRequireVersion: =>
       return if @_tabs.options.selected is -1
       version = @_historyList.find(':selected').val()
+      # do not proceed if no version specified
       item = @_views[@_tabs.options.selected]?.model
       item?.fetchVersion version
 

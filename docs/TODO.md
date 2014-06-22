@@ -16,7 +16,7 @@
 - Rheia
   - Bugs
     - [!!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
-    - [!!] revert file to version is broken, rule/PPscript versionning not implemented
+    - [!!] revert file to version is broken, rule/script versionning not implemented
     - use tileDim in hexagon and diamond map renderers
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - refresh edition and moderation map content (is there any cache ?) when removing a field type

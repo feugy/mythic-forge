@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -68,7 +68,7 @@ define [
     # Builds rendering
     constructor: (element, options) ->
       super element, options
-      
+
       @$el.addClass 'adv-editor'
 
       # creates and wire the editor
@@ -154,11 +154,17 @@ define [
           undoMgr = @_editor.getSession().getUndoManager()
           # keeps the cursor position if possible
           position = @_editor.selection.getCursor()
+          # attach to body to update: it ensure that size will be ok and text really updated
+          parent = @$el.parent()
+          $('body').append @$el
           @_editor.setValue value
-          # setValue will select all new text. Reset the cursor to original position.
-          @_editor.clearSelection()
-          @_editor.selection.moveCursorToPosition position
-          @_editor.getSession().setUndoManager undoMgr
+          # defer come back to parent to ensure text was updated
+          _.defer =>
+            parent.append @$el
+            # setValue will select all new text. Reset the cursor to original position.
+            @_editor.clearSelection()
+            @_editor.selection.moveCursorToPosition position
+            @_editor.getSession().setUndoManager undoMgr
         when 'tabSize'
           @options.tabSize = value
           @_editor.getSession().setTabSize value

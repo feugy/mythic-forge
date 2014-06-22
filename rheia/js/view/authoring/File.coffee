@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -69,6 +69,10 @@ define [
     # File rendering in image mode
     _image: null
 
+    # **private**
+    # Warning indicating external change
+    _externalChangeMessage: null
+
     # The view constructor. The edited file system item must be a file, with its content poplated
     #
     # @param file [FSItem] the edited object.
@@ -88,8 +92,9 @@ define [
       @_editorWidget?.resize()
 
     dispose: =>
-      @model.restored = false
       @model.off 'version', @_onChangeVersion
+      # if was restored from previous version, get back to current
+      @model.fetchVersion() if @model.restored
       super()
 
     # Returns the view's title
@@ -113,6 +118,10 @@ define [
       ).data 'advEditor'
       @$el.empty().append @_editorWidget.$el
 
+      # get reference on external change
+      @_externalChangeMessage = $('<div class="external-change"></div>').appendTo @$el
+      @$el.on 'click', '.external-change .ui-icon-close', @_cleanExternalChange
+
       @_image = $('<img/>').appendTo @$el
 
     # **private**
@@ -122,7 +131,9 @@ define [
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: =>
+    #
+    #@param restoredContent [String] content to display during restoration
+    _fillRendering: (restoredContent) =>
       @_mode = getMode @model
       @$el.toggleClass 'image', @_mode is 'img'
       if @_mode is 'img'
@@ -133,7 +144,7 @@ define [
       else
         @_editorWidget.$el.show()
         @_editorWidget.setOption 'mode', @_mode
-        @_editorWidget.setOption 'text', utf8.decode @model.content or ''
+        @_editorWidget.setOption 'text', utf8.decode restoredContent or @model.content or ''
 
       # to update displayed icon
       @_onChange()
@@ -168,11 +179,22 @@ define [
     # Wired to FSItem version changes. Update editor if current model have been changed
     # 
     # @param item [FSItem] concerned item
-    # @param content [String] utf8 encoded content.
+    # @param content [String] utf8 encoded content. Null to get back to current version
     _onChangeVersion: (item, content) =>
       return unless @model.equals item
-      @model.restored = true
-      # update content
-      @model.content = content
-      # and refresh rendering
-      @_fillRendering()
+      # refresh rendering with restored content
+      @_fillRendering content
+
+    # **private**
+    # Remove external changes messages
+    _cleanExternalChange: =>
+      @_externalChangeMessage.find('> *').remove()
+
+    # **private**
+    # Displays warning message above file content when file have been modified externally.
+    #
+    # @param saved [Object] the received values from server
+    _notifyExternalChange: (saved) =>
+      @_cleanExternalChange()
+      # add new one
+      @_externalChangeMessage.append "<p>#{i18n.msgs.fileExternalChange}<i class='ui-icon ui-icon-close'></i></p>"

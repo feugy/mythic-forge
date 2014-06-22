@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -27,11 +27,10 @@ async = require 'async'
 requirejs = require 'requirejs'
 cheerio = require 'cheerio'
 utils = require '../util/common'
-versionUtils = require '../util/versionning'
 logger = require('../util/logger').getLogger 'service'
 notifier = require('../service/Notifier').get()
+versionService = require('../service/VersionService').get()
 
-repo = null
 root = null
 
 # Singleton instance
@@ -71,10 +70,9 @@ class _DeployementService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    versionUtils.initGameRepo logger, (err, _root, _repo) =>
+    versionService.init (err) =>
       return callback err if err?
-      root = _root
-      repo = _repo
+      root = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.dev'
       callback null
 
   # Simple getter to known if a deployement is pending.
@@ -282,13 +280,13 @@ class _DeployementService
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
     # get known tags
-    versionUtils.quickTags repo, (err, tags) =>
+    versionService.tags (err, tags) =>
       return callback "Failed to consult versions: #{err}" if err?
       tags.reverse() # make the last tag comming first
       tagIds = _.pluck tags, 'id'
      
       # get history
-      versionUtils.quickHistory repo, (err, history) =>
+      versionService.history (err, history) =>
         return callback "Failed to consult history: #{err}" if err?
 
         result = 
@@ -335,16 +333,16 @@ class _DeployementService
         rules = pathUtils.resolve pathUtils.normalize utils.confKey 'game.executable.source'
         images = pathUtils.resolve pathUtils.normalize utils.confKey 'game.image'
         # add game files and executables
-        repo.add [dev, rules, images], {'ignore-errors': true, A:true}, (err) ->
+        versionService.repo.add [dev, rules, images], {'ignore-errors': true, A:true}, (err) ->
           return callback "Failed to add files to version: #{err}" if err?
           # TODO use version message
-          repo.commit version, {author: versionUtils.getAuthor author}, (err, stdout) =>
+          versionService.repo.commit version, {author: versionService.getAuthor author}, (err, stdout) =>
             # ignore commit warning, for example about line endings
             err = null if err?.code is 1 and -1 isnt "#{err}".indexOf 'warning:'
             return callback "Failed to commit: #{utils.purgeFolder err, root} #{utils.purgeFolder stdout, root}" if err?
             
             # and at last ceates the tag
-            repo.create_tag version, (err) ->
+            versionService.repo.create_tag version, (err) ->
               return callback "Failed to create version: #{err}" if err?
               notifier.notify 'deployement', 'VERSION_CREATED', notifNumber, version
 
@@ -367,7 +365,7 @@ class _DeployementService
 
       logger.debug "reset working copy to version #{version}"
       # now we can rest with no fear...
-      repo.git 'reset', hard:true, [version], (err, stdout, stderr) =>
+      versionService.repo.git 'reset', hard:true, [version], (err, stdout, stderr) =>
         return callback "Failed to restore version #{version}: #{err}" if err?
         notifier.notify 'deployement', 'VERSION_RESTORED', 1, version
 
@@ -379,7 +377,7 @@ class _DeployementService
 # @option callback err [String] an error string, or null if no error occured
 # @option callback versions [Array<String>] an array of versions names (may be empty)
 listVersions = (callback) ->
-  versionUtils.quickTags repo, (err, tags) ->
+  versionService.tags (err, tags) ->
     return callback "Failed to list existing versions: #{err}" if err?
     callback null, _.pluck tags, 'name'
 

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -36,6 +36,7 @@ define
     renameFSItem: 'Renommer "%s"'
     removeFSItem: 'Supprimer "%s"'
     commitDetails: '%3$s: %1$s (%2$s)'
+    commitDetailsLast: 'en cours: %1$s'
     history: 'historique'
 
   msgs:
@@ -49,6 +50,7 @@ define
     fsItemCreationFailed: "<p><b>%1$s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2$s</p>" 
     restorables: "<p>Voici la liste des fichiers supprimés ou déplacés.</p><p>Cliquez sur un fichier pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
     noRestorables: "<p>Il n'y a pas de fichiers à restaurer.</p>"
+    fileExternalChange: "Ce fichier a été modifié par ailleurs. Son contenu à été mis à jour"
 
   tips:
     newFolder: 'Crée un nouveau dossier dans le dossier séléctioné ou la racine'

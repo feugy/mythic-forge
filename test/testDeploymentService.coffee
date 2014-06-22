@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -25,21 +25,19 @@ http = require 'http'
 FSItem = require '../hyperion/src/model/FSItem'
 Executable = require '../hyperion/src/model/Executable'
 utils = require '../hyperion/src/util/common'
-versionUtils = require '../hyperion/src/util/versionning'
 front = require '../hyperion/src/web/front'
 Phantom = require 'phantom-proxy'
 git = require 'gift'
 assert = require('chai').assert
-logger = require('../hyperion/src/util/logger').getLogger 'test'
 service = require('../hyperion/src/service/DeployementService').get()
 authoringService = require('../hyperion/src/service/AuthoringService').get()
+versionService = require('../hyperion/src/service/VersionService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
 
 port = utils.confKey 'server.staticPort'
 rootUrl = "http://localhost:#{port}"
 root = utils.confKey 'game.client.dev'
 exeRoot = utils.confKey 'game.executable.source'
-repo = null
 notifications = []
 browser = null
 listener = null
@@ -51,7 +49,7 @@ describe 'Deployement tests', ->
     # clean destination folder
     fs.remove utils.confKey('game.client.production'), ->
       # reset game git repository
-      versionUtils.initGameRepo logger, true, done
+      versionService.init true, done
 
   beforeEach (done) ->
     # given a registered notification listener
@@ -83,11 +81,13 @@ describe 'Deployement tests', ->
             return done err if err?
             fs.mkdirs exeRoot, (err) ->
               return done err if err?
-              # given an executable
-              new Executable(id: 'test', content: 'msg = "hello world"').save (err) ->
+              fs.mkdirs utils.confKey('game.executable.target'), (err) ->
                 return done err if err?
-                # given a valid game client in it
-                fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, done
+                # given an executable
+                new Executable(id: 'test', content: 'msg = "hello world"').save (err) ->
+                  return done err if err?
+                  # given a valid game client in it
+                  fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, done
 
     it 'should coffee compilation errors be reported', (done) ->
       # given a non-compiling coffee script
@@ -219,9 +219,8 @@ describe 'Deployement tests', ->
       fs.copy pathUtils.join(__dirname, 'fixtures', 'working-client'), root, (err) ->
         return done err if err?
         # given a initiazed git repository
-        versionUtils.initGameRepo logger, (err, root, rep) ->
+        versionService.init (err) ->
           return done err if err?
-          repo = rep
           server = http.createServer front()
           server.listen port, 'localhost', done
       
@@ -312,7 +311,7 @@ describe 'Deployement tests', ->
         assert.deepEqual notifications, ['COMMIT_START', 'VERSION_CREATED', 'COMMIT_END']
 
         # then a git version was created
-        repo.tags (err, tags) ->
+        versionService.repo.tags (err, tags) ->
           return done "Failed to consult tags: #{err}" if err?
           assert.equal 1, tags.length
           assert.equal tags[0].name, version
@@ -474,7 +473,7 @@ describe 'Deployement tests', ->
             assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
 
             # then no version was made
-            repo.tags (err, tags) ->
+            versionService.repo.tags (err, tags) ->
               return done err if err?
               return assert.fail "Version #{version2} has been tagged" for tag in tags when tag.name is version3
 
@@ -530,7 +529,7 @@ describe 'Deployement tests', ->
           assert.deepEqual notifications, ['VERSION_CREATED']
 
           # then a git version was created
-          repo.tags (err, tags) ->
+          versionService.repo.tags (err, tags) ->
             return done "Failed to consult tags: #{err}" if err?
             assert.equal 3, tags.length
             assert.equal tags[0].name, version

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -44,6 +44,9 @@ class FSItem
   # For folder items, an array (may be empty) of FSItems.
   content: null
 
+  # Date of last update, populated when content is read
+  updated: null
+
   # Create a new fs-item, with its path and folder status
   # 
   # @overload new FSItem (path, isFolder)
@@ -86,6 +89,9 @@ class FSItem
       # check that folder status do not change
       return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
       
+      # keep last update time 
+      @updated = stat.mtime
+
       if @isFolder
         # read folder's content
         fs.readdir @path, (err, items) =>
@@ -140,6 +146,7 @@ class FSItem
             return callback "Error while creating new folder #{@path}: #{err}" if err?
             logger.debug "folder #{@path} successfully created"
             # invoke watcher
+            @updated = new Date()
             modelWatcher.change 'creation', 'FSItem', @
             callback null, @, true
         else
@@ -159,8 +166,12 @@ class FSItem
             # write file content
             fs.writeFile @path, saved, (err) =>
               return callback "Error while saving file #{@path}: #{err}" if err?
+
+              # keep last update time 
+              @updated = new Date()
+
               logger.debug "file #{@path} successfully saved"
-              modelWatcher.change (if isNew then 'creation' else 'update'), 'FSItem', @, ['content']
+              modelWatcher.change (if isNew then 'creation' else 'update'), 'FSItem', @, ['content', 'updated']
               callback null, @, isNew
           catch exc
             callback "Bad file content for file #{@path}: #{exc}"
@@ -239,6 +250,7 @@ class FSItem
 
               # and for creation
               @path = newPath
+              @updated = new Date()
               modelWatcher.change 'creation', 'FSItem', @
               callback null, @
 

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -58,6 +58,13 @@ host = utils.confKey 'server.host'
 staticPort = utils.confKey 'server.staticPort', process.env.PORT or ''
 bindingPort = utils.confKey 'server.bindingPort', process.env.PORT or ''
 apiPort = utils.confKey 'server.apiPort', process.env.PORT or ''
+logoutDelay = null
+
+# on configuration change, update some variables
+initConf = ->
+  logoutDelay = utils.confKey 'authentication.logoutDelay'
+utils.on 'confChanged', initConf
+initConf()
 
 # stores email corresponding to socket ids
 sid = {}
@@ -235,13 +242,13 @@ io.use (socket, callback) ->
     return callback new Error err if err?
     # if player exists, authorization awarded !
     if player?
-      logger.info "Player #{player.email} connected with token #{token}"
+      logger.info "Player #{player.email} connected with token #{player.token} on socket #{socket.id}"
       # this will allow to store connected player into the socket details
       sid[socket.id] = 
         email: player.email
         isAdmin: player.isAdmin
       return callback null
-    logger.debug "socket #{socket.id} received unknown token #{token}" 
+    logger.info "socket #{socket.id} received unknown token #{token}" 
     return callback new Error 'invalidToken'
 
 # When a client connects, returns it immediately its token
@@ -290,7 +297,7 @@ io.on 'connection', (socket) ->
       expiration[email] = _.delay =>
         logger.info "claim for logout for user #{email}"
         playerService.disconnect email, 'logout'
-      , 10000
+      , logoutDelay*1000
 
 # socket.io `game` namespace 
 #

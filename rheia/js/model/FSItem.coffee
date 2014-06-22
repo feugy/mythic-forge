@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -67,11 +67,13 @@ define [
           callback restorables for callback in @_restorablesCallback
           @_restorablesCallback = []
 
-        app.sockets.admin.on 'authoring', @_onNewVersion
-        app.sockets.admin.on 'deployement', (state) =>
-          return unless state is 'VERSION_RESTORED'
-          # totally clean collection 
-          @fetch()
+        app.sockets.admin.on 'deployement', (state, number, version) =>
+          switch state
+            when 'VERSION_CREATED', 'VERSION_RESTORED' 
+              # update content and history for items that need it
+              for model in @models
+                @fetch item: model if model.content?
+                model.fetchHistory() if model.history?
 
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
@@ -126,6 +128,19 @@ define [
       changes.content = atob changes.content unless changes.isFolder or changes.content is null
       super className, changes
 
+      # update history if needed
+      model = @get changes[@model.prototype.idAttribute]
+      if model?.history?
+        if model.history[0]?.id isnt ''
+          # add a fake history entry for current version
+          model.history.splice 0, 0, 
+            id: ''
+            author: null
+            message: null
+        # update date to now
+        model.history[0].date = new Date changes.updated
+        model.trigger 'history', model
+
     # **private**
     # Enhanced to remove item under the removed one
     #
@@ -176,22 +191,6 @@ define [
       @_onUpdate 'FSItem', rawItem
 
     # **private**
-    # Invoked when a message of a new commit is received.
-    # Update the corresponding FSItem if found, and triggers its `history` event.
-    #
-    # @param event [String] kind of version event.
-    # @param path [String] concerned FSItem path
-    # @param commit [Object] commit object, with `author`, `date`, `message` and `id` fields
-    _onNewVersion: (event, path, commit) =>
-      return unless event is 'committed'
-      item = @get path
-      if item?
-        item.history = [] unless item.history?
-        commit.date = new Date commit.date
-        item.history.splice 0, 0, commit
-        item.trigger 'history', item
-
-    # **private**
     # File history retrieval handler. 
     # Triggers an 'history' event on the concerned FSItem after having filled its history attribute
     # Wired on collection to avoid multiple listeners. 
@@ -201,6 +200,10 @@ define [
     # @param item [FSItem] raw concerned FSItem
     # @param history [Array] array of commits, containing `author`, `date`, `id` and `message` attributes
     _onHistory: (reqId, err, item, history) =>
+      # silently ignore errors regarding unexisting items when fetching history:
+      # can occur when displaying file not yet saved on server
+      # and when restoring version that do not include an opened file
+      return if err?.toString()?.indexOf('Unexisting item') >= 0
       return app.router.trigger 'serverError', err, method:"FSItem.fetchHistory" if err? 
       item = @get item.path
       if item?
@@ -222,6 +225,7 @@ define [
       return app.router.trigger 'serverError', err, method:"FSItem.fetchVersion" if err? 
       item = @get(item.path)
       if item?
+        item.restored = true
         item.trigger 'version', item, atob content
 
   # Modelisation of a single File System Item.
@@ -237,7 +241,7 @@ define [
 
     # **private**
     # List of properties that must be defined in this instance.
-    _fixedAttributes: ['path', 'isFolder', 'content']
+    _fixedAttributes: ['path', 'isFolder', 'content', 'updated']
 
     # bind the Backbone attribute to the path name
     idAttribute: 'path'
@@ -271,17 +275,20 @@ define [
     # an `history` event will be triggered on model once retrieved
     fetchHistory: =>
       return if @get 'isFolder'
-      console.debug "fetch history for #{@id}"
       app.sockets.admin.emit 'history', utils.rid(), @_serialize()
 
     # fetch a given version on server, only for files.
     # an `version` event will be triggered on model once retrieved
     #
-    # @param version [String] retrieved version id 
+    # @param version [String] retrieved version id. null or empty to restore last uncommited version
     fetchVersion: (version) =>
       return if @get 'isFolder'
-      console.debug "fetch version #{version} for #{@id}"
-      app.sockets.admin.emit 'readVersion', utils.rid(), @_serialize(), version
+      console.debug "fetch version #{version or 'current'} for #{@id}"
+      if version
+        app.sockets.admin.emit 'readVersion', utils.rid(), @_serialize(), version
+      else
+        @restored = false
+        @trigger 'version', @
 
     # **private** 
     # Method used to serialize a model when saving and removing it

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -23,13 +23,12 @@ FSItem = require '../model/FSItem'
 Executable = require '../model/Executable'
 {resolve, normalize, join, relative, extname} = require 'path'
 {purgeFolder, confKey} = require '../util/common'
-versionUtils = require '../util/versionning'
 logger = require('../util/logger').getLogger 'service'
+versionService = require('./VersionService').get()
 deployementService = require('./DeployementService').get()
 notifier = require('../service/Notifier').get()
 
 executablesRoot = resolve normalize confKey 'game.executable.source'
-repo = null
 root = null
 
 # Singleton instance
@@ -54,10 +53,9 @@ class _AuthoringService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    versionUtils.initGameRepo logger, (err, _root, _repo) =>
+    versionService.init (err) =>
       return callback err if err?
-      root = _root
-      repo = _repo
+      root = resolve normalize confKey 'game.client.dev'
       callback null
 
   # Retrieves the root FSItem, populated with its content.
@@ -199,7 +197,7 @@ class _AuthoringService
       return callback 'History not supported on folders' if obj.isFolder
 
     # consult file history
-    versionUtils.quickHistory repo, path, (err, history) =>
+    versionService.history path, (err, history) =>
       return callback "Failed to get history: #{err}" if err?
       callback null, obj, history
 
@@ -209,12 +207,12 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). For each item contains an object with `id`and `item` attributes
   restorables: (callback) =>
-    versionUtils.listRestorables repo, (err, restorables) =>
+    versionService.restorables (err, restorables) =>
       return callback "Failed to get restorable list: #{err}" if err?
       results = []
 
-      fileRoot = root.replace(repo.path, '')[1..]
-      exeRoot = executablesRoot.replace(repo.path, '')[1..]
+      fileRoot = root.replace(versionService.repo.path, '')[1..]
+      exeRoot = executablesRoot.replace(versionService.repo.path, '')[1..]
       for restorable in restorables
         if 0 is restorable.path.indexOf fileRoot
           # an FSItem
@@ -262,8 +260,8 @@ class _AuthoringService
       return callback 'History not supported on folders' if obj.isFolder
 
     # item path must be / separated, and relative to repository root
-    path = path.replace(repo.path, '').replace /\\/g, '\/'
+    path = path.replace(versionService.repo.path, '').replace /\\/g, '\/'
     # show file at specified revision
-    repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
+    versionService.repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
       return callback "Failed to get version content: #{err}" if err?
       callback err, obj, new Buffer(stdout, 'binary').toString 'base64'

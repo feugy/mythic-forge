@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -96,7 +96,7 @@ define [
     #
     # @param title [String] the popup title
     # @param message [String] the popup message
-    # @param messageIcon [String] if not null, an icon displayed next to the popup message
+    # @param messageIcon [String] if not null, an icon displayed next to the popup message (question, warning, cancel)
     # @param buttons [Array] an array (order is significant) or buttons:
     # @option buttons text [String] the button text
     # @option buttons icon [String] the button icon classes

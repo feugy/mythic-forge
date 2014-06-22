@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -29,11 +29,10 @@ EventType = require '../hyperion/src/model/EventType'
 Executable = require '../hyperion/src/model/Executable'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
-versionUtils = require '../hyperion/src/util/versionning'
 request = require 'request'
 fs = require 'fs-extra'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
-logger = require('../hyperion/src/util/logger').getLogger 'test'
+versionService = require('../hyperion/src/service/VersionService').get()
 assert = require('chai').assert
 
 port = 9090
@@ -86,7 +85,7 @@ describe 'Server tests', ->
       fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, imgData) ->
         return done err if err?
         # given a clean root
-        versionUtils.initGameRepo logger, true, (err) ->
+        versionService.init true, (err) ->
           return done err if err?
           authoringService.init (err) ->
             return done err if err?

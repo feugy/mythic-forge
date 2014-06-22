@@ -25,6 +25,7 @@ server:
 # Authentication details
 authentication:
   tokenLifeTime: 0 # number of seconds during wich tokens are valid, 0 means no expiration
+  logoutDelay: 25 # number of secons before claiming that disconnected player has quit
   # Key usable on localhost domain with SSL
   google:
     id: 750195776526.apps.googleusercontent.com
