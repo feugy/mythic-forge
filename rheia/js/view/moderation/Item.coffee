@@ -47,10 +47,6 @@ define [
     _confirmRemoveMessage: i18n.msgs.removeItemConfirm
 
     # **private**
-    # Message displayed when an external message was applied.
-    _externalChangeMessage: i18n.msgs.itemExternalChange
-
-    # **private**
     # indicates wether or not this item has quantity
     _hasQuantity: false
 

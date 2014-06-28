@@ -22,7 +22,6 @@ define
     newFolder: "Création d'un dossier"
     newFile: "Création d'un fichier"
     renameFSItem: "Renommage/déplacement"
-    restorables: "Fichiers supprimés/déplacés"
 
   buttons:
     rename: 'renommer'
@@ -35,9 +34,6 @@ define
     openFSItem: 'Ouvrir "%s"'
     renameFSItem: 'Renommer "%s"'
     removeFSItem: 'Supprimer "%s"'
-    commitDetails: '%3$s: %1$s (%2$s)'
-    commitDetailsLast: 'en cours: %1$s'
-    history: 'historique'
 
   msgs:
     newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b> :'
@@ -48,9 +44,7 @@ define
     removeFolderConfirm: "<p>Voulez-vous vraiment supprimer le dosser <b>%s</b> et tout son contenu ?</p>"
     closeFileConfirm: "<p>Vous avez modifié le fichier <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
     fsItemCreationFailed: "<p><b>%1$s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2$s</p>" 
-    restorables: "<p>Voici la liste des fichiers supprimés ou déplacés.</p><p>Cliquez sur un fichier pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
-    noRestorables: "<p>Il n'y a pas de fichiers à restaurer.</p>"
-    fileExternalChange: "Ce fichier a été modifié par ailleurs. Son contenu à été mis à jour"
+    externalChangeFSItem: "Ce fichier a été modifié par ailleurs. Son contenu à été mis à jour"
 
   tips:
     newFolder: 'Crée un nouveau dossier dans le dossier séléctioné ou la racine'
@@ -60,4 +54,3 @@ define
     removeFolder: 'Supprime le dossier séléctioné'
     saveFile: "Sauve le fichier en cours d'édition"
     removeFile: "Supprime le fichier en cours d'édition"
-    restorables: "Liste les fichiers ayant été supprimés ou déplacés"

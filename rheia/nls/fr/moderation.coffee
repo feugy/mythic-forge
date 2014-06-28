@@ -106,9 +106,9 @@ define
     removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'objet <b>%s</b> ?</p>"
     removeEventConfirm: "<p>Voulez-vous vraiment supprimer l'évènement <b>%s</b> ?</p>"
     removePlayerConfirm: "<p>Voulez-vous vraiment supprimer le joueur <b>%s</b> ?</p>"
-    itemExternalChange: "L'objet à été modifié par ailleur. Ses valeurs ont été mises à jour"
-    eventExternalChange: "L'évènement à été modifié par ailleur. Ses valeurs ont été mises à jour"
-    playerExternalChange: "Le joueur à été modifié par ailleur. Ses valeurs ont été mises à jour"
+    externalChangeItem: "Cet objet à été modifié par ailleurs. Ses valeurs ont été mises à jour"
+    externalChangeEvent: "Cet évènement à été modifié par ailleurs. Ses valeurs ont été mises à jour"
+    externalChangePlayer: "Ce joueur à été modifié par ailleurs. Ses valeurs ont été mises à jour"
     chooseItemType: "<p>Choisissez un type et un identidiant pour le nouvel objet.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
     chooseEventType: "<p>Choisissez un type et un identifiant pour le nouvel évènement.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
     invalidPrefs: 'Préférences : erreur de syntaxe JSON'

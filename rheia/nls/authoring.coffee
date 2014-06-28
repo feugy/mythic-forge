@@ -24,7 +24,6 @@ define
       newFolder: "Folder creation"
       newFile: "File creation"
       renameFSItem: "Rename/move"
-      restorables: "Renamed/removed files"
 
     buttons:
       rename: 'rename'
@@ -37,9 +36,6 @@ define
       openFSItem: 'Openr "%s"'
       renameFSItem: 'Rename/move "%s"'
       removeFSItem: 'Remove "%s"'
-      commitDetails: '%3$s: %1$s (%2$s)'
-      commitDetailsLast: 'current: %1$s'
-      history: 'history'
 
     msgs:
       newFolder: 'Please choose a name for folder in <b>%s</b>:'
@@ -50,9 +46,7 @@ define
       removeFolderConfirm: "<p>Do you really whish to remove folder <b>%s</b> and all its content ?</p>"
       closeFileConfirm: "<p>You've modified file <b>%s</b>.</p><p>Du you whish to save modifications before closing tab ?</p>"
       fsItemCreationFailed: "<p><b>%1$s</b> cannot be saved on server:</p><p>%2$s</p>" 
-      restorables: "<p>This is the whole list of removed/renamed files.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
-      noRestorables: "<p>No files to restore.</p>"
-      fileExternalChange: "This file has been externally modified. Its content was updated"
+      externalChangeFSItem: "This file has been externally modified. Its values where updated"
 
     tips:
       newFolder: 'Creates a new folder in the selected parent or at root'
@@ -62,4 +56,3 @@ define
       removeFolder: 'Removes the selecte file or folder'
       saveFile: "Saves the currently edited file"
       removeFile: "Removes the currently edited file"
-      restorables: "Displays list of removed/renamed files"

@@ -4,26 +4,22 @@
   - Bugs
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
-  - test images for field types and event types
   - Documentation
   - Rule engine
     - [!!!] Handle 'No matching document found' version errors while executing rule and revert execution
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
     - secured rules > mock save() and remove() methods from instances, collection and update() from classes
-  - Security
-    - register users from Facebook
 
 - Rheia
   - Bugs
     - [!!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
-    - [!!] revert file to version is broken, rule/script versionning not implemented
-    - use tileDim in hexagon and diamond map renderers
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - Documentation
   - Authoring perspective
     - [!] multiple file search
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
+  - use tileDim in hexagon and diamond map renderers
 
 - Atlas
   - package as library for es6, common JS and require
@@ -165,6 +161,7 @@
     - remove models by id in rule's removed array
     - allow rule, turn rule and script to be written in plain javascript
     - inject current player inside resolve's and execute's context
+    - rule, turn rules and scripts are versionned and can be rolled-back
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation
@@ -208,6 +205,8 @@
   - error reporting on network failure, kick and deployement in progress cases
   - reconnection management, page reloading management
   - display connected count in top bar
+  - non modal notification for object/files external modification
+  - modal notification for object/files external removal (except for Items and Events from moderation)
   - authoring perspective
     - reload when changing game client version
     - error handling while saving/moving/removing files (during deployement)
@@ -226,12 +225,12 @@
       - action bar (save, delete)
       - editor widget
       - loading/save content
-      - external modification/removal notification
       - displays images
       - dot not save when restoring previous version
     - History
       - display file's history
       - revert to file version
+      - automatically update content when global version changed
   - edition perspective
     - check that search is reloaded only on types changed
     - contextual menus in search and explorer
@@ -274,6 +273,9 @@
       - rule special behaviour when renaming
       - try to reload executable when initializing executables on requirejs errors
       - written in JavaScript or CoffeeScript
+      - display's content history
+      - revert to previous versions
+      - automatically update content when global version changed
     - Client configuration
       - written in YAML
   - administration perspective

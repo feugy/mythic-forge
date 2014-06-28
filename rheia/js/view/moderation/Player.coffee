@@ -103,7 +103,7 @@ define [
     constructor: (id) ->
       super id, 'player'
       # Closes external changes warning after 5 seconds
-      @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
+      @_autoHideExternal = true
 
       @bindTo Player.collection, 'connectedPlayersChanged', (connected, disconnected) =>
         return unless @_kickButton?
@@ -333,15 +333,6 @@ define [
     # @return true if all rendering's fields are valid
     _specificValidate: =>
       (msg: "#{i18n.labels.prefs} : #{err?.msg}" for err in @_prefsWidget.options.errors)
-
-    # **private**
-    # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
-    #
-    # @param changed [Object] new updated values
-    _notifyExternalChange: (changed) =>
-      @_emptyExternalChange()
-      if @$el.find('.external-change *').length is 0
-        @$el.find('.external-change').append "<p>#{i18n.msgs.playerExternalChange}</p>"
 
     # **private**
     # When changing provider, we must toggle the password field also

@@ -104,6 +104,7 @@ select
 
 .action-bars .ui-button 
 .action-bar .ui-button 
+.action.ui-button
   display: inline-block;
   margin-right 10px
   min-height 27px
@@ -433,8 +434,11 @@ body
         margin-left 10px
 
     > .external-change
-      margin 2px 10px 5px
       width auto
+      margin 0
+      
+      > *
+        margin 2px 10px 5px
         
     .images
       padding-top 0.5em

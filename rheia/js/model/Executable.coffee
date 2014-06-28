@@ -19,34 +19,41 @@
 'use strict'
 
 define [
+  'underscore'
   'model/BaseModel'
-], (Base) ->
+], (_, Base) ->
 
   # Client cache of executables.
-  class _Executables extends Base.Collection
+  class _Executables extends Base.VersionnedCollection
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'Executable'
 
     # **private**
+    # Global version changed: must refresh all models's content and history
+    _onGlobalVersionChanged: =>
+      # must wait a little for server to reset all executable
+      _.delay => 
+        @fetch()
+      , 1500
+
+    # **private**
     # Return handler of `list` server method. 
-    # Store number of added executable to properly handle interdependencies
     #
     # @param reqId [String] client request id
     # @param err [String] error message. Null if no error occured
     # @param modelName [String] reminds the listed class name.
     # @param models [Array<Object>] raw models.
     _onGetList: (reqId, err, modelName, models) =>
-      unless modelName isnt @_className or err?
-        added = models.length 
-        lastAdded = null
       super reqId, err, modelName, models
+      # fetch history for models that needs it, used during _onGlobalVersionChanged
+      model.fetchHistory() for model in @models when model.history?
 
   # Modelisation of a single Item Type.
   # Not wired to the server : use collections Items instead
   #
-  class Executable extends Base.Model
+  class Executable extends Base.VersionnedModel
 
     # Local cache for models.
     @collection: new _Executables @
@@ -68,4 +75,4 @@ define [
 
     # **private**
     # List of properties that must be defined in this instance.
-    _fixedAttributes: ['content', 'path', 'meta', 'lang']
+    _fixedAttributes: ['path', 'meta', 'lang']

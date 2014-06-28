@@ -65,7 +65,7 @@ define [
       console.log "creates client configuration edition view for #{@model.id}"
       @_mergedSource = null
       # Closes external changes warning after 5 seconds
-      @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
+      @_autoHideExternal = true
 
     # **private**
     # Effectively creates a new model.
@@ -131,10 +131,7 @@ define [
     #
     # @param saved [Object] the received values from server
     _notifyExternalChange: (saved) =>
-      @_emptyExternalChange()
-      if @$el.find('.external-change *').length is 0
-        @$el.find('.external-change').append "<p>#{i18n.msgs.externalConfChange}</p>"
-
+      super saved
       # merge values if necessary
       return unless @canSave()
       @_mergedSource = i18n.labels.editedValues+@_editor.options.text+i18n.labels.remoteValues+saved.source

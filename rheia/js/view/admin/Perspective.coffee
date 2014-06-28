@@ -58,3 +58,7 @@ define [
 
       # for chaining purposes
       @
+
+    # invoked when perspective is shown. Does nothing
+    shown: =>
+      @

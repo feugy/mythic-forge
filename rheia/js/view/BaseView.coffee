@@ -72,11 +72,20 @@ define [
     # flag to differentiate creation from update
     _isNew: false
 
+    # **private**
+    # Warning indicating external change
+    _externalChangeMessage: null
+
+    # **private**
+    # Automatically hides external change message if set to true
+    _autoHideExternal: false
+
     # The view constructor.
     #
     # @param id [String] the edited object's id.
     # @param className [String] the edited object's className.
     constructor: (id, className) ->
+      @_autoHideExternal = false
       super tagName: 'div', className:"#{className} view"
       # creation of a new item type if necessary
       @model = @_collection.get id
@@ -94,6 +103,8 @@ define [
       @bindTo @_collection, 'update', @_onSaved
       @bindTo @_collection, 'remove', @_onRemoved
       @bindTo app.router, 'serverError', @_onServerError
+
+      @_hideExternalChange = _.debounce (=> @_externalChangeMessage.hide 200, @_cleanExternalChange), 5000
 
     # Returns the view's title
     #
@@ -183,6 +194,9 @@ define [
       # first rendering filling
       @_fillRendering()
 
+      # get reference on external change
+      @_externalChangeMessage = @$el.find '.external-change'
+      @$el.on 'click', '.external-change .ui-icon-close', @_cleanExternalChange
       # for chaining purposes
       @
 
@@ -232,18 +246,20 @@ define [
         id
 
     # **private**
-    # Displays warning dialog when edited object have been modified externally.
+    # Remove external changes messages
+    _cleanExternalChange: =>
+      @_externalChangeMessage.find('> *').remove()
+
+    # **private**
+    # Displays warning message above file content when file have been modified externally.
     #
     # @param saved [Object] the received values from server
     _notifyExternalChange: (saved) =>
-      id = md5 "externalChange-#{@model.id}"
-      return if $("##{id}").length > 0
-      utils.popup i18n.titles.external, 
-        _.sprintf(i18n.msgs.externalChange, @model.id), 
-        'warning',
-        [text: i18n.buttons.ok], 
-        0,
-        id
+      @_hideExternalChange() if @_autoHideExternal
+      @_cleanExternalChange()
+      msg = i18n.msgs["externalChange#{@model._className}"] or _.sprintf i18n.msgs.externalChange, @model.id
+      # add new one
+      @_externalChangeMessage.append "<p>#{msg}<i class='ui-icon ui-icon-close'></i></p>"
 
     # **private**
     # Displays error dialog when current server operation failed on edited object.

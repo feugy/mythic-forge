@@ -57,7 +57,7 @@ define [
     # @param events [String] events on which the callback is bound
     # @parma callback [Function] the bound callback
     bindTo: (emitter, events, callback) ->
-      debugger unless emitter
+      debugger unless emitter?
       emitter.on events, callback
       @_bounds.push [emitter, events, callback]
       

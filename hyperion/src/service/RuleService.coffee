@@ -113,6 +113,17 @@ class _RuleService
             catch err
               # silent error: if a worker is closed, it will be automatically restarted
 
+      # on version changes, we must reset worker's cache
+      notifier.on notifier.NOTIFICATION, (kind, details) =>
+        return unless details is 'VERSION_RESTORED'
+        Executable.resetAll true, (err) ->
+          # silent error
+          for id, worker of cluster.workers when worker.process.pid isnt process.pid
+            try
+              worker.send event: 'executableReset'
+            catch err
+              # silent error: if a worker is closed, it will be automatically restarted
+
       # propagate time changes
       ruleUtils.timer.on 'change', (time) ->
         notifier.notify 'time', 'change', time.valueOf()

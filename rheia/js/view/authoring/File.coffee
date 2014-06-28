@@ -69,10 +69,6 @@ define [
     # File rendering in image mode
     _image: null
 
-    # **private**
-    # Warning indicating external change
-    _externalChangeMessage: null
-
     # The view constructor. The edited file system item must be a file, with its content poplated
     #
     # @param file [FSItem] the edited object.
@@ -89,8 +85,9 @@ define [
       
     # Called by the TabPerspective each time the view is showned.
     shown: =>
-      @_editorWidget?.resize()
+      @_editorWidget?.resize()?.focus()
 
+    # on dispose, clean version handler and restore if needed
     dispose: =>
       @model.off 'version', @_onChangeVersion
       # if was restored from previous version, get back to current
@@ -113,14 +110,9 @@ define [
       @className += " #{getMode @model}"
 
       # instanciate the content editor
-      @_editorWidget = $('<div class="content"></div>').advEditor(
-      ).on('change', @_onChange
-      ).data 'advEditor'
-      @$el.empty().append @_editorWidget.$el
-
-      # get reference on external change
-      @_externalChangeMessage = $('<div class="external-change"></div>').appendTo @$el
-      @$el.on 'click', '.external-change .ui-icon-close', @_cleanExternalChange
+      @$el.append '<div class="external-change"></div>'
+      @_editorWidget = $('<div class="content"></div>').appendTo(@$el)
+        .advEditor().on('change', @_onChange).data 'advEditor'
 
       @_image = $('<img/>').appendTo @$el
 
@@ -132,7 +124,7 @@ define [
     # **private**
     # Updates rendering with values from the edited object.
     #
-    #@param restoredContent [String] content to display during restoration
+    # @param restoredContent [String] content to display during restoration
     _fillRendering: (restoredContent) =>
       @_mode = getMode @model
       @$el.toggleClass 'image', @_mode is 'img'
@@ -184,17 +176,3 @@ define [
       return unless @model.equals item
       # refresh rendering with restored content
       @_fillRendering content
-
-    # **private**
-    # Remove external changes messages
-    _cleanExternalChange: =>
-      @_externalChangeMessage.find('> *').remove()
-
-    # **private**
-    # Displays warning message above file content when file have been modified externally.
-    #
-    # @param saved [Object] the received values from server
-    _notifyExternalChange: (saved) =>
-      @_cleanExternalChange()
-      # add new one
-      @_externalChangeMessage.append "<p>#{i18n.msgs.fileExternalChange}<i class='ui-icon ui-icon-close'></i></p>"

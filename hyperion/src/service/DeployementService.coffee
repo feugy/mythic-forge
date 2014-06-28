@@ -46,22 +46,20 @@ module.exports = class DeployementService
 class _DeployementService
 
   # **private**
-  # Version currently deployed.
-  # Only one version may be deployed at a time.
-  @_deployed: null
-
-  # **private**
   # Flag to avoid commit/rollback during unfinished deploy
-  @_deployPending: false
-
-  # **private**
-  # Email of the player that triggers deployement.
-  @_deployer: null
+  # Stores also deployer email, and version used
+  @_pending:
+    name: null
+    email: null
+    inProgress: false
 
   # Service constructor. Invoke init()
   # Triggers 'initialized' event on singleton instance when ready.
   constructor: ->
-    @_deployed = null
+    @_pending =
+      name: null
+      email: null
+      inProgress: false
     @init (err) =>
       throw new Error "Failed to init: #{err}" if err?
 
@@ -78,8 +76,7 @@ class _DeployementService
   # Simple getter to known if a deployement is pending.
   # @return the version name of a deployement that has been triggered and not yet committed or rollbacked.
   # Null otherwise.
-  deployedVersion: =>
-    if @_deployed? then "#{@_deployed}" else null
+  deployedVersion: => @_pending.name or null
 
   # Performs compilation and optimization of game client, and send 'deployment' notifications
   # with relevant step name and number: 
@@ -99,23 +96,23 @@ class _DeployementService
   # @option callback err [String] an error message, or null if no error occures
   # @option callback path [String] path to the compiled and optimized location of the client
   deploy: (version, email, callback) =>
-    return callback "Deployment of version #{@_deployed} already in progress" if @_deployed?
-    return callback "Commit or rollback of previous version not finished" if @_deployPending
+    return callback "Deployment of version #{@_pending.name} already in progress" if @_pending.name?
+    return callback "Commit or rollback of previous version not finished" if @_pending.inProgress
 
     # check version unicity
     listVersions (err, versions) =>
       return callback err if err?
       return callback "Version #{version} already used" if version in versions
 
-      @_deployPending = true
-      @_deployed = "#{version}"
-      @_deployer = email
+      @_pending.name = "#{version}"
+      @_pending.email = email
+      @_pending.inProgress = true
 
       error = (err) =>
         notifier.notify 'deployement', 'DEPLOY_FAILED', err
-        @_deployed = null
-        @_deployer = null
-        @_deployPending = false
+        @_pending.name = null
+        @_pending.email = null
+        @_pending.inProgress = false
         callback err
 
       # first, clean to optimized destination
@@ -123,7 +120,7 @@ class _DeployementService
       production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.production'
       save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
 
-      notifier.notify 'deployement', 'DEPLOY_START', 1, @_deployed, @_deployer
+      notifier.notify 'deployement', 'DEPLOY_START', 1, @_pending.name, @_pending.email
 
       fs.remove folder, (err) => fs.remove "#{folder}.out", (err) =>
         return error "Failed to clean optimized folder: #{err}" if err?
@@ -143,7 +140,7 @@ class _DeployementService
                 return error "Failed to optimized client: #{err}" if err?
                 # sixth, make it cacheable
                 notifier.notify 'deployement', 'OPTIMIZE_HTML', 5
-                makeCacheable temp, root, @_deployed, (err, result) =>
+                makeCacheable temp, root, @_pending.name, (err, result) =>
                   return error "Failed to make client cacheable: #{err}" if err?
                   # save production folder content and move everything in it
                   notifier.notify 'deployement', 'DEPLOY_FILES', 6
@@ -163,7 +160,7 @@ class _DeployementService
                             # cleans optimization folders
                             async.each [folder, temp, result], fs.remove, (err) =>
                               notifier.notify 'deployement', 'DEPLOY_END', 7
-                              @_deployPending = false
+                              @_pending.inProgress = false
                               # ignore removal errors
                               callback null
 
@@ -200,10 +197,10 @@ class _DeployementService
   # @param callback [Function] invoked when deployement is committed, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   commit: (email, callback) =>
-    return callback 'Commit can only be performed after deploy' unless @_deployed?
-    return callback "Commit can only be performed be deployement author #{@_deployer}" unless @_deployer is email
-    return callback 'Deploy not finished' if @_deployPending
-    @_deployPending = true
+    return callback 'Commit can only be performed after deploy' unless @_pending.name?
+    return callback "Commit can only be performed be deployement author #{@_pending.email}" unless @_pending.email is email
+    return callback 'Deploy not finished' if @_pending.inProgress
+    @_pending.inProgress = true
 
     error = (err) =>
       notifier.notify 'deployement', 'COMMIT_FAILED', err
@@ -214,7 +211,7 @@ class _DeployementService
     notifier.notify 'deployement', 'COMMIT_START', 1
     
     # first create tag
-    @createVersion @_deployed, @_deployer, 2, (err) =>
+    @createVersion @_pending.name, @_pending.email, 2, (err) =>
       return error "Failed to create version: #{err}" if err?
 
       # at least, remove save folder
@@ -223,9 +220,10 @@ class _DeployementService
         logger.debug "previous game client files deleted"
 
         # end of the deployement
-        @_deployed = null
-        @_deployer = null
-        @_deployPending = false
+        @_pending.name = null
+        @_pending.email = null
+        @_pending.message = null
+        @_pending.inProgress = false
         notifier.notify 'deployement', 'COMMIT_END', 3
         callback null
 
@@ -238,10 +236,10 @@ class _DeployementService
   # @param callback [Function] invoked when deployement is rollbacked, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   rollback: (email, callback) =>
-    return callback 'Rollback can only be performed after deploy' unless @_deployed?
-    return callback "Rollback can only be performed be deployement author #{@_deployer}" unless @_deployer is email
-    return callback 'Deploy not finished' if @_deployPending
-    @_deployPending = true
+    return callback 'Rollback can only be performed after deploy' unless @_pending.name?
+    return callback "Rollback can only be performed be deployement author #{@_pending.email}" unless @_pending.email is email
+    return callback 'Deploy not finished' if @_pending.inProgress
+    @_pending.inProgress = true
 
     save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
     production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.production'
@@ -262,9 +260,9 @@ class _DeployementService
         logger.debug "previous game client files restored"
 
         # end of the deployement
-        @_deployed = null
-        @_deployer = null
-        @_deployPending = false
+        @_pending.name = null
+        @_pending.email = null
+        @_pending.inProgress = false
         notifier.notify 'deployement', 'ROLLBACK_END', 2
         callback null
 
@@ -290,9 +288,9 @@ class _DeployementService
         return callback "Failed to consult history: #{err}" if err?
 
         result = 
-          deployed: @_deployed
-          inProgress: @_deployPending
-          author: @_deployer
+          deployed: @_pending.name
+          inProgress: @_pending.inProgress
+          author: @_pending.email
           current: null
           versions: _.pluck tags, 'name'
 
@@ -319,6 +317,7 @@ class _DeployementService
       callback = notifNumber
       notifNumber = 1
     return callback 'Spaces not allowed in version names' unless -1 is version.indexOf ' '
+    return callback 'Version must be at most 50 characters' unless version.length <= 50
     # get tags first
     listVersions (err, versions) =>
       return callback err if err?
@@ -335,7 +334,7 @@ class _DeployementService
         # add game files and executables
         versionService.repo.add [dev, rules, images], {'ignore-errors': true, A:true}, (err) ->
           return callback "Failed to add files to version: #{err}" if err?
-          # TODO use version message
+          # use version as short commit message
           versionService.repo.commit version, {author: versionService.getAuthor author}, (err, stdout) =>
             # ignore commit warning, for example about line endings
             err = null if err?.code is 1 and -1 isnt "#{err}".indexOf 'warning:'
@@ -355,7 +354,7 @@ class _DeployementService
   # @param callback [Function] invoked when game client was restored
   # @option callback err [String] an error message, or null if no error occures
   restoreVersion: (version, callback) =>
-    return callback "Deployment of version #{@_deployed} in progress" if @_deployed?
+    return callback "Deployment of version #{@_pending.name} in progress" if @_pending.name?
 
     # get tags first
     listVersions (err, versions) =>

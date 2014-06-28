@@ -98,8 +98,11 @@ define [
     _onGetList: (reqId, err, modelName, models) =>
       return unless modelName is @_className
       return app.router.trigger 'serverError', err, method:"#{@_className}.collection.sync", details:'read' if err?
-      # add returned types in current collection
-      @reset models
+      # add returned models in current collection, with merging to avoid breaking listeners.
+      # removes old ones that are not present in result
+      @set models, merge: true, remove: true
+      # manually trigger reset for backward compatibility
+      @trigger 'reset', @, {}
 
     # **private**
     # Callback invoked when a database creation is received.
@@ -578,9 +581,178 @@ define [
       # returns the json attributes
       attrs
 
+  # VersionnedCollection stores model that have multiple versions and can be restored
+  class BaseVersionnedCollection extends BaseCollection
+
+    # Collection constructor, that wired on events.
+    #
+    # @param model [Object] the managed model
+    # @param options [Object] unused
+    constructor: (model, @options) ->
+      super model, options
+      utils.onRouterReady =>
+        # history() and readVersion() handlers
+        app.sockets.admin.on 'history-resp', @_onHistory
+        app.sockets.admin.on 'readVersion-resp', @_onReadVersion
+
+        app.sockets.admin.on 'deployement', (state, number, version) =>
+          switch state
+            when 'VERSION_CREATED', 'VERSION_RESTORED' then @_onGlobalVersionChanged()
+
+    # List all restorables files
+    #
+    # @param callback [Function] end callback, invoked with
+    # @option callback restorables [Array] an array (may be empty) containing for each restorable file an objects with `item` and `id` attributes
+    restorables: (callback) =>
+      requestId = utils.rid()
+
+      onResult = (reqId, err, restorables) =>
+        return unless reqId is requestId
+        app.sockets.admin.off 'restorables-resp', onResult
+        if err?
+          app.router.trigger 'serverError', err, method:"#{@_className}.restorables"
+          restorables = []
+        else
+          # enrich returned models, because restorable filters ensure we only get right items
+          for restorable in restorables
+            restorable.item = new @model restorable.item
+        callback restorables
+
+      # ask only restorable of concerned class name
+      app.sockets.admin.emit 'restorables', requestId, [@model::_className]
+      app.sockets.admin.on 'restorables-resp', onResult
+
+    # **private**
+    # Global version changed: must refresh all models's content and history
+    _onGlobalVersionChanged: =>
+      # update content and history for items that need it
+      for model in @models
+        @fetch item: model if model.content?
+        model.fetchHistory() if model.history?
+
+    # **private**
+    # Callback invoked when a database creation is received.
+    # Adds the model to the current collection if needed, and fire event 'add'.
+    #
+    # @param className [String] the modified object className
+    # @param model [Object] created model.
+    _onAdd: (className, model) =>
+      return unless className is @_className
+      super className, model
+      # removes restored state if needed
+      @get(model[@model.prototype.idAttribute])?.restored = false
+
+    # **private**
+    # Enhanced to decode file content from base64.
+    #
+    # @param className [String] the modified object className
+    # @param changes [Object] new changes for a given model.
+    _onUpdate: (className, changes) =>
+      return unless className is @_className
+      super className, changes
+
+      # update history if needed
+      model = @get changes[@model.prototype.idAttribute]
+      model?.restored = false
+      if model?.history?
+        if model.history[0]?.id isnt ''
+          # add a fake history entry for current version
+          model.history.splice 0, 0, 
+            id: ''
+            author: null
+            message: null
+        # update date to now
+        model.history[0].date = new Date changes.updated
+        model.trigger 'history', model
+
+    # **private**
+    # Model history retrieval handler. 
+    # Triggers an 'history' event on the concerned model after having filled its history attribute
+    # Wired on collection to avoid multiple listeners. 
+    #
+    # @param reqId [String] client request id
+    # @param err [String] error string, or null if no error occured
+    # @param model [Model] raw concerned model
+    # @param history [Array] array of commits, containing `author`, `date`, `id` and `message` attributes
+    _onHistory: (reqId, err, model, history) =>
+      # silently ignore errors regarding unexisting items when fetching history:
+      # can occur when displaying file not yet saved on server
+      # and when restoring version that do not include an opened file
+      return if err?.toString()?.indexOf('Unexisting item') >= 0
+      return app.router.trigger 'serverError', err, method:"#{@_className}.fetchHistory" if err? 
+      model = @get model[@model::idAttribute]
+      if model?
+        model.history = history
+        delete model._pending.history
+        # reconstruct dates
+        commit.date = new Date commit.date for commit in history
+        model.trigger 'history', model
+
+    # **private**
+    # File version retrieval handler. 
+    # Triggers an 'version' event on the concerned FSItem with its content as parameter
+    # Wired on collection to avoid multiple listeners. 
+    #
+    # @param reqId [String] client request id
+    # @param err [String] error string, or null if no error occured
+    # @param item [FSItem] raw concerned FSItem
+    # @param content [String] utf8 encoded file content
+    _onReadVersion: (reqId, err, model, content) =>
+      return app.router.trigger 'serverError', err, method:"#{@_className}.fetchVersion" if err? 
+      model = @get model[@model::idAttribute]
+      if model?
+        model.restored = true
+        delete model._pending.version
+        model.trigger 'version', model, atob content
+
+  # Versionned model has 'content', 'updated' (both from server), 'restored' and 'history' (client side) attributes
+  class BaseVersionnedModel extends BaseModel
+
+    # Special status to indicate this model in restoration start.
+    restored: false
+
+    # Model history. Null until retrieved with `fetchHistory()`
+    history: null
+
+    # **private**
+    # Pending history/version request, to avoid multiple calls
+    _pending: {}
+
+    # Verisionned mode constructor.
+    #
+    # @param attributes [Object] raw attributes of the created instance.
+    constructor: (attributes) ->
+      @_fixedAttributes.push 'content', 'updated'
+      super attributes
+      @_pending = {}
+      @restored = false
+      @history = null
+
+    # fetch history on server, only for files
+    # an `history` event will be triggered on model once retrieved
+    fetchHistory: =>
+      return if @_pending.history
+      @_pending.history = true
+      app.sockets.admin.emit 'history', utils.rid(), @_serialize()
+
+    # fetch a given version on server, only for files.
+    # an `version` event will be triggered on model once retrieved
+    #
+    # @param version [String] retrieved version id. null or empty to restore last uncommited version
+    fetchVersion: (version) =>
+      return if @_pending.version
+      if version
+        @_pending.version = true
+        app.sockets.admin.emit 'readVersion', utils.rid(), @_serialize(), version
+      else
+        @restored = false
+        @trigger 'version', @
+
   {
     Collection: BaseCollection
     Model: BaseModel
     LinkedCollection: BaseLinkedCollection
     LinkedModel: BaseLinkedModel
+    VersionnedCollection: BaseVersionnedCollection
+    VersionnedModel: BaseVersionnedModel
   }

@@ -285,6 +285,7 @@ define [
       # puts perspective content inside layout if it already exists
       if name of app
         app.layoutView.show app[name].$el
+        app[name].shown?()
         return perspectiveLoading = false
 
       # or requires, instanciate and render the view

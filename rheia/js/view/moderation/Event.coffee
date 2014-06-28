@@ -47,10 +47,6 @@ define [
     _confirmRemoveMessage: i18n.msgs.removeEventConfirm
 
     # **private**
-    # Message displayed when an external message was applied.
-    _externalChangeMessage: i18n.msgs.eventExternalChange
-
-    # **private**
     # widget to manage from
     _fromWidget: null
 

@@ -91,6 +91,7 @@ class FSItem
       
       # keep last update time 
       @updated = stat.mtime
+      @updated.setMilliseconds 0
 
       if @isFolder
         # read folder's content
@@ -147,6 +148,8 @@ class FSItem
             logger.debug "folder #{@path} successfully created"
             # invoke watcher
             @updated = new Date()
+            @updated.setMilliseconds 0
+
             modelWatcher.change 'creation', 'FSItem', @
             callback null, @, true
         else
@@ -169,6 +172,7 @@ class FSItem
 
               # keep last update time 
               @updated = new Date()
+              @updated.setMilliseconds 0
 
               logger.debug "file #{@path} successfully saved"
               modelWatcher.change (if isNew then 'creation' else 'update'), 'FSItem', @, ['content', 'updated']
@@ -251,6 +255,8 @@ class FSItem
               # and for creation
               @path = newPath
               @updated = new Date()
+              @updated.setMilliseconds 0
+              
               modelWatcher.change 'creation', 'FSItem', @
               callback null, @
 

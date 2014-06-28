@@ -70,6 +70,8 @@ define
         scripts: 'Scripts'
         clientConfs: 'Configurations'
       login: 'Rheia - Connection'
+      restorableFiles: "Restorable files"
+      restorableExecutables: "Restorable rules/scripts"
         
     labels:
       enterLogin: 'Login: '
@@ -87,6 +89,9 @@ define
       noQuantity: '~'
       noFrom: 'nobody'
       connectedNumber: 'connected'
+      commitDetails: '%3$s: %1$s (%2$s)'
+      commitDetailsLast: 'current: %1$s'
+      history: 'history'
 
     buttons:
       close: 'Close'
@@ -115,10 +120,12 @@ define
       event: '<div>From: %2$s</div><div>Updated: %1$s</div>'
       player: '<div>%1$s %2$s</div><div>Characters:<ul>%3$s</ul></div>'
       playerCharacter: '<li>%s</li>'
+      restorableFiles: "Displays list of removed/renamed files"
+      restorableExecutables: "Displays list of removed rules or scripts"
 
     msgs:
       closeConfirm: "<p>You had modified <b>%s</b>.</p><p>Do you wish to save modifications before closing tab ?</p>"
-      externalChange: "<p><b>%s</b> has been modified by another administrator.</p><p>Its values have been updated.</p>"
+      externalChange: "<b>%s</b> has been externally modified. Its values have been updated"
       externalRemove: "<p><b>%s</b> has been removed by another administratot.</p><p>Tab has been closed.</p>"
       saveFailed: "<p><b>%1s</b> can't be saved on server:</p><p>%2s</p>" 
       removeFailed: "<p><b>%1s</b> can't be removed from server:</p><p>%2s</p>"
@@ -128,6 +135,10 @@ define
       confirmUnload: 'At least one tab from perspective %1s has been modified.'
       invalidId: 'Identifiers can only contain "_", "$", "-" and unaccentuated alphanumerical characters'
       alreadyUsedId: "This identifier is already used by another type, rule, script, configuration, object or event"
+      restorableFiles: "<p>This is the whole list of removed/renamed files.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
+      noRestorableFiles: "<p>No files to restore.</p>"
+      restorableExecutables: "<p>This is the whole list of removed rules or scripts.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
+      noRestorableExecutables: "<p>No rules/scripts to restore.</p>"
 
     errors:
       wrongCredentials: '<p>Login is unknown or password is errored.</p><p>Please give another try.</p>'

@@ -319,7 +319,7 @@ describe 'AuthoringService tests', ->
             versionService.repo.commit 'third commit', (err) ->
               return done err if err?
               # when consulting history for this file
-              service.restorables (err, restorables) ->
+              service.restorables [], (err, restorables) ->
                 return done "Cannot get restorables: #{err}" if err?
                 assert.equal 2, restorables.length
                 assert.ok restorables[1].item.equals(file), 'deleted file not found as second restorable'

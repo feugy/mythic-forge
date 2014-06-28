@@ -107,9 +107,9 @@ define
       removeItemConfirm: "<p>Do you really whish to remove object <b>%s</b> ?</p>"
       removeEventConfirm: "<p>Do you really whish to remove event <b>%s</b> ?</p>"
       removePlayerConfirm: "<p>Do you really whish to remove player <b>%s</b> ?</p>"
-      itemExternalChange: "Object has been externally modified. Its values where updated"
-      eventExternalChange: "Event has been externally modified. Its values where updated"
-      playerExternalChange: "Player has been externally modified. Its values where updated"
+      externalChangeItem: "This object has been externally modified. Its values where updated"
+      externalChangeEvent: "This event has been externally modified. Its values where updated"
+      externalChangePlayer: "This player has been externally modified. Its values where updated"
       chooseItemType: "<p>Please choose a type and an identifier for the created object.</p><p><b>Beware:</b> thoses values cannot be changed in the future.</p>"
       chooseEventType: "<p>Please choose a type and an identifier for the created event.</p><p><b>Beware:</b> thoses values cannot be changed in the future.</p>"
       invalidPrefs: 'Settings: JSON syntax error'

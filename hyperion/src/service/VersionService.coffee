@@ -280,6 +280,21 @@ class _VersionService
 
       callback null, restorables
 
+  # Retrieves a file to a given version. Content is returned base64 encoded
+  #
+  # @param file [String] consulted file
+  # @param version [String] commit id of the concerned version
+  # @param callback [Function] end callback, invoked with two arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback content [String] the base64 encoded content
+  readVersion: (file, version, callback) =>
+    # item path must be / separated, and relative to repository root
+    path = file.replace(@_root, '').replace /\\/g, '\/'
+    # show file at specified revision
+    @repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
+      return callback "Failed to get version content: #{err}" if err?
+      callback null, new Buffer(stdout, 'binary').toString 'base64'
+
 # singleton instance
 _instance = undefined
 class VersionService

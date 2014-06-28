@@ -29,6 +29,7 @@ deployementService = require('./DeployementService').get()
 notifier = require('../service/Notifier').get()
 
 executablesRoot = resolve normalize confKey 'game.executable.source'
+imagesRoot = resolve normalize confKey 'game.image'
 root = null
 
 # Singleton instance
@@ -203,31 +204,44 @@ class _AuthoringService
 
   # Retrieves all files that have been deleted in repository.
   #
+  # @param filters [Array<String>] result filters, to get only 'Executable', 'FSItem' and or d 'Image'. Empty to get all
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
-  # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). For each item contains an object with `id`and `item` attributes
-  restorables: (callback) =>
+  # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). 
+  # For each item contains an object with `id` (commit id), `item` (object model) and `className` (model class name) attributes
+  restorables: (filters, callback) =>
     versionService.restorables (err, restorables) =>
       return callback "Failed to get restorable list: #{err}" if err?
       results = []
 
       fileRoot = root.replace(versionService.repo.path, '')[1..]
       exeRoot = executablesRoot.replace(versionService.repo.path, '')[1..]
+      imgRoot = imagesRoot.replace(versionService.repo.path, '')[1..]
       for restorable in restorables
+        className = null
         if 0 is restorable.path.indexOf fileRoot
           # an FSItem
+          className = 'FSItem'
           obj = new FSItem {isFolder: false, path: restorable.path[fileRoot.length+1..]}
-        else
-          # an executable
+        else if 0 is restorable.path.indexOf exeRoot
+          # an executable.
+          className = 'Executable'
           ext = extname restorable.path
           obj = new Executable
             id: restorable.path[exeRoot.length+1..].replace ext, ''
             lang: ext[1..]
 
-        results.push 
-          # make path relative to file root, not git repository
-          item: obj
-          id: restorable.id
+        else
+          # an image
+          className = 'Image'
+          obj = path: restorable.path[imgRoot.length+1..]
+
+        # may filter results to only what's required
+        if filters.length is 0 or className in filters
+          results.push 
+            item: obj
+            className: className
+            id: restorable.id
 
       callback err, results
 
@@ -259,9 +273,5 @@ class _AuthoringService
         return callback "Only Executable and FSItem files are supported: #{exc}"
       return callback 'History not supported on folders' if obj.isFolder
 
-    # item path must be / separated, and relative to repository root
-    path = path.replace(versionService.repo.path, '').replace /\\/g, '\/'
     # show file at specified revision
-    versionService.repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
-      return callback "Failed to get version content: #{err}" if err?
-      callback err, obj, new Buffer(stdout, 'binary').toString 'base64'
+    versionService.readVersion path, version, (err, content) => callback err, obj, content

@@ -261,16 +261,24 @@ class Executable
           # creates an empty executable
           executable = new Executable {id:file.replace(ext, ''), lang: ext[1..]}
 
-          fs.readFile executable.path, encoding, (err, content) ->
+          fs.stat executable.path, (err, stat) ->
             if err?
               return end() if err.code is 'ENOENT'
               return callback "Error while reading executable '#{executable.id}': #{err}"
-              
-            # complete the executable content, and add it to the array.
-            executable.content = content
-            compileFile executable, (err) ->
-              return callback "Compilation failed: #{err}" if err?
-              end()
+
+            # keep last update time 
+            executable.updated = stat.mtime
+            executable.updated.setMilliseconds 0
+
+            fs.readFile executable.path, encoding, (err, content) ->
+              if err?
+                return callback "Error while reading executable '#{executable.id}': #{err}"
+                
+              # complete the executable content, and add it to the array.
+              executable.content = content
+              compileFile executable, (err) ->
+                return callback "Compilation failed: #{err}" if err?
+                end()
 
         # each individual file must be read
         async.each files, readFile, (err) -> 
@@ -341,6 +349,9 @@ class Executable
   # The executable content (Utf-8 string encoded).
   content: ''
 
+  # Date of last update, populated when content is read
+  updated: null
+
   # Absolute path to the executable source.
   path: ''
 
@@ -375,6 +386,10 @@ class Executable
       # Trigger the compilation.
       compileFile @, (err) =>
         return callback err if err?
+        # update last access date
+        @updated = new Date()
+        @updated.setMilliseconds 0
+        
         # and require immediately
         requireExecutable @, false, callback
 

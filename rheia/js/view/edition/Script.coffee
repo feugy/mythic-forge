@@ -65,11 +65,25 @@ define [
       super id, className
       # on content changes, displays category and active status
       console.log "creates script edition view for #{if id? then @model.id else 'a new script'}"
+      # wire version changes
+      @model.on 'version', @_onChangeVersion
     
     # Called by the TabPerspective each time the view is showned.
     shown: =>
-      @_editorWidget?.resize()
-      
+      @_editorWidget?.resize().focus()
+  
+    # Extension to add special restored state as reason to be saved
+    #
+    # @return the savable status of this object
+    canSave: => @_canSave or @model.restored
+
+    # on dispose, clean version handler and restore if needed
+    dispose: =>
+      @model.off 'version', @_onChangeVersion
+      # if was restored from previous version, get back to current
+      @model.fetchVersion() if @model.restored
+      super()
+
     # **private**
     # Effectively creates a new model.
     _createNewModel: =>
@@ -84,10 +98,12 @@ define [
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: =>
+    #
+    # @param restoredContent [String] content to display during restoration
+    _fillRendering: (restoredContent) =>
       # superclass handles description image
       super()
-      @_editorWidget.setOption 'text', @model.content
+      @_editorWidget.setOption 'text', restoredContent or @model.content or ''
       @_onChange()
 
     # **private**
@@ -103,10 +119,10 @@ define [
     # Performs view specific rendering operations.
     # Creates the editor and category widgets.
     _specificRender: =>
-      super()
       @_editorWidget = @$el.find('.content').advEditor(
         mode: i18n.constants.extToMode[@model.lang]
       ).on('change', @_onChange).data 'advEditor'
+      super()
 
     # **private**
     # Returns the list of check fields. This array must contains following structures:
@@ -123,3 +139,13 @@ define [
         original: @model.content
         current: @_editorWidget.options.text
       comparable
+
+    # **private**
+    # Wired to FSItem version changes. Update editor if current model have been changed
+    # 
+    # @param item [FSItem] concerned item
+    # @param content [String] utf8 encoded content. Null to get back to current version
+    _onChangeVersion: (item, content) =>
+      return unless @model.equals item
+      # refresh rendering with restored content
+      @_fillRendering content
