@@ -20,7 +20,8 @@
 
 yaml = require 'js-yaml'
 fs = require 'fs-extra'
-pathUtils = require 'path'
+{resolve, normalize, join, sep} = require 'path'
+stacktrace = require 'stack-trace'
 async = require 'async'
 _ = require 'underscore'
 EventEmitter = require('events').EventEmitter
@@ -30,14 +31,47 @@ EventEmitter = require('events').EventEmitter
 emitter = new EventEmitter()
 emitter.setMaxListeners 0
 
+# value search to forbid usage from executables target
+forbidRoot = null
+
+# Read a configuration key inside the YAML configuration file (utf-8 encoded).
+# At first call, performs a synchronous disk access, because configuraiton is very likely to be read
+# before any other operation. The configuration is then cached.
+# 
+# The configuration file read is named 'xxx-conf.yaml', where xxx is the value of NODE_ENV (dev if not defined) 
+# and located in a "conf" folder under the execution root.
+#
+# @param key [String] the path to the requested key, splited with dots.
+# @param def [Object] the default value, used if key not present. 
+# If undefined, and if the key is missing, an error is thrown.
+# @return the expected key.
+emitter.confKey = (key, def) -> 
+  path = key.split '.'
+  obj = conf
+  last = path.length-1
+  for step, i in path
+    unless step of obj
+      # missing key or step
+      throw new Error "The #{key} key is not defined in the configuration file #{confPath}" if def is undefined
+      return def
+    unless i is last
+      # goes deeper
+      obj = obj[step]
+    else 
+      # last step: returns value
+      return obj[step]
+
 # read configuration file
 conf = null
-confPath = pathUtils.resolve "#{process.cwd()}/conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
+confPath = resolve "#{process.cwd()}/conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
 parseConf = ->
   try 
     conf = yaml.load fs.readFileSync confPath, 'utf8'
   catch err
     throw new Error "Cannot read or parse configuration file '#{confPath}': #{err}"
+  # init required rule
+  forbidRoot = resolve(normalize emitter.confKey 'game.executable.target').replace /\//g, '\\'
+
 parseConf()
 
 # read again if file is changed
@@ -69,33 +103,6 @@ emitter.isA = (obj, clazz) ->
     currentClass = currentClass.__super__?.constructor
   false
 
-# Read a configuration key inside the YAML configuration file (utf-8 encoded).
-# At first call, performs a synchronous disk access, because configuraiton is very likely to be read
-# before any other operation. The configuration is then cached.
-# 
-# The configuration file read is named 'xxx-conf.yaml', where xxx is the value of NODE_ENV (dev if not defined) 
-# and located in a "conf" folder under the execution root.
-#
-# @param key [String] the path to the requested key, splited with dots.
-# @param def [Object] the default value, used if key not present. 
-# If undefined, and if the key is missing, an error is thrown.
-# @return the expected key.
-emitter.confKey = (key, def) -> 
-  path = key.split '.'
-  obj = conf
-  last = path.length-1
-  for step, i in path
-    unless step of obj
-      # missing key or step
-      throw new Error "The #{key} key is not defined in the configuration file #{confPath}" if def is undefined
-      return def
-    unless i is last
-      # goes deeper
-      obj = obj[step]
-    else 
-      # last step: returns value
-      return obj[step]
-
 # Enforce the folder existence.
 # This function IS intended to be synchonous, to enforce folder existence before executing code.
 # Allows to remove existing folder if necessary.
@@ -104,6 +111,7 @@ emitter.confKey = (key, def) ->
 # @param forceRemove [boolean] if specifed and true, first erase the folder.
 # @param logger [Object] optional logger
 emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
+  return if emitter.fromRule module, ->
   exists = fs.existsSync folderPath
 
   # force Removal if specified
@@ -129,6 +137,7 @@ emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
 # @param callback [Function] end callback invoked with an error string as first argument if something
 # goes wrong, and null if the folder was properly created
 emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
+  return if emitter.fromRule module, callback
   fs.exists folderPath, (exists) ->
     create = (err) ->
       return callback "Failed to remove #{folderPath}: #{err}" if err?
@@ -156,6 +165,7 @@ emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
 # @option callback err [String] an error string, or null if no error occured
 # @option callback results [Array] matching file names (may be empty)   
 emitter.find = (path, regex, contentRegEx, callback) ->
+  return if emitter.fromRule module, callback
   if 'function' is emitter.type contentRegEx
     callback = contentRegEx
     contentRegEx = null
@@ -181,7 +191,7 @@ emitter.find = (path, regex, contentRegEx, callback) ->
         results = []
         async.forEach children, (child, next) ->
           # check child nature
-          emitter.find pathUtils.join(path, child), regex, contentRegEx, (err, subResults) ->
+          emitter.find join(path, child), regex, contentRegEx, (err, subResults) ->
             return next err if err?
             results = results.concat subResults
             next()
@@ -257,6 +267,7 @@ _processOpSync = (path, err) ->
 # @option callback err [String] error message. Null if no error occured.
 emitter.remove = (path, callback) ->
   callback ||= -> 
+  return if emitter.fromRule module, callback
   fs.stat path, (err, stats) ->
     _processOp path, err, (err) ->
       return callback() unless stats?
@@ -267,7 +278,7 @@ emitter.remove = (path, callback) ->
       # a folder, recurse with async
       fs.readdir path, (err, contents) ->
         return callback new Error "failed to remove #{path}: #{err}" if err?
-        async.forEach (pathUtils.join path, content for content in contents), emitter.remove, (err) ->
+        async.forEach (join path, content for content in contents), emitter.remove, (err) ->
           return callback err if err?
           # remove folder once empty
           fs.rmdir path, (err) -> _processOp path, err, callback
@@ -277,6 +288,7 @@ emitter.remove = (path, callback) ->
 # @param path removed file of folder
 # @throws err if the removal failed
 emitter.removeSync = (path) ->
+  return if emitter.fromRule module, ->
   try 
     stats = fs.statSync path
     # a file: unlink it
@@ -287,7 +299,7 @@ emitter.removeSync = (path) ->
         _processOpSync path, err
     else
       # a folder, recurse with async
-      contents = (pathUtils.join path, content for content in fs.readdirSync path)
+      contents = (join path, content for content in fs.readdirSync path)
       emitter.removeSync content for content in contents
       # remove folder once empty
       try 
@@ -304,11 +316,12 @@ emitter.removeSync = (path) ->
 # @param callback [Function] end callback, executed with one parameter:
 # @option callback err [String] error message. Null if no error occured.
 emitter.empty = (path, callback) ->
+  return if emitter.fromRule module, callback
   fs.readdir path, (err, files) ->
     return callback err if err?
     
     async.forEachSeries files, (file, next) ->
-      emitter.remove pathUtils.join(path, file), next
+      emitter.remove join(path, file), next
     , (err) ->
       return callback err if err?
       # use a slight delay to let underlying os really remove content
@@ -322,11 +335,11 @@ emitter.empty = (path, callback) ->
 # @param bPath [String] absolute path of target folder
 # @eturn the relative path from A to reach B
 emitter.relativePath = (aPath, bPath) ->
-  aPath = pathUtils.normalize aPath
-  aPathSteps = aPath.split pathUtils.sep
+  aPath = normalize aPath
+  aPathSteps = aPath.split sep
   aLength = aPathSteps.length
-  bPath = pathUtils.normalize bPath
-  bPathSteps = bPath.split pathUtils.sep
+  bPath = normalize bPath
+  bPathSteps = bPath.split sep
   bLength = bPathSteps.length
   
   suffix = ''
@@ -341,17 +354,17 @@ emitter.relativePath = (aPath, bPath) ->
       if aPathSteps[i] is bPathSteps[i]
         # if reached a end, just add b remaining steps
         continue unless i is aLength-1
-        suffix = ".#{pathUtils.sep}#{bPathSteps[i+1..bLength].join pathUtils.sep}"
+        suffix = ".#{sep}#{bPathSteps[i+1..bLength].join sep}"
       else
         # now go back of a remaining steps, and go forth of b remaining steps
         stepBack = aLength-i
-        suffix = "#{pathUtils.sep}#{bPathSteps[i..bLength].join pathUtils.sep}" if i < bLength
+        suffix = "#{sep}#{bPathSteps[i..bLength].join sep}" if i < bLength
       break
 
   path = ''
   for i in [0...stepBack]
     path += '..'
-    path += pathUtils.sep unless i is stepBack-1
+    path += sep unless i is stepBack-1
   "#{path}#{suffix}" 
 
 # Simple method to remove occurence of the root path from error messages
@@ -360,6 +373,7 @@ emitter.relativePath = (aPath, bPath) ->
 # @param root [String] root folder path removed from string.
 # @return the pureged string.
 emitter.purgeFolder = (err, root) -> 
+  return if emitter.fromRule module, ->
   err = err.message if emitter.isA err, Error
   err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), '' if 'string'
 
@@ -383,5 +397,40 @@ emitter.plainObjects = (args) ->
       else
         arg[attr] = emitter.plainObjects([val])[0] for attr, val of arg
   if isArray then args else args[0]
+  
+# Prevent using critical functionnalities from rules, scripts and turn rules.
+# Two detection modes are available:
+# - using stack trace (most reliable, slower).
+# - using caller module (faster, not always available).
+#
+# Intended to be used synchronously in a test:
+#
+# criticalTreatment: (arg1, callback) ->
+#   return if fromRule module, callback # check with module
+#   return if fromRule callback # check with stack trace
+#   ...
+#
+# @param mod [Object] (optionnal) module from which method is invoke. Invoke with current modul.
+# @param callback [Function] optionnal callback invoked if caller is an executable
+# @option callback error [Error] an error object
+# @return a function to invoke true if caller is not allowed, false otherwise
+emitter.fromRule = (mod, callback) ->
+  if callback?
+    caller = mod.parent?.filename
+    # forbidden if starts with rule compilation folder
+    if not(caller?) or 0 is caller.indexOf forbidRoot
+      callback new Error "this functionnality is denied to executables"
+      return true
+  else
+    callback = mod
+    for line in stacktrace.get()
+      line = line.getFileName()
+      # invoked from compilation folder: forbidden
+      if 0 is line.indexOf forbidRoot
+        callback new Error "this functionnality is denied to executables"
+        return true
+      # invoked from a service: do not goes further cause its allowed
+      break if -1 isnt line.indexOf join 'hyperion', 'lib', 'service'
+  false
 
 module.exports = emitter

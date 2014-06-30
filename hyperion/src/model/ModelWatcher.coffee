@@ -19,12 +19,12 @@
 'use strict'
 
 _ = require 'underscore'
-pathUtils = require 'path'
-utils = require '../util/common'
+{relative} = require 'path'
+{confKey, fromRule, type} = require '../util/common'
 logger = require('../util/logger').getLogger 'watcher'
 EventEmitter = require('events').EventEmitter
 
-gameClientRoot = utils.confKey 'game.client.dev'
+gameClientRoot = confKey 'game.client.dev'
 
 # The ModelWatcher track model modifications.
 # It exposes a singleton class. The unic instance is retrieved by the `get()` method.
@@ -45,6 +45,7 @@ class _ModelWatcher extends EventEmitter
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, className, instance, modified) =>
+    return if fromRule module, ->
     changes = {}
     if '_doc' of instance
       changes[key] = value for own key,value of instance._doc
@@ -66,7 +67,7 @@ class _ModelWatcher extends EventEmitter
         changes.map = null 
       else
         # only the id if we got an object, or itself if already an id
-        changes.map = changes.map.id if 'object' is utils.type changes.map 
+        changes.map = changes.map.id if 'object' is type changes.map 
 
     if operation is 'update'
       unless className in ['Executable', 'FSItem']
@@ -82,7 +83,7 @@ class _ModelWatcher extends EventEmitter
       throw new Error "Unknown operation #{operation} on instance #{changes.id or changes.path}}"
 
     # Specific case of FSItem that must be relative to gameClient root
-    changes.path = pathUtils.relative gameClientRoot, changes.path if className is 'FSItem'
+    changes.path = relative gameClientRoot, changes.path if className is 'FSItem'
 
     # Do not propagate password nor tokens of Players
     if className is 'Player'

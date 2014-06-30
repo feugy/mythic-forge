@@ -27,14 +27,14 @@ utils = require '../util/common'
 logger = require('../util/logger').getLogger 'model'
 
 # Define the schema for players
-Player = typeFactory 'Player', 
+Player = typeFactory 'Player', module,
 
   # email as login
   email: 
     type: String 
     required: true
 
-  # provider: Google, Facebook or null for manual accounts.
+  # provider: Google, Twitter, Githb or null for manual accounts.
   provider: 
     type: String
     default: null

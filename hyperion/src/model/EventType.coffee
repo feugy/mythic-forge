@@ -24,7 +24,7 @@ logger = require('../util/logger').getLogger 'model'
 modelUtils = require '../util/model'
 
 # Define the schema for event types
-EventType = typeFactory 'EventType', 
+EventType = typeFactory 'EventType', module,
   # descriptive image for this type.
   descImage:
     type: String

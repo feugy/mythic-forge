@@ -27,10 +27,11 @@ conn = require './connection'
 Executable = require '../model/Executable'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
-utils = require '../util/common'
-modelUtils = require '../util/model'
+{confKey, fromRule} = require '../util/common'
+checkType = require('../util/common').type
+{evictModelCache, processLinks, checkPropertyType, generateId, isValidId} = require '../util/model'
 
-imageStore = utils.confKey 'game.image'
+imageStore = confKey 'game.image'
 
 # cache of used ids for all managed type cache, populated at startup
 idCache = {}
@@ -41,7 +42,7 @@ conn.loadIdCache idCache
 # - key is model ids
 # - value is an object with "model" property (the model itself) "since" property (timestamp of last save)
 caches = {}
-modelUtils.evictModelCache caches, utils.confKey('cache.frequency'), utils.confKey 'cache.maxAge'
+evictModelCache caches, confKey('cache.frequency'), confKey 'cache.maxAge'
 
 # update local cache when removing an instance or creating one
 modelWatcher.on 'change', (operation, className, changes) ->
@@ -68,7 +69,7 @@ mongoose.Document::$__registerHooks = ->
 compareArrayProperty = (instance, prop) ->
   original = instance["__orig#{prop}"] or []
   # original contains, ids, current may also contain Mongoose objects
-  current = _.map instance[prop] or [], (linked) -> if 'object' is utils.type(linked) and linked?.id? then linked.id else linked
+  current = _.map instance[prop] or [], (linked) -> if 'object' is checkType(linked) and linked?.id? then linked.id else linked
   # compare original value and current dynamic value and mark modified if necessary
   instance.markModified prop unless _.isEqual original, current
 
@@ -113,6 +114,20 @@ mongoose.Document::_defineProperties = ->
             set: (v) -> @set name, v
       )(name)
 
+# Overload mongoose mutator method to forbid usage from rules
+originals = {}
+['insert', 'save', 'update', 'remove', 'findAndModify'].forEach (method) ->
+  # avoid mocking already mocked methods
+  return if mongoose.Collection::[method].secured
+  # store original method
+  originals[method] = mongoose.Collection::[method]
+  mongoose.Collection::[method] = (args...) ->
+    # forbid if necessary
+    return if fromRule args[args.length-1] or ->
+    # or process original
+    originals[method].apply @, arguments
+  mongoose.Collection::[method].secured = true
+
 # Factory that creates an abstract type.
 # Provides:
 # - id primary key
@@ -123,6 +138,7 @@ mongoose.Document::_defineProperties = ->
 # - properties management, for type or instances
 #
 # @param typeName [String] name of the build type, used for changes propagations
+# @param mod [Object] current nodeJs module used to forbidd usage of save/remove method in executables
 # @param spec [Object] attributes of the created type.
 # @param options [Object] Mongoose schema options, and factory custom options:
 # @option options typeProperties [Boolean] whether this type will defined properties for its instances
@@ -132,7 +148,7 @@ mongoose.Document::_defineProperties = ->
 # @option options hasImages [Boolean] if this type has images to be removed when type is removed
 # @option options middlewares [Object] type middleware, added before other middlewares
 # @return the created type
-module.exports = (typeName, spec, options = {}) ->
+module.exports = (typeName, mod, spec, options = {}) ->
 
   caches[typeName] = {}
 
@@ -154,7 +170,7 @@ module.exports = (typeName, spec, options = {}) ->
             if "__orig#{attr}" of instance
               if _.isArray instance["__orig#{attr}"]
                 # object array
-                instance["__orig#{attr}"] = _.map value or [], (o) -> if 'object' is utils.type(o) and o?.id? then o.id else o
+                instance["__orig#{attr}"] = _.map value or [], (o) -> if 'object' is checkType(o) and o?.id? then o.id else o
               else
                 # arbitrary JSON
                 instance["__orig#{attr}"] = JSON.stringify value or {}
@@ -228,11 +244,11 @@ module.exports = (typeName, spec, options = {}) ->
   # @param other [Object] other object against which the current object is compared
   # @return true if both objects have the same id, false otherwise
   AbstractType.methods.equals = (object) ->
-    return false unless 'string' is utils.type object?.id
+    return false unless 'string' is checkType object?.id
     @id is object.id
 
   # Adds custom middleware first
-  if 'object' is utils.type options.middlewares
+  if 'object' is checkType options.middlewares
     AbstractType.pre name, middleware for name, middleware of options.middlewares
 
   # This special finder maintains an in-memory cache of objects, to faster type retrieval by ids.
@@ -279,6 +295,7 @@ module.exports = (typeName, spec, options = {}) ->
   #
   # @param all [Boolean] true (default) to clean all models, false to clean models of this class
   AbstractType.statics.cleanModelCache = (all = true) ->
+    return if fromRule module
     for className of caches
       caches[className] = {} if className is typeName or all
 
@@ -289,8 +306,18 @@ module.exports = (typeName, spec, options = {}) ->
   AbstractType.statics.isUsed = (id) -> 
     id of idCache or Executable.findCached([id]).length isnt 0
 
-  # post-init middleware: populate the cache
+  # post-init middleware: populate the cache and secure save/remove method
   AbstractType.post 'init', ->
+    # prevent remove and save usage from rule, using stack and not module
+    originalRemove = @remove
+    @remove = (next) ->
+      unless fromRule next
+        originalRemove.call @, next 
+    originalSave = @save
+    @save = (next) ->
+      unless fromRule next
+        originalSave.call @, next 
+
     # store in cache
     caches[typeName][@id] = model:@, since: new Date().getTime()
   
@@ -305,7 +332,7 @@ module.exports = (typeName, spec, options = {}) ->
     delete caches[typeName][@id]
 
     # to avoid circular dependencies, replace links by their ids in properties
-    modelUtils.processLinks @, @type.properties if options.instanceProperties
+    processLinks @, @type.properties if options.instanceProperties
         
     # broadcast deletion
     modelWatcher.change 'deletion', typeName, @
@@ -327,7 +354,7 @@ module.exports = (typeName, spec, options = {}) ->
     # @param def [Object] default value affected to the type instances.
     AbstractType.methods.setProperty = (name, type, def) ->
       # Do not store strings, store dates instead
-      def = new Date def if type is 'date' and 'string' is utils.type def
+      def = new Date def if type is 'date' and 'string' is checkType def
       @properties[name] = {type: type, def: def}
       @markModified 'properties'
       @_updatedProps = [] unless @_updatedProps?
@@ -363,7 +390,7 @@ module.exports = (typeName, spec, options = {}) ->
                 when 'object' then def = null
 
               # check default values              
-              err = modelUtils.checkPropertyType def, prop
+              err = checkPropertyType def, prop
               return next new Error err if err?
 
               # if property isn't defined: set default
@@ -452,10 +479,10 @@ module.exports = (typeName, spec, options = {}) ->
           if def.type is 'object'
             unless breakCycles
               # if cache is used, always fetch value
-              if value?.id? or 'string' is utils.type value
+              if value?.id? or 'string' is checkType value
                 logger.debug "found #{value.id or value} in property #{prop}"
                 ids.push value.id or value
-            else if 'string' is utils.type value
+            else if 'string' is checkType value
               # otherwise, only kept unresolved values
               logger.debug "found #{value} in property #{prop}"
               ids.push value
@@ -463,10 +490,10 @@ module.exports = (typeName, spec, options = {}) ->
             for val in value
               unless breakCycles
                 # if cache is used, always fetch value
-                if val?.id? or 'string' is utils.type val
+                if val?.id? or 'string' is checkType val
                   logger.debug "found #{val.id or val} in property #{prop}"
                   ids.push val.id or val
-              else if 'string' is utils.type val
+              else if 'string' is checkType val
                 # otherwise, only kept unresolved values
                 logger.debug "found #{val} in property #{prop}"
                 ids.push val
@@ -537,7 +564,7 @@ module.exports = (typeName, spec, options = {}) ->
         # not in schema, nor in type
         if attr of properties
           # use not property cause it's not always defined at this moment
-          err = modelUtils.checkPropertyType @_doc[attr], properties[attr] 
+          err = checkPropertyType @_doc[attr], properties[attr] 
           next(new Error "Unable to save instance #{@id}. Property #{attr}: #{err}") if err?
         else unless attr of AbstractType.paths
           next new Error "Unable to save instance #{@id}: unknown property #{attr}"
@@ -549,15 +576,15 @@ module.exports = (typeName, spec, options = {}) ->
           @_doc[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
 
         # Do not store strings, store dates instead
-        if value.type is 'date' and 'string' is utils.type @_doc[prop]
+        if value.type is 'date' and 'string' is checkType @_doc[prop]
           @_doc[prop] = new Date @_doc[prop]
           
       wasNew = @isNew
       # generate id if necessary
-      @id = modelUtils.generateId() unless @id? or !wasNew
+      @id = generateId() unless @id? or !wasNew
       if wasNew
         # validates id 
-        return next new Error "id #{@id} for model #{typeName} is invalid" unless modelUtils.isValidId @id
+        return next new Error "id #{@id} for model #{typeName} is invalid" unless isValidId @id
         return next new Error "id #{@id} for model #{typeName} is already used" if @id of idCache
       else
         # do not change the id once created
@@ -566,7 +593,7 @@ module.exports = (typeName, spec, options = {}) ->
       # stores the isNew status and modified paths now, to avoid registering modification on wrong attributes.
       modifiedPaths = @modifiedPaths().concat()
       # replace links by them ids
-      modelUtils.processLinks @, properties
+      processLinks @, properties
       # replace type with its id, for storing in Mongo, without using setters.
       saveType = @type
       @_doc.type = saveType?.id
@@ -592,10 +619,10 @@ module.exports = (typeName, spec, options = {}) ->
     AbstractType.pre 'save', (next) ->
       wasNew = @isNew
       # generate id if necessary
-      @id = modelUtils.generateId() unless @id? or !wasNew
+      @id = generateId() unless @id? or !wasNew
       if wasNew
         # validates id 
-        return next new Error "id #{@id} for model #{typeName} is invalid" unless modelUtils.isValidId @id
+        return next new Error "id #{@id} for model #{typeName} is invalid" unless isValidId @id
         return next new Error "id #{@id} for model #{typeName} is already used" if @id of idCache
       else
         # do not change the id once created
@@ -606,5 +633,5 @@ module.exports = (typeName, spec, options = {}) ->
       next()
       # propagate modifications
       modelWatcher.change (if wasNew then 'creation' else 'update'), typeName, @, modifiedPaths
-    
+
   return AbstractType

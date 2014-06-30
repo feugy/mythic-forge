@@ -52,6 +52,12 @@ cache:
   frequency: 1000
   maxAge: 5000
 
+# Mailgun information for sending emails
+mailgun:
+  key: key-172q07yay65msqw6rde9v75chjt3t1i1
+  domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
+  sender: noreply@mythic-forge.com
+
 # location of games files
 game: 
   repo: ../proto-game

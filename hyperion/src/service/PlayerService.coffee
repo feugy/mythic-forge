@@ -69,6 +69,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the created player.
   register: (email, password, callback) =>
+    return if utils.fromRule module, callback
     return callback 'missingEmail' unless email
     return callback 'missingPassword' unless password
     logger.info "Register new player with email: #{email}"
@@ -76,6 +77,7 @@ class _PlayerService
     @getByEmail email, false, (err, player) ->
       return callback "Can't check email unicity: #{err}", null if err?
       return callback "Email #{email} is already used", null if player?
+      # create manual provider player
       new Player({email: email, password:password}).save (err, newPlayer) ->
         logger.info "New player (#{newPlayer.id}) registered with email: #{email}"
         callback err, Player.purge newPlayer
@@ -90,6 +92,7 @@ class _PlayerService
   # @option callback token [String] the generated access token, or false if authentication refused
   # @option callback details [Object] an error detailed object containing attributes `type` and `message`
   authenticate: (email, password, callback) =>
+    return if utils.fromRule module, callback
     logger.debug "Authenticate player with email: #{email}"
     # check user existence
     @getByEmail email, false, (err, player) =>
@@ -111,6 +114,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback token [String] the generated access token.
   authenticatedFromGoogle: (accessToken, refreshToken, profile, callback) =>
+    return if utils.fromRule module, callback
     email = profile.emails[0].value
     return callback 'No email found in profile' unless email?
     logger.debug "Authenticate Google player with email: #{email}"
@@ -142,6 +146,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback token [String] the generated access token.
   authenticatedFromGithub: (accessToken, refreshToken, profile, callback) =>
+    return if utils.fromRule module, callback
     id = profile.id
     return callback 'No id found in profile' unless id?
     logger.debug "Authenticate Github player with id: #{id}"
@@ -173,6 +178,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback token [String] the generated access token.
   authenticatedFromTwitter: (accessToken, refreshToken, profile, callback) =>
+    return if utils.fromRule module, callback
     email = profile.username
     return callback 'No email found in profile' unless email?
     logger.debug "Authenticate Twitter player with email: #{email}"
@@ -200,6 +206,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the concerned player. May be null.
   getByEmail: (email, withLinked, callback) =>
+    return if utils.fromRule module, callback
     [callback, withLinked] = [withLinked, false] if 'function' is utils.type withLinked
     logger.debug "consult player by email: #{email}"
     Player.findOne {email: email}, (err, player) =>
@@ -222,6 +229,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the corresponding player. May be null.
   getByToken: (token, callback) =>
+    return if utils.fromRule module, callback
     Player.findOne {token: token}, (err, player) =>
       return callback err, null if err?
       # no player found
@@ -255,6 +263,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback player [Player] the disconnected player.
   disconnect: (email, reason, callback = ->) =>
+    return if utils.fromRule module, callback
     Player.findOne {email: email}, (err, player) =>
       return callback err if err?
       return callback "No player with email #{email} found" unless player?
@@ -283,6 +292,7 @@ class _PlayerService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback token [String] the generated token
   _setTokens: (player, provider, callback) =>
+    return if utils.fromRule module, callback
     # update the saved token and last connection date
     token = utils.generateToken 24
     player.token = token

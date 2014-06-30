@@ -23,7 +23,7 @@ conn = require './connection'
 Map = require './Map'
 
 # Define the schema for map item with its properties
-Item = typeFactory 'Item', 
+Item = typeFactory 'Item', module,
   # link to map
   map: {}
   
@@ -101,4 +101,3 @@ Item = typeFactory 'Item',
 
 # Export the Class.
 module.exports = conn.model 'item', Item
-

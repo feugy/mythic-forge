@@ -23,7 +23,7 @@ _ = require 'underscore'
 fs = require 'fs-extra'
 async = require 'async'
 git = require 'gift'
-{confKey, enforceFolderSync, removeSync} = require '../util/common'
+{confKey, enforceFolderSync, removeSync, fromRule} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
 
 # The VersionService wrapped a Git repository to manage version for rules and 
@@ -80,6 +80,7 @@ class _VersionService
   #   @param reset [Boolean] true to remove existing repository
   init: (reset, callback) =>
     [callback, reset] = [reset, false] if _.isFunction reset
+    return if fromRule module, callback
     
     # in case of current initialization, retry 250ms later
     if @_initInProgress
@@ -157,6 +158,7 @@ class _VersionService
   # @option callback err [String] an error details string, or null if no error occured.
   # @option callback tags [Array] an array of tags (may be empty) containing for each tag an object with `name` and `id` attributes
   tags: (callback) =>
+    return if fromRule module, callback
     @repo.git 'show-ref', {tags:true}, (err, stdout, stderr) =>
       # ignore error code 1: means no match
       err = null if err?.code is 1
@@ -191,6 +193,7 @@ class _VersionService
   # @option callback err [String] an error details string, or null if no error occured.
   # @option callback history [Array] an array of commits (may be empty) containing for each commit an object
   history: (file, callback) =>
+    return if fromRule module, callback
     options = format:'format:"%H %at %aN|%s"'
     fileArg = []
     unless callback?
@@ -246,6 +249,7 @@ class _VersionService
   # @option callback err [String] an error details string, or null if no error occured.
   # @option callback restorables [Array] an array of objects (may be empty) containing `path` and `id` attributes
   restorables: (callback) =>
+    return if fromRule module, callback
     # git log --diff-filter=D --name-only --pretty=format:"%H"
     @repo.git 'log', {'diff-filter': 'D', 'name-only': true, pretty:'format:"%H"'}, (err, stdout, stderr) =>
       # ignore error code 1: means no match
@@ -288,6 +292,7 @@ class _VersionService
   # @option callback err [String] error string. Null if no error occured
   # @option callback content [String] the base64 encoded content
   readVersion: (file, version, callback) =>
+    return if fromRule module, callback
     # item path must be / separated, and relative to repository root
     path = file.replace(@_root, '').replace /\\/g, '\/'
     # show file at specified revision

@@ -932,6 +932,81 @@ describe 'RuleService tests', ->
                         expect(item.compose).to.equal item1.id, 'item3 do not compose item1'
                         done()
 
+    it 'should models methods be forbidden from rules', (done) ->
+      # given a rule that tries to save model directly
+      new Executable(
+        id:'rule37'
+        content: """Rule = require 'hyperion/model/Rule'
+          class ForbiddenRule extends Rule
+            canExecute: (actor, target, context, callback) =>
+              callback null, []
+            execute: (actor, target, params, context, callback) =>
+              actor.x++;
+              actor.save callback
+          module.exports = new ForbiddenRule()"""
+      ).save (err) ->
+        # when executing this rule on that target
+        service.execute 'rule37', item1.id, item1.id, {}, 'admin', (err, result)->
+          expect(err).to.exist.and.to.include 'denied to executables'
+          done()
+
+    it 'should services methods be forbidden from rules', (done) ->
+      # given a rule that tries to save model directly
+      new Executable(
+        id:'rule38'
+        content: """Rule = require 'hyperion/model/Rule'
+          GameService = require('hyperion/service/GameService').get()
+
+          class ForbiddenServiceRule extends Rule
+            canExecute: (actor, target, context, callback) =>
+              callback null, []
+            execute: (actor, target, params, context, callback) =>
+              GameService.getTypes [], callback
+          module.exports = new ForbiddenServiceRule()"""
+      ).save (err) ->
+        # when executing this rule on that target
+        service.execute 'rule38', item1.id, item1.id, {}, 'admin', (err, result)->
+          expect(err).to.exist.and.to.include 'denied to executables'
+          done()
+
+    it 'should query methods be forbidden from rules', (done) ->
+      # given a rule that tries to save model directly
+      new Executable(
+        id:'rule39'
+        content: """Rule = require 'hyperion/model/Rule'
+          Item = require 'hyperion/model/Item'
+
+          class ForbiddenQueryRule extends Rule
+            canExecute: (actor, target, context, callback) =>
+              callback null, []
+            execute: (actor, target, params, context, callback) =>
+              Item.where('x', actor.x).where('y', actor.y).findOneAndRemove callback
+          module.exports = new ForbiddenQueryRule()"""
+      ).save (err) ->
+        # when executing this rule on that target
+        service.execute 'rule39', item1.id, item1.id, {}, 'admin', (err, result)->
+          expect(err).to.exist.and.to.include 'denied to executables'
+          done()
+
+    it 'should model class methods be forbidden from rules', (done) ->
+      # given a rule that tries to save model directly
+      new Executable(
+        id:'rule40'
+        content: """Rule = require 'hyperion/model/Rule'
+          Item = require 'hyperion/model/Item'
+
+          class ForbiddenModelClassRule extends Rule
+            canExecute: (actor, target, context, callback) =>
+              callback null, []
+            execute: (actor, target, params, context, callback) =>
+              Item.remove actor, callback
+          module.exports = new ForbiddenModelClassRule()"""
+      ).save (err) ->
+        # when executing this rule on that target
+        service.execute 'rule40', item1.id, item1.id, {}, 'admin', (err, result)->
+          expect(err).to.exist.and.to.include 'denied to executables'
+          done()
+
   describe 'given an item type and an item', ->
 
     beforeEach (done) ->

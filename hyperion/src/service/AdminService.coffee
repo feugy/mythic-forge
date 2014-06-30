@@ -29,8 +29,8 @@ Event = require '../model/Event'
 Player = require '../model/Player'
 Executable = require '../model/Executable'
 ClientConf = require '../model/ClientConf'
-utils = require '../util/common'
-modelUtils = require '../util/model'
+{type, fromRule} = require '../util/common'
+{isValidId} = require '../util/model'
 logger = require('../util/logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 authoringService = require('./AuthoringService').get()
@@ -56,7 +56,7 @@ class _AdminService
   # @param id [String] the checked id
   # @option callback err [String] error string. Null if no error occured and id is valid and not used
   isIdValid: (id, callback) =>
-    return callback "#{id} is invalid" unless modelUtils.isValidId id
+    return callback "#{id} is invalid" unless isValidId id
     return callback "#{id} is already used" if ItemType.isUsed id
     callback null
 
@@ -71,6 +71,7 @@ class _AdminService
   # @option callback models [Array] list (may be empty) of retrieved models
   #
   list: (modelName, callback) =>
+    return if fromRule module, callback
     return callback "The #{modelName} model can't be listed", modelName unless modelName in listSupported
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
@@ -92,6 +93,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   save: (modelName, values, email, callback) =>
+    return if fromRule module, callback
     return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
 
     _save = (model) ->
@@ -159,7 +161,7 @@ class _AdminService
 
         resolveFrom = (model) ->
           if model.from?
-            id = if 'object' is utils.type model.from then model.from?.id else model.from
+            id = if 'object' is type model.from then model.from?.id else model.from
             # resolve from item
             return Item.findCached [id], (err, froms) ->
               return callback "Failed to save event #{values.id}. Error while resolving its from: #{err}" if err?
@@ -257,6 +259,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   remove: (modelName, values, email, callback) =>
+    return if fromRule module, callback
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
     unless 'Field' is modelName or 'FSItem' is modelName or 'id' of values
       return callback "Cannot remove #{modelName} because no 'id' specified", modelName 

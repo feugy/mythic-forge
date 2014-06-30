@@ -29,10 +29,13 @@ authentication:
   # Key usable on mythic-forge.com domain with SSL
   google:
     id: 750195776526-mo5tvhku8nig3hdfcrqdmeu5t970ssvp.apps.googleusercontent.com
-    secret: _gYg5gAnVChSvilEzmyAUMHu
+    secret: !!!!!
   twitter:
     id: ZgC2E9e623mkj8W0auA
-    secret: eYkJjLGwthMHybjauOaBcmDRYNKVUXeIRlhLD0kKFXg
+    secret: !!!!!
+  github:
+    id: fb89406eb6a9e87cb2d8
+    secret: !!!!!
 
 # MongoDB connection
 mongo: {}
@@ -41,6 +44,12 @@ mongo: {}
 cache:
   frequency: 1000
   maxAge: 5000
+
+# Mailgun information for sending emails
+mailgun:
+  key: key-172q07yay65msqw6rde9v75chjt3t1i1
+  domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
+  sender: deephulk.noreply@mythic-forge.com
 
 # location of games files
 game: 

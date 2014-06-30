@@ -15,8 +15,10 @@
     "express": "3.10.3",
     "fs-extra": "0.9.1",
     "gift": "0.4.2",
+    "isemail": "1.0.1",
     "js-yaml": "3.0.2",
     "jshint": "2.5.1",
+    "mailgun-js": "0.5.1",
     "moment": "2.6.0",
     "mongodb": "1.4.5",
     "mongoose": "3.8.12",
@@ -27,8 +29,8 @@
     "passport-twitter": "1.0.2",
     "password-hash": "1.2.2",
     "requirejs": "2.1.14",
-    "sanitizer": "0.1.1",
     "socket.io": "1.0.4",
+    "stack-trace": "0.0.9",
     "stylus": "0.46.3",
     "underscore": "1.6.0",
     "underscore.string": "2.3.3"
@@ -44,6 +46,7 @@
     "mocha": "1.20.1",
     "phantom-proxy": "0.1.792",
     "request": "2.36.0",
+    "sanitizer": "0.1.1",
     "socket.io-client": "1.0.4"
   },
   "scripts": {

@@ -8,7 +8,6 @@
   - Rule engine
     - [!!!] Handle 'No matching document found' version errors while executing rule and revert execution
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
-    - secured rules > mock save() and remove() methods from instances, collection and update() from classes
 
 - Rheia
   - Bugs
@@ -162,6 +161,7 @@
     - allow rule, turn rule and script to be written in plain javascript
     - inject current player inside resolve's and execute's context
     - rule, turn rules and scripts are versionned and can be rolled-back
+    - secure mongoose Models and Collection to prevent usage from executables
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation
@@ -170,6 +170,8 @@
     - map items modification propagation
     - secured websocket
     - use socket.io 1.0.0-pre
+  - Contact Service
+    - send emails with mailgun
 
 - Rheia
   - Bugs
@@ -332,22 +334,24 @@
   - create and automate tests
 
 # Consequent changes
+  - much more fast and reliable
   - mongoDB instead MySQL, NodeJS instead Java
+  - WebSocket everywhere: increase speed
   - no more distinction between Items and Actors
   - no more event on actors
   - no more link between rules and actors
   - hexagonal and 3D iso maps
   - event-kind properties
   - date-kind properties
-  - connect with Google, Twitter
-  - drop from Item/Event/Player tabs
+  - connect with Google, Twitter, Github
+  - drop from Item/Event/Player tabs to affect
+  - copy existing Item/Event/Player
   - sprite management for animations and transition
   - rules in CoffeeScript and Javascript
   - isomorphic rules: can partially be executed on client to increase reactivity
-  - WebSocket everywhere: increase speed
   - rendering template for events
   - live log displayal on Rheia
   - faster game client optimization process, automatic versionning
   - game client files and rules history, with possible rollback (even for removed/renamed files)
   - a central configuration and i18n file for clients to store types names, rules results, and any labels
-  - much more fast and reliable
+  - contact service to send emails to players

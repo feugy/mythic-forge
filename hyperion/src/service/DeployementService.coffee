@@ -19,14 +19,14 @@
 'use strict'
 
 _ = require 'underscore'
-pathUtils = require 'path'
+{resolve, join, normalize, dirname, basename} = require 'path'
 coffee = require 'coffee-script'
 stylus = require 'stylus'
 fs = require 'fs-extra'
 async = require 'async'
 requirejs = require 'requirejs'
 cheerio = require 'cheerio'
-utils = require '../util/common'
+{fromRule, confKey, find, purgeFolder, isA} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
 notifier = require('../service/Notifier').get()
 versionService = require('../service/VersionService').get()
@@ -68,9 +68,10 @@ class _DeployementService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
+    return if fromRule module, callback
     versionService.init (err) =>
       return callback err if err?
-      root = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.dev'
+      root = resolve normalize confKey 'game.client.dev'
       callback null
 
   # Simple getter to known if a deployement is pending.
@@ -96,6 +97,7 @@ class _DeployementService
   # @option callback err [String] an error message, or null if no error occures
   # @option callback path [String] path to the compiled and optimized location of the client
   deploy: (version, email, callback) =>
+    return if fromRule module, callback
     return callback "Deployment of version #{@_pending.name} already in progress" if @_pending.name?
     return callback "Commit or rollback of previous version not finished" if @_pending.inProgress
 
@@ -116,9 +118,9 @@ class _DeployementService
         callback err
 
       # first, clean to optimized destination
-      folder = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.optimized'
-      production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.production'
-      save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
+      folder = resolve normalize confKey 'game.client.optimized'
+      production = resolve normalize confKey 'game.client.production'
+      save = resolve normalize confKey 'game.client.save'
 
       notifier.notify 'deployement', 'DEPLOY_START', 1, @_pending.name, @_pending.email
 
@@ -167,7 +169,7 @@ class _DeployementService
             # fourth, compile coffee scripts
             _compileCoffee = =>
               notifier.notify 'deployement', 'COMPILE_COFFEE', 3
-              utils.find folder, /^.*\.coffee?$/, (err, results) =>
+              find folder, /^.*\.coffee?$/, (err, results) =>
                 return _optimize() if err? or results.length is 0
                 async.each results, (script, next) =>
                   compileCoffee script, next
@@ -177,7 +179,7 @@ class _DeployementService
 
             # third, compile stylus sheets
             notifier.notify 'deployement', 'COMPILE_STYLUS', 2
-            utils.find folder, /^.*\.styl(us)?$/, (err, results) =>
+            find folder, /^.*\.styl(us)?$/, (err, results) =>
               return _compileCoffee() if err? or results.length is 0
               async.each results, (sheet, next) =>
                 compileStylus sheet, next
@@ -197,6 +199,7 @@ class _DeployementService
   # @param callback [Function] invoked when deployement is committed, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   commit: (email, callback) =>
+    return if fromRule module, callback
     return callback 'Commit can only be performed after deploy' unless @_pending.name?
     return callback "Commit can only be performed be deployement author #{@_pending.email}" unless @_pending.email is email
     return callback 'Deploy not finished' if @_pending.inProgress
@@ -206,7 +209,7 @@ class _DeployementService
       notifier.notify 'deployement', 'COMMIT_FAILED', err
       callback err
 
-    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
+    save = resolve normalize confKey 'game.client.save'
 
     notifier.notify 'deployement', 'COMMIT_START', 1
     
@@ -236,13 +239,14 @@ class _DeployementService
   # @param callback [Function] invoked when deployement is rollbacked, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   rollback: (email, callback) =>
+    return if fromRule module, callback
     return callback 'Rollback can only be performed after deploy' unless @_pending.name?
     return callback "Rollback can only be performed be deployement author #{@_pending.email}" unless @_pending.email is email
     return callback 'Deploy not finished' if @_pending.inProgress
     @_pending.inProgress = true
 
-    save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
-    production = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.production'
+    save = resolve normalize confKey 'game.client.save'
+    production = resolve normalize confKey 'game.client.production'
 
     error = (err) =>
       notifier.notify 'deployement', 'ROLLBACK_FAILED', err
@@ -277,6 +281,7 @@ class _DeployementService
   # @option callback state author [String] email of the deployer, null if no pending deployement
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
+    return if fromRule module, callback
     # get known tags
     versionService.tags (err, tags) =>
       return callback "Failed to consult versions: #{err}" if err?
@@ -312,6 +317,7 @@ class _DeployementService
   # @param callback [Function] invoked when version is created
   # @option callback err [String] an error message, or null if no error occures
   createVersion: (version, email, notifNumber, callback) =>
+    return if fromRule module, callback
     # default values
     if _.isFunction notifNumber
       callback = notifNumber
@@ -328,9 +334,9 @@ class _DeployementService
         return callback "Failed to get author: #{err}" if err?
         return callback "No author with email #{email}" unless author?
         
-        dev = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.dev'
-        rules = pathUtils.resolve pathUtils.normalize utils.confKey 'game.executable.source'
-        images = pathUtils.resolve pathUtils.normalize utils.confKey 'game.image'
+        dev = resolve normalize confKey 'game.client.dev'
+        rules = resolve normalize confKey 'game.executable.source'
+        images = resolve normalize confKey 'game.image'
         # add game files and executables
         versionService.repo.add [dev, rules, images], {'ignore-errors': true, A:true}, (err) ->
           return callback "Failed to add files to version: #{err}" if err?
@@ -338,7 +344,7 @@ class _DeployementService
           versionService.repo.commit version, {author: versionService.getAuthor author}, (err, stdout) =>
             # ignore commit warning, for example about line endings
             err = null if err?.code is 1 and -1 isnt "#{err}".indexOf 'warning:'
-            return callback "Failed to commit: #{utils.purgeFolder err, root} #{utils.purgeFolder stdout, root}" if err?
+            return callback "Failed to commit: #{purgeFolder err, root} #{purgeFolder stdout, root}" if err?
             
             # and at last ceates the tag
             versionService.repo.create_tag version, (err) ->
@@ -354,6 +360,7 @@ class _DeployementService
   # @param callback [Function] invoked when game client was restored
   # @option callback err [String] an error message, or null if no error occures
   restoreVersion: (version, callback) =>
+    return if fromRule module, callback
     return callback "Deployment of version #{@_pending.name} in progress" if @_pending.name?
 
     # get tags first
@@ -388,9 +395,9 @@ listVersions = (callback) ->
 # @option callback err [String] an error details string, or null if no error occured
 compileStylus = (sheet, callback) ->
   # compute destination name
-  parent = pathUtils.dirname sheet
-  name = pathUtils.basename sheet
-  destination = pathUtils.join parent, name.replace /\.styl(us)?$/i, '.css'
+  parent = dirname sheet
+  name = basename sheet
+  destination = join parent, name.replace /\.styl(us)?$/i, '.css'
   logger.debug "compiles stylus sheet #{sheet} with parent #{parent}"
   # read the sheet
   fs.readFile sheet, (err, content) =>
@@ -444,7 +451,7 @@ optimize = (folder, callback) ->
   # search main entry point
   requireMatcher = /<script[^>]*data-main\s*=\s*(["'])(.*)(?=\1)/i
 
-  utils.find folder, /^.*\.html$/i, requireMatcher, (err, results) ->
+  find folder, /^.*\.html$/i, requireMatcher, (err, results) ->
     return callback "failed to identify html page including requirejs: #{err}" if err?
     return callback 'no html page including requirejs found' if results.length is 0
     # choose the least path length
@@ -470,7 +477,7 @@ optimize = (folder, callback) ->
       logger.debug "found main requirejs file #{mainFile} in base url #{baseUrl}"
 
       # search file containing requirejs config
-      utils.find folder, /^.*\.js$/, /requirejs\.config/i, (err, results) ->
+      find folder, /^.*\.js$/, /requirejs\.config/i, (err, results) ->
         return callback "failed to identify requirejs configuration file: #{err}" if err?
         return callback 'no requirejs configuration file found' if results.length is 0
         # choose the least path length
@@ -496,7 +503,7 @@ optimize = (folder, callback) ->
         start = new Date().getTime()
         logger.debug "start optimization..."
         requirejs.optimize config, (result) ->
-          return callback result.message if utils.isA result, Error
+          return callback result.message if isA result, Error
           logger.debug "optimization succeeded in #{(new Date().getTime() - start)/1000}s"
           logger.debug result
           callback null, main, folderOut
@@ -522,7 +529,7 @@ makeCacheable = (folder, main, version, callback) ->
 
     # then copies all optimized content inside a timestamped folder
     timestamp = "#{new Date().getTime()}"
-    timestamped = pathUtils.join dest, timestamp
+    timestamped = join dest, timestamp
     fs.mkdirs timestamped, (err) ->
       return callback "failed to create timestamped folder: #{err}" if err?
 
@@ -531,13 +538,13 @@ makeCacheable = (folder, main, version, callback) ->
         return callback "failed to copy to timestamped folder: #{err}" if err?
         
         # removes main file and build.txt
-        async.each ['build.txt', pathUtils.basename main], (file, next) ->
-          fs.remove pathUtils.join(timestamped, file), next
+        async.each ['build.txt', basename main], (file, next) ->
+          fs.remove join(timestamped, file), next
         , (err) ->
           return callback "failed to remove none-cached files: #{err}" if err?
 
           # copies main file next to timestamped folder
-          newMain = pathUtils.join dest, pathUtils.basename main
+          newMain = join dest, basename main
           logger.debug "copy main file #{newMain}"
           fs.copy main, newMain, (err) ->
             return callback "failed to copy new main file: #{err}" if err?

@@ -18,6 +18,7 @@
 ###
 'use strict'
 
+{fromRule} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
 EventEmitter = require('events').EventEmitter
 
@@ -44,4 +45,5 @@ class _Notifier extends EventEmitter
   # @param event [String] the notification name or kind
   # @param details... [Any] optional data send with notification
   notify: (event, details...) =>
+    return if fromRule module, ->
     @emit.apply @, [NOTIF_EVT, event].concat details

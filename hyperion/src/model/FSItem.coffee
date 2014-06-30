@@ -19,10 +19,10 @@
 'use strict'
 
 _ = require 'underscore'
-pathUtils = require 'path'
+{normalize, join, dirname} = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
-utils = require '../util/common'
+{fromRule, type} = require '../util/common'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 
@@ -65,14 +65,14 @@ class FSItem
     switch args.length
       when 1 
         raw = args[0]
-        throw 'FSItem may be constructed from JSON object' unless 'object' is utils.type raw
+        throw 'FSItem may be constructed from JSON object' unless 'object' is type raw
         @[attr] = value for attr, value of raw when attr in ['path', 'content', 'isFolder']
       when 2
         @path = args[0]
         @isFolder = args[1]          
       else throw 'Can only construct FSItem with arguments `raw` or `path`and `isFolder`'
     # process attributes
-    @path = pathUtils.normalize @path
+    @path = normalize @path
     @content = @content.toString 'base64' if Buffer.isBuffer @content
 
   # Find fs-item content. If the searched fs-item is a folder, @content will contains
@@ -100,7 +100,7 @@ class FSItem
           @content = []
           # construct FSItem for each contained item
           async.forEach items, (item, next) =>
-            path = pathUtils.join(@path, item)
+            path = join(@path, item)
             # test if item is folder or file
             fs.stat path, (err, stat) =>
               return next(err) if err?
@@ -129,6 +129,7 @@ class FSItem
   # @option callback item [FSItem] the saved item
   # @option callback isNew [Boolean] true if the item did not exists before
   save: (callback) =>
+    return if fromRule module, callback
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       isNew = false
@@ -163,7 +164,7 @@ class FSItem
             if Buffer.isBuffer @content
               saved = @content
               @content = @content.toString 'base64' 
-            else if 'string' is utils.type @content
+            else if 'string' is type @content
               saved = new Buffer @content, 'base64'
 
             # write file content
@@ -182,7 +183,7 @@ class FSItem
 
         return saveFile() unless isNew
         # for new files, create parent folders
-        parent = pathUtils.dirname @path
+        parent = dirname @path
         fs.mkdirs parent, (err) =>
           return callback "Error while creating new file #{@path}: #{err}" if err?
           saveFile()
@@ -193,6 +194,7 @@ class FSItem
   #   @param err [String] error string. Null if save succeeded
   #   @param item [FSItem] the removed item
   remove: (callback) =>
+    return if fromRule module, callback
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       return callback "Unexisting item #{@path} cannot be removed" if err?.code is 'ENOENT'
@@ -222,7 +224,8 @@ class FSItem
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback item [FSItem] the concerned fsitem
   move: (newPath, callback) =>
-    newPath = pathUtils.normalize newPath
+    return if fromRule module, callback
+    newPath = normalize newPath
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       return callback "Unexisting item #{@path} cannot be moved" if err?.code is 'ENOENT'
@@ -236,7 +239,7 @@ class FSItem
         return callback "Cannot move because new path #{newPath} already exists" if exists
 
         # then creates the new parent path
-        parent = pathUtils.dirname newPath
+        parent = dirname newPath
         fs.mkdirs parent, (err) =>
           return callback "Error while creating new item #{@path}: #{err}" if err?
 

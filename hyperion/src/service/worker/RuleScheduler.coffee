@@ -20,9 +20,9 @@
 
 _ = require 'underscore'
 async = require 'async'
-pathUtils = require 'path'
-utils = require '../../util/common'
-modelUtils = require '../../util/model'
+{relative} = require 'path'
+{isA, type, fromRule} = require '../../util/common'
+utils = require '../../util/model'
 TurnRule = require '../../model/TurnRule'
 Executable = require '../../model/Executable'
 notifier = require('../Notifier').get()
@@ -46,6 +46,7 @@ commitSuicide = false
 # @option callback err [String] an error string. Null if no error occured.
 # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
 trigger = (callback, _auto = false) ->
+  return if fromRule module, callback
   return callback if inProgress
 
   # avoid quitting on failures.
@@ -81,11 +82,11 @@ trigger = (callback, _auto = false) ->
       try
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
-        obj = require pathUtils.relative __dirname, executable.compiledPath
-        if obj? and utils.isA(obj, TurnRule)
+        obj = require relative __dirname, executable.compiledPath
+        if obj? and isA(obj, TurnRule)
           rules.push obj 
           obj.id = executable.id
-          obj.rank = 0 unless 'number' is utils.type obj.rank
+          obj.rank = 0 unless 'number' is type obj.rank
       catch err
         # report require errors
         err = "failed to require executable #{executable.id}: #{err}"
@@ -98,8 +99,8 @@ trigger = (callback, _auto = false) ->
     # function that updates dbs with rule's modifications
     updateDb = (rule, saved, removed, end) =>
       # removes duplicates, and do not save removed instances
-      modelUtils.purgeDuplicates removed
-      modelUtils.purgeDuplicates saved
+      utils.purgeDuplicates removed
+      utils.purgeDuplicates saved
       # at the end, save and remove modified objects
       removeModel = (target, removeEnd) =>
         logger.debug "remove model #{target.id}"
@@ -168,7 +169,7 @@ trigger = (callback, _auto = false) ->
             return executeEnd "failed to execute rule #{rule.id}: #{err}" if err?
             # store modified object for later
             saved.push obj for obj in rule.saved
-            modelUtils.filterModified target, saved
+            utils.filterModified target, saved
             removed.push obj for obj in rule.removed
             executeEnd()
           

@@ -83,7 +83,9 @@ define [
         @_count++
 
       # date name level parameter : message
-      vals = (if _.isObject arg then JSON.stringify arg else arg?.toString() for arg in details.args)
+      vals = (for arg in details.args 
+        if _.isObject arg then JSON.stringify(arg) else arg?.toString()
+      )
 
       # put at first line and the compute height
       lineHeight = $("""<div class="log #{details.level}">

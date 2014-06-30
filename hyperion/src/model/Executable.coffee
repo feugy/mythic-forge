@@ -28,7 +28,7 @@ pathUtils = require 'path'
 jshint = require('jshint').JSHINT
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
-utils = require '../util/common'
+{enforceFolder, type, isA, confKey, relativePath, fromRule} = require '../util/common'
 modelUtils = require '../util/model'
 Rule = require '../model/Rule'
 TurnRule = require '../model/TurnRule'
@@ -54,13 +54,13 @@ hintOpts =
   node: true
 
 Item = null
-root = path.resolve path.normalize utils.confKey 'game.executable.source'
-compiledRoot = path.resolve path.normalize utils.confKey 'game.executable.target'
-encoding = utils.confKey 'game.executable.encoding', 'utf8'
+root = path.resolve path.normalize confKey 'game.executable.source'
+compiledRoot = path.resolve path.normalize confKey 'game.executable.target'
+encoding = confKey 'game.executable.encoding', 'utf8'
 supported = ['.coffee', '.js']
 requirePrefix = 'hyperion'
-pathToHyperion = utils.relativePath(compiledRoot, path.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
-pathToNodeModules = utils.relativePath(compiledRoot, path.join(__dirname, '..', '..', '..', 'node_modules').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
+pathToHyperion = relativePath(compiledRoot, path.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
+pathToNodeModules = relativePath(compiledRoot, path.join(__dirname, '..', '..', '..', 'node_modules').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 
 # when receiving a change from another worker, update the executable cache
 modelWatcher.on 'change', (operation, className, changes, wId) ->
@@ -138,11 +138,11 @@ requireExecutable = (executable, silent, callback) ->
     # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
     # and singleton (like ModuleWatcher) will be broken.
     obj = require pathUtils.relative __dirname, executable.compiledPath
-    if obj? and utils.isA obj, TurnRule
+    if obj? and isA obj, TurnRule
       executable.meta.active = obj.active
       executable.meta.rank = obj.rank
       executable.meta.kind = 'TurnRule'
-    else if obj? and utils.isA obj, Rule
+    else if obj? and isA obj, Rule
       executable.meta.active = obj.active
       executable.meta.category = obj.category
       executable.meta.kind = 'Rule'
@@ -189,7 +189,7 @@ search = (query, all, _operator = null) ->
         results = results.concat tmp.filter (result) -> -1 is results.indexOf result
     return results
 
-  if 'object' is utils.type query
+  if 'object' is type query
     # we found a term:  `{or: []}`, `{and: []}`, `{toto:1}`, `{toto:''}`, `{toto://}`
     keys = Object.keys query
     throw new Error "only one attribute is allowed inside query terms" if keys.length isnt 1
@@ -197,7 +197,7 @@ search = (query, all, _operator = null) ->
     field = keys[0] 
     value = query[field]
     # special case of regexp strings that must be transformed
-    if 'string' is utils.type(value)
+    if 'string' is type(value)
       match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
       value = new RegExp match[1], match[2], match[3] if match?
 
@@ -215,7 +215,7 @@ search = (query, all, _operator = null) ->
       # matching candidates ids
       ids = []
       # this is a terminal term, validates value's type
-      switch utils.type value
+      switch type value
         when 'string', 'number', 'boolean'
           # performs exact match
           candidates.forEach (candidate, i) -> ids.push i if candidate[field] is value
@@ -242,13 +242,14 @@ class Executable
   # @param callback [Function] invoked when the reset is done.
   # @option callback err [String] an error callback. Null if no error occured.
   @resetAll: (clean, callback) ->
+    return if fromRule module, callback
     # to avoid circular dependency
     Item = require '../model/Item'
     # clean local files, and compiled scripts
     cleanNodeCache()
     removed = _.keys executables
     executables = {}
-    utils.enforceFolder compiledRoot, clean, logger, (err) ->
+    enforceFolder compiledRoot, clean, logger, (err) ->
       return callback err if err?
 
       fs.readdir root, (err, files) ->
@@ -312,7 +313,7 @@ class Executable
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback executables [Array<Executable>] list (may be empty) of executables
   @find: (query, callback) ->
-    if 'function' is utils.type query
+    if 'function' is type query
       callback = query
       query = null
 
@@ -376,6 +377,7 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the saved item
   save: (callback) =>
+    return if fromRule module, callback
     wasNew[@id] = !(@id of executables)
     # check id unicity and validity
     return callback new Error "id #{@id} for model Executable is invalid" unless modelUtils.isValidId @id
@@ -399,6 +401,7 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the removed item
   remove: (callback) =>
+    return if fromRule module, callback
     fs.exists @path, (exists) =>
       return callback "Error while removing executable #{@id}: this executable does not exists" if not exists
       cleanNodeCache()
@@ -416,7 +419,7 @@ class Executable
   # @param other [Object] other object against which the current object is compared
   # @return true if both objects have the same id, false otherwise
   equals: (object) =>
-    return false unless 'object' is utils.type object
+    return false unless 'object' is type object
     @id is object?.id
 
 module.exports = Executable
