@@ -91,7 +91,7 @@ module.exports =
       unless _.isObject(campaign) and campaign.msg? and campaign.players?
         return next new Error "campaign must be an object with 'msg' and 'players' properties"
       # send notification for this campaign
-      ContactService.sentTo campaign.players, campaign.msg, next
+      ContactService.sendTo campaign.players, campaign.msg, next
     , (err, reports) ->
       # aggregate reports
       callback err, if reports? then _.flatten reports else []

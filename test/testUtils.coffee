@@ -18,11 +18,14 @@
 ###
 
 _ = require 'underscore'
+async = require 'async'
 {join, sep} = require 'path'
 moment = require 'moment'
 FieldType = require '../hyperion/src/model/FieldType'
 utils = require '../hyperion/src/util/common'
 ruleUtils = require '../hyperion/src/util/rule'
+Player = require '../hyperion/src/model/Player'
+ContactService = require('../hyperion/src/service/ContactService').get()
 {expect} = require 'chai'
 
 describe 'Utilities tests', -> 
@@ -82,6 +85,94 @@ describe 'Utilities tests', ->
     expect(result.subObj.emptyArray).to.be.an.instanceof(Array).and.to.have.lengthOf 0
     expect(result.subArray).to.be.an.instanceof(Array).and.to.have.lengthOf 2
     expect(result.subArray).deep.equal [{}, []]
+
+  describe 'given a mocked ContactService', ->
+    original = ContactService.sendTo
+    sendToArgs = []
+    sendToErr = []
+    sendToReport = []
+    invoke = 0
+    unic = Math.floor Math.random()*10000
+
+    players = [
+      new Player(email: "google@#{unic}.com", provider: 'Google', firstName: 'Google', lastName: 'Forge Google')
+      new Player(email: "github@#{}{unic}.com", provider: 'Github', firstName: 'Github', lastName: 'Forge Github')
+      new Player(email: "twitter@#{unic}.com", provider: 'Twitter', firstName: 'Twitter', lastName: 'Forge Twitter')
+    ]
+
+    before (done) ->
+      ContactService.sendTo = (args..., callback) ->
+        sendToArgs.push args
+        callback sendToErr[invoke], sendToReport[invoke++]
+
+      async.each players, (player, next) ->
+        player.save next
+      , done
+
+    beforeEach ->
+      invoke = 0
+      sendToArgs = []
+      sendToErr = []
+      sendToReport = []
+
+    after (done) ->
+      ContactService.sendTo = original
+      async.each players, (player, next) ->
+        player.remove next
+      , done
+
+    it 'should fail on campaign without players', (done) ->
+      # when sending notification to a single player
+      ruleUtils.notifCampaigns msg: 'Hey #{player.email}', (err) ->
+        expect(err).to.have.property('message').that.include "campaign must be an object with 'msg' and 'players' properties"
+        done()
+
+    it 'should fail on campaign without msgs', (done) ->
+      # when sending notification to a single player
+      ruleUtils.notifCampaigns players: players, msg: undefined, (err) ->
+        expect(err).to.have.property('message').that.include "campaign must be an object with 'msg' and 'players' properties"
+        done()
+
+    it 'should send notification for single campaign', (done) ->
+      sendToReport.push [success: true, kind: 'email', endpoint: players[0].email]
+
+      # when sending notification to a single player
+      ruleUtils.notifCampaigns players: players[0], msg: 'Hey #{player.email}', (err, report) ->
+        expect(err).not.to.exist
+        expect(invoke).to.equal 1
+        # then expect ContactService.sendTo arguments where generated
+        expect(sendToArgs[0]).to.have.lengthOf 2
+        expect(sendToArgs[0][0]).to.deep.equal players[0]
+        expect(sendToArgs[0][1]).to.equal 'Hey #{player.email}'
+        expect(report).to.deep.equal sendToReport[0]
+        done()
+
+    it 'should send notification for multiple campaigns', (done) ->
+      sendToReport.push [
+        {success: true, kind: 'email', endpoint: players[0].email}
+        {success: true, kind: 'email', endpoint: players[1].email}
+      ], [
+        {success: true, kind: 'email', endpoint: players[2].email}
+      ]
+      msg1 = 'Hey #{player.email}'
+      msg2 = 'Yo #{player.firstName}'
+
+      # when sending notification to a single player
+      ruleUtils.notifCampaigns [
+        {players: players[0..1], msg: msg1 }
+        {players: players[2], msg: msg2}
+      ], (err, report) ->
+        expect(err).not.to.exist
+        expect(invoke).to.equal 2
+        # then expect ContactService.sendTo arguments where generated
+        expect(sendToArgs[0]).to.have.lengthOf 2
+        expect(sendToArgs[0][0]).to.deep.equal players[0..1]
+        expect(sendToArgs[0][1]).to.equal msg1
+        expect(sendToArgs[1]).to.have.lengthOf 2
+        expect(sendToArgs[1][0]).to.deep.equal players[2]
+        expect(sendToArgs[1][1]).to.equal msg2
+        expect(report).to.deep.equal _.flatten sendToReport
+        done()
 
   describe 'given timer configured every seconds', ->
     @timeout 4000
