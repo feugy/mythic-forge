@@ -68,7 +68,7 @@ class _DeployementService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     versionService.init (err) =>
       return callback err if err?
       root = resolve normalize confKey 'game.client.dev'
@@ -97,7 +97,7 @@ class _DeployementService
   # @option callback err [String] an error message, or null if no error occures
   # @option callback path [String] path to the compiled and optimized location of the client
   deploy: (version, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback "Deployment of version #{@_pending.name} already in progress" if @_pending.name?
     return callback "Commit or rollback of previous version not finished" if @_pending.inProgress
 
@@ -199,7 +199,7 @@ class _DeployementService
   # @param callback [Function] invoked when deployement is committed, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   commit: (email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback 'Commit can only be performed after deploy' unless @_pending.name?
     return callback "Commit can only be performed be deployement author #{@_pending.email}" unless @_pending.email is email
     return callback 'Deploy not finished' if @_pending.inProgress
@@ -239,7 +239,7 @@ class _DeployementService
   # @param callback [Function] invoked when deployement is rollbacked, with following parameters:
   # @option callback err [String] an error message, or null if no error occures
   rollback: (email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback 'Rollback can only be performed after deploy' unless @_pending.name?
     return callback "Rollback can only be performed be deployement author #{@_pending.email}" unless @_pending.email is email
     return callback 'Deploy not finished' if @_pending.inProgress
@@ -281,7 +281,7 @@ class _DeployementService
   # @option callback state author [String] email of the deployer, null if no pending deployement
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # get known tags
     versionService.tags (err, tags) =>
       return callback "Failed to consult versions: #{err}" if err?
@@ -317,7 +317,7 @@ class _DeployementService
   # @param callback [Function] invoked when version is created
   # @option callback err [String] an error message, or null if no error occures
   createVersion: (version, email, notifNumber, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # default values
     if _.isFunction notifNumber
       callback = notifNumber
@@ -360,7 +360,7 @@ class _DeployementService
   # @param callback [Function] invoked when game client was restored
   # @option callback err [String] an error message, or null if no error occures
   restoreVersion: (version, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback "Deployment of version #{@_pending.name} in progress" if @_pending.name?
 
     # get tags first

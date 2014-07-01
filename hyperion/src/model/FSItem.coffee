@@ -129,7 +129,7 @@ class FSItem
   # @option callback item [FSItem] the saved item
   # @option callback isNew [Boolean] true if the item did not exists before
   save: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       isNew = false
@@ -194,7 +194,7 @@ class FSItem
   #   @param err [String] error string. Null if save succeeded
   #   @param item [FSItem] the removed item
   remove: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       return callback "Unexisting item #{@path} cannot be removed" if err?.code is 'ENOENT'
@@ -224,7 +224,7 @@ class FSItem
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback item [FSItem] the concerned fsitem
   move: (newPath, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     newPath = normalize newPath
     # First, read current file statistics
     fs.stat @path, (err, stat) =>

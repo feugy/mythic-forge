@@ -24,7 +24,7 @@ logger = require('../util/logger').getLogger 'model'
 modelUtils = require '../util/model'
 
 # Define the schema for map field types
-FieldType = typeFactory 'FieldType', module,
+FieldType = typeFactory 'FieldType',
 
   # descriptive image for this type.
   descImage:

@@ -110,7 +110,7 @@ class _SearchService
   # @param callback [Function] callback invoked when query has been enhanced
   # @option callback err [String] error string, or null if no error occured
   _enhanceInstanceQuery: (query, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     if Array.isArray query
       # recursive enhancement inside term arrays
       return async.forEachSeries query, (term, next) =>
@@ -197,7 +197,7 @@ class _SearchService
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching types
   searchTypes: (query, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # special case: string query must be parse to object
     if 'string' is type query
       try 
@@ -264,7 +264,7 @@ class _SearchService
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching instances
   searchInstances: (query, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # special case: string query must be parse to object
     if 'string' is type query
       try 

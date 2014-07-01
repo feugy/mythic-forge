@@ -123,7 +123,7 @@ originals = {}
   originals[method] = mongoose.Collection::[method]
   mongoose.Collection::[method] = (args...) ->
     # forbid if necessary
-    return if fromRule args[args.length-1] or ->
+    return if fromRule args[args.length-1]
     # or process original
     originals[method].apply @, arguments
   mongoose.Collection::[method].secured = true
@@ -138,7 +138,6 @@ originals = {}
 # - properties management, for type or instances
 #
 # @param typeName [String] name of the build type, used for changes propagations
-# @param mod [Object] current nodeJs module used to forbidd usage of save/remove method in executables
 # @param spec [Object] attributes of the created type.
 # @param options [Object] Mongoose schema options, and factory custom options:
 # @option options typeProperties [Boolean] whether this type will defined properties for its instances
@@ -148,7 +147,7 @@ originals = {}
 # @option options hasImages [Boolean] if this type has images to be removed when type is removed
 # @option options middlewares [Object] type middleware, added before other middlewares
 # @return the created type
-module.exports = (typeName, mod, spec, options = {}) ->
+module.exports = (typeName, spec, options = {}) ->
 
   caches[typeName] = {}
 
@@ -295,7 +294,7 @@ module.exports = (typeName, mod, spec, options = {}) ->
   #
   # @param all [Boolean] true (default) to clean all models, false to clean models of this class
   AbstractType.statics.cleanModelCache = (all = true) ->
-    return if fromRule module
+    return if fromRule()
     for className of caches
       caches[className] = {} if className is typeName or all
 

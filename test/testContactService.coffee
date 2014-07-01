@@ -23,12 +23,13 @@ async = require 'async'
 Mailgun = require 'mailgun-js'
 service = require('../hyperion/src/service/ContactService').get()
 Player = require '../hyperion/src/model/Player'
+{confKey} = require '../hyperion/src/util/common'
 
 describe 'Contact service tests', ->
   
   # given a mailer configured on sandbox
-  domain = 'sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org'
-  mailer = new Mailgun apiKey:'key-172q07yay65msqw6rde9v75chjt3t1i1', domain: domain
+  domain = confKey 'mailgun.domain'
+  mailer = new Mailgun apiKey: confKey('mailgun.key'), domain: domain
 
   # utility poll method, that waits for query to be fullfilled
   pollEvent = (query, end, _number = 0) ->

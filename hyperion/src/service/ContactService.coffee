@@ -108,7 +108,7 @@ class _ContactService
   # @option callback err [Error] an error object. Null if no error occured
   # @option callback report [Array<Object>] a report containing sending result for each player
   sendTo: (players, message, callback) =>
-    return if utils.fromRule module, callback
+    return if utils.fromRule callback
     # make player an array if not alreay the case
     players = [players] unless Array.isArray players
 

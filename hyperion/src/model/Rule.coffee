@@ -41,10 +41,16 @@ class Rule
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
 
+  # Notifications sent to players: for each campaign, put an object with properties:
+  # - msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
+  # - players [Player|Array<Player>] an array of players to be notified 
+  campaigns: []
+
   # Construct a rule, with a category.
   constructor: (@category = '') ->
     @removed= []
     @saved= []
+    @campaigns= []
  
   # This method indicates wheter or not the rule apply to a given situation.
   # Beware: `canExecute`  is intended to be invoked on server and client side, thus, database access are not allowed.

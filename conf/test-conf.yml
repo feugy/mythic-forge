@@ -50,7 +50,7 @@ cache:
 
 # Mailgun information for sending emails
 mailgun:
-  key: key-172q07yay65msqw6rde9v75chjt3t1i1
+  key: key-23thw7sif-v21lwsgw83--7wyxvp0sj0
   domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
   sender: noreply@mythic-forge.com
 

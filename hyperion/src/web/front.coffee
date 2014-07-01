@@ -52,7 +52,7 @@ notifier.on notifier.NOTIFICATION, (event, stateOrEmail, playerOrkey) ->
 # @param app [Object] existing express server. Default to null
 # @return the configures express server, which needs to be started
 module.exports = (app = null) ->
-  return if fromRule module, ->
+  return if fromRule()
 
   unless app?
     # creates a single server to serve static files

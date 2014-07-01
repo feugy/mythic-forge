@@ -242,7 +242,7 @@ class Executable
   # @param callback [Function] invoked when the reset is done.
   # @option callback err [String] an error callback. Null if no error occured.
   @resetAll: (clean, callback) ->
-    return if fromRule module, callback
+    return if fromRule callback
     # to avoid circular dependency
     Item = require '../model/Item'
     # clean local files, and compiled scripts
@@ -377,7 +377,7 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the saved item
   save: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     wasNew[@id] = !(@id of executables)
     # check id unicity and validity
     return callback new Error "id #{@id} for model Executable is invalid" unless modelUtils.isValidId @id
@@ -401,7 +401,7 @@ class Executable
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the removed item
   remove: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     fs.exists @path, (exists) =>
       return callback "Error while removing executable #{@id}: this executable does not exists" if not exists
       cleanNodeCache()

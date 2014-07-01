@@ -54,7 +54,7 @@ class _AuthoringService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     versionService.init (err) =>
       return callback err if err?
       root = resolve normalize confKey 'game.client.dev'
@@ -66,7 +66,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback root [FSItem] the root fSItem folder, populated
   readRoot: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     new FSItem(root, true).read (err, rootFolder) =>
       return callback "Failed to get root content: #{purgeFolder err, root}" if err?
       # make root relative
@@ -83,7 +83,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback saved [FSItem] the saved fSItem
   save: (item, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
     try 
@@ -108,7 +108,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback removed [FSItem] the removed fSItem
   remove: (item, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
     try 
@@ -135,7 +135,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback moved [FSItem] the moved fSItem
   move: (item, newPath, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
     try 
@@ -160,7 +160,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback read [FSItem] the read fSItem populated with its content
   read: (item, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     try 
       item = new FSItem item
     catch exc
@@ -185,7 +185,7 @@ class _AuthoringService
   # @option callback obj [FSItem|Executable] concerned file or executable
   # @option callback history [Array] array of commits, each an object containing `message`, `author`, `date` and `id`
   history: (item, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     path = null
     obj = null
     if _.isObject(item) and item?.id
@@ -217,7 +217,7 @@ class _AuthoringService
   # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). 
   # For each item contains an object with `id` (commit id), `item` (object model) and `className` (model class name) attributes
   restorables: (filters, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     versionService.restorables (err, restorables) =>
       return callback "Failed to get restorable list: #{err}" if err?
       results = []
@@ -263,7 +263,7 @@ class _AuthoringService
   # @option callback obj [FSItem|Executable] concerned file or executable
   # @option callback content [String] the base64 encoded content
   readVersion: (item, version, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     path = null
     obj = null
     if _.isObject(item) and item?.id

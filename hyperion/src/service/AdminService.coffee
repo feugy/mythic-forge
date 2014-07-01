@@ -71,7 +71,7 @@ class _AdminService
   # @option callback models [Array] list (may be empty) of retrieved models
   #
   list: (modelName, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback "The #{modelName} model can't be listed", modelName unless modelName in listSupported
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
@@ -93,7 +93,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   save: (modelName, values, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
 
     _save = (model) ->
@@ -259,7 +259,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   remove: (modelName, values, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
     unless 'Field' is modelName or 'FSItem' is modelName or 'id' of values
       return callback "Cannot remove #{modelName} because no 'id' specified", modelName 

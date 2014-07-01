@@ -24,7 +24,7 @@ conn = require './connection'
 modelUtils = require '../util/model'
 
 # Define the schema for map event with properties
-Event = typeFactory 'Event', module,
+Event = typeFactory 'Event',
 
   # creation date. May not be modified
   created:

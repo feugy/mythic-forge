@@ -45,7 +45,7 @@ class _ModelWatcher extends EventEmitter
   # @param instance [Object] the Mongoose document that was modified
   # @param modified [Array<String>] array of modified path of the instance
   change: (operation, className, instance, modified) =>
-    return if fromRule module, ->
+    return if fromRule()
     changes = {}
     if '_doc' of instance
       changes[key] = value for own key,value of instance._doc

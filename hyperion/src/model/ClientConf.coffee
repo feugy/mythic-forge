@@ -36,7 +36,7 @@ parseSource = (model, source) ->
 
 # Define the schema for configuration values.
 # locale will be the id, other values will be stored arbitrary
-ClientConf = typeFactory 'ClientConf', module,
+ClientConf = typeFactory 'ClientConf',
 
   # configuration's source: plain yaml.
   source: 

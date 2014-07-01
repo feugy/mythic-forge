@@ -111,7 +111,7 @@ emitter.isA = (obj, clazz) ->
 # @param forceRemove [boolean] if specifed and true, first erase the folder.
 # @param logger [Object] optional logger
 emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
-  return if emitter.fromRule module, ->
+  return if emitter.fromRule()
   exists = fs.existsSync folderPath
 
   # force Removal if specified
@@ -137,7 +137,7 @@ emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
 # @param callback [Function] end callback invoked with an error string as first argument if something
 # goes wrong, and null if the folder was properly created
 emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
-  return if emitter.fromRule module, callback
+  return if emitter.fromRule callback
   fs.exists folderPath, (exists) ->
     create = (err) ->
       return callback "Failed to remove #{folderPath}: #{err}" if err?
@@ -165,7 +165,7 @@ emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
 # @option callback err [String] an error string, or null if no error occured
 # @option callback results [Array] matching file names (may be empty)   
 emitter.find = (path, regex, contentRegEx, callback) ->
-  return if emitter.fromRule module, callback
+  return if emitter.fromRule callback
   if 'function' is emitter.type contentRegEx
     callback = contentRegEx
     contentRegEx = null
@@ -267,7 +267,7 @@ _processOpSync = (path, err) ->
 # @option callback err [String] error message. Null if no error occured.
 emitter.remove = (path, callback) ->
   callback ||= -> 
-  return if emitter.fromRule module, callback
+  return if emitter.fromRule callback
   fs.stat path, (err, stats) ->
     _processOp path, err, (err) ->
       return callback() unless stats?
@@ -288,7 +288,7 @@ emitter.remove = (path, callback) ->
 # @param path removed file of folder
 # @throws err if the removal failed
 emitter.removeSync = (path) ->
-  return if emitter.fromRule module, ->
+  return if emitter.fromRule()
   try 
     stats = fs.statSync path
     # a file: unlink it
@@ -316,7 +316,7 @@ emitter.removeSync = (path) ->
 # @param callback [Function] end callback, executed with one parameter:
 # @option callback err [String] error message. Null if no error occured.
 emitter.empty = (path, callback) ->
-  return if emitter.fromRule module, callback
+  return if emitter.fromRule callback
   fs.readdir path, (err, files) ->
     return callback err if err?
     
@@ -373,7 +373,7 @@ emitter.relativePath = (aPath, bPath) ->
 # @param root [String] root folder path removed from string.
 # @return the pureged string.
 emitter.purgeFolder = (err, root) -> 
-  return if emitter.fromRule module, ->
+  return if emitter.fromRule()
   err = err.message if emitter.isA err, Error
   err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), '' if 'string'
 
@@ -398,39 +398,31 @@ emitter.plainObjects = (args) ->
         arg[attr] = emitter.plainObjects([val])[0] for attr, val of arg
   if isArray then args else args[0]
   
+serviceRoot = join 'hyperion', 'lib', 'service'
+
 # Prevent using critical functionnalities from rules, scripts and turn rules.
-# Two detection modes are available:
-# - using stack trace (most reliable, slower).
-# - using caller module (faster, not always available).
-#
 # Intended to be used synchronously in a test:
 #
 # criticalTreatment: (arg1, callback) ->
-#   return if fromRule module, callback # check with module
-#   return if fromRule callback # check with stack trace
+#   return if fromRule callback
 #   ...
 #
-# @param mod [Object] (optionnal) module from which method is invoke. Invoke with current modul.
 # @param callback [Function] optionnal callback invoked if caller is an executable
 # @option callback error [Error] an error object
 # @return a function to invoke true if caller is not allowed, false otherwise
-emitter.fromRule = (mod, callback) ->
-  if callback?
-    caller = mod.parent?.filename
-    # forbidden if starts with rule compilation folder
-    if not(caller?) or 0 is caller.indexOf forbidRoot
+emitter.fromRule = (callback = ->) ->
+  # rank of the first line containing service
+  foundService = false
+  for line, i in stacktrace.get()
+    line = line.getFileName()
+    # we found a line coming from services that is not the fromRule() and bind invokation
+    foundService = true unless i <= 2  or foundService or -1 is line.indexOf serviceRoot
+    # invoked from compilation folder: forbidden
+    if 0 is line.indexOf forbidRoot
+      # invoked from a service: do not goes further cause its allowed
+      return false if foundService
       callback new Error "this functionnality is denied to executables"
       return true
-  else
-    callback = mod
-    for line in stacktrace.get()
-      line = line.getFileName()
-      # invoked from compilation folder: forbidden
-      if 0 is line.indexOf forbidRoot
-        callback new Error "this functionnality is denied to executables"
-        return true
-      # invoked from a service: do not goes further cause its allowed
-      break if -1 isnt line.indexOf join 'hyperion', 'lib', 'service'
   false
 
 module.exports = emitter

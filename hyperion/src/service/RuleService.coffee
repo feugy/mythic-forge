@@ -132,14 +132,14 @@ class _RuleService
   #
   # @param time [Number] Unix epoch of new time. null to reset to current
   setTime: (time = null) => 
-    return if fromRule module, ->
+    return if fromRule()
     timer.set time
 
   # Allow to pause or resume game timer
   #
   # @param stopped [Boolean] true to pause time, false to resumt it
   pauseTime: (stopped) => 
-    return if fromRule module, ->
+    return if fromRule()
     timer.stopped = stopped is true
 
   # Exports existing rules to clients: turn rules are ignored and execute() function is not exposed.
@@ -148,7 +148,7 @@ class _RuleService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] exported rules, in text, indexed by rule ids.
   export: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # read all existing executables. @todo: use cached rules.
     Executable.find (err, executables) =>
       throw new Error "Cannot collect rules: #{err}" if err?
@@ -250,7 +250,7 @@ class _RuleService
   # - params [Object] the awaited parameters specification
   # - category [String] the rule category
   resolve: (args..., callback) ->
-    return if fromRule module, callback
+    return if fromRule callback
     # generate a random request Id
     id = generateToken 6
     # end callback used to process executor results
@@ -297,7 +297,7 @@ class _RuleService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
   execute: (args..., callback) ->
-    return if fromRule module, callback
+    return if fromRule callback
     # generate a random request Id
     id = generateToken 6
     # end callback used to process executor results
@@ -329,7 +329,7 @@ class _RuleService
   # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
   # @option callback err [String] an error string. Null if no error occured.
   triggerTurn: (callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # generate a random request Id
     id = generateToken 6
     # end callback used to process scheduler results

@@ -22,6 +22,7 @@ _ = require 'underscore'
 async = require 'async'
 {relative} = require 'path'
 {isA, type, fromRule} = require '../../util/common'
+{notifCampaigns} = require '../../util/rule'
 utils = require '../../util/model'
 TurnRule = require '../../model/TurnRule'
 Executable = require '../../model/Executable'
@@ -46,7 +47,7 @@ commitSuicide = false
 # @option callback err [String] an error string. Null if no error occured.
 # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
 trigger = (callback, _auto = false) ->
-  return if fromRule module, callback
+  return if fromRule callback
   return callback if inProgress
 
   # avoid quitting on failures.
@@ -122,8 +123,21 @@ trigger = (callback, _auto = false) ->
             logger.warn err
             notifier.notify 'turns', 'failure', rule.id, err
             return end()
-          notifier.notify 'turns', 'success', rule.id
-          end()
+
+          # everything was fine, now, send campaigns
+          unless rule.campaigns?
+            notifier.notify 'turns', 'success', rule.id
+            return end()
+
+          notifCampaigns rule.campaigns, (err, report) ->
+            if err?
+              notifier.notify 'turns', 'failure', rule.id, err
+            else
+              notifier.notify 'turns', 'success', rule.id
+            if report?
+              for operation in report
+                logger.debug "sent notification to #{operation.endpoint} succeeded ? #{operation.success}"
+            end()
 
     # function that select target of a rule and execute it on them
     selectAndExecute = (rule, end) =>

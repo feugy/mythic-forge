@@ -30,6 +30,7 @@ Player = require '../../model/Player'
 Map = require '../../model/Map'
 {type, isA, fromRule} = require '../../util/common'
 utils = require '../../util/model'
+{notifCampaigns} = require '../../util/rule'
 logger = require('../../util/logger').getLogger 'executor'
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
@@ -163,7 +164,7 @@ module.exports =
   # - params [Object] the awaited parameters specification
   # - category [String] the rule category
   resolve: (args..., restriction, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # resolve connected player first
     Player.findOne {email: email}, (err, current) =>
       return callback "Cannot resolve rules. Failed to retrieve current player (#{email}): #{err}" if err?
@@ -262,7 +263,7 @@ module.exports =
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
   execute: (ruleId, args..., parameters, email, callback) =>
-    return if fromRule module, callback
+    return if fromRule callback
     # resolve connected player first
     Player.findOne {email: email}, (err, current) =>
       return callback "Failed to execute rule #{rule.id}. Failed to retrieve current player (#{email}): #{err}" if err?
@@ -342,8 +343,14 @@ module.exports =
                     obj.save end
                   , (err) => 
                     return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-                    # everything was fine
-                    callback null, result
+                    # everything was fine, now, send campaigns
+                    return callback null, result unless rule.campaigns?
+
+                    notifCampaigns rule.campaigns, (err, report) ->
+                      if report?
+                        for operation in report
+                          logger.debug "sent notification to #{operation.endpoint} succeeded ? #{operation.success}"
+                      callback err, result
               
       if args.length is 1
         playerId = args[0]

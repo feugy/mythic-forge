@@ -45,5 +45,5 @@ class _Notifier extends EventEmitter
   # @param event [String] the notification name or kind
   # @param details... [Any] optional data send with notification
   notify: (event, details...) =>
-    return if fromRule module, ->
+    return if fromRule()
     @emit.apply @, [NOTIF_EVT, event].concat details

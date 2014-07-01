@@ -38,10 +38,16 @@ class TurnRule
   # Turn rule rank inside existing rules
   rank: 0
 
+  # Notifications sent to players: for each campaign, put an object with properties:
+  # - msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
+  # - players [Player|Array<Player>] an array of players to be notified 
+  campaigns: []
+
   # Construct a rule, with a fthe rule rank
   constructor: (@rank = 0) ->
     @removed= []
     @saved= []
+    @campaigns= []
  
   # This method select a set of element on which execute will be applied.
   # Objects can be read directly from database, but modification is not allowed.

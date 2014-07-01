@@ -955,13 +955,13 @@ describe 'RuleService tests', ->
       new Executable(
         id:'rule38'
         content: """Rule = require 'hyperion/model/Rule'
-          GameService = require('hyperion/service/GameService').get()
+          ContactService = require('hyperion/service/ContactService').get()
 
           class ForbiddenServiceRule extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, context, callback) =>
-              GameService.getTypes [], callback
+              ContactService.sendTo null, '', callback
           module.exports = new ForbiddenServiceRule()"""
       ).save (err) ->
         # when executing this rule on that target

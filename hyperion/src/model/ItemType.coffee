@@ -26,7 +26,7 @@ Item = require './Item'
 modelUtils = require '../util/model'
 
 # Define the schema for map item types
-ItemType = typeFactory 'ItemType', module,
+ItemType = typeFactory 'ItemType',
 
   # descriptive image for this type.
   descImage:

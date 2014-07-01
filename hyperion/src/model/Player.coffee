@@ -27,7 +27,7 @@ utils = require '../util/common'
 logger = require('../util/logger').getLogger 'model'
 
 # Define the schema for players
-Player = typeFactory 'Player', module,
+Player = typeFactory 'Player',
 
   # email as login
   email: 

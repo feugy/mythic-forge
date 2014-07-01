@@ -25,7 +25,8 @@ modelWatcher = require('./ModelWatcher').get()
 modelUtils = require '../util/model'
 
 # Define the schema for map item types
-Map = typeFactory 'Map', module,
+Map = typeFactory 'Map',
+
   # kind of map: square, diamond, hexagon
   kind: 
     type: String

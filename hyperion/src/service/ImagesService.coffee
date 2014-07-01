@@ -55,7 +55,7 @@ class _ImagesService
   #   Saves an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
   uploadImage: (modelName, id, ext, imageData, args...) =>
-    return if fromRule module, ->
+    return if fromRule()
     switch args.length
       when 1 
         callback = args[0]
@@ -140,7 +140,7 @@ class _ImagesService
   #   Removes an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
   removeImage: (modelName, id, args...) =>
-    return if fromRule module, ->
+    return if fromRule()
     switch args.length
       when 1 
         callback = args[0]
