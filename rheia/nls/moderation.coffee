@@ -64,12 +64,11 @@ define
       noEmbodiment: '~~'
       embodiment: 'Embodied'
 
-    buttons:
-      kick: 'Kickass !'
-      connectAs: 'Connect as'
-
     tips:
+      connectAs: 'Connect as this player in the game client'
       copy: 'Duplicate existing object or event'
+      kick: "Kick player's ass !"
+      embody: "Embody this actor to trigger rules from Rheia"
       newItem: 'Creates a new object'
       newEvent: 'Creates a new event'
       newPlayer: 'Creates a new player account'

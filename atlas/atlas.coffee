@@ -206,6 +206,7 @@
       player = null
       Atlas.socket.emit 'logout'
       Atlas.socket.disconnect()
+      eventEmitter.emit 'disconnected'
       callback()
 
     #-----------------------------------------------------------------------------

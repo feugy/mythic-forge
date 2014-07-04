@@ -63,12 +63,11 @@ define
     noEmbodiment: '~~'
     embodiment: 'Incarné'
 
-  buttons:
-    kick: 'Kickass !'
-    connectAs: 'Connexion'
-
   tips:
-    copy: "Duplique l'objet ou l'évènemnet"
+    connectAs: 'Faites vous passer pour ce joueur dans client de jeu'
+    copy: "Duplique l'objet ou l'évènement"
+    embody: 'Incarnez cet objet pour lancer des règles depuis Rheia'
+    kick: 'Déconnectez le joueur !'
     newItem: 'Créer un nouvel objet'
     newEvent: 'Créer un nouvel évènement'
     newPlayer: 'Créer un nouvel compte joueur'

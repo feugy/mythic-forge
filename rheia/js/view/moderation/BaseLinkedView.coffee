@@ -73,7 +73,7 @@ define [
       bar = super()
       # adds specific buttons
       if bar.find('.copy').length is 0
-        $('<a class="copy"></a>')
+        $('<a href="#" class="copy"></a>')
           .attr('title', i18n.tips.copy)
           .button(
             icons: 
