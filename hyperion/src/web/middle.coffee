@@ -315,7 +315,7 @@ io.of('/game').on 'connection', (socket) ->
 # send also notification of the Notifier
 # @see {AdminService}
 adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->  
-  exposeMethods adminService, socket, ['save', 'remove']
+  exposeMethods adminService, socket, ['save', 'remove', 'connectAs']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']

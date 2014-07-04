@@ -211,6 +211,7 @@ class _GameService
       basePath: "#{base}/"
       apiBaseUrl: apiBaseUrl
       imagesUrl: "#{baseUrl}/images/"
+      gameUrl: "#{baseUrl}/game"
       # add timer information
       timer:
         value: timer.current().valueOf()

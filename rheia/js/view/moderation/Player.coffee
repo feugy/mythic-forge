@@ -50,6 +50,10 @@ define [
     _collection: Player.collection
 
     # **private**
+    # Simple shortcut to rheia administration service singleton
+    _service: null
+
+    # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removePlayerConfirm
 
@@ -60,6 +64,10 @@ define [
     # **private**
     # Button to kick user
     _kickButton: null
+
+    # **private**
+    # Button to connect as the selected user
+    _connectAsButton: null
 
     # **private**
     # Widget to display email
@@ -105,6 +113,9 @@ define [
       # Closes external changes warning after 5 seconds
       @_autoHideExternal = true
 
+      utils.onRouterReady =>  
+        @_service = app.adminService
+
       @bindTo Player.collection, 'connectedPlayersChanged', (connected, disconnected) =>
         return unless @_kickButton?
         # update kick button's state regarding the presence of model's email in a list
@@ -144,7 +155,7 @@ define [
     # Allows subclass to add specific widgets right after the template was rendered and before first 
     # call to `fillRendering`. 
     _specificRender: =>
-      # wired kick button
+      # wire kick button
       @_kickButton = @$el.find('.kick').button(
         label: i18n.buttons.kick
         disabled: !(@model.email in Player.collection.connected)
@@ -152,6 +163,14 @@ define [
         # do not kick unsaved users
         return if @_tempId?
         Player.collection.kick @model.email
+
+      # wire connect as button
+      @_connectAsButton = @$el.find('.connect-as').button(
+        label: i18n.buttons.connectAs
+      ).on 'click', => 
+        # do not connect as unsaved users
+        return if @_tempId? or !@_service?
+        @_service.connectAs @model.email
 
       # create specific field widgets
       @_emailWidget = @$el.find('.email.field').property(

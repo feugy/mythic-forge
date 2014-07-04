@@ -65,6 +65,7 @@ define
 
   buttons:
     kick: 'Kickass !'
+    connectAs: 'Connexion'
 
   tips:
     copy: "Duplique l'objet ou l'évènemnet"

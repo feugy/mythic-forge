@@ -29,7 +29,7 @@ Event = require '../model/Event'
 Player = require '../model/Player'
 Executable = require '../model/Executable'
 ClientConf = require '../model/ClientConf'
-{type, fromRule} = require '../util/common'
+{type, fromRule, generateToken} = require '../util/common'
 {isValidId} = require '../util/model'
 logger = require('../util/logger').getLogger 'service'
 playerService = require('./PlayerService').get()
@@ -59,6 +59,32 @@ class _AdminService
     return callback "#{id} is invalid" unless isValidId id
     return callback "#{id} is already used" if ItemType.isUsed id
     callback null
+
+  # Allows an administrator to connect as another player
+  #
+  # @param email [String] email of the player to be embodied
+  # @param adminEmail [String] the administrator email that connect instead of the real player
+  # @param callback [Function] end callback, invoked with two arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback token [String] the generated token to use for connection
+  connectAs: (email, adminEmail, callback) =>
+    # Just check that the connecting email bleongs to an administrator
+    Player.findOne {email: adminEmail}, (err, admin) =>
+      return callback err if err?
+      return callback "No player with email #{adminEmail} found" unless admin?
+      return callback "This functionnality is reserved to administrator" unless admin.isAdmin
+
+      # get the other player
+      Player.findOne {email: email}, (err, player) =>
+        return callback err if err?
+        return callback "No player with email #{email} found" unless player?
+
+        # creates a new token, but avoid changing the connection date and connected list
+        player.token = generateToken 24
+        player.save (err, saved) =>
+          return callback err if err?
+          logger.info "administrator #{adminEmail} connected as #{email}"
+          callback null, saved.token
 
   # The list method retrieve all instances of a given model, in:
   # Map, ItemType, Executable, FieldType, EventType and FSItem (AuthoringService.readRoot()). 

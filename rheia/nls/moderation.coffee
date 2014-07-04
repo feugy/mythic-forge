@@ -66,6 +66,7 @@ define
 
     buttons:
       kick: 'Kickass !'
+      connectAs: 'Connect as'
 
     tips:
       copy: 'Duplicate existing object or event'

@@ -320,6 +320,7 @@
       - CRUD (email, firstName, lastName, prefs, characters, isAdmin, lastConnection)
       - providers and password management
       - kick
+      - connect as
     - Search
       - input query with help and validation (use : for regexp and = for string)
       - display result and navigates
@@ -355,3 +356,4 @@
   - game client files and rules history, with possible rollback (even for removed/renamed files)
   - a central configuration and i18n file for clients to store types names, rules results, and any labels
   - contact service to send emails to players
+  - administrator can connect as any players
