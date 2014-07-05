@@ -19,10 +19,8 @@
 'use strict'
 
 _ = require 'underscore'
-async = require 'async'
 moment = require 'moment'
 EventEmitter = require('events').EventEmitter
-ContactService = require('../service/ContactService').get()
 
 # Timer object that will propagate time notifications and that manipulates current time
 #
@@ -77,21 +75,16 @@ class Timer extends EventEmitter
 module.exports =
   timer: new Timer()
 
-  # Used to send a notification campaign
-  # @param campaigns [Object|Array<Object>] An array of notifications to be sent, containing properties:
+  # Used to send a notification campaign from a rule worker to master thread
+  # Does not crash worker if master is unavailable 
+  #
+  # @param campaigns [Array<Object>] An array of notifications to be sent, containing properties:
   # @option campaigns msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
   # @option campaigns players [Player|Array<Player>] an array of players to be notified 
-  # @param callback [Function] end callback, invoked when all message were sent, with parameters:
-  # @option callback err [Error] an error object. Null if no error occured
-  # @option callback report [Array<Object>] a report containing sending result for each player
-  notifCampaigns: (campaigns, callback) ->
-    campaigns = [campaigns] unless _.isArray campaigns
-    async.map campaigns, (campaign, next) ->
-      # check campaign format
-      unless _.isObject(campaign) and campaign.msg? and campaign.players?
-        return next new Error "campaign must be an object with 'msg' and 'players' properties"
-      # send notification for this campaign
-      ContactService.sendTo campaign.players, campaign.msg, next
-    , (err, reports) ->
-      # aggregate reports
-      callback err, if reports? then _.flatten reports else []
+  processCampaigns: (campaigns) ->
+    if _.isArray campaigns
+      try
+        process.send _.extend {event: 'sendTo'}, campaign for campaign in campaigns
+      catch err
+        # master probably dead.
+        console.error "worker #{process.pid}, module #{process.env.module} failed to send campaign: #{err}"

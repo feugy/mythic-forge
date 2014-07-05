@@ -38,16 +38,10 @@ class TurnRule
   # Turn rule rank inside existing rules
   rank: 0
 
-  # Notifications sent to players: for each campaign, put an object with properties:
-  # - msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
-  # - players [Player|Array<Player>] an array of players to be notified 
-  campaigns: []
-
   # Construct a rule, with a fthe rule rank
   constructor: (@rank = 0) ->
     @removed= []
     @saved= []
-    @campaigns= []
  
   # This method select a set of element on which execute will be applied.
   # Objects can be read directly from database, but modification is not allowed.
@@ -59,7 +53,7 @@ class TurnRule
   #   @param err [String] error string. Null if no error occured
   #   @param targets [Array<Object>] list of targeted object, null or empty if the rule does not apply.
   select: (callback) =>
-    throw "#{module.filename}.select() is not implemented yet !"
+    throw new Error "#{module.filename}.select() is not implemented yet !"
 
   # This method execute the rule on a targeted object.
   # Nothing can be saved directly in database, but target and its linked objects could be modified and will
@@ -70,6 +64,15 @@ class TurnRule
   # @param callback [Function] called when the rule is applied, with two arguments:
   #   @param err [String] error string. Null if no error occured
   execute: (target, callback) =>
-    throw "#{module.filename}.execute() is not implemented yet !"
+    throw new Error "#{module.filename}.execute() is not implemented yet !"
+
+  # Notifications sent to players. 
+  # Only available during execute()
+  #
+  # @param campaign [Object]for each campaign, send an object with properties:
+  # @option campaign msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
+  # @option campaign players [Player|Array<Player>] an array of players to be notified 
+  sendCampaign: (campaign) -> 
+    throw new Error 'only available at execution'
 
 module.exports = TurnRule

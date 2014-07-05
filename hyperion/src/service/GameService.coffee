@@ -212,6 +212,7 @@ class _GameService
       apiBaseUrl: apiBaseUrl
       imagesUrl: "#{baseUrl}/images/"
       gameUrl: "#{baseUrl}/game"
+      gameToken: confKey 'game.token'
       # add timer information
       timer:
         value: timer.current().valueOf()

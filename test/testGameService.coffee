@@ -31,7 +31,7 @@ Executable = require '../hyperion/src/model/Executable'
 service = require('../hyperion/src/service/GameService').get()
 adminService = require('../hyperion/src/service/AdminService').get()
 playerService = require('../hyperion/src/service/PlayerService').get()
-assert = require('chai').assert
+{expect} = require 'chai'
      
 type = null
 item1 = null
@@ -94,11 +94,11 @@ describe 'GameService tests', ->
     service.consultMap map.id, -5, -5, 5, 5, (err, items, fields) ->
       return done "Can't consultMap: #{err}" if err?
       # then only item1 is returned
-      assert.equal items.length, 1
-      assert.ok item1.equals items[0]
+      expect(items).to.have.lengthOf 1
+      expect(item1).to.satisfy (o) -> o.equals items[0]
       # then only field1 returned
-      assert.equal fields.length, 1
-      assert.ok field1.equals fields[0]
+      expect(fields).to.have.lengthOf 1
+      expect(field1).to.satisfy (o) -> o.equals fields[0]
       done()
         
   it 'should consultMap returned nothing if no item found', (done) ->
@@ -106,9 +106,9 @@ describe 'GameService tests', ->
     service.consultMap map.id, -1, -1, -5, -5, (err, items, fields) ->
       return done "Can't consultMap: #{err}" if err?
       # then no items returned
-      assert.equal items.length, 0
+      expect(items).to.have.lengthOf 0
       # then no fields returned
-      assert.equal fields.length, 0
+      expect(fields).to.have.lengthOf 0
       done()
         
   it 'should importRules returned nothing', (done) ->
@@ -116,8 +116,7 @@ describe 'GameService tests', ->
     service.importRules (err, rules) ->
       return done "Can't importRules: #{err}" if err?
       # then no rules were exported
-      for key of rules
-        assert.fail 'no rules may have been returned'
+      expect(rules).to.be.empty
       done()
 
   it 'should default configuration be accessible', (done) ->
@@ -128,12 +127,13 @@ describe 'GameService tests', ->
       service.getConf 'root', null, (err, conf) ->
         return done "Can't get configuration: #{err}" if err?
         # then the configuration is returned
-        assert.equal conf.separator, pathUtils.sep
-        assert.equal conf.basePath, 'root/'
-        assert.equal conf.apiBaseUrl, 'http://localhost:3080'
-        assert.equal conf.imagesUrl, 'http://localhost:3080/images/'
-        assert.property conf, 'custom'
-        assert.deepEqual conf.custom, [1, 15]
+        expect(conf).to.have.property 'separator', pathUtils.sep
+        expect(conf).to.have.property 'basePath', 'root/'
+        expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
+        expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
+        expect(conf).to.have.property 'gameToken', 'game.token'
+        expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
+        expect(conf).to.have.property('custom').that.is.deep.equal [1, 15]
         done()
 
   it 'should known locale configuration be accessible', (done) ->
@@ -147,12 +147,14 @@ describe 'GameService tests', ->
         service.getConf 'root', 'fr', (err, conf) ->
           return done "Can't get configuration: #{err}" if err?
           # then the configuration is returned
-          assert.equal conf.separator, pathUtils.sep
-          assert.equal conf.basePath, 'root/'
-          assert.equal conf.apiBaseUrl, 'http://localhost:3080'
-          assert.equal conf.imagesUrl, 'http://localhost:3080/images/'
-          assert.equal conf.names.plain, 'plaine'
-          assert.equal conf.names.montain, 'montain'
+          expect(conf).to.have.property 'separator', pathUtils.sep
+          expect(conf).to.have.property 'basePath', 'root/'
+          expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
+          expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
+          expect(conf).to.have.property 'gameToken', 'game.token'
+          expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
+          expect(conf).to.have.deep.property 'names.plain', 'plaine'
+          expect(conf).to.have.deep.property 'names.montain', 'montain'
           done()
 
   it 'should known sublocale configuration be accessible', (done) ->
@@ -169,14 +171,16 @@ describe 'GameService tests', ->
           service.getConf 'root', 'fr_FR', (err, conf) ->
             return done "Can't get configuration: #{err}" if err?
             # then the configuration is returned
-            assert.equal conf.separator, pathUtils.sep
-            assert.equal conf.basePath, 'root/'
-            assert.equal conf.apiBaseUrl, 'http://localhost:3080'
-            assert.equal conf.imagesUrl, 'http://localhost:3080/images/'
-            assert.equal conf.names.plain, 'dèche'
-            assert.equal conf.names.montain, 'montagne'
-            assert.equal conf.names.river, 'river'
-            assert.equal conf.other, 'WTF'
+            expect(conf).to.have.property 'separator', pathUtils.sep
+            expect(conf).to.have.property 'basePath', 'root/'
+            expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
+            expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
+            expect(conf).to.have.property 'gameToken', 'game.token'
+            expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
+            expect(conf).to.have.deep.property 'names.plain', 'dèche'
+            expect(conf).to.have.deep.property 'names.montain', 'montagne'
+            expect(conf).to.have.deep.property 'names.river', 'river'
+            expect(conf).to.have.deep.property 'other', 'WTF'
             done()
 
   it 'should unknown sublocale configuration be accessible', (done) ->
@@ -190,13 +194,15 @@ describe 'GameService tests', ->
         service.getConf 'root', 'fr_BE', (err, conf) ->
           return done "Can't get configuration: #{err}" if err?
           # then the configuration is returned
-          assert.equal conf.separator, pathUtils.sep
-          assert.equal conf.basePath, 'root/'
-          assert.equal conf.apiBaseUrl, 'http://localhost:3080'
-          assert.equal conf.imagesUrl, 'http://localhost:3080/images/'
-          assert.equal conf.names.plain, 'plaine'
-          assert.equal conf.names.montain, 'montagne'
-          assert.equal conf.names.river, 'river'
+          expect(conf).to.have.property 'separator', pathUtils.sep
+          expect(conf).to.have.property 'basePath', 'root/'
+          expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
+          expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
+          expect(conf).to.have.property 'gameToken', 'game.token'
+          expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
+          expect(conf).to.have.deep.property 'names.plain', 'plaine'
+          expect(conf).to.have.deep.property 'names.montain', 'montagne'
+          expect(conf).to.have.deep.property 'names.river', 'river'
           done()
 
   it 'should unknown locale configuration be accessible', (done) ->
@@ -207,23 +213,23 @@ describe 'GameService tests', ->
       service.getConf 'root', 'en', (err, conf) ->
         return done "Can't get configuration: #{err}" if err?
         # then the configuration is returned
-        assert.equal conf.separator, pathUtils.sep
-        assert.equal conf.basePath, 'root/'
-        assert.equal conf.apiBaseUrl, 'http://localhost:3080'
-        assert.equal conf.imagesUrl, 'http://localhost:3080/images/'
-        assert.equal conf.names.plain, 'plain'
+        expect(conf).to.have.property 'separator', pathUtils.sep
+        expect(conf).to.have.property 'basePath', 'root/'
+        expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
+        expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
+        expect(conf).to.have.property 'gameToken', 'game.token'
+        expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
+        expect(conf).to.have.deep.property 'names.plain', 'plain'
         done()
 
   it 'should invalid yaml not be accepted in configuration', (done) ->
     # when saving an invalid jsonn configuration
     adminService.save 'ClientConf', {source: 'names:\nplain:plain"'}, 'test', (err) ->
-      assert.isDefined err
-      assert.isNotNull err
-      assert.include err.message, 'syntax error'
-      #then configuration was not saved
+      expect(err).to.have.property('message').that.include 'syntax error'
+      # then configuration was not saved
       service.getConf 'root', null, (err, conf) ->
         return done "Can't get configuration: #{err}" if err?
-        assert.isUndefined conf.method
+        expect(conf).not.to.have.property 'method'
         done()
 
   describe 'given two players', ->
@@ -249,28 +255,28 @@ describe 'GameService tests', ->
       service.getPlayers ['james', 'mm', 'unknown'], (err, players) ->
         return done err if err?
 
-        assert.lengthOf players, 2
+        expect(players).to.have.lengthOf 2
 
         # then players data are available
-        assert.equal players[0].email, 'james'
-        assert.equal players[0].firstName, 'Dean'
-        assert.equal players[0].lastName, 'James'
-        assert.instanceOf players[0].lastConnection, Date
-        assert.isTrue players[0].connected
-        assert.notProperty players[0], 'password'
-        assert.notProperty players[0], 'characters'
-        assert.notProperty players[0], 'token'
-        assert.notProperty players[0], 'prefs'
-        assert.notProperty players[0], 'key'
+        expect(players[0]).to.have.property 'email', 'james'
+        expect(players[0]).to.have.property 'firstName', 'Dean'
+        expect(players[0]).to.have.property 'lastName', 'James'
+        expect(players[0]).to.have.property('lastConnection').that.is.instanceOf Date
+        expect(players[0]).to.have.property 'connected', true
+        expect(players[0]).not.to.have.property 'password'
+        expect(players[0]).not.to.have.property 'characters'
+        expect(players[0]).not.to.have.property 'token'
+        expect(players[0]).not.to.have.property 'prefs'
+        expect(players[0]).not.to.have.property 'key'
 
-        assert.equal players[1].email, 'mm'
-        assert.equal players[1].firstName, 'Monroe'
-        assert.equal players[1].lastName, 'Marylin'
-        assert.instanceOf players[1].lastConnection, Date
-        assert.isFalse players[1].connected
-        assert.notProperty players[1], 'password'
-        assert.notProperty players[1], 'characters'
-        assert.notProperty players[1], 'token'
-        assert.notProperty players[1], 'prefs'
-        assert.notProperty players[1], 'key'
+        expect(players[1]).to.have.property 'email', 'mm'
+        expect(players[1]).to.have.property 'firstName', 'Monroe'
+        expect(players[1]).to.have.property 'lastName', 'Marylin'
+        expect(players[1]).to.have.property('lastConnection').that.is.instanceOf Date
+        expect(players[1]).to.have.property 'connected', false
+        expect(players[1]).not.to.have.property 'password'
+        expect(players[1]).not.to.have.property 'characters'
+        expect(players[1]).not.to.have.property 'token'
+        expect(players[1]).not.to.have.property 'prefs'
+        expect(players[1]).not.to.have.property 'key'
         done()

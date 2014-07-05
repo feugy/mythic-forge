@@ -29,9 +29,10 @@ Field = require '../../model/Field'
 Player = require '../../model/Player'
 Map = require '../../model/Map'
 {type, isA, fromRule} = require '../../util/common'
+{processCampaigns} = require '../../util/rule'
 utils = require '../../util/model'
-{notifCampaigns} = require '../../util/rule'
 logger = require('../../util/logger').getLogger 'executor'
+
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #
@@ -287,6 +288,8 @@ module.exports =
           # reinitialize creation and removal arrays.
           rule.saved = []
           rule.removed = []
+          campaigns = []
+
           # check parameters
           utils.checkParameters parameters, applicable.params, actor, target, (err) =>
             return callback err if err?
@@ -294,6 +297,10 @@ module.exports =
             # message used in case of uncaught exception
             @_errMsg = "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}:"
 
+            # campaign handling
+            rule.sendCampaign = (campaign) => campaigns.push campaign
+
+            # now execute
             rule.execute actor, target, parameters, {player: current}, (err, result) => 
               return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
               saved = []
@@ -319,6 +326,7 @@ module.exports =
                 else 
                   Class.find {_id: $in: ids}, enrich
               , (err) =>
+                rule.sendCampaign = () ->
                 return callback err if err?
                 # removes objects from mongo (without duplicates)
                 utils.purgeDuplicates rule.removed
@@ -344,13 +352,8 @@ module.exports =
                   , (err) => 
                     return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                     # everything was fine, now, send campaigns
-                    return callback null, result unless rule.campaigns?
-
-                    notifCampaigns rule.campaigns, (err, report) ->
-                      if report?
-                        for operation in report
-                          logger.debug "sent notification to #{operation.endpoint} succeeded ? #{operation.success}"
-                      callback err, result
+                    processCampaigns campaigns
+                    return callback null, result
               
       if args.length is 1
         playerId = args[0]

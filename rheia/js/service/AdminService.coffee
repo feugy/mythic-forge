@@ -81,7 +81,7 @@ define [
           switch method 
             when 'connectAs'
               # connectAs specific behaviour: store token into local storage and opens a new tab
-              localStorage.setItem 'game.token', args[0]
+              localStorage.setItem conf.gameToken, args[0]
               window.open conf.gameUrl, '_blank'
 
       proxyMethod method for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion', 'connectAs']

@@ -51,9 +51,15 @@ mailgun:
   domain: mythic-forge.com
   sender: deephulk.noreply@mythic-forge.com
 
-# location of games files
 game: 
+  # location of games files
   repo: /tmp/deephulk
+
+  # Images storage
+  image: /tmp/deephulk/images # must be INSIDE game.repo
+
+  # localStorage key that will store connection token
+  token: game.token
 
   # Executable scripts 
   executable:
@@ -66,9 +72,6 @@ game:
     optimized: /tmp/deephulk/optimized
     production: /tmp/deephulk/final
     save: /tmp/deephulk/previous
-
-  # Images storage
-  image: /tmp/deephulk/images
 
 # Turns execution settings. Frequency in seconds
 turn:

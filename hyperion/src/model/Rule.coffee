@@ -41,16 +41,10 @@ class Rule
   # All objects removed by the rule must be added to this array to be removed from database
   removed: []
 
-  # Notifications sent to players: for each campaign, put an object with properties:
-  # - msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
-  # - players [Player|Array<Player>] an array of players to be notified 
-  campaigns: []
-
   # Construct a rule, with a category.
   constructor: (@category = '') ->
     @removed= []
     @saved= []
-    @campaigns= []
  
   # This method indicates wheter or not the rule apply to a given situation.
   # Beware: `canExecute`  is intended to be invoked on server and client side, thus, database access are not allowed.
@@ -63,7 +57,7 @@ class Rule
   # @option callback err [String] error string. Null if no error occured
   # @option callback params [Array] array of awaited parameter (may be empty), or null/undefined if rule does not apply
   canExecute: (actor, target, context, callback) =>
-    throw "#{module.filename}.canExecute() is not implemented yet !"
+    throw new Error "#{module.filename}.canExecute() is not implemented yet !"
 
   # This method effectively contains the rule's logic.
   # It's invoked by the rule engine when the rule is applied.
@@ -79,6 +73,15 @@ class Rule
   # @option callback err [String] error string. Null if no error occured
   # @option callback result [Object] an arbitrary result of this rule.
   execute: (actor, target, params, context, callback) =>
-    throw "#{module.filename}.execute() is not implemented yet !"
+    throw new Error "#{module.filename}.execute() is not implemented yet !"
+    
+  # Notifications sent to players. 
+  # Only available during execute()
+  #
+  # @param campaign [Object]for each campaign, send an object with properties:
+  # @option campaign msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
+  # @option campaign players [Player|Array<Player>] an array of players to be notified 
+  sendCampaign: (campaign) -> 
+    throw new Error 'only available at execution'
         
 module.exports = Rule

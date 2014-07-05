@@ -30,6 +30,7 @@ Executable = require '../model/Executable'
 Map = require '../model/Map'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
+ContactService = require('../service/ContactService').get()
 LoggerFactory = require '../util/logger'
 logger = LoggerFactory.getLogger 'service'
 loggerWorker = LoggerFactory.getLogger 'worker'
@@ -53,6 +54,8 @@ spawn = (poolIdx, options) ->
   worker = cluster.fork options
   worker.setMaxListeners 0
   pool[poolIdx] = worker
+  
+  loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{worker.process.pid}"
 
   # relaunch immediately dead worker
   worker.on 'exit', (code, signal) ->
@@ -67,6 +70,7 @@ spawn = (poolIdx, options) ->
     spawn poolIdx, options
     loggerWorker.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
 
+  # relay important message from worker to master thread
   worker.on 'message', (data) ->
     if data?.event is 'change'
       # trigger the change as if it comes from the master modelWatcher
@@ -74,8 +78,15 @@ spawn = (poolIdx, options) ->
     else if data?.event is notifier.NOTIFICATION
       # trigger the notification as if it comes from the master notifier
       notifier.notify.apply notifier, data.args
+    else if data?.event is 'sendTo'
+      # check data format
+      unless data.msg? and data.players?
+        logger.error "campaign must be an object with 'msg' and 'players' properties:", data
+      # send campaign, and just log results
+      ContactService.sendTo data.players, data.msg, (err, report) =>
+        return logger.error "failed to send campaign: #{err}" if err?
+        logger.info "send campaign", report
     else if data?.event is 'log'
-      # relay log
       LoggerFactory.emit 'log', data.args
 
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
@@ -85,48 +96,43 @@ spawn = (poolIdx, options) ->
 class _RuleService
 
   constructor: ->
-    if cluster.isMaster
-      Executable.resetAll true, (err) ->
-        throw new Error "Failed to initialize RuleService: #{err}" if err?
-        cluster.setupMaster 
-          exec: join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
-
-        options = 
-          module: 'RuleExecutor'
-        spawn 0, options
-        loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{pool[0].process.pid}"
+    # only on master thread
+    return unless cluster.isMaster
+    Executable.resetAll true, (err) ->
+      throw new Error "Failed to initialize RuleService: #{err}" if err?
+      cluster.setupMaster 
+        exec: join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
         
-        options = 
-          module: 'RuleScheduler'
-          # frequency, in seconds.
-          frequency: confKey 'turn.frequency'
-        spawn 1, options
-        loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{pool[1].process.pid}"
+      spawn 0, module: 'RuleExecutor'
+      spawn 1, 
+        module: 'RuleScheduler'
+        # frequency, in seconds.
+        frequency: confKey 'turn.frequency'
 
-        # when a change is detected in master, send it to workers
-        modelWatcher.on 'change', (operation, className, changes, wId) ->
-          # use master pid if it comes from the master
-          wId = if wId? then wId else process.pid
-          for id, worker of cluster.workers when worker.process.pid isnt wId
-            try
-              worker.send event: 'change', args:[operation, className, changes, wId]
-            catch err
-              # silent error: if a worker is closed, it will be automatically restarted
+    # when a change is detected in master, send it to workers
+    modelWatcher.on 'change', (operation, className, changes, wId) ->
+      # use master pid if it comes from the master
+      wId = if wId? then wId else process.pid
+      for id, worker of cluster.workers when worker.process.pid isnt wId
+        try
+          worker.send event: 'change', args:[operation, className, changes, wId]
+        catch err
+          # silent error: if a worker is closed, it will be automatically restarted
 
-      # on version changes, we must reset worker's cache
-      notifier.on notifier.NOTIFICATION, (kind, details) =>
-        return unless details is 'VERSION_RESTORED'
-        Executable.resetAll true, (err) ->
-          # silent error
-          for id, worker of cluster.workers when worker.process.pid isnt process.pid
-            try
-              worker.send event: 'executableReset'
-            catch err
-              # silent error: if a worker is closed, it will be automatically restarted
+    # on version changes, we must reset worker's cache
+    notifier.on notifier.NOTIFICATION, (kind, details) =>
+      return unless details is 'VERSION_RESTORED'
+      Executable.resetAll true, (err) ->
+        # silent error
+        for id, worker of cluster.workers when worker.process.pid isnt process.pid
+          try
+            worker.send event: 'executableReset'
+          catch err
+            # silent error: if a worker is closed, it will be automatically restarted
 
-      # propagate time changes
-      timer.on 'change', (time) ->
-        notifier.notify 'time', 'change', time.valueOf()
+    # propagate time changes
+    timer.on 'change', (time) ->
+      notifier.notify 'time', 'change', time.valueOf()
         
   # Allow to change game timer
   #

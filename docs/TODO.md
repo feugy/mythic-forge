@@ -6,17 +6,17 @@
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - Documentation
   - Rule engine
-    - [!!!] Handle 'No matching document found' version errors while executing rule and revert execution
+    - [!] Handle 'No matching document found' version errors while executing rule and revert execution
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
 
 - Rheia
   - Bugs
-    - [!!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
+    - [!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - Documentation
   - Authoring perspective
-    - [!] multiple file search
+    - [!!] multiple file search
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
   - use tileDim in hexagon and diamond map renderers
 

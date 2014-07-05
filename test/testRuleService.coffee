@@ -28,6 +28,7 @@ Player = require '../hyperion/src/model/Player'
 ItemType = require '../hyperion/src/model/ItemType'
 EventType = require '../hyperion/src/model/EventType'
 FieldType = require '../hyperion/src/model/FieldType'
+ContactService = require('../hyperion/src/service/ContactService').get()
 service = require('../hyperion/src/service/RuleService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
 utils = require '../hyperion/src/util/common'
@@ -637,6 +638,9 @@ describe 'RuleService tests', ->
             compose:
               type: 'object'
               def: 'Item'
+            notified:
+              type: 'boolean'
+              def: false
         ).save (err, saved) ->
           return done err if err?
           type1 = saved
@@ -1006,6 +1010,180 @@ describe 'RuleService tests', ->
         service.execute 'rule40', item1.id, item1.id, {}, 'admin', (err, result)->
           expect(err).to.exist.and.to.include 'denied to executables'
           done()
+
+    describe 'given a mocked ContactService', ->
+      originalSendTo = ContactService.sendTo
+      sendArgs = []
+      sendError = []
+      sendReport = []
+      invokation = 0
+
+      beforeEach ->
+        sendArgs = []
+        sendError = []
+        sendReport = []
+        invokation = 0
+        ContactService.sendTo = (args..., callback) ->
+          sendArgs[invokation] = args
+          callback sendError[invokation], sendReport[invokation++]
+
+      afterEach ->
+        ContactService.sendTo = originalSendTo
+
+      it 'should campaign being distinct between turns', (done) ->
+        # given a turn rule that send email to same player for different items
+        new Executable(
+          id:'rule41'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
+            Player = require 'hyperion/model/Player'
+
+            class CampaignRule extends TurnRule
+              select: (callback) =>
+                Item.find type: "#{type1.id}", notified: false, callback
+
+              execute: (target, callback) =>
+                Player.findOne email: 'admin', (err, admin) =>
+                  return callback err if err?
+                  @sendCampaign players: admin, msg: "message for \#{target.id}"
+                  target.notified = true
+                  callback null
+            module.exports = new CampaignRule()"""
+        ).save (err) ->
+          Player.findOne email: 'admin', (err, admin) ->
+            return done err if err?
+
+            # when triggering turn first time
+            service.triggerTurn (err, result)->
+              expect(err).not.to.exist
+              expect(invokation).to.equal 4
+
+              # then campaign was sent for each item
+              for item in [item1, item2, item3, item4]
+                found = false
+                for [players, msg] in sendArgs when msg is "message for #{item.id}"
+                  expect(players, "unexpected player for #{item.id}").to.satisfy (o) -> admin.equals o
+                  found = true
+                  break
+                expect(found, "no campaign found for #{item.id}").to.be.true
+
+              # when triggering turn second time
+              service.triggerTurn (err, result)->
+                expect(err).not.to.exist
+                # then no more campaign was sent
+                expect(invokation).to.equal 4
+                done()
+
+      it 'should not fail on campaign error', (done) ->
+        # given a turn rule that send email to same player for different items
+        new Executable(
+          id:'rule42'
+          content: """TurnRule = require 'hyperion/model/TurnRule'
+            Item = require 'hyperion/model/Item'
+            Player = require 'hyperion/model/Player'
+
+            class SecondCampaignRule extends TurnRule
+              select: (callback) =>
+                Item.find type: "#{type1.id}", callback
+
+              execute: (target, callback) =>
+                Player.findOne email: 'admin', (err, admin) =>
+                  return callback err if err?
+                  @sendCampaign players: admin, msg: "message for \#{target.id}"
+                  callback null
+            module.exports = new SecondCampaignRule()"""
+        ).save (err) ->
+          # given a failing contact service
+          sendError = (new Error 'sending problem' for i in [0..3])
+
+          # when triggering turn
+          service.triggerTurn (err, result)->
+            # no error was sent
+            expect(err).not.to.exist
+
+            # then all campaign were issued
+            expect(invokation).to.equal 4
+            done()
+
+      it 'should campaign being sent during execution', (done) ->
+        # given a turn rule that send email to same player for different items
+        new Executable(
+          id:'rule44'
+          content: """Rule = require 'hyperion/model/Rule'
+
+            class SendCampaignRule extends Rule
+              canExecute: (player, target, context, callback) =>
+                callback null, if player._className is 'Player' then [] else null
+              execute: (player, target, params, context, callback) =>
+                @sendCampaign players: player, msg: "message for \#{target.id}"
+                callback null, null
+
+            module.exports = new SendCampaignRule()"""
+        ).save (err) ->
+          Player.findOne email: 'admin', (err, admin) ->
+            return done err if err?
+
+            # when exeuting rule
+            service.execute 'rule44', admin.id, item1.id, {}, 'admin', (err, result)->
+              expect(err).not.to.exist
+              expect(invokation).to.equal 1
+              [player, msg] = sendArgs[0]
+              expect(player).to.satisfy (o) -> admin.equals o
+              expect(msg).to.equal "message for #{item1.id}" 
+              done()
+
+      it 'should campaign not being sent during select', (done) ->
+        # given a turn rule that send email to same player for different items
+        new Executable(
+          id:'rule45'
+          content: """Rule = require 'hyperion/model/Rule'
+
+            class IllegalCampaignRule extends Rule
+              canExecute: (player, target, context, callback) =>
+                @sendCampaign players: player, msg: "message for \#{target.id}"
+                callback null, null
+              execute: (player, target, params, context, callback) =>
+                callback null, null
+            module.exports = new IllegalCampaignRule()"""
+        ).save (err) ->
+          Player.findOne email: 'admin', (err, admin) ->
+            return done err if err?
+
+            # when exeuting rule
+            service.resolve admin.id, 'rule45', 'admin', (err, result)->
+              expect(err).to.include 'only available at execution'
+              expect(invokation).to.equal 0
+              done()
+
+      it 'should campaign error not fails execution', (done) ->
+        # given a turn rule that send email to same player for different items
+        new Executable(
+          id:'rule46'
+          content: """Rule = require 'hyperion/model/Rule'
+
+            class FailingCampaignRule extends Rule
+              canExecute: (player, target, context, callback) =>
+                callback null, if player._className is 'Player' then [] else null
+              execute: (player, target, params, context, callback) =>
+                @sendCampaign players: player, msg: "message for \#{target.id}"
+                callback null, null
+
+            module.exports = new FailingCampaignRule()"""
+        ).save (err) ->
+          Player.findOne email: 'admin', (err, admin) ->
+            return done err if err?
+
+            # given a failing contact service
+            sendError = [new Error 'sending problem']
+
+            # when triggering turn
+            service.execute 'rule46', admin.id, item1.id, {}, 'admin', (err, result)->
+              # no error was sent
+              expect(err).not.to.exist
+
+              # then all campaign were issued
+              expect(invokation).to.equal 1
+              done()
 
   describe 'given an item type and an item', ->
 

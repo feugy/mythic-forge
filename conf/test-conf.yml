@@ -54,9 +54,16 @@ mailgun:
   domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
   sender: noreply@mythic-forge.com
 
-# location of games files
 game: 
+  # location of games files
   repo: ../tmp
+
+  # Images storage
+  image: ../tmp/images # must be INSIDE game.repo
+
+  # localStorage key that will store connection token
+  token: game.token
+
 
   # Executable scripts 
   executable:
@@ -69,9 +76,6 @@ game:
     optimized: ../tmp/optimized
     production: ../tmp/final
     save: ../tmp/previous
-
-  # Images storage
-  image: ../tmp/images
 
 # Turns execution settings. Frequency in seconds
 turn:
