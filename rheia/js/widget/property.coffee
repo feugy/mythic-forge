@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -29,6 +29,8 @@ define [
   'widget/advEditor'
 ],  ($, _, moment, i18n, i18nWidget, Base) ->
 
+  # check that current browser support numeric inputs
+  supportNumeric = $('<input type="number">').attr('type') is 'number'
   i18n = $.extend true, i18n, i18nWidget
 
   # The property widget allows to display and edit a type's property. 
@@ -56,7 +58,7 @@ define [
       # refresh rendering.
       @$el.find('*').unbind().remove()
       @$el.html ''
-      # inhibition flag: for firefox and numeric types. the `numeric` widget trigger setOption twice
+      # inhibition flag: for old browsers and numeric types. the `numeric` widget trigger setOption twice
       @_inhibit = true
       @_create()
       @_inhibit = false
@@ -129,8 +131,8 @@ define [
                    max="#{@options.max}" step="#{step}" 
                    value="#{@options.value}"/>""").appendTo @$el
           rendering.on 'change keyup', @_onChange
-          if $.browser.mozilla 
-            # we must use a widget on firefox       
+          unless supportNumeric
+            # we must use a widget on old browsers       
             rendering.attr('name', parseInt Math.random()*1000000000)
               .focus(() ->  $(this).parent().addClass 'focus')
               .blur(() -> $(this).parent().removeClass 'focus')
@@ -237,8 +239,8 @@ define [
         switch @options.type
           when 'float', 'integer'
             newValue = if isNull then null else 0
-            if $.browser.mozilla
-              # in mozilla we're using a widget
+            unless supportNumeric 
+              # in old browsers we're using a widget
               input.numeric 'option', 'disabled', isNull
               input.val '0' unless isNull
             else 

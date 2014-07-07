@@ -2,47 +2,33 @@
 
 - Hyperion
   - Bugs
-    - [!!] Space crusade, reveal blip: actions are not detected modified on squad
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
-  - test images for field types and event types
   - Documentation
   - Rule engine
+    - [!] Handle 'No matching document found' version errors while executing rule and revert execution
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
-    - secured rules > mock save() and remove() methods from instances, collection and update() from classes
-  - Security
-    - register users from Facebook
-    - use github as authentication method
-    - token expiration: no refresh on operations
 
 - Rheia
   - Bugs
-    - [!!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
-    - [!] on handshake expiration, infinite redirect loop between dev tab and rheia tab
-    - set nls default values to avoid browser failure with non-french locale
-    - use tileDim in hexagon and diamond map renderers
-    - noticeable slowdown in Firefox
-    - after version change, version list is empty
+    - [!] in authoring, some modified files have the title asterisk, but no buttons/shortcut enabled
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
-    - map navigation and zoom - NOT reproducted
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - Documentation
   - Authoring perspective
-    - multiple file search & replace
-    - single file search & replace
+    - [!!] multiple file search
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
+  - use tileDim in hexagon and diamond map renderers
 
 - Atlas
-  - image cache evinction (notably when item/field/event type changes)
-  - manage labels in clientConf
-  - provide widget library with Image service
-  - package as library
+  - package as library for es6, common JS and require
   - Documentation
 
 # Done
 
 - Hyperion
   - Bugs
+    - modified linked model (not linked to actor nor target) not detected as modified and not saved by rules
     - model cache retains old object version: clean worker model cache when any thread failed
     - temper executable require during resetAll until all executable compilation
     - avoid message collision between ruleService and ruleExecutor on same executed method
@@ -139,14 +125,16 @@
     - kick users after inactivity
     - register users from Google
     - register users from Twitter
+    - register users from Github
     - register user manually
     - enforce user existence and rights at socket.io handshake
     - disable security for tests
     - re-authent user after disconnection
     - manual user logout 
-    - session expiration
+    - session expiration on last connection date, that can be disabled from configuration
     - restrict rheia access to administrators only
     - test password management of manually registered players
+    - detect client disconnection and claim for logout after 10 seconds
   - Rule engine 
     - restrict rule resolution to given categories
     - restrict rule resolution to given rule id
@@ -172,6 +160,8 @@
     - remove models by id in rule's removed array
     - allow rule, turn rule and script to be written in plain javascript
     - inject current player inside resolve's and execute's context
+    - rule, turn rules and scripts are versionned and can be rolled-back
+    - secure mongoose Models and Collection to prevent usage from executables
   - Web layer
     - retrieve item, event and field types 
     - map items CRUD invokation
@@ -180,9 +170,13 @@
     - map items modification propagation
     - secured websocket
     - use socket.io 1.0.0-pre
+  - Contact Service
+    - send emails with mailgun
 
 - Rheia
   - Bugs
+    - image carousel in field type not properly working with exotic image sizes
+    - double numeric contols in newest firfox for number properties
     - player token invalidated after player edition
     - when update received on an item moderation view, displayed image is wrong
     - moderation map does not shows item movement when specified transition isn't found
@@ -205,6 +199,7 @@
     - FSItem move popup does not close on ok
     - item's map changes not displayed in moderation (when map was previously not existing)
     - fix rule/turn rule active/category/rank changes
+  - provide english default labels, and french translation
   - handle rule requires
   - perspective loader
   - login page
@@ -212,6 +207,8 @@
   - error reporting on network failure, kick and deployement in progress cases
   - reconnection management, page reloading management
   - display connected count in top bar
+  - non modal notification for object/files external modification
+  - modal notification for object/files external removal (except for Items and Events from moderation)
   - authoring perspective
     - reload when changing game client version
     - error handling while saving/moving/removing files (during deployement)
@@ -230,12 +227,12 @@
       - action bar (save, delete)
       - editor widget
       - loading/save content
-      - external modification/removal notification
       - displays images
       - dot not save when restoring previous version
     - History
       - display file's history
       - revert to file version
+      - automatically update content when global version changed
   - edition perspective
     - check that search is reloaded only on types changed
     - contextual menus in search and explorer
@@ -252,6 +249,7 @@
       - multiple affectation
       - zoom, toggle markers and toggle grid commands
       - choose tile size and use it in display
+      - display hovered field position, type and image num
     - Search
       - input query with help and validation
       - display result and navigates
@@ -277,6 +275,9 @@
       - rule special behaviour when renaming
       - try to reload executable when initializing executables on requirejs errors
       - written in JavaScript or CoffeeScript
+      - display's content history
+      - revert to previous versions
+      - automatically update content when global version changed
     - Client configuration
       - written in YAML
   - administration perspective
@@ -319,6 +320,7 @@
       - CRUD (email, firstName, lastName, prefs, characters, isAdmin, lastConnection)
       - providers and password management
       - kick
+      - connect as
     - Search
       - input query with help and validation (use : for regexp and = for string)
       - display result and navigates
@@ -333,22 +335,25 @@
   - create and automate tests
 
 # Consequent changes
+  - much more fast and reliable
   - mongoDB instead MySQL, NodeJS instead Java
+  - WebSocket everywhere: increase speed
   - no more distinction between Items and Actors
   - no more event on actors
   - no more link between rules and actors
   - hexagonal and 3D iso maps
   - event-kind properties
   - date-kind properties
-  - connect with Google, Twitter
-  - drop from Item/Event/Player tabs
+  - connect with Google, Twitter, Github
+  - drop from Item/Event/Player tabs to affect
+  - copy existing Item/Event/Player
   - sprite management for animations and transition
   - rules in CoffeeScript and Javascript
   - isomorphic rules: can partially be executed on client to increase reactivity
-  - WebSocket everywhere: increase speed
   - rendering template for events
   - live log displayal on Rheia
   - faster game client optimization process, automatic versionning
   - game client files and rules history, with possible rollback (even for removed/renamed files)
   - a central configuration and i18n file for clients to store types names, rules results, and any labels
-  - much more fast and reliable
+  - contact service to send emails to players
+  - administrator can connect as any players

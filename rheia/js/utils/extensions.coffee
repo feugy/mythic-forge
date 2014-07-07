@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -57,7 +57,7 @@ define [
     # @param events [String] events on which the callback is bound
     # @parma callback [Function] the bound callback
     bindTo: (emitter, events, callback) ->
-      debugger unless emitter
+      debugger unless emitter?
       emitter.on events, callback
       @_bounds.push [emitter, events, callback]
       

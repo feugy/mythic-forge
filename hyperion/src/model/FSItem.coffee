@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -19,10 +19,10 @@
 'use strict'
 
 _ = require 'underscore'
-pathUtils = require 'path'
+{normalize, join, dirname} = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
-utils = require '../util/common'
+{fromRule, type} = require '../util/common'
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 
@@ -44,6 +44,9 @@ class FSItem
   # For folder items, an array (may be empty) of FSItems.
   content: null
 
+  # Date of last update, populated when content is read
+  updated: null
+
   # Create a new fs-item, with its path and folder status
   # 
   # @overload new FSItem (path, isFolder)
@@ -62,14 +65,14 @@ class FSItem
     switch args.length
       when 1 
         raw = args[0]
-        throw 'FSItem may be constructed from JSON object' unless 'object' is utils.type raw
+        throw 'FSItem may be constructed from JSON object' unless 'object' is type raw
         @[attr] = value for attr, value of raw when attr in ['path', 'content', 'isFolder']
       when 2
         @path = args[0]
         @isFolder = args[1]          
       else throw 'Can only construct FSItem with arguments `raw` or `path`and `isFolder`'
     # process attributes
-    @path = pathUtils.normalize @path
+    @path = normalize @path
     @content = @content.toString 'base64' if Buffer.isBuffer @content
 
   # Find fs-item content. If the searched fs-item is a folder, @content will contains
@@ -86,6 +89,10 @@ class FSItem
       # check that folder status do not change
       return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
       
+      # keep last update time 
+      @updated = stat.mtime
+      @updated.setMilliseconds 0
+
       if @isFolder
         # read folder's content
         fs.readdir @path, (err, items) =>
@@ -93,7 +100,7 @@ class FSItem
           @content = []
           # construct FSItem for each contained item
           async.forEach items, (item, next) =>
-            path = pathUtils.join(@path, item)
+            path = join(@path, item)
             # test if item is folder or file
             fs.stat path, (err, stat) =>
               return next(err) if err?
@@ -122,6 +129,7 @@ class FSItem
   # @option callback item [FSItem] the saved item
   # @option callback isNew [Boolean] true if the item did not exists before
   save: (callback) =>
+    return if fromRule callback
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       isNew = false
@@ -140,6 +148,9 @@ class FSItem
             return callback "Error while creating new folder #{@path}: #{err}" if err?
             logger.debug "folder #{@path} successfully created"
             # invoke watcher
+            @updated = new Date()
+            @updated.setMilliseconds 0
+
             modelWatcher.change 'creation', 'FSItem', @
             callback null, @, true
         else
@@ -153,21 +164,26 @@ class FSItem
             if Buffer.isBuffer @content
               saved = @content
               @content = @content.toString 'base64' 
-            else if 'string' is utils.type @content
+            else if 'string' is type @content
               saved = new Buffer @content, 'base64'
 
             # write file content
             fs.writeFile @path, saved, (err) =>
               return callback "Error while saving file #{@path}: #{err}" if err?
+
+              # keep last update time 
+              @updated = new Date()
+              @updated.setMilliseconds 0
+
               logger.debug "file #{@path} successfully saved"
-              modelWatcher.change (if isNew then 'creation' else 'update'), 'FSItem', @, ['content']
+              modelWatcher.change (if isNew then 'creation' else 'update'), 'FSItem', @, ['content', 'updated']
               callback null, @, isNew
           catch exc
             callback "Bad file content for file #{@path}: #{exc}"
 
         return saveFile() unless isNew
         # for new files, create parent folders
-        parent = pathUtils.dirname @path
+        parent = dirname @path
         fs.mkdirs parent, (err) =>
           return callback "Error while creating new file #{@path}: #{err}" if err?
           saveFile()
@@ -178,6 +194,7 @@ class FSItem
   #   @param err [String] error string. Null if save succeeded
   #   @param item [FSItem] the removed item
   remove: (callback) =>
+    return if fromRule callback
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       return callback "Unexisting item #{@path} cannot be removed" if err?.code is 'ENOENT'
@@ -207,7 +224,8 @@ class FSItem
   # @option callback err [String] an error message if an error occured. null otherwise
   # @option callback item [FSItem] the concerned fsitem
   move: (newPath, callback) =>
-    newPath = pathUtils.normalize newPath
+    return if fromRule callback
+    newPath = normalize newPath
     # First, read current file statistics
     fs.stat @path, (err, stat) =>
       return callback "Unexisting item #{@path} cannot be moved" if err?.code is 'ENOENT'
@@ -221,7 +239,7 @@ class FSItem
         return callback "Cannot move because new path #{newPath} already exists" if exists
 
         # then creates the new parent path
-        parent = pathUtils.dirname newPath
+        parent = dirname newPath
         fs.mkdirs parent, (err) =>
           return callback "Error while creating new item #{@path}: #{err}" if err?
 
@@ -239,6 +257,9 @@ class FSItem
 
               # and for creation
               @path = newPath
+              @updated = new Date()
+              @updated.setMilliseconds 0
+              
               modelWatcher.change 'creation', 'FSItem', @
               callback null, @
 

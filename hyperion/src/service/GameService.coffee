@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -31,20 +31,20 @@ ClientConf = require '../model/ClientConf'
 Player = require '../model/Player'
 playerService = require('./PlayerService').get()
 
-utils = require '../util/common'
-pathUtils = require 'path'
-ruleUtils = require '../util/rule'
+{fromRule, confKey} = require '../util/common'
+{sep} = require 'path'
+{timer} = require '../util/rule'
 ruleService = require('./RuleService').get()
 logger = require('../util/logger').getLogger 'service'
 
-port = utils.confKey 'server.bindingPort', utils.confKey 'server.staticPort', process.env.PORT
-apiPort = utils.confKey 'server.bindingPort', utils.confKey 'server.apiPort', process.env.PORT
-host = utils.confKey 'server.host'
+port = confKey 'server.bindingPort', confKey 'server.staticPort', process.env.PORT
+apiPort = confKey 'server.bindingPort', confKey 'server.apiPort', process.env.PORT
+host = confKey 'server.host'
 
 baseUrl = "http://#{host}"
 # port 80 must be omitted, to allow images resolution on client side.
 baseUrl += ":#{port}" if port isnt 80
-apiBaseUrl = "#{if certPath = utils.confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{apiPort}"
+apiBaseUrl = "#{if certPath = confKey('ssl.certificate', null)? then 'https' else 'http'}://#{host}:#{apiPort}"
 
 # merge two JSON object by putting into the result object a deep coy of all original attributes
 #
@@ -70,6 +70,7 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback types [Array<ItemType/EventType/FieldType>] list of retrieved types. May be empty.
   getTypes: (ids, callback) =>
+    return if fromRule callback
     logger.debug "Consult types with ids: #{ids}"
     types = []
     # search in each possible type category
@@ -89,6 +90,7 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback events [Array<Item>] list of retrieved items. May be empty.
   getItems: (ids, callback) =>
+    return if fromRule callback
     logger.debug "Consult items with ids: #{ids}"
     Item.find {_id: $in: ids}, (err, items) ->
       return callback err, [] if err?
@@ -103,6 +105,7 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback events [Array<Event>] list of retrieved events. May be empty.
   getEvents: (ids, callback) =>
+    return if fromRule callback
     logger.debug "Consult events with ids: #{ids}"
     Event.find {_id: $in: ids}, (err, events) ->
       return callback err, [] if err?
@@ -117,6 +120,7 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback events [Array<Object>] list of retrieved players (plain objects. May be empty.
   getPlayers: (emails, callback) =>
+    return if fromRule callback
     logger.debug "Consult players with emails: #{emails}"
     Player.find {email: $in: emails}, (err, players) ->
       return callback err, [] if err?
@@ -138,6 +142,7 @@ class _GameService
   # @option callback items [Array<Item>] list of retrieved items. May be empty
   # @option callback fields [Array<Field>] list of retrieved fields. May be empty
   consultMap: (mapId, lowX, lowY, upX, upY, callback) =>
+    return if fromRule callback
     unless mapId? and lowX? and lowY? and upX? and upY? and callback?
       return callback 'All parameters are mandatory' 
 
@@ -187,6 +192,7 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback items [Array<Executable>] list of retrieved executables. May be empty.
   getExecutables: (callback) =>
+    return if fromRule callback
     logger.debug 'Consult all executables'
     Executable.find callback
 
@@ -198,16 +204,19 @@ class _GameService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback conf [Object] computed configuration, in json format.
   getConf: (base, locale, callback) =>
+    return if fromRule callback
     # get information that does not change often
     conf = 
-      separator: pathUtils.sep
+      separator: sep
       basePath: "#{base}/"
       apiBaseUrl: apiBaseUrl
       imagesUrl: "#{baseUrl}/images/"
+      gameUrl: "#{baseUrl}/game"
+      gameToken: confKey 'game.token'
       # add timer information
       timer:
-        value: ruleUtils.timer.current().valueOf()
-        paused: ruleUtils.timer.stopped
+        value: timer.current().valueOf()
+        paused: timer.stopped
 
     ids = ['default']
     # add locale

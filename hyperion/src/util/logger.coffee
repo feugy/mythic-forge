@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -96,7 +96,9 @@ computeLevel = (name) ->
 # @throw an error if parameter is above 25 characters
 format = (args, level, name) ->
   # date name level parameter : message
-  vals = (if _.isObject arg then JSON.stringify arg else arg?.toString() for arg in args)
+  vals = (for arg in args
+    if _.isObject arg then JSON.stringify(arg) else arg?.toString() 
+  )
   "#{moment().format conf.dateFormat or defaultDateFormat} #{process.pid} #{_s.pad name, nameMaxLength} #{_s.pad level, levelMaxLength} : #{vals.join ' '}"
 
 # Logger Factory: creates new (or retrieve existing) logger with the following methods (ordered):

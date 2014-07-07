@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -23,7 +23,7 @@ conn = require './connection'
 Map = require './Map'
 
 # Define the schema for map item with its properties
-Item = typeFactory 'Item', 
+Item = typeFactory 'Item',
   # link to map
   map: {}
   
@@ -101,4 +101,3 @@ Item = typeFactory 'Item',
 
 # Export the Class.
 module.exports = conn.model 'item', Item
-

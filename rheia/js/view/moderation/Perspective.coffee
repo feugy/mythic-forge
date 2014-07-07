@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -136,7 +136,7 @@ define [
       'click .toggle-grid': '_onToggleGrid'
       'click .toggle-markers': '_onToggleMarkers'
       'change .zoom': '_onZoomed'
-      'click .embody > .value': '_onDisplayEmbody'
+      'click .embodied > .value': '_onDisplayEmbody'
 
     # **private**
     # View's mustache template
@@ -313,7 +313,7 @@ define [
     # **private**
     # When embodiment changed, refresh its name
     _onRefreshEmbodiment: =>
-      @$el.find('.embody > .value').text if app.embodiment? then utils.instanceName(app.embodiment) else i18n.labels.noEmbodiment
+      @$el.find('.embodied > .value').text if app.embodiment? then utils.instanceName(app.embodiment) else i18n.labels.noEmbodiment
       # store new embodiment into local storage for refresh
       
 

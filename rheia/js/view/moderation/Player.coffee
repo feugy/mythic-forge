@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -50,6 +50,10 @@ define [
     _collection: Player.collection
 
     # **private**
+    # Simple shortcut to rheia administration service singleton
+    _service: null
+
+    # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removePlayerConfirm
 
@@ -60,6 +64,10 @@ define [
     # **private**
     # Button to kick user
     _kickButton: null
+
+    # **private**
+    # Button to connect as the selected user
+    _connectAsButton: null
 
     # **private**
     # Widget to display email
@@ -103,15 +111,18 @@ define [
     constructor: (id) ->
       super id, 'player'
       # Closes external changes warning after 5 seconds
-      @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
+      @_autoHideExternal = true
+
+      utils.onRouterReady =>  
+        @_service = app.adminService
 
       @bindTo Player.collection, 'connectedPlayersChanged', (connected, disconnected) =>
         return unless @_kickButton?
         # update kick button's state regarding the presence of model's email in a list
         if @model.email in disconnected
-          @_kickButton.button 'option', 'disabled', true
+          @_kickButton.disable()
         else if @model.email in connected
-          @_kickButton.button 'option', 'disabled', false
+          @_kickButton.enable()
 
       console.log "creates player moderation view for #{if id? then @model.id else 'a new player'}"
 
@@ -140,19 +151,46 @@ define [
       title: _.sprintf i18n.titles.player, @model.email, @model.id
       i18n: i18n
 
+    # Returns the view's action bar, and creates it if needed.
+    # Adds kick and connect-as buttons 
+    #
+    # @return the action bar rendering.
+    getActionBar: =>
+      bar = super()
+      # adds specific buttons
+      if bar.find('.kick').length is 0
+        @_kickButton = $('<a href="#" class="kick"></a>')
+          .attr('title', i18n.tips.kick)
+          .button(
+            icons: 
+              primary: 'kick small'
+            text: false
+          ).appendTo(bar).click((event) =>
+            event?.preventDefault()
+            # do not kick unsaved users
+            return if @_tempId?
+            Player.collection.kick @model.email
+          ).data 'button'
+        @_kickButton.disable() unless @model.email in Player.collection.connected
+
+      if bar.find('.connect-as').length is 0
+        $('<a href="#" class="connect-as"></a>')
+          .attr('title', i18n.tips.connectAs)
+          .button(
+            icons: 
+              primary: 'connect-as small'
+            text: false
+          ).appendTo(bar).click (event) =>
+            event?.preventDefault()
+            # do not connect as unsaved users
+            return if @_tempId? or !@_service?
+            @_service.connectAs @model.email
+      bar
+
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
     # call to `fillRendering`. 
     _specificRender: =>
-      # wired kick button
-      @_kickButton = @$el.find('.kick').button(
-        label: i18n.buttons.kick
-        disabled: !(@model.email in Player.collection.connected)
-      ).on 'click', => 
-        # do not kick unsaved users
-        return if @_tempId?
-        Player.collection.kick @model.email
-
       # create specific field widgets
       @_emailWidget = @$el.find('.email.field').property(
         type: 'string'
@@ -333,13 +371,6 @@ define [
     # @return true if all rendering's fields are valid
     _specificValidate: =>
       (msg: "#{i18n.labels.prefs} : #{err?.msg}" for err in @_prefsWidget.options.errors)
-
-    # **private**
-    # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
-    _notifyExternalChange: =>
-      @_emptyExternalChange()
-      if @$el.find('.external-change *').length is 0
-        @$el.find('.external-change').append "<p>#{i18n.msgs.playerExternalChange}</p>"
 
     # **private**
     # When changing provider, we must toggle the password field also

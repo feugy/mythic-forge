@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -162,7 +162,13 @@ define [
       @_inhibitPropertyChange = true
       for uidName, prop of @_editedProperties
         # a line for each property
-        line = $("""<tr class="property"></tr>""").appendTo @$el.find '.properties > tbody'
+        line = $("""<tr class="property"></tr>""")
+
+        # newly created properties are always first
+        if uidName is i18n.labels.propertyDefaultName
+          @$el.find('.properties > tbody').prepend line
+        else
+          @$el.find('.properties > tbody').append line
 
         # removal button
         remove = $('<a href="#"></a>').button(

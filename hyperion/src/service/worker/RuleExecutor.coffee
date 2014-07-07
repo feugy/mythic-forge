@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -20,7 +20,7 @@
 
 _ = require 'underscore'
 async = require 'async'
-pathUtils = require 'path'
+{relative} = require 'path'
 Rule = require '../../model/Rule'
 Executable = require '../../model/Executable'
 Item = require '../../model/Item'
@@ -28,9 +28,11 @@ Event = require '../../model/Event'
 Field = require '../../model/Field'
 Player = require '../../model/Player'
 Map = require '../../model/Map'
-utils = require '../../util/common'
-modelUtils = require '../../util/model'
+{type, isA, fromRule} = require '../../util/common'
+{processCampaigns} = require '../../util/rule'
+utils = require '../../util/model'
 logger = require('../../util/logger').getLogger 'executor'
+
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #
@@ -63,10 +65,10 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, current, call
       try 
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
-        obj = require pathUtils.relative __dirname, executable.compiledPath
+        obj = require relative __dirname, executable.compiledPath
         obj?.id = executable.id
-        obj?.category = '' unless 'string' is utils.type obj?.category
-        if obj? and utils.isA(obj, Rule) and obj.active
+        obj?.category = '' unless 'string' is type obj?.category
+        if obj? and isA(obj, Rule) and obj.active
           if _.isArray restriction
             rules.push obj if obj.category in restriction
           else if _.isString restriction
@@ -111,6 +113,9 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, current, call
                 if wholeRule
                   result = rule: rule
                 else
+                  # do not send fully fetched target: it may contained reference to actor and then cause a stack explosion
+                  if target?._className in ['Event', 'Item']
+                    utils.processLinks target, target.type.properties, false
                   result = category: rule.category
                 result.target = target
                 result.params = parameters
@@ -160,6 +165,7 @@ module.exports =
   # - params [Object] the awaited parameters specification
   # - category [String] the rule category
   resolve: (args..., restriction, email, callback) =>
+    return if fromRule callback
     # resolve connected player first
     Player.findOne {email: email}, (err, current) =>
       return callback "Cannot resolve rules. Failed to retrieve current player (#{email}): #{err}" if err?
@@ -258,6 +264,7 @@ module.exports =
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
   execute: (ruleId, args..., parameters, email, callback) =>
+    return if fromRule callback
     # resolve connected player first
     Player.findOne {email: email}, (err, current) =>
       return callback "Failed to execute rule #{rule.id}. Failed to retrieve current player (#{email}): #{err}" if err?
@@ -281,13 +288,19 @@ module.exports =
           # reinitialize creation and removal arrays.
           rule.saved = []
           rule.removed = []
+          campaigns = []
+
           # check parameters
-          modelUtils.checkParameters parameters, applicable.params, actor, target, (err) =>
+          utils.checkParameters parameters, applicable.params, actor, target, (err) =>
             return callback err if err?
 
             # message used in case of uncaught exception
             @_errMsg = "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}:"
 
+            # campaign handling
+            rule.sendCampaign = (campaign) => campaigns.push campaign
+
+            # now execute
             rule.execute actor, target, parameters, {player: current}, (err, result) => 
               return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
               saved = []
@@ -313,20 +326,23 @@ module.exports =
                 else 
                   Class.find {_id: $in: ids}, enrich
               , (err) =>
+                rule.sendCampaign = () ->
                 return callback err if err?
                 # removes objects from mongo (without duplicates)
-                modelUtils.purgeDuplicates rule.removed
+                utils.purgeDuplicates rule.removed
                 async.each rule.removed, (obj, end) -> 
                   logger.debug "remove #{obj._className} #{obj.id}"
                   obj.remove (err)-> end err
                 , (err) => 
                   return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-                  # adds new objects to be saved
-                  saved = [].concat rule.saved
-                  # looks for modified linked objects
-                  modelUtils.filterModified actor, saved
-                  modelUtils.filterModified target, saved
-                  modelUtils.purgeDuplicates saved
+                  
+                  saved = []
+                  # looks for modified linked objects, for every saved object
+                  utils.filterModified obj, saved for obj in [actor, target].concat rule.saved
+                  # removes duplicates and sort to save new objects first
+                  utils.purgeDuplicates saved
+                  saved.sort (o1, o2) -> if o1.id? and not o2.id? then 1 else if o2.id? and not o1.id? then -1 else 0
+
                   # saves the whole in MongoDB
                   async.forEach saved, (obj, end) -> 
                     # do not re-save models that were already removed !
@@ -335,8 +351,9 @@ module.exports =
                     obj.save end
                   , (err) => 
                     return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-                    # everything was fine
-                    callback null, result
+                    # everything was fine, now, send campaigns
+                    processCampaigns campaigns
+                    return callback null, result
               
       if args.length is 1
         playerId = args[0]

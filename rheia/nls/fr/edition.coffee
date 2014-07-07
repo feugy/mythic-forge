@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -41,8 +41,8 @@ define
     removeRuleConfirm: "<p>Voulez-vous vraiment supprimer la règle <b>%s</b> ?</p>"
     removeScriptConfirm: "<p>Voulez-vous vraiment supprimer le script <b>%s</b> ?</p>"
     removeMapConfirm: "<p>Voulez-vous vraiment supprimer la carte <b>%s</b> ?</p><p>Tous les terrains et les objets sur cette carte seront aussi supprimés.</p>"
-    removeClientConfConfirm: "<p>Voulez-vous vraiment suppriemer la configuration pour la langue <b>%s</b> ?</p><p>Seuls les valeurs de la langue par défaut s'appliqueront.<p/>"
-    invalidExecutableNameError: "l'identifiant d'un executable ne peut contenir que des caractères alphanumeriques"
+    removeClientConfConfirm: "<p>Voulez-vous vraiment supprimer la configuration pour la langue <b>%s</b> ?</p><p>Seuls les valeurs de la langue par défaut s'appliqueront.<p/>"
+    invalidExecutableNameError: "l'identifiant d'un script/règle ne peut contenir que des caractères alphanumeriques"
     multipleAffectation: 'Choisisez les images que vous aller affecter dans la séléction (l\'ordre est significatif)'
     invalidConfValues: "Erreur de syntaxe JSON"
     externalConfChange: "Une modification externe à été reçue et fusionné"
@@ -94,7 +94,7 @@ define
     tileDim: "Dimension d'une tuile"
     randomAffect: 'affectation aléatoire'
     mapNotSaved: "Merci de sauvegarder la carte avant d'affecter des terrains"
-    lang: 'Language'
+    lang: 'Langage'
     coffee: 'CoffeeScript'
     js: 'JavaScript'
     editedValues: '>>>>>>>>>> Vos valeurs:\n'
@@ -103,18 +103,18 @@ define
   tips:
     addProperty: 'Ajoute une nouvelle propriété'
     removeSelection: 'Supprime la séléction courante de la carte éditée'
-    template: "Template HTML d'affichage des évènements. Utilisez \#{X} pour inclure la properiété X de l'évènement affiché"
-    searchTypes: """Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateur (or, and) et groupé avec des parenthèses.
-
-        Les champs suivants de recherche suivants sont disponibles :
-        - `id: *val*` tous types par id
-        - `name: *val*` tous types par nom (dépend de la locale courante)
-        - `desc: *val*` types d'objets, évènements et terrains par description (dépend de la locale courante)
-        - `*prop*: '!'` types d'objets et d'évènements possédant la propriété *prop*
-        - `*prop*: *val*` types d'objets et d'évènements dont la propriété *prop* à la valeur *val* par défaut
-        - `quantifiable: *val*` types d'objet quantifiables ou non
-        - `category: *val*` règle par catégorie
-        - `rank: *val*` règles de tour par ordre
-        - `content: *val*` règles et règles de tour par contenu
-        
-        Les valeur peuvent être des chaînes de caractères, des nombres, des booléens ou des expression régulières"""
+    template: "Template HTML d'affichage des évènements. Utilisez \#{X} pour inclure la propriété X de l'évènement affiché"
+    searchTypes: """
+        <p>Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateurs ('or', 'and') et groupé avec des parenthèses.</p>
+        <p>Un champ est constitué d'un chemin et d'une valeur, précédée du signe '=' ou ':' (indique que la valeur est une expression régulière).</p>
+        <p>Les valeur peuvent être des chaînes de caractères (délimitées par un guillement simple ou double), des nombres, des booléens.</p>
+        <p>Les champs de recherche suivants sont disponibles :</p>
+        <ul>
+            <li><dfn>id=<var>id</var></dfn> types dont l'id est <var>id</var></li>
+            <li><dfn><var>prop</var>='!'</dfn> types qui possèdent la propriété <var>prop</var></li>
+            <li><dfn><var>prop</var>=<var>val</var></dfn> types dont la propriété <var>prop</var> a la valeur <var>val</var></li>
+            <li><dfn>quantifiable=<var>bool</var></dfn> types quantifiables ou non.</li>
+            <li><dfn>category=<var>val</var></dfn> règles dont la catégorie est <var>val</var></li>
+            <li><dfn>rank=<var>val</var></dfn> règles de tour de rang <var>val</var></li>
+            <li><dfn>content=<var>val</var></dfn> règles et scripts dont le contenu est <var>val</var> (utilisez une expression régulière)</li>
+        </ul>"""

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -38,7 +38,7 @@ requirejs.config
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'
     'nls': '../nls'
     'numeric': 'lib/jquery-ui-numeric-1.2-min'
-    'socket.io': 'lib/socket.io-1.0.0-pre'
+    'socket.io': 'lib/socket.io-1.0.4-min'
     'text': 'lib/text-2.0.0-min'
     'timepicker': 'lib/jquery-timepicker-addon-1.0.1-min'
     'tpl': '../template'
@@ -167,7 +167,7 @@ define [
 
     # wire logout facilities
     app.router.on 'logout', -> 
-      localStorage.removeItem 'app.token'
+      localStorage.removeItem 'rheia.token'
       isLoggingOut = true
       socket.emit 'logout'
       app.router.navigate 'login', trigger: true
@@ -183,12 +183,14 @@ define [
     socket.on 'disconnect', (reason) ->
       return if isLoggingOut
       console.log "disconnected for #{reason}"
-      # TODO plus moyen de savoir pourquoi on a été décconnecté
+      # TODO plus moyen de savoir pourquoi on a été déconnecté
       if reason is 'booted'
         document.cookie = "key=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/"
       callback 'disconnected'
 
     socket.io.on 'reconnect_attempt', ->
+      return if isLoggingOut
+      console.log "reconnection attempt"
       # don't forget to set connecting flag again for error handling
       connecting = true
 
@@ -202,7 +204,7 @@ define [
       socket.emit 'getConnected', (err, player) ->
         # stores the token to allow re-connection
         app.player = player
-        localStorage.setItem 'app.token', player.token
+        localStorage.setItem 'rheia.token', player.token
         # set cookie for dev access if admin
         if player.key
           document.cookie = "key=#{player.key}; max-age=#{1000*60*60*24}; path=/"
@@ -272,17 +274,18 @@ define [
       # check if we are connected
       if app.sockets.game is null
         perspectiveLoading = false
-        token = localStorage.getItem 'app.token'
+        token = localStorage.getItem 'rheia.token'
         return @navigate 'login', trigger:true unless token?
         return @_onLoggedIn token
 
       # update last perspective visited
-      localStorage.setItem 'app.lastPerspective', window.location.pathname.replace conf.basePath, ''
+      localStorage.setItem 'rheia.lastPerspective', window.location.pathname.replace conf.basePath, ''
 
       app.layoutView.loading i18n.titles[name]
       # puts perspective content inside layout if it already exists
       if name of app
         app.layoutView.show app[name].$el
+        app[name].shown?()
         return perspectiveLoading = false
 
       # or requires, instanciate and render the view
@@ -299,7 +302,10 @@ define [
         @_onLoggedIn params.token
       else 
         if params?.redirect?
-          localStorage.setItem 'app.redirect', decodeURIComponent params.redirect
+          localStorage.setItem 'rheia.redirect', decodeURIComponent params.redirect
+        else
+          localStorage.removeItem 'rheia.redirect'
+          
         form = $('#loginStock').detach()
         $('body').empty().append new LoginView(form).render().$el
 
@@ -309,9 +315,9 @@ define [
     #
     # @param token [String] valid autorization token
     _onLoggedIn: (token) =>
-      redirect = localStorage.getItem 'app.redirect'
+      redirect = localStorage.getItem 'rheia.redirect'
       if redirect?
-        localStorage.removeItem 'app.redirect'
+        localStorage.removeItem 'rheia.redirect'
         return window.location.pathname = redirect
 
       # Connects token
@@ -336,7 +342,7 @@ define [
 
         # run current or last-saved perspective
         current = window.location.pathname.replace conf.basePath, ''
-        current = localStorage.getItem 'app.lastPerspective' if current is 'login'
+        current = localStorage.getItem 'rheia.lastPerspective' if current is 'login'
         current = 'edition' unless current?
         # reset Backbone.history internal state to allow re-running current route
         Backbone.history.fragment = null

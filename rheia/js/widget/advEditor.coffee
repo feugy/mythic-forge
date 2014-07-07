@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -68,7 +68,7 @@ define [
     # Builds rendering
     constructor: (element, options) ->
       super element, options
-      
+
       @$el.addClass 'adv-editor'
 
       # creates and wire the editor
@@ -128,9 +128,15 @@ define [
       @_editor.destroy()
       super()
 
+    # Give focus to editor
+    focus: =>
+      @_editor.focus()
+      @
+
     # This method might be called when the editor is shown, to resize it properly
     resize: =>
       _.defer => @_editor.resize true  
+      @
 
     # Allow to consult the error annotations inside the editor.
     #
@@ -152,12 +158,14 @@ define [
         when 'text' 
           # keeps the undo manager
           undoMgr = @_editor.getSession().getUndoManager()
-          # keeps the cursor position if possible
-          position = @_editor.selection.getCursor()
+          # keeps the cursor position and first visible row if possible
+          position = @_editor.getCursorPosition()
+          visible = @_editor.getFirstVisibleRow()
           @_editor.setValue value
           # setValue will select all new text. Reset the cursor to original position.
           @_editor.clearSelection()
-          @_editor.selection.moveCursorToPosition position
+          @_editor.moveCursorToPosition position
+          @_editor.scrollToLine visible or 0, false, false
           @_editor.getSession().setUndoManager undoMgr
         when 'tabSize'
           @options.tabSize = value

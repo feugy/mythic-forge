@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -21,7 +21,7 @@ yaml = require 'js-yaml'
 pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
-assert = require('chai').assert
+{expect} = require 'chai'
 ItemType = require '../hyperion/src/model/ItemType'
 Item = require '../hyperion/src/model/Item'
 FieldType = require '../hyperion/src/model/FieldType'
@@ -105,8 +105,8 @@ describe 'AdminService tests', ->
     # when listing unallowed model
     service.list unknownModelName, (err, modelName, list) ->
       # then an error occured
-      assert.equal err, "The #{unknownModelName} model can't be listed"
-      assert.equal modelName, unknownModelName
+      expect(err).to.equal "The #{unknownModelName} model can't be listed"
+      expect(modelName).to.equal unknownModelName
       done()
 
   it 'should list returns item types', (done) ->
@@ -114,10 +114,10 @@ describe 'AdminService tests', ->
     service.list 'ItemType', (err, modelName, list) ->
       return done "Can't list itemTypes: #{err}" if err?
       # then the two created types are retrieved
-      assert.equal list.length, 2
-      assert.equal modelName, 'ItemType'
-      assert.ok itemTypes[0].equals(list[0])
-      assert.ok itemTypes[1].equals(list[1])
+      expect(list).to.have.lengthOf 2
+      expect(modelName).to.equal 'ItemType'
+      expect(list[0]).to.satisfy (o) -> o.equals itemTypes[0]
+      expect(list[1]).to.satisfy (o) -> o.equals itemTypes[1]
       done()
 
   it 'should list returns event types', (done) ->
@@ -125,10 +125,10 @@ describe 'AdminService tests', ->
     service.list 'EventType', (err, modelName, list) ->
       return done "Can't list eventTypes: #{err}" if err?
       # then the two created types are retrieved
-      assert.equal list.length, 2
-      assert.equal modelName, 'EventType'
-      assert.ok eventTypes[0].equals(list[0])
-      assert.ok eventTypes[1].equals(list[1])
+      expect(list).to.have.lengthOf 2
+      expect(modelName).to.equal 'EventType'
+      expect(list[0]).to.satisfy (o) -> o.equals eventTypes[0]
+      expect(list[1]).to.satisfy (o) -> o.equals eventTypes[1]
       done()
 
   it 'should list returns field types', (done) ->
@@ -136,10 +136,10 @@ describe 'AdminService tests', ->
     service.list 'FieldType', (err, modelName, list) ->
       return done "Can't list fieldTypes: #{err}" if err?
       # then the two created types are retrieved
-      assert.equal list.length, 2
-      assert.equal modelName, 'FieldType'
-      assert.ok fieldTypes[0].equals(list[0])
-      assert.ok fieldTypes[1].equals(list[1])
+      expect(list).to.have.lengthOf 2
+      expect(modelName).to.equal 'FieldType'
+      expect(list[0]).to.satisfy (o) -> o.equals fieldTypes[0]
+      expect(list[1]).to.satisfy (o) -> o.equals fieldTypes[1]
       done()
 
   it 'should list returns executables', (done) ->
@@ -147,10 +147,10 @@ describe 'AdminService tests', ->
     service.list 'Executable', (err, modelName, list) ->
       return done "Can't list executables: #{err}" if err?
       # then the two created executables are retrieved
-      assert.equal list.length, 2
-      assert.equal modelName, 'Executable'
-      assert.equal executables[0].id, list[0].id
-      assert.equal executables[1].id, list[1].id
+      expect(list).to.have.lengthOf 2
+      expect(modelName).to.equal 'Executable'
+      expect(list[0]).to.have.property 'id', executables[0].id
+      expect(list[1]).to.have.property 'id', executables[1].id
       done()
 
   it 'should list returns maps', (done) ->
@@ -158,24 +158,24 @@ describe 'AdminService tests', ->
     service.list 'Map', (err, modelName, list) ->
       return done "Can't list maps: #{err}" if err?
       # then the two created executables are retrieved
-      assert.equal list.length, 2
-      assert.equal modelName, 'Map'
-      assert.ok maps[0].equals(list[0])
-      assert.ok maps[1].equals(list[1])
+      expect(list).to.have.lengthOf 2
+      expect(modelName).to.equal 'Map'
+      expect(list[0]).to.satisfy (o) -> o.equals maps[0]
+      expect(list[1]).to.satisfy (o) -> o.equals maps[1]
       done()
 
   it 'should list fails on Items', (done) ->
     # when listing items
     service.list 'Item', (err, modelName, list) ->
       # then an error occured
-      assert.equal err, "The Item model can't be listed"
+      expect(err).to.equal "The Item model can't be listed"
       done()
 
   it 'should list fails on Events', (done) ->
     # when listing events
     service.list 'Event', (err, modelName, list) ->
       # then an error occured
-      assert.equal err, "The Event model can't be listed"
+      expect(err).to.equal "The Event model can't be listed"
       done()
 
   it 'should list returns configurations', (done) ->
@@ -183,10 +183,10 @@ describe 'AdminService tests', ->
     service.list 'ClientConf', (err, modelName, list) ->
       return done "Can't list configurations: #{err}" if err?
       # then the two created executables are retrieved
-      assert.equal list.length, 2
-      assert.equal modelName, 'ClientConf'
-      assert.ok confs[0].equals(list[0])
-      assert.ok confs[1].equals(list[1])
+      expect(list).to.have.lengthOf 2
+      expect(modelName).to.equal 'ClientConf'
+      expect(list[0]).to.satisfy (o) -> o.equals confs[0]
+      expect(list[1]).to.satisfy (o) -> o.equals confs[1]
       done()
 
   it 'should list returns fsItems in root', (done) ->
@@ -212,10 +212,10 @@ describe 'AdminService tests', ->
             service.list 'FSItem', (err, modelName, list) ->
               return done "Can't list root FSItems: #{err}" if err?
               # then the authoring service result were returned
-              assert.equal modelName, 'FSItem'
-              assert.equal list.length, expected.content.length
+              expect(modelName).to.equal 'FSItem'
+              expect(list).to.have.lengthOf expected.content.length
               for item, i in expected.content
-                assert.ok item.equals list[i]
+                expect(item).to.satisfy (o) -> o.equals list[i]
               done()
 
   it 'should save fails on unallowed model', (done) ->
@@ -223,8 +223,8 @@ describe 'AdminService tests', ->
     # when saving unallowed model
     service.save unknownModelName, {id:'type3'}, 'admin', (err, modelName, model) ->
       # then an error occured
-      assert.equal err, "The #{unknownModelName} model can't be saved"
-      assert.equal modelName, unknownModelName
+      expect(err).to.equal "The #{unknownModelName} model can't be saved"
+      expect(modelName).to.equal unknownModelName
       done()
 
   it 'should save create new item type', (done) ->
@@ -234,7 +234,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'ItemType' and operation is 'creation'
-      assert.equal instance.id, 'itemtype3'
+      expect(instance).to.have.property 'id', 'itemtype3'
       awaited = true
     watcher.on 'change', listener
 
@@ -242,16 +242,15 @@ describe 'AdminService tests', ->
     service.save 'ItemType', values, 'admin', (err, modelName, model) ->
       return done "Can't save itemType: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.ok model.id?
-      assert.equal model.id, values.id
-      assert.equal model.properties, values.properties
+      expect(model).to.exist
+      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property('properties').that.deep.equal values.properties
 
       # then the model exists in DB
       ItemType.findById model.id, (err, obj) ->
         return done "Can't find itemType in db #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save create new event type', (done) ->
@@ -261,7 +260,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'EventType' and operation is 'creation'
-      assert.equal instance.id, 'eventtype3'
+      expect(instance).to.have.property 'id', 'eventtype3'
       awaited = true
     watcher.on 'change', listener
 
@@ -269,16 +268,15 @@ describe 'AdminService tests', ->
     service.save 'EventType', values, 'admin', (err, modelName, model) ->
       return done "Can't save eventType: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.ok model.id?
-      assert.equal model.id, values.id
-      assert.equal model.properties, values.properties
+      expect(model).to.exist
+      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property('properties').that.deep.equal values.properties
 
       # then the model exists in DB
       EventType.findById model.id, (err, obj) ->
         return done "Can't find eventType in db #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save create new field type', (done) ->
@@ -288,7 +286,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'FieldType' and operation is 'creation'
-      assert.equal instance.id, 'fieldtype3'
+      expect(instance).to.have.property 'id', 'fieldtype3'
       awaited = true
     watcher.on 'change', listener
 
@@ -296,15 +294,14 @@ describe 'AdminService tests', ->
     service.save 'FieldType', values, 'admin', (err, modelName, model) ->
       return done "Can't save fieldType: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.ok model.id?
-      assert.equal model.id, values.id
+      expect(model).to.exist
+      expect(model).to.have.property 'id', values.id
 
       # then the model exists in DB
       FieldType.findById model.id, (err, obj) ->
         return done "Can't find fieldType in db #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save create new executable', (done) ->
@@ -314,7 +311,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Executable' and operation is 'creation'
-      assert.equal instance.id, 'rule3'
+      expect(instance).to.have.property 'id', 'rule3'
       awaited = true
     watcher.on 'change', listener
 
@@ -322,16 +319,16 @@ describe 'AdminService tests', ->
     service.save 'Executable', values, 'admin', (err, modelName, model) ->
       return done "Can't save executable: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.equal model.id, values.id
-      assert.equal model.content, values.content
+      expect(model).to.exist
+      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property 'content', values.content
 
       # then the model exists in cache
       Executable.findCached [model.id], (err, objs) ->
         return done "Can't find executable #{err}" if err?
-        assert.equal objs.length, 1
-        assert.deepEqual objs[0], model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(objs).to.have.lengthOf 1
+        expect(objs[0]).to.deep.equal model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save report executable compilation failure', (done) ->
@@ -347,13 +344,13 @@ describe 'AdminService tests', ->
     # when saving new executable
     service.save 'Executable', values, 'admin', (err) ->
       # then the compilation error is reported
-      assert.include err, 'unexpected "hello world 3"'
+      expect(err).to.include 'unexpected "hello world 3"'
 
       # then the model does not exist in cache
       Executable.findCached [values.id], (err, objs) ->
         return done "Can't find executable #{err}" if err?
-        assert.equal objs.length, 0
-        assert.isFalse awaited, 'watcher was invoked'
+        expect(objs).to.have.lengthOf 0
+        expect(awaited, 'watcher was invoked').to.be.false
         done()
 
   it 'should save create new map', (done) ->
@@ -363,7 +360,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Map' and operation is 'creation'
-      assert.equal instance.id, 'map3'
+      expect(instance).to.have.property 'id', 'map3'
       awaited = true
     watcher.on 'change', listener
 
@@ -371,16 +368,15 @@ describe 'AdminService tests', ->
     service.save 'Map', values, 'admin', (err, modelName, model) ->
       return done "Can't save map: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.ok model.id?
-      assert.equal model.id, values.id
-      assert.equal model.kind, 'hexagon'
+      expect(model).to.exist
+      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property 'kind', 'hexagon'
 
       # then the model exists in DB
       Map.findById model.id, (err, obj) ->
         return done "Can't find map in db #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save create new fsItem', (done) ->
@@ -390,9 +386,9 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'creation'
-      assert.equal instance.path, values.path
-      assert.isFalse instance.isFolder
-      assert.equal instance.content, values.content
+      expect(instance).to.have.property 'path', values.path
+      expect(instance.isFolder).to.be.false
+      expect(instance).to.have.property 'content', values.content
       awaited = true
     watcher.on 'change', listener
 
@@ -400,16 +396,16 @@ describe 'AdminService tests', ->
     service.save 'FSItem', values, 'admin', (err, modelName, model) ->
       return done "Can't save fsitem: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.equal model.path, values.path
-      assert.equal model.content, values.content
-      assert.isFalse model.isFolder
+      expect(model).to.exist
+      expect(model).to.have.property 'path', values.path
+      expect(model).to.have.property 'content', values.content
+      expect(model.isFolder).to.be.false
 
       # then the authoring servce serve this fsitem
       authoringService.read model, (err, obj) ->
         return done "Can't find fsitem with authoring servce #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save create new configuration', (done) ->
@@ -419,7 +415,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'ClientConf' and operation is 'creation'
-      assert.equal instance.id, 'jp'
+      expect(instance).to.have.property 'id', 'jp'
       awaited = true
     watcher.on 'change', listener
 
@@ -427,17 +423,16 @@ describe 'AdminService tests', ->
     service.save 'ClientConf', values, 'admin', (err, modelName, model) ->
       return done "Can't save conf: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.ok model.id?
-      assert.equal model.id, values.id
-      assert.equal model.values?.names?.river, 'kawa'
-      assert.equal model.source, values.source
+      expect(model).to.exist
+      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.deep.property 'values.names.river', 'kawa'
+      expect(model).to.have.property 'source', values.source
 
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
         return done "Can't find conf in db #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should save update existing item type', (done) ->
@@ -447,7 +442,7 @@ describe 'AdminService tests', ->
     # given an item for this type
     new Item({type: itemTypes[1]}).save (err, item) ->
       return done "Can't save item: #{err}" if err?
-      assert.equal item.strength, 10
+      expect(item).to.have.property 'strength', 10
         
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
@@ -456,8 +451,8 @@ describe 'AdminService tests', ->
       # then a creation event was issued
       listener = (operation, className, instance) ->
         return unless className is 'ItemType'
-        assert.equal operation, 'update'
-        assert.ok itemTypes[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
+        expect(operation).to.equal 'update'
+        expect(itemTypes[1]).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -466,28 +461,26 @@ describe 'AdminService tests', ->
         return done "Can't save itemType: #{err}" if err?
 
         # then the created values are returned
-        assert.equal itemTypes[1].id, model.id, 'Saved model doesn\'t match parameters'
-        assert.equal model.name, itemTypes[1].name
-        assert.ok 'desc' of model.properties, 'Desc not added in properties'
-        assert.equal model.properties.desc.type, 'string'
-        assert.equal model.properties.desc.def, 'to be defined'
+        expect(model).to.have.property 'id', itemTypes[1].id
+        expect(model).to.have.deep.property 'properties.desc.type', 'string'
+        expect(model).to.have.deep.property 'properties.desc.def', 'to be defined'
 
         # then the model exists in DB
         ItemType.findById model.id, (err, obj) ->
           return done "Can't find itemType in db #{err}" if err?
-          assert.ok obj.equals model, 'ItemType cannot be found in DB'
+          expect(obj).to.satisfy (o) -> o.equals model
 
           # then the model was updated, not created in DB
           ItemType.find {}, (err, list) ->
             return done "Can't find itemTypes in db #{err}" if err?
-            assert.equal list.length, 2
-            assert.ok awaited, 'watcher wasn\'t invoked'
+            expect(list).to.have.lengthOf 2
+            expect(awaited, 'watcher wasn\'t invoked').to.be.true
 
             # then the instance has has only property property desc
             Item.findById item.id, (err, item) ->
               return done "Can't get item from db #{err}" if err?
-              assert.equal 'to be defined', item.desc
-              assert.isUndefined item.strength, 'Item still has strength property'
+              expect(item).to.have.property 'desc', 'to be defined'
+              expect(item).not.to.have.property 'strength'
               done()
 
   it 'should save update existing event type', (done) ->
@@ -497,7 +490,7 @@ describe 'AdminService tests', ->
     # given an event for this type
     new Event({type: eventTypes[1]}).save (err, event) ->
       return done "Can't save event: #{err}" if err?
-      assert.equal event.content, 'hello'
+      expect(event).to.have.property 'content', 'hello'
         
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
@@ -506,8 +499,8 @@ describe 'AdminService tests', ->
       # then a creation event was issued
       listener = (operation, className, instance) ->
         return unless className is 'EventType'
-        assert.equal operation, 'update'
-        assert.ok eventTypes[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
+        expect(operation).to.equal 'update'
+        expect(eventTypes[1]).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -515,39 +508,37 @@ describe 'AdminService tests', ->
       service.save 'EventType', values, 'admin', (err, modelName, model) ->
         return done "Can't save eventType: #{err}" if err?
         # then the created values are returned
-        assert.equal eventTypes[1].id, model.id, 'Saved model doesn\'t match parameters'
-        assert.equal model.name, eventTypes[1].name
-        assert.ok 'desc' of model.properties, 'Desc not added in properties'
-        assert.equal model.properties.desc.type, 'string'
-        assert.equal model.properties.desc.def, 'to be defined'
+        expect(eventTypes[1]).to.have.property 'id', model.id
+        expect(model).to.have.deep.property 'properties.desc.type', 'string'
+        expect(model).to.have.deep.property 'properties.desc.def', 'to be defined'
 
         # then the model exists in DB
         EventType.findById model.id, (err, obj) ->
           return done "Can't find eventType in db #{err}" if err?
-          assert.ok obj.equals model, 'EventType cannot be found in DB'
+          expect(obj).to.satisfy (o) -> o.equals model
 
           # then the model was updated, not created in DB
           EventType.find {}, (err, list) ->
             return done "Can't find eventTypes in db #{err}" if err?
-            assert.equal list.length, 2
-            assert.ok awaited, 'watcher wasn\'t invoked'
+            expect(list).to.have.lengthOf 2
+            expect(awaited, 'watcher wasn\'t invoked').to.be.true
 
             # then the instance has has only property property desc
             Event.findById event.id, (err, event) ->
               return done "Can't get event from db #{err}" if err?
-              assert.equal 'to be defined', event.desc
-              assert.isUndefined event.content, 'Event still has content property'
+              expect(event).to.have.property 'desc', 'to be defined'
+              expect(event).not.to.have.property 'content'
               done()
 
   it 'should save update existing field type', (done) ->
     # given existing values
     values = fieldTypes[1].toJSON()
-    values.desc = 'to be defined'
+    values.descImage = 'to be defined'
 
     # then a update event was issued
     listener = (operation, className, instance)->
       return unless className is 'FieldType' and operation is 'update'
-      assert.ok fieldTypes[1].equals instance
+      expect(fieldTypes[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -555,21 +546,20 @@ describe 'AdminService tests', ->
     service.save 'FieldType', values, 'admin', (err, modelName, model) ->
       return done "Can't save fieldType: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.equal fieldTypes[1].id, model.id
-      assert.equal model.name, values.name
-      assert.equal model.desc, 'to be defined'
+      expect(model).to.exist
+      expect(fieldTypes[1]).to.have.property 'id', model.id
+      expect(model).to.have.property 'descImage', 'to be defined'
 
       # then the model exists in DB
       FieldType.findById model.id, (err, obj) ->
         return done "Can't find fieldType in db #{err}" if err?
-        assert.ok obj.equals model
+        expect(obj).to.satisfy (o) -> o.equals model
 
         # then the model was updated, not created in DB
         FieldType.find {}, (err, list) ->
           return done "Can't find fieldTypes in db #{err}" if err?
-          assert.equal list.length, 2
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(list).to.have.lengthOf 2
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
   it 'should save update existing map', (done) ->
@@ -580,8 +570,8 @@ describe 'AdminService tests', ->
     # then a update event was issued
     listener = (operation, className, instance)->
       return unless className is 'Map' and operation is 'update'
-      assert.ok maps[0].equals instance
-      assert.equal instance.kind, 'square', 'modification not propagated'
+      expect(maps[0]).to.satisfy (o) -> o.equals instance
+      expect(instance).to.have.property 'kind', 'square'
       awaited = true
     watcher.on 'change', listener
 
@@ -589,21 +579,20 @@ describe 'AdminService tests', ->
     service.save 'Map', values, 'admin', (err, modelName, model) ->
       return done "Can't save map: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.equal maps[0].id, model.id
-      assert.equal model.name, values.name
-      assert.equal model.kind, 'square', 'returned value not updated'
+      expect(model).to.exist
+      expect(maps[0]).to.have.property 'id', model.id
+      expect(model).to.have.property 'kind', 'square' 
 
       # then the model exists in DB
       Map.findById model.id, (err, obj) ->
         return done "Can't find map in db #{err}" if err?
-        assert.ok obj.equals model
+        expect(obj).to.satisfy (o) -> o.equals model
 
         # then the model was updated, not created in DB
         Map.find {}, (err, list) ->
           return done "Can't find maps in db #{err}" if err?
-          assert.equal list.length, 2
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(list).to.have.lengthOf 2
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
   it 'should save update existing executable', (done) ->
@@ -614,7 +603,7 @@ describe 'AdminService tests', ->
     # then a update event was issued
     listener = (operation, className, instance)->
       return unless className is 'Executable' and operation is 'update'
-      assert.deepEqual executables[1], instance
+      expect(executables[1]).to.deep.equal instance
       awaited = true
     watcher.on 'change', listener
 
@@ -622,15 +611,15 @@ describe 'AdminService tests', ->
     service.save 'Executable', values, 'admin', (err, modelName, model) ->
       return done "Can't save executable: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.equal executables[1].id, model.id
-      assert.equal model.content, 'console.log("hello world 4");'
+      expect(model).to.exist
+      expect(executables[1]).to.have.property 'id', model.id
+      expect(model).to.have.property 'content', 'console.log("hello world 4");'
 
       # then the model exists in DB
       Executable.findCached [model.id], (err, objs) ->
         return done "Can't find executable in db #{err}" if err?
-        assert.equal objs.length, 1
-        assert.deepEqual objs[0], model
+        expect(objs).to.have.lengthOf 1
+        expect(objs[0]).to.deep.equal model
         done()
 
   it 'should save update existing fsItem', (done) ->
@@ -641,8 +630,8 @@ describe 'AdminService tests', ->
     # then a update event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'update'
-      assert.equal instance.path, fsItem.path
-      assert.equal instance.content, newContent
+      expect(instance).to.have.property 'path', fsItem.path
+      expect(instance).to.have.property 'content', newContent
       awaited = true
     watcher.on 'change', listener
 
@@ -650,17 +639,17 @@ describe 'AdminService tests', ->
     service.save 'FSItem', fsItem, 'admin', (err, modelName, model) ->
       return done "Can't save fsitem: #{err}" if err?
       # then the created values are returned
-      assert.ok model?
-      assert.equal model.path, fsItem.path
-      assert.equal model.content, newContent
-      assert.isFalse model.isFolder
+      expect(model).to.exist
+      expect(model).to.have.property 'path', fsItem.path
+      expect(model).to.have.property 'content', newContent
+      expect(model.isFolder).to.be.false
 
       # then the authoring servce serve this fsitem
       authoringService.read fsItem, (err, obj) ->
         return done "Can't find fsitem with authoring servce #{err}" if err?
-        assert.ok obj.equals model
-        assert.ok awaited, 'watcher wasn\'t invoked'
-        assert.equal obj.content, newContent
+        expect(obj).to.satisfy (o) -> o.equals model
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
+        expect(obj).to.have.property 'content', newContent
         done()
 
   it 'should save creates new fields', (done) ->
@@ -673,8 +662,8 @@ describe 'AdminService tests', ->
 
     # then a creation event was issued
     listener = (operation, className, instance)->
-      assert.equal className, 'Field'
-      assert.equal operation, 'creation'
+      expect(className).to.equal 'Field'
+      expect(operation).to.equal 'creation'
       saved.push instance
     watcher.on 'change', listener
 
@@ -682,35 +671,34 @@ describe 'AdminService tests', ->
     service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
       return done "Can't save fields: #{err}" if err?
       # then the created values are returned
-      assert.equal returned?.length, 2, 'unexpected returned fields'
-      assert.equal saved.length, 2, 'watcher was not as many times invoked as awaited'
+      expect(returned).to.have.lengthOf 2
+      expect(saved).to.have.lengthOf 2
 
       # then the model exists in DB
       Field.findById returned[0].id, (err, obj) ->
         return done "Can't find field in db #{err}" if err?
-        assert.equal obj.mapId, toBeSaved[1].mapId
-        assert.equal obj.typeId, toBeSaved[1].typeId
-        assert.equal obj.x, toBeSaved[1].x
-        assert.equal obj.y, toBeSaved[1].y
-        assert.ok returned[0].equals obj
+        expect(obj).to.have.property 'mapId', toBeSaved[1].mapId
+        expect(obj).to.have.property 'typeId', toBeSaved[1].typeId
+        expect(obj).to.have.property 'x', toBeSaved[1].x
+        expect(obj).to.have.property 'y', toBeSaved[1].y
+        expect(obj).to.satisfy (o) -> o.equals returned[0]
         # then the model exists in DB
         Field.findById returned[1].id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          assert.equal obj.mapId, toBeSaved[0].mapId
-          assert.equal obj.typeId, toBeSaved[0].typeId
-          assert.equal obj.x, toBeSaved[0].x
-          assert.equal obj.y, toBeSaved[0].y
-          assert.ok returned[1].equals obj
+          expect(obj).to.have.property 'mapId', toBeSaved[0].mapId
+          expect(obj).to.have.property 'typeId', toBeSaved[0].typeId
+          expect(obj).to.have.property 'x', toBeSaved[0].x
+          expect(obj).to.have.property 'y', toBeSaved[0].y
+          expect(obj).to.satisfy (o) -> o.equals returned[1]
           done()
 
   it 'should save fails on non fields array parameter', (done) ->
     # when saving field without array
     service.save 'Field', {mapId: maps[0].id, typeId: fieldTypes[0].id, x:0, y:0}, 'admin', (err, modelName, returned) ->
       # then nothing was saved
-      assert.isNotNull err
-      assert.equal 'Fields must be saved within an array', err
-      assert.equal modelName, 'Field'
-      assert.isUndefined returned
+      expect(err).to.equal 'Fields must be saved within an array'
+      expect(modelName).to.equal 'Field'
+      expect(returned).not.to.exist
       done()
 
   it 'should save fails on existing fields', (done) ->
@@ -727,27 +715,27 @@ describe 'AdminService tests', ->
 
       # then a creation event was issued
       listener = (operation, className, instance)->
-        assert.equal className, 'Field'
-        assert.equal operation, 'creation'
+        expect(className).to.equal 'Field'
+        expect(operation).to.equal 'creation'
         saved.push instance
       watcher.on 'change', listener
 
       # when saving two new fields
       service.save 'Field', toBeSaved.concat(), 'admin', (err, modelName, returned) ->
         # then an error was returned
-        assert.equal 'Fields cannot be updated', err
+        expect(err).to.equal 'Fields cannot be updated'
         # then the created values are returned
-        assert.equal returned?.length, 1, 'unexpected returned fields'
-        assert.equal saved.length, 1, 'watcher was not as many times invoked as awaited'
+        expect(returned).to.have.lengthOf 1
+        expect(saved).to.have.lengthOf 1
 
         # then the model exists in DB
         Field.findById returned[0].id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          assert.equal obj.mapId, toBeSaved[1].mapId
-          assert.equal obj.typeId, toBeSaved[1].typeId
-          assert.equal obj.x, toBeSaved[1].x
-          assert.equal obj.y, toBeSaved[1].y
-          assert.ok returned[0].equals obj
+          expect(obj).to.have.property 'mapId', toBeSaved[1].mapId
+          expect(obj).to.have.property 'typeId', toBeSaved[1].typeId
+          expect(obj).to.have.property 'x', toBeSaved[1].x
+          expect(obj).to.have.property 'y', toBeSaved[1].y
+          expect(obj).to.satisfy (o) -> o.equals returned[0]
           done()
 
   it 'should save do nothing on empty fields array', (done) ->
@@ -755,8 +743,8 @@ describe 'AdminService tests', ->
     service.save 'Field', [], 'admin', (err, modelName, returned) ->
       # then nothing was saved
       return done "Unexpected error while saving fields: #{err}" if err?
-      assert.equal modelName, 'Field'
-      assert.equal returned.length, 0
+      expect(modelName).to.equal 'Field'
+      expect(returned).to.have.lengthOf 0
       done()
 
   it 'should save creates new item', (done) ->
@@ -774,19 +762,19 @@ describe 'AdminService tests', ->
     service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
       return done "Can't save item: #{err}" if err?
       # then the created values are returned
-      assert.isNotNull returned, 'unexpected returned item'
-      assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
-      assert.ok returned.equals saved
+      expect(returned).to.exist
+      expect(saved).to.exist
+      expect(returned).to.satisfy (o) -> o.equals saved
 
       # then the model exists in DB
       Item.findById returned.id, (err, obj) ->
         return done "Can't find item in db #{err}" if err?
-        assert.equal maps[0].id, obj.map.id, "unexpected map id #{obj.map.id}"
-        assert.equal itemTypes[1].id, obj.type.id, "unexpected type id #{obj.type.id}"
-        assert.equal obj.x, toBeSaved.x
-        assert.equal obj.y, toBeSaved.y
-        assert.equal obj.strength, toBeSaved.strength
-        assert.ok obj.equals returned
+        expect(obj).to.have.deep.property 'map._id', maps[0].id
+        expect(obj).to.have.deep.property 'type._id', itemTypes[1].id
+        expect(obj).to.have.property 'x', toBeSaved.x
+        expect(obj).to.have.property 'y', toBeSaved.y
+        expect(obj).to.have.property 'strength', toBeSaved.strength
+        expect(obj).to.satisfy (o) -> o.equals returned
         done()
 
   it 'should save saved existing item', (done) ->
@@ -800,7 +788,7 @@ describe 'AdminService tests', ->
       # then a update event was issued
       listener = (operation, className, instance)->
         return unless className is 'Item' and operation is 'update'
-        assert.ok item.equals instance
+        expect(item).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -808,18 +796,18 @@ describe 'AdminService tests', ->
       service.save 'Item', toBeSaved, 'admin', (err, modelName, returned) ->
         return done "Can't save item: #{err}" if err?
         # then the created values are returned
-        assert.isNotNull returned, 'unexpected returned item'
-        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        expect(returned).to.exist
+        expect(awaited, 'watcher was not as many times invoked as awaited').to.be.true
 
         # then the model exists in DB
         Item.findById returned.id, (err, obj) ->
           return done "Can't find item in db #{err}" if err?
-          assert.equal maps[0].id, obj.map.id, "unexpected map id #{obj.map.id}"
-          assert.equal itemTypes[0].id, obj.type.id, "unexpected type id #{obj.type.id}"
-          assert.equal obj.x, toBeSaved.x
-          assert.equal obj.y, toBeSaved.y
-          assert.equal obj.strength, toBeSaved.strength
-          assert.ok obj.equals returned
+          expect(obj).to.have.deep.property 'map._id', maps[0].id
+          expect(obj).to.have.deep.property 'type._id', itemTypes[0].id
+          expect(obj).to.have.property 'x', toBeSaved.x
+          expect(obj).to.have.property 'y', toBeSaved.y
+          expect(obj).to.have.property 'strength', toBeSaved.strength
+          expect(obj).to.satisfy (o) -> o.equals returned
           done()
 
   it 'should save creates new event', (done) ->
@@ -837,16 +825,16 @@ describe 'AdminService tests', ->
     service.save 'Event', toBeSaved, 'admin', (err, modelName, returned) ->
       return done "Can't save event: #{err}" if err?
       # then the created values are returned
-      assert.isNotNull returned, 'unexpected returned event'
-      assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
-      assert.ok returned.equals saved
+      expect(returned).to.exist
+      expect(saved).to.exist
+      expect(returned).to.satisfy (o) -> o.equals saved
 
       # then the model exists in DB
       Event.findById returned.id, (err, obj) ->
         return done "Can't find event in db #{err}" if err?
-        assert.equal eventTypes[1].id, obj.type.id, "unexpected type id #{obj.type.id}"
-        assert.equal obj.content, toBeSaved.content
-        assert.ok obj.equals returned
+        expect(obj).to.have.deep.property 'type._id', eventTypes[1].id
+        expect(obj).to.have.property 'content', toBeSaved.content
+        expect(obj).to.satisfy (o) -> o.equals returned
         done()
 
   it 'should save saved existing event', (done) ->
@@ -860,7 +848,7 @@ describe 'AdminService tests', ->
       # then a update event was issued
       listener = (operation, className, instance)->
         return unless className is 'Event' and operation is 'update'
-        assert.ok event.equals instance
+        expect(event).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -868,15 +856,15 @@ describe 'AdminService tests', ->
       service.save 'Event', toBeSaved, 'admin', (err, modelName, returned) ->
         return done "Can't save event: #{err}" if err?
         # then the created values are returned
-        assert.isNotNull returned, 'unexpected returned event'
-        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        expect(returned).to.exist
+        expect(awaited, 'watcher was not as many times invoked as awaited').to.be.true
 
         # then the model exists in DB
         Event.findById returned.id, (err, obj) ->
           return done "Can't find event in db #{err}" if err?
-          assert.equal eventTypes[1].id, obj.type.id, "unexpected type id #{obj.type.id}"
-          assert.equal obj.content, toBeSaved.content
-          assert.ok obj.equals returned
+          expect(obj).to.have.deep.property 'type._id', eventTypes[1].id
+          expect(obj).to.have.property 'content', toBeSaved.content
+          expect(obj).to.satisfy (o) -> o.equals returned
           done()
 
   it 'should save creates new player', (done) ->
@@ -894,17 +882,17 @@ describe 'AdminService tests', ->
     service.save 'Player', toBeSaved, 'admin', (err, modelName, returned) ->
       return done "Can't save player: #{err}" if err?
       # then the created values are returned
-      assert.isNotNull returned, 'unexpected returned player'
-      assert.isNotNull saved, 'watcher was not as many times invoked as awaited'
-      assert.ok returned.equals saved
+      expect(returned).to.exist
+      expect(saved).to.exist
+      expect(returned).to.satisfy (o) -> o.equals saved
 
       # then the model exists in DB
       Player.findById returned.id, (err, obj) ->
         return done "Can't find player in db #{err}" if err?
-        assert.equal obj.email, toBeSaved.email
-        assert.equal obj.provider, toBeSaved.provider
-        assert.equal obj.isAdmin, toBeSaved.isAdmin
-        assert.ok obj.equals returned
+        expect(obj).to.have.property 'email', toBeSaved.email
+        expect(obj).to.have.property 'provider', toBeSaved.provider
+        expect(obj).to.have.property 'isAdmin', toBeSaved.isAdmin
+        expect(obj).to.satisfy (o) -> o.equals returned
         done()
 
   it 'should save saved existing player', (done) ->
@@ -919,7 +907,7 @@ describe 'AdminService tests', ->
       # then a update event was issued
       listener = (operation, className, instance)->
         return unless className is 'Player' and operation is 'update'
-        assert.ok player.equals instance
+        expect(player).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -927,16 +915,16 @@ describe 'AdminService tests', ->
       service.save 'Player', toBeSaved, 'admin', (err, modelName, returned) ->
         return done "Can't save player: #{err}" if err?
         # then the created values are returned
-        assert.isNotNull returned, 'unexpected returned player'
-        assert.ok awaited, 'watcher was not as many times invoked as awaited'
+        expect(returned).to.exist
+        expect(awaited, 'watcher was not as many times invoked as awaited').to.be.true
 
         # then the model exists in DB
         Player.findById returned.id, (err, obj) ->
           return done "Can't find player in db #{err}" if err?
-          assert.equal obj.email, toBeSaved.email
-          assert.equal obj.provider, toBeSaved.provider
-          assert.equal obj.isAdmin, toBeSaved.isAdmin
-          assert.ok obj.equals returned
+          expect(obj).to.have.property 'email', toBeSaved.email
+          expect(obj).to.have.property 'provider', toBeSaved.provider
+          expect(obj).to.have.property 'isAdmin', toBeSaved.isAdmin
+          expect(obj).to.satisfy (o) -> o.equals returned
           done()
 
   it 'should save update existing configuration', (done) ->
@@ -949,8 +937,8 @@ describe 'AdminService tests', ->
     # then an update event was issued
     listener = (operation, className, instance) ->
       return unless className is 'ClientConf'
-      assert.equal operation, 'update'
-      assert.ok confs[1].equals instance, 'In watcher, changed instance doesn`t match parameters'
+      expect(operation).to.equal 'update'
+      expect(confs[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -959,20 +947,20 @@ describe 'AdminService tests', ->
       return done "Can't save conf: #{err}" if err?
 
       # then the created values are returned
-      assert.equal confs[1].id, model.id, 'Saved model doesn\'t match parameters'
-      assert.equal confs[1].source, model.source
-      assert.equal model.values?.names?.montain, 'montagne'
+      expect(confs[1]).to.have.property 'id', model.id
+      expect(confs[1]).to.have.property 'source', model.source
+      expect(model).to.have.deep.property 'values.names.montain', 'montagne'
       
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
         return done "Can't find conf in db #{err}" if err?
-        assert.ok obj.equals model, 'Conf cannot be found in DB'
+        expect(obj).to.satisfy (o) -> o.equals model
 
         # then the model was updated, not created in DB
         ClientConf.find {}, (err, list) ->
           return done "Can't find confs in db #{err}" if err?
-          assert.equal list.length, 2
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(list).to.have.lengthOf 2
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
   it 'should remove fails on unallowed model', (done) ->
@@ -980,48 +968,43 @@ describe 'AdminService tests', ->
     # when removing unallowed model
     service.remove unknownModelName, {id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
-      assert.ok err?
-      assert.equal err, "The #{unknownModelName} model can't be removed"
-      assert.equal modelName, unknownModelName
+      expect(err).to.equal "The #{unknownModelName} model can't be removed"
+      expect(modelName).to.equal unknownModelName
       done()
 
   it 'should remove fails on unknown item type', (done) ->
     # when removing unknown item type
     service.remove 'ItemType', {id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
-      assert.ok err?
-      assert.ok 0 is err.indexOf "Unexisting ItemType"
+      expect(err).to.include "Unexisting ItemType"
       done()
 
   it 'should remove fails on unknown event type', (done) ->
     # when removing unknown event type
     service.remove 'EventType', {id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
-      assert.ok err?
-      assert.ok 0 is err.indexOf "Unexisting EventType"
+      expect(err).to.include "Unexisting EventType"
       done()
 
   it 'should remove fails on unknown field type', (done) ->
     # when removing unknown field type
     service.remove 'FieldType', {id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
-      assert.ok err?
-      assert.ok 0 is err.indexOf "Unexisting FieldType"
+      expect(err).to.include "Unexisting FieldType"
       done()
 
   it 'should remove fails on unknown executable', (done) ->
     # when removing unknown item type
     service.remove 'Executable', {id:'4feab529ac7805980e000017'}, 'admin', (err, modelName, model) ->
       # then an error occured
-      assert.ok err?
-      assert.ok 0 is err.indexOf "Unexisting Executable"
+      expect(err).to.include "Unexisting Executable"
       done()
 
   it 'should remove delete existing item type', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'ItemType' and operation is 'deletion'
-      assert.ok itemTypes[1].equals instance
+      expect(itemTypes[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1029,20 +1012,20 @@ describe 'AdminService tests', ->
     service.remove 'ItemType', itemTypes[1], 'admin', (err, modelName, model) ->
       return done "Can't remove itemType: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.equal itemTypes[1].id, model.id
+      expect(model).to.exist
+      expect(itemTypes[1]).to.have.property 'id', model.id
 
       # then the model do not exists anymore in DB
       ItemType.findById model.id, (err, obj) ->
-        assert.ok obj is null
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).not.to.exist
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should remove delete existing event type', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'EventType' and operation is 'deletion'
-      assert.ok eventTypes[1].equals instance
+      expect(eventTypes[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1050,20 +1033,20 @@ describe 'AdminService tests', ->
     service.remove 'EventType', eventTypes[1], 'admin', (err, modelName, model) ->
       return done "Can't remove eventType: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.equal eventTypes[1].id, model.id
+      expect(model).to.exist
+      expect(eventTypes[1]).to.have.property 'id', model.id
 
       # then the model do not exists anymore in DB
       EventType.findById model.id, (err, obj) ->
-        assert.ok obj is null
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).not.to.exist
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should remove delete existing field type', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'FieldType' and operation is 'deletion'
-      assert.ok fieldTypes[1].equals instance
+      expect(fieldTypes[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1071,20 +1054,20 @@ describe 'AdminService tests', ->
     service.remove 'FieldType', fieldTypes[1], 'admin', (err, modelName, model) ->
       return done "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.equal fieldTypes[1].id, model.id
+      expect(model).to.exist
+      expect(fieldTypes[1]).to.have.property 'id', model.id
 
       # then the model do not exists anymore in DB
       FieldType.findById model.id, (err, obj) ->
-        assert.isNull obj
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).not.to.exist
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should remove delete existing executable', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'Executable' and operation is 'deletion'
-      assert.ok executables[1].equals instance
+      expect(executables[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1092,20 +1075,20 @@ describe 'AdminService tests', ->
     service.remove 'Executable', executables[1], 'admin', (err, modelName, model) ->
       return done "Can't remove executable: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.equal executables[1].id, model.id
+      expect(model).to.exist
+      expect(executables[1]).to.have.property 'id', model.id
 
       # then the model do not exists anymore in DB
       Executable.findCached [model.id], (err, objs) ->
-        assert.equal objs.length , 0
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(objs).to.have.lengthOf 0
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should remove delete existing map', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'Map' and operation is 'deletion'
-      assert.ok maps[1].equals instance
+      expect(maps[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1113,13 +1096,13 @@ describe 'AdminService tests', ->
     service.remove 'Map', maps[1], 'admin', (err, modelName, model) ->
       return done "Can't remove map: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.equal maps[1].id, model.id
+      expect(model).to.exist
+      expect(maps[1]).to.have.property 'id', model.id
 
       # then the model do not exists anymore in DB
       Map.findById model.id, (err, obj) ->
-        assert.ok obj is null
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).not.to.exist
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should remove removes existing fields', (done) ->
@@ -1132,8 +1115,8 @@ describe 'AdminService tests', ->
 
         # then a deletion event was issued
         listener = (operation, className, instance)->
-          assert.equal className, 'Field'
-          assert.equal operation, 'deletion'
+          expect(className).to.equal 'Field'
+          expect(operation).to.equal 'deletion'
           removed.push instance
         watcher.on 'change', listener
 
@@ -1141,21 +1124,21 @@ describe 'AdminService tests', ->
         service.remove 'Field', [field1, field2], 'admin', (err, modelName, returned) ->
           return done "Can't remove fields: #{err}" if err?
           # then the created values are returned
-          assert.equal returned?.length, 2, 'unexpected returned fields'
-          assert.ok returned[0].equals field2
-          assert.ok returned[1].equals field1
+          expect(returned).to.have.lengthOf 2
+          expect(returned[0]).to.satisfy (o) -> o.equals field2
+          expect(returned[1]).to.satisfy (o) -> o.equals field1
 
           # then the model does exist in DB anymore
           Field.findById field1.id, (err, obj) ->
             return done "Can't find field in db #{err}" if err?
-            assert.isNull obj
+            expect(obj).not.to.exist
             Field.findById field2.id, (err, obj) ->
               return done "Can't find field in db #{err}" if err?
-              assert.isNull obj
+              expect(obj).not.to.exist
               # then the watcher was properly invoked
-              assert.equal removed.length, 2, 'watcher was not as many times invoked as awaited'
-              assert.ok returned[0].equals removed[0]
-              assert.ok returned[1].equals removed[1]
+              expect(removed).to.have.lengthOf 2
+              expect(returned[0]).to.satisfy (o) -> o.equals removed[0]
+              expect(returned[1]).to.satisfy (o) -> o.equals removed[1]
               done()
 
   it 'should remove delete existing item', (done) ->
@@ -1166,7 +1149,7 @@ describe 'AdminService tests', ->
       # then a deletion event was issued
       listener = (operation, className, instance)->
         return unless className is 'Item' and operation is 'deletion'
-        assert.ok item.equals instance
+        expect(item).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -1174,14 +1157,14 @@ describe 'AdminService tests', ->
       service.remove 'Item', item.toJSON(), 'admin', (err, modelName, returned) ->
         return done "Can't remove item: #{err}" if err?
         # then the created values are returned
-        assert.isNotNull returned, 'unexpected returned item'
-        assert.ok awaited, 'watcher was not as many times invoked as awaited'
-        assert.ok returned.equals item
+        expect(returned).to.exist
+        expect(awaited, 'watcher was not as many times invoked as awaited').to.be.true
+        expect(returned).to.satisfy (o) -> o.equals item
 
         # then the model exists in DB
         Item.findById returned.id, (err, obj) ->
           return done "Can't find item in db #{err}" if err?
-          assert.isNull obj
+          expect(obj).not.to.exist
           done()
 
   it 'should remove delete existing event', (done) ->
@@ -1192,7 +1175,7 @@ describe 'AdminService tests', ->
       # then a deletion event was issued
       listener = (operation, className, instance)->
         return unless className is 'Event' and operation is 'deletion'
-        assert.ok event.equals instance
+        expect(event).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -1200,14 +1183,14 @@ describe 'AdminService tests', ->
       service.remove 'Event', event.toJSON(), 'admin', (err, modelName, returned) ->
         return done "Can't remove event: #{err}" if err?
         # then the created values are returned
-        assert.isNotNull returned, 'unexpected returned event'
-        assert.ok awaited, 'watcher was not as many times invoked as awaited'
-        assert.ok returned.equals event
+        expect(returned).to.exist
+        expect(awaited, 'watcher was not as many times invoked as awaited').to.be.true
+        expect(returned).to.satisfy (o) -> o.equals event
 
         # then the model exists in DB
         Event.findById returned.id, (err, obj) ->
           return done "Can't find event in db #{err}" if err?
-          assert.isNull obj
+          expect(obj).not.to.exist
           done()
 
   it 'should remove delete existing player', (done) ->
@@ -1218,8 +1201,8 @@ describe 'AdminService tests', ->
       # then a deletion event was issued
       listener = (operation, className, instance)->
         return unless operation is 'deletion'
-        assert.equal className, 'Player'
-        assert.ok player.equals instance
+        expect(className).to.equal 'Player'
+        expect(player).to.satisfy (o) -> o.equals instance
         awaited = true
       watcher.on 'change', listener
 
@@ -1227,21 +1210,21 @@ describe 'AdminService tests', ->
       service.remove 'Player', player.toJSON(), 'admin', (err, modelName, returned) ->
         return done "Can't remove player: #{err}" if err?
         # then the created values are returned
-        assert.isNotNull returned, 'unexpected returned player'
-        assert.ok awaited, 'watcher was not as many times invoked as awaited'
-        assert.ok returned.equals player
+        expect(returned).to.exist
+        expect(awaited, 'watcher was not as many times invoked as awaited').to.be.true
+        expect(returned).to.satisfy (o) -> o.equals player
 
         # then the model exists in DB
         Player.findById returned.id, (err, obj) ->
           return done "Can't find player in db #{err}" if err?
-          assert.isNull obj
+          expect(obj).not.to.exist
           done()
 
   it 'should remove delete existing fsItem', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'deletion'
-      assert.ok fsItem.equals instance
+      expect(fsItem).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1249,24 +1232,22 @@ describe 'AdminService tests', ->
     service.remove 'FSItem', fsItem, 'admin', (err, modelName, model) ->
       return done "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.ok fsItem.equals model
+      expect(model).to.exist
+      expect(fsItem).to.satisfy (o) -> o.equals model
 
       # then the model is not readable with authoring service
       authoringService.read fsItem, (err, obj) ->
-        assert.isNotNull err
-        assert.ok -1 isnt err.indexOf 'Unexisting item'
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(err).to.include 'Unexisting item'
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should remove fails on non array parameter', (done) ->
     # when removing field without array
     service.remove 'Field', {mapId: maps[0].id, typeId: fieldTypes[0].id, x:0, y:0}, 'admin', (err, modelName, returned) ->
       # then nothing was removed
-      assert.isNotNull err
-      assert.equal 'Fields must be removed within an array', err
-      assert.equal modelName, 'Field'
-      assert.isUndefined returned
+      expect(err).to.include 'Fields must be removed within an array'
+      expect(modelName).to.equal 'Field'
+      expect(returned).not.to.exist
       done()
 
   it 'should remove fails on unexisting fields', (done) ->
@@ -1278,8 +1259,8 @@ describe 'AdminService tests', ->
 
       # then a deletion event was issued
       listener = (operation, className, instance)->
-        assert.equal className, 'Field'
-        assert.equal operation, 'deletion'
+        expect(className).to.equal 'Field'
+        expect(operation).to.equal 'deletion'
         removed.push instance
       watcher.on 'change', listener
 
@@ -1287,19 +1268,18 @@ describe 'AdminService tests', ->
       unexisting = {id: fieldTypes[0].id, mapId: maps[0].id, typeId: fieldTypes[1].id, x:0, y:1}
       service.remove 'Field', [unexisting, field], 'admin', (err, modelName, returned) ->
         # then an error occured
-        assert.isNotNull err
-        assert.equal "Unexisting field with id #{unexisting.id}", err
+        expect(err).to.equal "Unexisting field with id #{unexisting.id}"
         # then the created values are returned
-        assert.equal returned?.length, 1, 'unexpected returned fields'
-        assert.ok returned[0].equals field
+        expect(returned).to.have.lengthOf 1
+        expect(returned[0]).to.satisfy (o) -> o.equals field
 
         # then the model does exist in DB anymore
         Field.findById field.id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          assert.isNull obj
+          expect(obj).not.to.exist
           # then the watcher was properly invoked
-          assert.equal removed.length, 1, 'watcher was not as many times invoked as awaited'
-          assert.ok returned[0].equals removed[0]
+          expect(removed).to.have.lengthOf 1
+          expect(returned[0]).to.satisfy (o) -> o.equals removed[0]
           done()
 
   it 'should remove do nothing on empty array', (done) ->
@@ -1307,15 +1287,15 @@ describe 'AdminService tests', ->
     service.remove 'Field', [], 'admin', (err, modelName, returned) ->
       # then nothing was saved
       return done "Unexpected error while saving fields: #{err}" if err?
-      assert.equal modelName, 'Field'
-      assert.equal returned.length, 0
+      expect(modelName).to.equal 'Field'
+      expect(returned).to.have.lengthOf 0
       done()
 
   it 'should remove delete existing configuration', (done) ->
     # then a deletion event was issued
     listener = (operation, className, instance)->
       return unless className is 'ClientConf' and operation is 'deletion'
-      assert.ok confs[1].equals instance
+      expect(confs[1]).to.satisfy (o) -> o.equals instance
       awaited = true
     watcher.on 'change', listener
 
@@ -1323,13 +1303,13 @@ describe 'AdminService tests', ->
     service.remove 'ClientConf', confs[1], 'admin', (err, modelName, model) ->
       return done "Can't remove conf: #{err}" if err?
       # then the removed values are returned
-      assert.ok model?
-      assert.equal confs[1].id, model.id
+      expect(model).to.exist
+      expect(confs[1]).to.have.property 'id', model.id
 
       # then the model do not exists anymore in DB
       ClientConf.findById model.id, (err, obj) ->
-        assert.isNull obj
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(obj).not.to.exist
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should id unicity be globally checked', (done) ->
@@ -1348,8 +1328,8 @@ describe 'AdminService tests', ->
         # when saving the model with an executable id
         new type.clazz(type.args).save (err) ->
           # then an error is detected
-          assert.isNotNull err, "#{name} for #{type.name} did not report error"
-          assert.equal err.toString(), "Error: id #{name} for model #{type.name} is already used"
+          expect(err, "#{name} for #{type.name} did not report error").to.exist
+          expect(err).to.have.property('message').that.equal "id #{name} for model #{type.name} is already used"
           next()
       , next
     , done
@@ -1368,8 +1348,70 @@ describe 'AdminService tests', ->
         # when saving the model with an unallowed id
         new type.clazz(type.args).save (err) ->
           # then an error is detected
-          assert.isNotNull err, "#{name} for #{type.name} did not report error"
-          assert.equal err.toString(), "Error: id #{name} for model #{type.name} is invalid"
+          expect(err, "#{name} for #{type.name} did not report error").to.exist
+          expect(err).to.have.property('message').that.equal "id #{name} for model #{type.name} is invalid"
           next()
       , next
     , done
+
+  describe 'given a normal player and an administrator', ->
+
+    player = null
+    admin = null
+
+    beforeEach (done) ->
+      new Player(email: 'administrator', password:'toto', isAdmin: true).save (err, saved) ->
+        return done err if err?
+        admin = saved
+        new Player(email: 'player', password:'toto').save (err, saved) ->
+          player = saved
+          done err
+
+    afterEach (done) ->
+      admin.remove (err) ->
+        player.remove (err2) ->
+          done err or err2
+
+    it 'should connect as another player', (done) ->
+      # when connecting as a player
+      service.connectAs player.email, admin.email, (err, token) ->
+
+        expect(err).not.to.exist
+        expect(token).to.be.a('string').and.to.have.lengthOf 24
+
+        # then player token was updated
+        Player.findById player.id, (err, result) ->
+          return done err if err?
+          expect(result).to.have.property 'token', token
+          done()
+
+    it 'should not connect if not administrator', (done) ->
+      service.connectAs admin.email, player.email, (err, token) ->
+
+        expect(err).to.include 'reserved'
+        expect(token).not.to.exist
+
+        # then player token was updated
+        Player.findById admin.id, (err, result) ->
+          return done err if err?
+          expect(result).not.to.have.property 'token'
+          done()
+
+    it 'should not connect as unknown player', (done) ->
+      service.connectAs 'someone', admin.email, (err, token) ->
+
+        expect(err).to.include 'No player with email someone'
+        expect(token).not.to.exist
+        done()
+
+    it 'should not connect as unknown administrator', (done) ->
+      service.connectAs player.email, 'somebody', (err, token) ->
+
+        expect(err).to.include 'No player with email somebody'
+        expect(token).not.to.exist
+
+        # then player token was updated
+        Player.findById player.id, (err, result) ->
+          return done err if err?
+          expect(result).not.to.have.property 'token'
+          done()

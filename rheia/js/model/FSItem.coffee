@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -24,15 +24,11 @@ define [
 ], (Base, utils) ->
 
   # Client cache of FSItems.
-  class _FSItems extends Base.Collection
+  class _FSItems extends Base.VersionnedCollection
 
     # Flag used to distinguish moves from removals
     # Must be set to true when moving file.
     moveInProgress: false
-
-    # **private**
-    # Temporary stores callback of `restorables()` calls
-    _restorablesCallback: []
 
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
@@ -52,27 +48,6 @@ define [
           return app.router.trigger 'serverError', err, method:'FSItem.sync', details:'move' if err? 
           @moveInProgress = false
 
-        # history() and readVersion() handlers
-        app.sockets.admin.on 'history-resp', @_onHistory
-        app.sockets.admin.on 'readVersion-resp', @_onReadVersion
-        app.sockets.admin.on 'restorables-resp', (reqId, err, restorables) =>
-          if err?
-            app.router.trigger 'serverError', err, method:'FSItem.restorables' 
-            restorables = []
-          else
-            # build FSItems
-            restorable.item = new FSItem restorable.item for restorable in restorables
-
-          # invoke all registered callbacks
-          callback restorables for callback in @_restorablesCallback
-          @_restorablesCallback = []
-
-        app.sockets.admin.on 'authoring', @_onNewVersion
-        app.sockets.admin.on 'deployement', (state) =>
-          return unless state is 'VERSION_RESTORED'
-          # totally clean collection 
-          @fetch()
-
     # Provide a custom sync method to wire FSItems to the server.
     # Only read operation allowed.
     #
@@ -87,15 +62,6 @@ define [
       return app.sockets.admin.emit 'list', utils.rid(), 'FSItem' unless item?
       # Or read the item
       return app.sockets.admin.emit 'read', utils.rid(), item._serialize()
-
-    # List all restorables files
-    #
-    # @param callback [Function] end callback, invoked with
-    # @option callback restorables [Array] an array (may be empty) containing for each restorable file an objects with `item` and `id` attributes
-    restorables: (callback) =>
-      # stores callback and ask to server if we have one callback. 
-      @_restorablesCallback.push callback
-      app.sockets.admin.emit 'restorables', utils.rid() if @_restorablesCallback.length is 1
 
     # **private**
     # Enhanced to dencode file content from base64.
@@ -175,57 +141,8 @@ define [
       # trigger update 
       @_onUpdate 'FSItem', rawItem
 
-    # **private**
-    # Invoked when a message of a new commit is received.
-    # Update the corresponding FSItem if found, and triggers its `history` event.
-    #
-    # @param event [String] kind of version event.
-    # @param path [String] concerned FSItem path
-    # @param commit [Object] commit object, with `author`, `date`, `message` and `id` fields
-    _onNewVersion: (event, path, commit) =>
-      return unless event is 'committed'
-      item = @get path
-      if item?
-        item.history = [] unless item.history?
-        commit.date = new Date commit.date
-        item.history.splice 0, 0, commit
-        item.trigger 'history', item
-
-    # **private**
-    # File history retrieval handler. 
-    # Triggers an 'history' event on the concerned FSItem after having filled its history attribute
-    # Wired on collection to avoid multiple listeners. 
-    #
-    # @param reqId [String] client request id
-    # @param err [String] error string, or null if no error occured
-    # @param item [FSItem] raw concerned FSItem
-    # @param history [Array] array of commits, containing `author`, `date`, `id` and `message` attributes
-    _onHistory: (reqId, err, item, history) =>
-      return app.router.trigger 'serverError', err, method:"FSItem.fetchHistory" if err? 
-      item = @get item.path
-      if item?
-        item.history = history
-        # reconstruct dates
-        commit.date = new Date commit.date for commit in history
-        item.trigger 'history', item
-
-    # **private**
-    # File version retrieval handler. 
-    # Triggers an 'version' event on the concerned FSItem with its content as parameter
-    # Wired on collection to avoid multiple listeners. 
-    #
-    # @param reqId [String] client request id
-    # @param err [String] error string, or null if no error occured
-    # @param item [FSItem] raw concerned FSItem
-    # @param content [String] utf8 encoded file content
-    _onReadVersion: (reqId, err, item, content) =>
-      return app.router.trigger 'serverError', err, method:"FSItem.fetchVersion" if err? 
-      item = @get(item.path)
-      if item?
-        item.trigger 'version', item, atob content
-
   # Modelisation of a single File System Item.
-  class FSItem extends Base.Model
+  class FSItem extends Base.VersionnedModel
 
     # FSItem local cache.
     # A Backbone.Collection subclass
@@ -237,7 +154,7 @@ define [
 
     # **private**
     # List of properties that must be defined in this instance.
-    _fixedAttributes: ['path', 'isFolder', 'content']
+    _fixedAttributes: ['path', 'isFolder']
 
     # bind the Backbone attribute to the path name
     idAttribute: 'path'
@@ -245,19 +162,11 @@ define [
     # File extension, if relevant
     extension: ''
 
-    # Special status to indicate this FSItem in restoration.
-    restored: false
-
-    # File history. Null until retrieved with `fetchHistory()`
-    history: null
-
     # FSItem constructor.
     #
     # @param attributes [Object] raw attributes of the created instance.
     constructor: (attributes) ->
       super attributes
-      restored = false
-      history = null
       # update file extension
       @extension = @get('path').substring(@get('path').lastIndexOf('.')+1).toLowerCase() unless @get 'isFolder'
 
@@ -271,17 +180,15 @@ define [
     # an `history` event will be triggered on model once retrieved
     fetchHistory: =>
       return if @get 'isFolder'
-      console.debug "fetch history for #{@id}"
-      app.sockets.admin.emit 'history', utils.rid(), @_serialize()
+      super()
 
     # fetch a given version on server, only for files.
     # an `version` event will be triggered on model once retrieved
     #
-    # @param version [String] retrieved version id 
+    # @param version [String] retrieved version id. null or empty to restore last uncommited version
     fetchVersion: (version) =>
       return if @get 'isFolder'
-      console.debug "fetch version #{version} for #{@id}"
-      app.sockets.admin.emit 'readVersion', utils.rid(), @_serialize(), version
+      super version
 
     # **private** 
     # Method used to serialize a model when saving and removing it

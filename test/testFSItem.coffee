@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -24,7 +24,7 @@ _ = require 'underscore'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-assert = require('chai').assert
+{expect} = require 'chai'
 
 root = null
 awaited = false
@@ -38,7 +38,7 @@ creationAwaited = false
 # @param content [String|Buffer|Array] optionnal item content. null by default
 # @param isNew [Boolean] optionnal distinguish creation from update. true by default
 # @param done [Function] test done function.
-assertFSItemSave = (item, isFolder, content, isNew, done) ->
+expectFSItemSave = (item, isFolder, content, isNew, done) ->
   if 'function' is utils.type content
     done = content
     content = null
@@ -49,12 +49,12 @@ assertFSItemSave = (item, isFolder, content, isNew, done) ->
 
   # then a creation event was issued
   watcher.once 'change', (operation, className, instance)->
-    assert.equal className, 'FSItem'
-    assert.equal operation, if isNew then 'creation' else 'update'
+    expect(className).to.equal 'FSItem'
+    expect(operation).to.equal if isNew then 'creation' else 'update'
     # path in change must ends original path
-    assert.isNotNull item.path.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
-    assert.equal item.isFolder, instance.isFolder
-    assert.equal item.content, instance.content
+    expect(item.path).to.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
+    expect(instance.isFolder).to.equal item.isFolder
+    expect(instance.content).to.equal item.content
     awaited = true
 
   # when saving it
@@ -62,41 +62,43 @@ assertFSItemSave = (item, isFolder, content, isNew, done) ->
   item.save (err, result) ->
 
     return done "Can't save #{if isFolder then 'folder' else 'file'}: #{err}" if err?
-    assert.equal item.path, result.path
-    assert.equal isFolder, result.isFolder
-    assert.equal content, result.content
+    expect(result.path).to.equal item.path
+    expect(result.isFolder).to.equal isFolder
+    expect(result.content).to.equal content
+    expect(result).to.have.property 'updated'
+    expect(result.updated.getTime()).to.equal new Date().setMilliseconds 0
 
     # then it's on the file system
     fs.stat item.path, (err, stats) ->
       return done "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
-      assert.equal isFolder, stats.isDirectory()
-      assert.ok awaited, 'watcher wasn\'t invoked'
+      expect(isFolder).to.equal stats.isDirectory()
+      expect(awaited, 'watcher wasn\'t invoked').to.be.true
       done()
 
 # Simple code factorization on fs-items destruction
 #
 # @param item [FSItem] removed item
 # @param done [Function] test done function.
-assertFSItemRemove = (item, done) ->
+expectFSItemRemove = (item, done) ->
   # then a creation event was issued
   watcher.once 'change', (operation, className, instance)->
-    assert.equal className, 'FSItem'
-    assert.equal operation, 'deletion'
+    expect(className).to.equal 'FSItem'
+    expect(operation).to.equal 'deletion'
     # path in change must ends original path
-    assert.isNotNull item.path.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
-    assert.equal item.isFolder, instance.isFolder
+    expect(item.path).to.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
+    expect(instance.isFolder).to.equal item.isFolder
     awaited = true
 
   # when saving it
   awaited = false
   item.remove (err, result) ->
     return done "Can't remove #{if item.isFolder then 'folder' else 'file'}: #{err}" if err?
-    assert.ok item.equals result
+    expect(result).to.satisfy (o) => o.equals item
 
     # then it's not on the file system anymore
     fs.exists item.path, (exists) ->
-      assert.ok !exists, "#{if item.isFolder then 'folder' else 'file'} still exists"
-      assert.ok awaited, 'watcher wasn\'t invoked'
+      expect(exists, "#{if item.isFolder then 'folder' else 'file'} still exists").to.be.false
+      expect(awaited, 'watcher wasn\'t invoked').to.be.true
       done()
 
 # Simple code factorization on fs-items move and rename
@@ -106,7 +108,7 @@ assertFSItemRemove = (item, done) ->
 # @param isFolder [Boolean] awaited folder status
 # @param content [String|Buffer|Array] optionnal item content. null by default
 # @param done [Function] test done function.
-assertFSItemMoved = (item, newPath, isFolder, content, done) ->
+expectFSItemMoved = (item, newPath, isFolder, content, done) ->
   if 'function' is utils.type content
     done = content
     content = null
@@ -116,15 +118,16 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
 
   # then a creation and a delection event were issued
   watcher.on 'change', listener = (operation, className, instance)->
-    assert.equal className, 'FSItem'
+    expect(className).to.equal 'FSItem'
     if operation is 'creation'
-      assert.isNotNull newPath.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
-      assert.equal instance.isFolder, isFolder
-      assert.equal instance.content, content unless isFolder
+      expect(newPath).to.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
+      expect(instance.isFolder).to.equal isFolder
+      unless isFolder
+        expect(instance.content).to.equal content
       creationAwaited = true
     else if operation is 'deletion'
-      assert.isNotNull oldPath.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
-      assert.equal instance.isFolder, isFolder
+      expect(oldPath).to.match new RegExp "#{instance.path.replace /\\/g, '\\\\'}$"
+      expect(instance.isFolder).to.equal isFolder
       deletionAwaited = true
 
   creationAwaited = false
@@ -133,21 +136,22 @@ assertFSItemMoved = (item, newPath, isFolder, content, done) ->
   item.move newPath, (err, result) ->
 
     return done "Can't move #{if isFolder then 'folder' else 'file'}: #{err}" if err?
-    assert.equal result.path, newPath
-    assert.equal result.isFolder, isFolder
-    assert.equal result.content, content unless isFolder
+    expect(result.path).to.equal newPath
+    expect(result.isFolder).to.equal isFolder
+    unless isFolder
+      expect(result.content).to.equal content 
 
     # then the old path does not exists anymore
     fs.exists oldPath, (exists) ->
-      assert.isFalse exists, "old path #{oldPath} still exists"
+      expect(exists, "old path #{oldPath} still exists").to.be.false
 
       # then it's on the file system
       fs.stat newPath, (err, stats) ->
 
         return done "Can't analyse #{if isFolder then 'folder' else 'file'}: #{err}" if err?
-        assert.equal stats.isDirectory(), isFolder
-        assert.ok deletionAwaited, 'deletion event not received'
-        assert.ok creationAwaited, 'creation event not received'
+        expect(stats.isDirectory()).to.equal isFolder
+        expect(deletionAwaited, 'deletion event not received').to.be.true
+        expect(creationAwaited, 'creation event not received').to.be.true
         watcher.removeListener 'change', listener
         done()
 
@@ -167,35 +171,38 @@ describe 'FSItem tests', ->
     it 'should file be created', (done) -> 
       # given a new file
       item = new FSItem "#{root}/file.txt", false
-      assertFSItemSave item, false, done
+      expectFSItemSave item, false, done
 
     it 'should folder be created', (done) -> 
       # given a new file
       item = new FSItem "#{root}/folder", true
-      assertFSItemSave item, true, done
+      expectFSItemSave item, true, done
 
     it 'should file be created inside new folders', (done) -> 
       # given a new file inside unexisting folders
       item = new FSItem "#{root}/folder/folder/file1.txt", false
-      assertFSItemSave item, false, done
+      expectFSItemSave item, false, done
 
     it 'should folder be created inside new folders', (done) -> 
       # given a new file
       item = new FSItem "#{root}/folder/folder/folder", true
-      assertFSItemSave item, true, done
+      expectFSItemSave item, true, done
 
   describe 'given an existing file', ->
 
     file1 = null
+    creation = null
 
     before (done) ->
       cleanRoot (err) ->
         return done err if err?
         file1 = new FSItem "#{root}/file.txt", false
         file1.content = new Buffer 'yeah !'
+        creation = new Date()
         file1.save (err, result) ->
           return done err if err?
           file1 = result
+          creation = file1.updated
           done()
 
     it 'should file content be read', (done) ->
@@ -203,28 +210,32 @@ describe 'FSItem tests', ->
       file1.read (err, result) ->
         return done "Can't read file content: #{err}" if err?
         # then content is available
-        assert.equal new Buffer(result.content, 'base64').toString(), 'yeah !'
+        expect(file1.updated.getTime()).to.equal creation.getTime()
+        expect(new Buffer(result.content, 'base64').toString()).to.equal 'yeah !'
         done()
 
     it 'should file be updated', (done) ->
       newContent = new Buffer 'coucou 1'
       file1.content = newContent
+      creation = file1.updated
       # when saginv it         
-      assertFSItemSave file1, false, newContent.toString('base64'), false, ->
+      expectFSItemSave file1, false, newContent.toString('base64'), false, ->
         # then the content was written on file system
         fs.readFile file1.path, (err, content) ->
           return done "Can't read file content: #{err}" if err?
-          assert.equal newContent.toString('base64'), content.toString('base64')
+          expect(file1.updated.getTime()).to.equal new Date().setMilliseconds 0
+          expect(newContent.toString('base64')).to.equal content.toString('base64')
+          expect(file1.updated).not.to.equal creation
           done()
 
     it 'should file be renamed', (done) ->
-      assertFSItemMoved file1, "#{root}/file.copy", false, file1.content, done
+      expectFSItemMoved file1, "#{root}/file.copy", false, file1.content, done
      
     it 'should file be moved into another folder', (done) ->
-      assertFSItemMoved file1, "#{root}/folder2/file.copy2", false, file1.content, done   
+      expectFSItemMoved file1, "#{root}/folder2/file.copy2", false, file1.content, done   
 
     it 'should file be removed', (done) ->
-      assertFSItemRemove file1, done
+      expectFSItemRemove file1, done
 
   describe 'given an existing folder', ->
 
@@ -254,21 +265,21 @@ describe 'FSItem tests', ->
         folder1.read (err, result) ->
           return done "Can't read folder content: #{err}" if err?
           # then folder was read
-          assert.isNotNull result.content
-          assert.equal 3, result.content.length
-          assert.ok content[0].equals(result.content[0]), 'first file not read'
-          assert.ok content[1].equals(result.content[1]), 'second file not read'
-          assert.ok new FSItem("#{folder1.path}/folder", true).equals(result.content[2]), 'subfolder not read'
+          expect(result.content).to.exist
+          expect(result.content).to.have.lengthOf 3
+          expect(content[0], 'first file not read').to.satisfy (o) => o.equals result.content[0]
+          expect(content[1], 'second file not read').to.satisfy (o) => o.equals result.content[1]
+          expect(new FSItem("#{folder1.path}/folder", true), 'subfolder not read').to.satisfy (o) => o.equals result.content[2]
           done()
 
     it 'should folder be renamed', (done) ->
-      assertFSItemMoved folder1, "#{root}/folder2", true, done
+      expectFSItemMoved folder1, "#{root}/folder2", true, done
      
     it 'should file be moved into another folder', (done) ->
-      assertFSItemMoved folder1, "#{root}/folder3/folder", true, done   
+      expectFSItemMoved folder1, "#{root}/folder3/folder", true, done   
 
     it 'should folder be removed', (done) ->
-      assertFSItemRemove folder1, done
+      expectFSItemRemove folder1, done
 
   describe 'given an existing files and a folders', ->
 
@@ -304,71 +315,71 @@ describe 'FSItem tests', ->
       files[0].isFolder = true
       files[0].move folders[0].path, (err, result) ->
         files[0].isFolder = false
-        assert.ok -1 isnt err.indexOf('move file'), "unexpected error: #{err}"
+        expect(err).to.include 'move file'
         done()
 
     it 'should file not be moved into existing file', (done) ->
       files[0].move files[1].path, (err, result) ->
-        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        expect(err).to.include 'already exists'
         done()
 
     it 'should file not be moved into existing folder', (done) ->
       files[0].move folders[0].path, (err, result) ->
-        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        expect(err).to.include 'already exists'
         done()
 
     it 'should folder not be moved into file', (done) ->
       folders[0].isFolder = false
       folders[0].move files[0].path, (err, result) ->
         folders[0].isFolder = true
-        assert.ok -1 isnt err.indexOf('move folder'), "unexpected error: #{err}"
+        expect(err).to.include 'move folder'
         done()
 
     it 'should folder not be moved into existing folder', (done) ->
       folders[0].move folders[1].path, (err, result) ->
-        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        expect(err).to.include 'already exists'
         done()
 
     it 'should folder not be moved into existing file', (done) ->
       folders[0].move files[0].path, (err, result) ->
-        assert.ok -1 isnt err.indexOf('already exists'), "unexpected error: #{err}"
+        expect(err).to.include 'already exists'
         done()
 
     it 'should folder not be saved again', (done) ->
       folders[0].save (err, result) ->
-        assert.ok -1 isnt err.indexOf('existing folder'), "unexpected error: #{err}"
+        expect(err).to.include 'existing folder'
         done()
 
     it 'should unexisting folder not be removed', (done) ->
       new FSItem("#{root}/unknown", true).remove (err, result) ->
-        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        expect(err).to.include 'Unexisting item'
         done()
 
     it 'should unexisting file not be removed', (done) ->
       new FSItem("#{root}/unknown", false).remove (err, result) ->
-        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        expect(err).to.include 'Unexisting item'
         done()
 
     it 'should unexisting folder not be read', (done) ->
       new FSItem("#{root}/unknown", true).read (err, result) ->
-        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        expect(err).to.include 'Unexisting item'
         done()
 
     it 'should unexisting file not be read', (done) ->
       new FSItem("#{root}/unknown", false).read (err, result) ->
-        assert.ok -1 isnt err.indexOf('Unexisting item'), "unexpected error: #{err}"
+        expect(err).to.include 'Unexisting item'
         done()
 
     it 'should folder not be saved into file', (done) ->
       folders[0].isFolder = false
       folders[0].save (err, result) ->
         folders[0].isFolder = true
-        assert.ok -1 isnt err.indexOf('save folder'), "unexpected error: #{err}"
+        expect(err).to.include 'save folder'
         done()
 
     it 'should file not be saved into folder', (done) ->
       files[0].isFolder = true
       files[0].save (err, result) ->
         files[0].isFolder = false
-        assert.ok -1 isnt err.indexOf('save file'), "unexpected error: #{err}"
+        expect(err).to.include 'save file'
         done()

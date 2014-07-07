@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -142,31 +142,6 @@ getProp = (obj, path, callback) ->
   
   processStep obj
 
-filterModified = (obj, modified, _parsed = []) ->
-  # do not process if already known
-  return if obj in _parsed
-  _parsed.push obj
-  # will be save if at least one path is modified
-  if obj?.isModified?()
-    modified.push obj
-  if obj?._className is 'Player'
-    # recurse if needed on characters
-    filterModified(value, modified, _parsed) for value in obj.characters when value? and 'string' isnt utils.type value
-    return 
-  # do not go further if not an obj
-  return unless obj?._className is 'Item' or obj?._className is 'Event'
-  properties = obj.type.properties
-  for prop, def of properties
-    if def.type is 'object'
-      value = obj[prop]
-      # recurse if needed on linked object that are resolved
-      filterModified(value, modified, _parsed) if value? and 'string' isnt utils.type value
-    else if def.type is 'array'
-      values = obj[prop]
-      if values
-        # recurse if needed on linked object that are resolved
-        filterModified(value, modified, _parsed) for value in values when value? and 'string' isnt utils.type value
-
 module.exports =
 
   # Generate a random Id (using Mong native id)
@@ -183,12 +158,18 @@ module.exports =
     i = 0
     while i < length
       model = arr[i]
-      if model.id? and _.any(uniq, (obj) -> obj?.equals and obj.equals model)
-        # found a duplicate
+      if model.id? 
+        # check on id equality
+        duplicate = _.any(uniq, (obj) -> obj?.equals and obj.equals model)
+      else
+        # or on strict equality
+        duplicate = -1 isnt uniq.indexOf model
+
+      if duplicate
+        # found a duplicate on id equality
         arr.splice i, 1
         length--
       else
-        # first occurence
         uniq.push model
         i++
 
@@ -378,7 +359,30 @@ module.exports =
   #
   # @param obj [Object] root model that begins the analysis
   # @param modified [Array] array of already modified object, concatenated with found modified objects
-  filterModified: filterModified
+  filterModified: (obj, modified, _parsed = []) ->
+    # do not process if already known
+    return if obj in _parsed
+    _parsed.push obj
+    # will be save if at least one path is modified
+    if obj?.isModified?() or obj?.isNew
+      modified.push obj
+    if obj?._className is 'Player'
+      # recurse if needed on characters
+      module.exports.filterModified(value, modified, _parsed) for value in obj.characters when value? and 'string' isnt utils.type value
+      return 
+    # do not go further if not an obj
+    return unless obj?._className is 'Item' or obj?._className is 'Event'
+    properties = obj.type.properties
+    for prop, def of properties
+      if def.type is 'object'
+        value = obj[prop]
+        # recurse if needed on linked object that are resolved
+        module.exports.filterModified(value, modified, _parsed) if value? and 'string' isnt utils.type value
+      else if def.type is 'array'
+        values = obj[prop]
+        if values
+          # recurse if needed on linked object that are resolved
+          module.exports.filterModified(value, modified, _parsed) for value in values when value? and 'string' isnt utils.type value
 
   # Check id validity. Must be a string containing only alphanumerical characters and -.
   #

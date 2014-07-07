@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -26,7 +26,7 @@ Item = require './Item'
 modelUtils = require '../util/model'
 
 # Define the schema for map item types
-ItemType = typeFactory 'ItemType', 
+ItemType = typeFactory 'ItemType',
 
   # descriptive image for this type.
   descImage:

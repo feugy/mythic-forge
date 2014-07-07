@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -39,6 +39,8 @@ define
       scripts: 'Scripts'
       clientConfs: 'Configurations'
     login: 'Rheia - Connexion'
+    restorableFiles: "Fichiers supprimés/déplacés"
+    restorableExecutables: "Règles/Scripts supprimés"
       
   labels:
     enterLogin: 'Identifiant : '
@@ -56,6 +58,9 @@ define
     noQuantity: '~'
     noFrom: 'personne'
     connectedNumber: 'connectés'
+    commitDetails: '%3$s: %1$s (%2$s)'
+    commitDetailsLast: 'en cours: %1$s'
+    history: 'historique'
 
   buttons:
     close: 'Fermer'
@@ -63,11 +68,13 @@ define
     login: 'Entrer'
     google: 'Google'
     twitter: 'Twitter'
+    github: 'Github'
     yes: 'Oui'
     no: 'Non'
     ok: 'Ok'
     cancel: 'Annuler'
     logout: 'Sortir'
+    applyRule: 'Appliquer...'
 
   validator:
     required: 'la valeur de "%s" est requise'
@@ -82,10 +89,12 @@ define
     event: '<div>Par : %2$s</div><div>Mise à jour : %1$s</div>'
     player: '<div>%1$s %2$s</div><div>Personnages:<ul>%3$s</ul></div>'
     playerCharacter: '<li>%s</li>'
+    restorableFiles: "Liste les fichiers ayant été supprimés ou déplacés"
+    restorableExecutables: "Liste les règles ou scripts ayant été supprimés"
 
   msgs:
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
-    externalChange: "<p><b>%s</b> a été modifié par un autre administrateur.</p><p>Ses valeurs ont été mises à jour.</p>"
+    externalChange: "<b>%s</b> a été modifié par ailleurs. Ses valeurs ont été mises à jour"
     externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet a été fermé.</p>"
     saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
     removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
@@ -93,10 +102,16 @@ define
     powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
     copyright: '&copy; 2010-2014 Damien Feugas'
     confirmUnload: 'Au moins une vue de la perspective %1s à été modifiée.'
+    invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
+    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"
+    restorableFiles: "<p>Voici la liste des fichiers supprimés ou déplacés.</p><p>Cliquez sur un fichier pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
+    noRestorableFiles: "<p>Il n'y a pas de fichiers à restaurer.</p>"
+    restorableExecutables: "<p>Voici la liste des règles/scripts supprimés.</p><p>Cliquez sur celui de votre choix pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
+    noRestorableExecutables: "<p>Il n'y a pas de règles/scripts à restaurer.</p>"
 
   errors:
     wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'
-    unauthorized: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, il va falloir trimer un peu !</p>"
+    unauthorized: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, merci de contacter l'auteur du jeu.</p>"
     expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter.</p>'
     invalidToken: '<p>Ce jeton de session est invalide.</p><p>Veuillez vous reconnecter.</p>'
     disconnected: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants : dès que le serveur sera joignable, vous serez automatiquement reconnecté.</p>'

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -83,7 +83,9 @@ define [
         @_count++
 
       # date name level parameter : message
-      vals = (if _.isObject arg then JSON.stringify arg else arg?.toString() for arg in details.args)
+      vals = (for arg in details.args 
+        if _.isObject arg then JSON.stringify(arg) else arg?.toString()
+      )
 
       # put at first line and the compute height
       lineHeight = $("""<div class="log #{details.level}">

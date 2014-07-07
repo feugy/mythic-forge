@@ -28,7 +28,7 @@ var sources = 'hyperion/src/**/*.coffee';
 var dest = 'hyperion/lib';
 var isWin = process.platform.match(/^win/) != null;
 
-gulp.task('default', ['dev']);
+gulp.task('default', ['watch']);
 
 // remove hyperion/lib folder
 gulp.task('clean', function(){
@@ -75,7 +75,7 @@ gulp.task('test', ['cleanBuild'], function(callback){
 });
 
 // Clean, build, and then watch for coffee files changes (default)
-gulp.task('dev', ['cleanBuild'], function(){
+gulp.task('watch', ['cleanBuild'], function(){
   return gulp.watch(sources, ['build']);
 });
 

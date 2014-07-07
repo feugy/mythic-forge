@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -31,6 +31,7 @@ SocketServer = require 'socket.io'
 corser = require 'corser'
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 TwitterStrategy = require('passport-twitter').Strategy
+GithubStrategy = require('passport-github').Strategy
 LocalStrategy = require('passport-local').Strategy
 gameService = require('../service/GameService').get()
 playerService = require('../service/PlayerService').get()
@@ -57,9 +58,18 @@ host = utils.confKey 'server.host'
 staticPort = utils.confKey 'server.staticPort', process.env.PORT or ''
 bindingPort = utils.confKey 'server.bindingPort', process.env.PORT or ''
 apiPort = utils.confKey 'server.apiPort', process.env.PORT or ''
+logoutDelay = null
+
+# on configuration change, update some variables
+initConf = ->
+  logoutDelay = utils.confKey 'authentication.logoutDelay'
+utils.on 'confChanged', initConf
+initConf()
 
 # stores email corresponding to socket ids
 sid = {}
+# keeps timer that claim client logged out when socket is closed
+expiration = {}
 
 app.use express.cookieParser utils.confKey 'server.cookieSecret'
 app.use express.urlencoded()
@@ -115,8 +125,6 @@ exposeMethods = (service, socket, connected = [], except = []) ->
     unless method in except
       do(method) ->
         socket.on method, ->
-          # reset inactivity
-          playerService.activity email
           originalArgs = Array.prototype.slice.call arguments
           args = originalArgs.slice 1
           # first parameter is always request id
@@ -169,28 +177,25 @@ checkAdmin = (socket, callback) ->
 # @param strategy [Passport.Strategy] the strategy class involved
 # @param verify [Function] Function used to enroll users from provider's response.
 # @param scopes [Array] OAuth2 scopes sent to provider. Null for OAuth providers
-registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
-
+registerOAuthProvider = (provider, Strategy, verify, scopes = null) ->
   if scopes?
     # OAuth2 provider
-    passport.use new strategy
+    strategy = new Strategy 
       clientID: utils.confKey "authentication.#{provider}.id"
       clientSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or apiPort}/auth/#{provider}/callback"
     , verify
-
     args = session: false, scope: scopes
-
   else
     # OAuth provider
-    passport.use new strategy
+    strategy = new Strategy
       consumerKey: utils.confKey "authentication.#{provider}.id"
       consumerSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or server.apiPort}/auth/#{provider}/callback"
     , verify
-
     args = {}
 
+  passport.use strategy
   redirects = []
 
   app.get "/auth/#{provider}", (req, res, next) ->
@@ -201,7 +206,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
       args.state = id
     else 
       req.session.state = id
-    passport.authenticate(provider, args) req, res, next
+    passport.authenticate(strategy.name, args) req, res, next
 
   app.get "/auth/#{provider}/callback", (req, res, next) ->
     # reuse redirection url
@@ -211,7 +216,7 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
       state = req.session.state
     redirect = redirects[state]
     
-    passport.authenticate(provider, (err, token) ->
+    passport.authenticate(strategy.name, (err, token) ->
       # authentication failed
       return res.redirect "#{redirect}?error=#{err}" if err?
       res.redirect "#{redirect}?token=#{token}"
@@ -226,8 +231,8 @@ registerOAuthProvider = (provider, strategy, verify, scopes = null) ->
 io.use (socket, callback) ->
   # allways allo access without security
   return callback null if noSecurity
-  # check if a token has been sent
-  token = socket.request.query?.token
+  # check if a token has been sent (TODO query for socket.io <= 1.0.0-pre1)
+  token = socket.request._query?.token or socket.request.query?.token
   if 'string' isnt utils.type(token) or token.length is 0
     logger.debug "socket #{socket.id} received invalid token #{token}"
     return callback new Error 'invalidToken' 
@@ -237,50 +242,62 @@ io.use (socket, callback) ->
     return callback new Error err if err?
     # if player exists, authorization awarded !
     if player?
-      logger.info "Player #{player.email} connected with token #{token}"
+      logger.info "Player #{player.email} connected with token #{player.token} on socket #{socket.id}"
       # this will allow to store connected player into the socket details
       sid[socket.id] = 
         email: player.email
         isAdmin: player.isAdmin
       return callback null
-    logger.debug "socket #{socket.id} received unknown token #{token}" 
+    logger.info "socket #{socket.id} received unknown token #{token}" 
     return callback new Error 'invalidToken'
 
 # When a client connects, returns it immediately its token
 io.on 'connection', (socket) ->
   # always use admin without security
   details = unless noSecurity then sid[socket.id] else email:'admin', isAdmin:true
-  # set inactivity
-  playerService.activity details.email
-  logger.debug "socket #{socket.id} established for user #{details.email}" 
+
+  email = details.email
+  logger.debug "socket #{socket.id} established for user #{email}" 
 
   # on each connection, generate a key for dev access
   if details.isAdmin
     key = utils.generateToken 24
-    notifier.notify 'admin-connect', details.email, key
+    notifier.notify 'admin-connect', email, key
   else
     key = null
 
+  # clear expiration timeer
+  clearTimeout expiration[email] if email of expiration
+
   # message to get connected player
   socket.on 'getConnected', (callback) ->
-    playerService.getByEmail details.email, false, (err, player) =>
-      # return key to rheia
-      player.key = key if key? and player?
-      callback err, player
-    socket.removeAllListeners()
+    playerService.getByEmail email, false, (err, player) =>
+      # avoid recursive object tree
+      json = utils.plainObjects player
+      # return key (dev zone access) and token (reconnection) to rheia and purge only password
+      delete json.password
+      json.key = key
+      callback err, json
 
   # message to manually logout the connected player
   socket.on 'logout', ->
-    logger.debug "received logout for user #{details.email}" 
-    # manually disconnect and clear the sid (disconnect event isn't fired)
-    socket.disconnect true
+    logger.info "received logout for user #{email}" 
+    # manually disconnect and clear the sid to avoid expiration
     delete sid[socket.id]
-    playerService.disconnect details.email, 'logout'
+    socket.disconnect true
+    playerService.disconnect email, 'logout'
 
   # don't forget to clean up connected socket email
   socket.on 'disconnect', ->
-    logger.debug "socket #{socket.id} closed user #{details.email}" 
-    delete sid[socket.id]
+    logger.debug "socket #{socket.id} closed user #{email}"
+    # in case of manual logout, socket.id isn't in sid and we don't need expiration
+    if socket.id of sid 
+      delete sid[socket.id]
+      # if client does not returns in within 10 seconds, consider it disconnected
+      expiration[email] = _.delay =>
+        logger.info "claim for logout for user #{email}"
+        playerService.disconnect email, 'logout'
+      , logoutDelay*1000
 
 # socket.io `game` namespace 
 #
@@ -298,7 +315,7 @@ io.of('/game').on 'connection', (socket) ->
 # send also notification of the Notifier
 # @see {AdminService}
 adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->  
-  exposeMethods adminService, socket, ['save', 'remove']
+  exposeMethods adminService, socket, ['save', 'remove', 'connectAs']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
   exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
@@ -318,7 +335,7 @@ adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->
 
   # add a message to returns connected list
   socket.on 'connectedList', (reqId) ->
-    socket.emit 'connectedList-resp', reqId, utils.plainObjects playerService.connectedList
+    socket.emit 'connectedList-resp', reqId, playerService.connectedList
 
 # socket.io `updates` namespace 
 #
@@ -366,6 +383,7 @@ LoggerFactory.on 'log', (details) ->
 passport.use new LocalStrategy playerService.authenticate, 
 registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
+registerOAuthProvider 'github', GithubStrategy, playerService.authenticatedFromGithub, ['user:email']
 
 # `POST /auth/login`
 #

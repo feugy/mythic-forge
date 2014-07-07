@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -33,6 +33,7 @@ define [
   # - rollback(): rollback currently deployed version
   # - createVersion(version): add a new developpement version
   # - restoreVersion(version): restores the existing developpement version
+  # - connectAs(email): allows to connect as another player
   #
   # In, addition of other 'method' events, the `versionChanged` event is triggered when the versions
   # list or current version changed, and an `initialized` event is triggered when the admin service 
@@ -74,10 +75,16 @@ define [
           app.sockets.admin.emit.apply app.sockets.admin, args
 
         # register an error callback
-        app.sockets.admin.on "#{method}-resp", (reqId, err) =>
-          app.router.trigger 'serverError', err, method:"AdminService.#{method}" if err?
+        app.sockets.admin.on "#{method}-resp", (reqId, err, args...) =>
+          return app.router.trigger 'serverError', err, method:"AdminService.#{method}" if err?
+          
+          switch method 
+            when 'connectAs'
+              # connectAs specific behaviour: store token into local storage and opens a new tab
+              localStorage.setItem conf.gameToken, args[0]
+              window.open conf.gameUrl, '_blank'
 
-      proxyMethod method for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion']
+      proxyMethod method for method in ['deploy', 'commit', 'rollback', 'createVersion', 'restoreVersion', 'connectAs']
 
     # Simple getter that indicate if a version is currently deploying
     # @return true if there is a deployement in progress

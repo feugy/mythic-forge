@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -20,12 +20,13 @@
 
 define [
   'jquery'
-  'view/TabPerspective'
+  'view/VersionnedPerspective'
   'i18n!nls/common'
   'i18n!nls/edition'
   'text!tpl/editionPerspective.html'
   'utils/utilities'
   'utils/validators'
+  'model/Executable'
   'view/edition/Explorer'
   'view/edition/ClientConf'
   'view/edition/ItemType'
@@ -36,13 +37,13 @@ define [
   'view/edition/TurnRule'
   'view/edition/Script'
   'widget/search'
-], ($, TabPerspective, i18n, i18nEdition, template, utils, validators, Explorer, ClientConfView
-    ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView, ScriptView) ->
+], ($, VersionnedPerspective, i18n, i18nEdition, template, utils, validators, Executable, Explorer, 
+    ClientConfView, ItemTypeView, EventTypeView, FieldTypeView, MapView, RuleView, TurnRuleView, ScriptView) ->
 
   i18n = $.extend true, i18n, i18nEdition
 
   # The edition perspective manages types, rules and maps
-  class EditionPerspective extends TabPerspective
+  class EditionPerspective extends VersionnedPerspective
     
     # rendering event mapping
     events: 
@@ -62,7 +63,7 @@ define [
    
     # The view constructor.
     constructor: ->
-      super 'edition'
+      super 'edition', 'Executables', Executable.collection
 
       # construct explorer
       @_explorer = new Explorer()
@@ -107,6 +108,13 @@ define [
         return unless Array.isArray(prev) and prev.length
         @_searchWidget.setOption 'results', prev
 
+      # Executable restoration
+      @$el.find(".restore").button(
+        icons:
+          primary: "small restore"
+        text: false
+      ).click => Executable.collection.restorables @_onDisplayRestorables
+
       # for chaining purposes
       @
 
@@ -133,7 +141,7 @@ define [
     # @param args [Array] optional arguments for view creation
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id, args) =>
-      return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Map', 'ClientConf']
+      return null unless type in ['FieldType', 'ItemType', 'EventType', 'Rule', 'TurnRule', 'Script', 'Executable', 'Map', 'ClientConf']
       
       unless id?
         # choose an id within a popup
@@ -171,7 +179,7 @@ define [
         popup.append """<div class="id-container">
             <label>#{if type is 'ClientConf' then i18n.labels.locale else i18n.labels.id}#{i18n.labels.fieldSeparator}</label>
             <input type='text' class='id'/>"""
-        if type in ['Rule', 'TurnRule', 'Script']
+        if type in ['Rule', 'TurnRule', 'Script', 'Executable']
           popup.append """<div class="lang-container">
             <label>#{i18n.msgs.chooseLang}</label>
             <select class="lang">
@@ -207,7 +215,7 @@ define [
         when 'EventType' then new EventTypeView id
         when 'Rule' then new RuleView id, args?[0]
         when 'TurnRule' then new TurnRuleView id, args?[0]
-        when 'Script' then new ScriptView id, args?[0]
+        when 'Script', 'Executable' then new ScriptView id, args?[0]
         when 'Map' then new MapView id
         when 'ClientConf' then new ClientConfView id
         else null

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
   This file is part of Mythic-Forge.
 
@@ -23,8 +23,9 @@ define [
   'underscore'
   'utils/utilities'
   'widget/base'
+  'i18n!nls/widget'
   'mousewheel'
-],  ($, _, utils, Base) ->
+],  ($, _, utils, Base, i18n) ->
 
 
   # Base widget for maps that allows drag'n drop affectation and selections.
@@ -86,6 +87,14 @@ define [
     # **private**
     # enable selection
     _selectable: true
+
+    # **private**
+    # store information on currently hovered objects, to display tooltip
+    _hovered: 
+      pos: null
+      data: []
+      timeout: null
+      tip: null
 
     # Build rendering
     constructor: (element, options) ->
@@ -313,7 +322,7 @@ define [
       o = @options
       return unless o.displayMarkers
 
-      ctx.font = "#{15*o.zoom}px sans-serif"
+      ctx.font = "#{8+4*o.zoom}px sans-serif"
       ctx.fillStyle = o.colors.markers
       ctx.textAlign = 'center'
       ctx.textBaseline  = 'middle'
@@ -333,7 +342,19 @@ define [
 
     # **private**
     # Redraws cursor on stored position (@_cursor)
+    # Also compute hovered tile
     _drawCursor: =>
+      # hovered tile: cancel previous only if change detected
+      if @_hovered.pos?.x isnt @_cursor?.x or @_hovered.pos?.y isnt @_cursor?.y
+        clearTimeout @_hovered.timeout
+        @_hovered.tip?.remove()
+        @_hovered.pos = @_cursor
+        # get newly hovered objects and display with delay
+        @_hovered.data = (data for data in @_data when data?.x is @_cursor?.x and data?.y is @_cursor?.y)
+        unless @_hovered.data.length is 0
+          @_hovered.timeout = setTimeout @_showHovered, 1000
+
+      # redraw cursor
       canvas = @$el.find('.hover')[0]
       canvas.width = canvas.width
       return unless @_cursor
@@ -386,6 +407,21 @@ define [
           # compute new lowerCoord
           @setOption 'lowerCoord', @options.lowerCoord
         , 300
+
+    # **private**
+    # Show tooltip with hovered objects informations
+    _showHovered: =>
+      content = ''
+      for model in @_hovered.data
+        content += "<p>#{_.sprintf i18n.authoringMap.tipObj, model.typeId, model.num}</p>"
+
+      {left, top} = @options.renderer.coordToPos @_hovered.pos
+      @_hovered.tip = $("<div class='tooltip'>#{content}<p>#{_.sprintf i18n.authoringMap.tipPos, @_hovered.pos.x, @_hovered.pos.y}</p></div>")
+        .appendTo(@_container)
+        .css(
+          left: left + @options.renderer.tileW*0.25
+          top: top + @options.renderer.tileH*0.25
+        )
 
     # **private**
     # Image loading end handler. Draws it on the field layer, and if it's the last awaited image, 

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -20,5 +20,39 @@
 define
   fr: true
   root: 
-    TOTRANSLATE: true    
+    titles:
+      newFolder: "Folder creation"
+      newFile: "File creation"
+      renameFSItem: "Rename/move"
 
+    buttons:
+      rename: 'rename'
+      
+    labels:
+      newFolder: 'Create a folder'
+      newFile: 'Create a file'
+      rootFolder: 'root'
+      fsItemName: 'name'
+      openFSItem: 'Openr "%s"'
+      renameFSItem: 'Rename/move "%s"'
+      removeFSItem: 'Remove "%s"'
+
+    msgs:
+      newFolder: 'Please choose a name for folder in <b>%s</b>:'
+      newFile: 'Please choose a name (with its extension) for file in <b>%s</b>:'
+      renameFolder: 'Please choose a new name (or path) for folder:'
+      renameFile: 'Please choose a new name (or path) for file:'
+      removeFileConfirm: "<p>Do you really whish to remove file <b>%s</b> ?</p>"
+      removeFolderConfirm: "<p>Do you really whish to remove folder <b>%s</b> and all its content ?</p>"
+      closeFileConfirm: "<p>You've modified file <b>%s</b>.</p><p>Du you whish to save modifications before closing tab ?</p>"
+      fsItemCreationFailed: "<p><b>%1$s</b> cannot be saved on server:</p><p>%2$s</p>" 
+      externalChangeFSItem: "This file has been externally modified. Its values where updated"
+
+    tips:
+      newFolder: 'Creates a new folder in the selected parent or at root'
+      newFile: 'Creates a new file in the selected parent or at root'
+      uploadInSelected: 'Uploads a new file in the selected parent or at root'
+      renameSelected: 'Renames/moves the selected file or folder'
+      removeFolder: 'Removes the selecte file or folder'
+      saveFile: "Saves the currently edited file"
+      removeFile: "Removes the currently edited file"

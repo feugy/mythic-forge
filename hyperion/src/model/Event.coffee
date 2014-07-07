@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -24,7 +24,7 @@ conn = require './connection'
 modelUtils = require '../util/model'
 
 # Define the schema for map event with properties
-Event = typeFactory 'Event', 
+Event = typeFactory 'Event',
 
   # creation date. May not be modified
   created:

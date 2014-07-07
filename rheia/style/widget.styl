@@ -1,5 +1,5 @@
 /*
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -197,6 +197,8 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 .carousel 
   navDim = 16px
   user-select none
+  display flex
+  align-items center
 
   .mask 
     overflow hidden
@@ -207,11 +209,12 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
   
   .container 
     position absolute
+    display flex
+    align-items flex-start
 
   .thumbnail 
     width imageDim
     height auto
-    vertical-align top
 
   .thumbnail[data-src='null']
     background-color black
@@ -225,7 +228,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     width navDim
     height navDim
     border none
-    vertical-align (imageDim/3)px
+    //vertical-align (imageDim/3)px
     background-color transparent
     background-image url('images/carousel.png') 
 
@@ -259,6 +262,8 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
       position absolute
     > .fields
       padding-left 0
+    > .items
+      z-index 0
 
     .hover
     .selection
@@ -323,6 +328,10 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     right 0
     top 0
     cursor pointer
+
+  .help-content
+    min-width 500px
+    width auto
 
 .search.invalid
 

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -22,14 +22,14 @@ _ = require 'underscore'
 FSItem = require '../model/FSItem'
 Executable = require '../model/Executable'
 {resolve, normalize, join, relative, extname} = require 'path'
-{purgeFolder, confKey} = require '../util/common'
-versionUtils = require '../util/versionning'
+{purgeFolder, confKey, fromRule} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
+versionService = require('./VersionService').get()
 deployementService = require('./DeployementService').get()
 notifier = require('../service/Notifier').get()
 
 executablesRoot = resolve normalize confKey 'game.executable.source'
-repo = null
+imagesRoot = resolve normalize confKey 'game.image'
 root = null
 
 # Singleton instance
@@ -54,10 +54,10 @@ class _AuthoringService
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
-    versionUtils.initGameRepo logger, (err, _root, _repo) =>
+    return if fromRule callback
+    versionService.init (err) =>
       return callback err if err?
-      root = _root
-      repo = _repo
+      root = resolve normalize confKey 'game.client.dev'
       callback null
 
   # Retrieves the root FSItem, populated with its content.
@@ -66,6 +66,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback root [FSItem] the root fSItem folder, populated
   readRoot: (callback) =>
+    return if fromRule callback
     new FSItem(root, true).read (err, rootFolder) =>
       return callback "Failed to get root content: #{purgeFolder err, root}" if err?
       # make root relative
@@ -82,6 +83,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback saved [FSItem] the saved fSItem
   save: (item, email, callback) =>
+    return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
     try 
@@ -106,6 +108,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback removed [FSItem] the removed fSItem
   remove: (item, email, callback) =>
+    return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
     try 
@@ -132,6 +135,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback moved [FSItem] the moved fSItem
   move: (item, newPath, email, callback) =>
+    return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
     try 
@@ -156,6 +160,7 @@ class _AuthoringService
   # @option callback err [String] error string. Null if no error occured
   # @option callback read [FSItem] the read fSItem populated with its content
   read: (item, callback) =>
+    return if fromRule callback
     try 
       item = new FSItem item
     catch exc
@@ -180,6 +185,7 @@ class _AuthoringService
   # @option callback obj [FSItem|Executable] concerned file or executable
   # @option callback history [Array] array of commits, each an object containing `message`, `author`, `date` and `id`
   history: (item, callback) =>
+    return if fromRule callback
     path = null
     obj = null
     if _.isObject(item) and item?.id
@@ -199,37 +205,51 @@ class _AuthoringService
       return callback 'History not supported on folders' if obj.isFolder
 
     # consult file history
-    versionUtils.quickHistory repo, path, (err, history) =>
+    versionService.history path, (err, history) =>
       return callback "Failed to get history: #{err}" if err?
       callback null, obj, history
 
   # Retrieves all files that have been deleted in repository.
   #
+  # @param filters [Array<String>] result filters, to get only 'Executable', 'FSItem' and or d 'Image'. Empty to get all
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
-  # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). For each item contains an object with `id`and `item` attributes
-  restorables: (callback) =>
-    versionUtils.listRestorables repo, (err, restorables) =>
+  # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). 
+  # For each item contains an object with `id` (commit id), `item` (object model) and `className` (model class name) attributes
+  restorables: (filters, callback) =>
+    return if fromRule callback
+    versionService.restorables (err, restorables) =>
       return callback "Failed to get restorable list: #{err}" if err?
       results = []
 
-      fileRoot = root.replace(repo.path, '')[1..]
-      exeRoot = executablesRoot.replace(repo.path, '')[1..]
+      fileRoot = root.replace(versionService.repo.path, '')[1..]
+      exeRoot = executablesRoot.replace(versionService.repo.path, '')[1..]
+      imgRoot = imagesRoot.replace(versionService.repo.path, '')[1..]
       for restorable in restorables
+        className = null
         if 0 is restorable.path.indexOf fileRoot
           # an FSItem
+          className = 'FSItem'
           obj = new FSItem {isFolder: false, path: restorable.path[fileRoot.length+1..]}
-        else
-          # an executable
+        else if 0 is restorable.path.indexOf exeRoot
+          # an executable.
+          className = 'Executable'
           ext = extname restorable.path
           obj = new Executable
             id: restorable.path[exeRoot.length+1..].replace ext, ''
             lang: ext[1..]
 
-        results.push 
-          # make path relative to file root, not git repository
-          item: obj
-          id: restorable.id
+        else
+          # an image
+          className = 'Image'
+          obj = path: restorable.path[imgRoot.length+1..]
+
+        # may filter results to only what's required
+        if filters.length is 0 or className in filters
+          results.push 
+            item: obj
+            className: className
+            id: restorable.id
 
       callback err, results
 
@@ -243,6 +263,7 @@ class _AuthoringService
   # @option callback obj [FSItem|Executable] concerned file or executable
   # @option callback content [String] the base64 encoded content
   readVersion: (item, version, callback) =>
+    return if fromRule callback
     path = null
     obj = null
     if _.isObject(item) and item?.id
@@ -261,9 +282,5 @@ class _AuthoringService
         return callback "Only Executable and FSItem files are supported: #{exc}"
       return callback 'History not supported on folders' if obj.isFolder
 
-    # item path must be / separated, and relative to repository root
-    path = path.replace(repo.path, '').replace /\\/g, '\/'
     # show file at specified revision
-    repo.git 'show', {}, "#{version}:.#{path}", (err, stdout, stderr) =>
-      return callback "Failed to get version content: #{err}" if err?
-      callback err, obj, new Buffer(stdout, 'binary').toString 'base64'
+    versionService.readVersion path, version, (err, content) => callback err, obj, content

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -26,7 +26,7 @@ define
       timeFormat: 'HH:mm:ss'
       dateTimeFormat: 'YY/MM/DD HH:mm:ss'
       instanceAffectation: 'affectInstances'
-      uidRegex: /^[\w$-]+$/i #/^[$_\u0041-\uff70].*$/i
+      uidRegex: /^[\w$-]+$/i
       emailRegex: /^[$_\u0041-\uff70]+$/i
 
       # map that indicates to which extension corresponds which editor mode
@@ -48,10 +48,105 @@ define
         jpg: 'img'
         jpeg: 'img'
         gif: 'img'
-
-    msgs: 
-      invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
-      alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"
     
-    TOTRANSLATE: true    
+    titles:
+      serverError: 'Server error'
+      loginError: 'Connection error'
+      editionPerspective: 'World edition'
+      authoringPerspective: 'Game client'
+      administrationPerspective: 'Administration tools'
+      moderationPerspective: 'World moderation'
+      removeConfirm: 'Removal'
+      closeConfirm: 'Closure'
+      external: 'External modification'
+      categories:
+        items: 'Objects'
+        maps: 'Maps'
+        events: 'Events'
+        rules: 'Rules'
+        turnRules: 'Turn Rules'
+        fields: 'Fields'
+        players: 'Players'
+        scripts: 'Scripts'
+        clientConfs: 'Configurations'
+      login: 'Rheia - Connection'
+      restorableFiles: "Restorable files"
+      restorableExecutables: "Restorable rules/scripts"
+        
+    labels:
+      enterLogin: 'Login: '
+      enterPassword: 'Password: '
+      connectWith: 'Connect with:'
+      orConnect: 'or'
+      fieldSeparator: ': '
+      deployementInProgress: 'deploying...'
+      zoom: 'Zoom'
+      gridShown: 'Grid'
+      markersShown: 'Markers'
+      noX: '~'
+      noY: '~'
+      noMap: 'none'
+      noQuantity: '~'
+      noFrom: 'nobody'
+      connectedNumber: 'connected'
+      commitDetails: '%3$s: %1$s (%2$s)'
+      commitDetailsLast: 'current: %1$s'
+      history: 'history'
+
+    buttons:
+      close: 'Close'
+      create: 'Create'
+      login: 'Login'
+      google: 'Google'
+      twitter: 'Twitter'
+      github: 'Github'
+      yes: 'Yes'
+      no: 'No'
+      ok: 'Ok'
+      cancel: 'Cancel'
+      logout: 'Logout'
+      applyRule: 'Apply...'
+
+    validator:
+      required: '"%s"\'s value is required'
+      spacesNotAllowed: '"%s" cannot contain spaces'
+      unmatch: '"%s" does not match expected value'
+      invalidHandler: 'invalid value'
+      
+    tips:
+      save: "Saves currently edited tab"
+      remove: "Removes currently edited tab"
+      item: '<div>Map: %2$s</div><div>X: %3$s</div><div>Y: %4$s</div><div>Quantity: %1$s</div>'
+      event: '<div>From: %2$s</div><div>Updated: %1$s</div>'
+      player: '<div>%1$s %2$s</div><div>Characters:<ul>%3$s</ul></div>'
+      playerCharacter: '<li>%s</li>'
+      restorableFiles: "Displays list of removed/renamed files"
+      restorableExecutables: "Displays list of removed rules or scripts"
+
+    msgs:
+      closeConfirm: "<p>You had modified <b>%s</b>.</p><p>Do you wish to save modifications before closing tab ?</p>"
+      externalChange: "<b>%s</b> has been externally modified. Its values have been updated"
+      externalRemove: "<p><b>%s</b> has been removed by another administratot.</p><p>Tab has been closed.</p>"
+      saveFailed: "<p><b>%1s</b> can't be saved on server:</p><p>%2s</p>" 
+      removeFailed: "<p><b>%1s</b> can't be removed from server:</p><p>%2s</p>"
+      searchFailed: '<p>Search has failed:</p><p>%s</p>'
+      powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
+      copyright: '&copy; 2010-2014 Damien Feugas'
+      confirmUnload: 'At least one tab from perspective %1s has been modified.'
+      invalidId: 'Identifiers can only contain "_", "$", "-" and unaccentuated alphanumerical characters'
+      alreadyUsedId: "This identifier is already used by another type, rule, script, configuration, object or event"
+      restorableFiles: "<p>This is the whole list of removed/renamed files.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
+      noRestorableFiles: "<p>No files to restore.</p>"
+      restorableExecutables: "<p>This is the whole list of removed rules or scripts.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
+      noRestorableExecutables: "<p>No rules/scripts to restore.</p>"
+
+    errors:
+      wrongCredentials: '<p>Login is unknown or password is errored.</p><p>Please give another try.</p>'
+      unauthorized: "<p>You haven't enought right to access to Rheia.</p><p>If you which to became administrator, please contact the game author.</p>"
+      expiredToken: '<p>Your session has expired.</p><p>Please connect again.</p>'
+      invalidToken: '<p>This session token is invalid.</p><p>Please connect again.</p>'
+      disconnected: "<p>Connection to server is lost.</p><p>Please check your network connectivity, and wait a moment: once the server is reachable, you'll be automatically reconnected.</p>"
+      kicked: "<p>You've been disconnected from server.</p>"
+      deploymentInProgress: '<p>A new version is currently beeing deployed.</p><p>Please wait a moment before connecting again.</p>'
+      clientAccessDenied: '<p>You must be identified and have enought right to access to this resource.</p>'
 

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -20,9 +20,10 @@
 
 _ = require 'underscore'
 async = require 'async'
-pathUtils = require 'path'
-utils = require '../../util/common'
-modelUtils = require '../../util/model'
+{relative} = require 'path'
+{isA, type, fromRule} = require '../../util/common'
+{processCampaigns} = require '../../util/rule'
+utils = require '../../util/model'
 TurnRule = require '../../model/TurnRule'
 Executable = require '../../model/Executable'
 notifier = require('../Notifier').get()
@@ -46,6 +47,7 @@ commitSuicide = false
 # @option callback err [String] an error string. Null if no error occured.
 # @param _auto [Boolean] **private** used to distinguish manual and automatic turn execution
 trigger = (callback, _auto = false) ->
+  return if fromRule callback
   return callback if inProgress
 
   # avoid quitting on failures.
@@ -59,7 +61,8 @@ trigger = (callback, _auto = false) ->
     logger.debug 'end of turn'
     notifier.notify 'turns', 'end'
     # trigger the next turn
-    if _auto and !commitSuicide
+    # disable if frequency isn't strictly positive
+    if _auto and !commitSuicide and frequency > 0
       _.delay ->
         trigger callback, true
       , nextTurn()
@@ -68,7 +71,14 @@ trigger = (callback, _auto = false) ->
     callback null
     # commit suicide if an error was recovered
     process.exit 0 if commitSuicide
-      
+
+  checkFailure = (rule, err, end) =>
+    if err?
+      logger.warn err
+      notifier.notify 'turns', 'failure', rule.id, err.message or err
+      end()
+      return true
+    false
 
   # read all existing executables. @todo: use cached rules.
   Executable.find (err, executables) =>
@@ -80,11 +90,11 @@ trigger = (callback, _auto = false) ->
       try
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
-        obj = require pathUtils.relative __dirname, executable.compiledPath
-        if obj? and utils.isA(obj, TurnRule)
+        obj = require relative __dirname, executable.compiledPath
+        if obj? and isA(obj, TurnRule)
           rules.push obj 
           obj.id = executable.id
-          obj.rank = 0 unless 'number' is utils.type obj.rank
+          obj.rank = 0 unless 'number' is type obj.rank
       catch err
         # report require errors
         err = "failed to require executable #{executable.id}: #{err}"
@@ -95,31 +105,32 @@ trigger = (callback, _auto = false) ->
     rules.sort (a, b) -> a.rank - b.rank
 
     # function that updates dbs with rule's modifications
-    updateDb = (rule, saved, removed, end) =>
+    updateDb = (rule, saved, removed, campaigns, end) =>
       # removes duplicates, and do not save removed instances
-      modelUtils.purgeDuplicates removed
-      modelUtils.purgeDuplicates saved
-      # at the end, save and remove modified objects
-      removeModel = (target, removeEnd) =>
-        logger.debug "remove model #{target.id}"
-        target.remove (err) =>
-          # stop a first execution error.
-          removeEnd if err? then "Failed to remove model #{target.id} at the end of the turn: #{err}" else undefined
+      utils.purgeDuplicates removed
+
       # first removals
-      async.forEach removed, removeModel, => 
-        saveModel = (target, saveEnd) =>
+      async.forEach removed, (obj, removeEnd) -> 
+        logger.debug "remove #{obj._className} #{obj.id}"
+        obj.remove removeEnd
+      , (err) => 
+        return if checkFailure rule, err, end
+
+        # removes duplicates and sort to save new objects first
+        utils.purgeDuplicates saved
+        saved.sort (o1, o2) -> if o1.id? and not o2.id? then 1 else if o2.id? and not o1.id? then -1 else 0
+        
+        # then save
+        async.forEach saved, (obj, saveEnd) -> 
           # do not re-save models that were already removed !
-          return saveEnd() if _.any removed, (obj) -> obj?.equals?(target)
-          logger.debug "save #{target._className} #{target.id}"
-          target.save (err) =>
-            # stop a first execution error.
-            saveEnd if err? then "Failed to save model #{target.id} at the end of the turn: #{err}" else undefined
-        # then saves
-        async.forEach saved, saveModel, (err) =>
-          if err?
-            logger.warn err
-            notifier.notify 'turns', 'failure', rule.id, err
-            return end()
+          return saveEnd() if _.any rule.removed, (removed) -> removed?.equals?(obj)
+          logger.debug "save modified #{obj._className} #{obj.id}, #{obj.modifiedPaths().join(',')}"
+          obj.save saveEnd
+        , (err) =>
+          return if checkFailure rule, err, end
+
+          # everything was fine, now, send campaigns
+          processCampaigns campaigns
           notifier.notify 'turns', 'success', rule.id
           end()
 
@@ -134,10 +145,8 @@ trigger = (callback, _auto = false) ->
         process.removeListener 'uncaughtException', error
         # exit at the first execution error
         msg = "failed to select or execute rule #{rule.id}: #{err}"
-        logger.warn msg
-        notifier.notify 'turns', 'failure', rule.id, msg
         commitSuicide = true
-        turnEnd()
+        checkFailure rule, msg, turnEnd
 
       process.on 'uncaughtException', error
 
@@ -145,10 +154,8 @@ trigger = (callback, _auto = false) ->
         # Do not emit an error, but stops this rule a first selection error.
         if err?
           err = "failed to select rule #{rule.id}: #{err}"
-          logger.warn err
-          notifier.notify 'turns', 'failure', rule.id, err
           process.removeListener 'uncaughtException', error
-          return end()
+          return checkFailure rule, err, end
 
         unless Array.isArray(targets)
           process.removeListener 'uncaughtException', error
@@ -159,27 +166,29 @@ trigger = (callback, _auto = false) ->
         # arrays of modified objects
         saved = []
         removed = []
+        campaigns = []
 
-        # function that execute the current rule on a target
-        execute = (target, executeEnd) =>
+        # execute on each target and leave at the end.
+        async.forEach targets, (target, executeEnd) =>
+          # reinitialize creation and removal arrays.
+          rule.saved = []
+          rule.removed = []
+          # campaign handling
+          rule.sendCampaign = (campaign) => campaigns.push campaign
+
           rule.execute target, (err) =>
             # stop a first execution error.
             return executeEnd "failed to execute rule #{rule.id}: #{err}" if err?
             # store modified object for later
-            saved.push obj for obj in rule.saved
-            modelUtils.filterModified target, saved
-            removed.push obj for obj in rule.removed
+            utils.filterModified obj, saved for obj in [target].concat rule.saved
+            removed = removed.concat rule.removed
             executeEnd()
-          
-        # execute on each target and leave at the end.
-        async.forEach targets, execute, (err) =>
+        , (err) =>
+          rule.sendCampaign = () ->
           process.removeListener 'uncaughtException', error
-          if err?
-            logger.warn err
-            notifier.notify 'turns', 'failure', rule.id, err
-            return end()
+          return if checkFailure rule, err, end
           # save all modified and removed object after the rule has executed
-          updateDb rule, saved, removed, end
+          updateDb rule, saved, removed, campaigns, end
 
     # select and execute each turn rule, NOT in parallel !
     async.forEachSeries rules, selectAndExecute, turnEnd

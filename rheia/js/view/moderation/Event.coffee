@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -45,10 +45,6 @@ define [
     # **private**
     # removal popup confirmation text, that can take the edited object's name in parameter
     _confirmRemoveMessage: i18n.msgs.removeEventConfirm
-
-    # **private**
-    # Message displayed when an external message was applied.
-    _externalChangeMessage: i18n.msgs.eventExternalChange
 
     # **private**
     # widget to manage from

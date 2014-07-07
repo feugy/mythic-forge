@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -27,14 +27,14 @@ utils = require '../util/common'
 logger = require('../util/logger').getLogger 'model'
 
 # Define the schema for players
-Player = typeFactory 'Player', 
+Player = typeFactory 'Player',
 
   # email as login
   email: 
     type: String 
     required: true
 
-  # provider: Google, Facebook or null for manual accounts.
+  # provider: Google, Twitter, Githb or null for manual accounts.
   provider: 
     type: String
     default: null
@@ -65,10 +65,6 @@ Player = typeFactory 'Player',
   # token used during authentication. 
   # **Not propagated by modelWatcher nor returned by AdminService**
   token: String
-
-  # cookie used to access game developpment zone 
-  # **Not propagated by modelWatcher nor returned by AdminService**
-  key: String
 
   # password, only used for manually provided accounts
   # **Not propagated by modelWatcher nor returned by AdminService**
@@ -167,12 +163,10 @@ Player.statics.purge = (player) ->
     # Mongoose proxy
     delete player._doc.password
     delete player._doc.token 
-    delete player._doc.key
   else 
     # plain raw object
     delete player.password
     delete player.token 
-    delete player.key
   player
 
 module.exports = conn.model 'player', Player

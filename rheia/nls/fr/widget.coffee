@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -64,6 +64,10 @@ define
   instanceList: 
     empty: "affectez un objet par drag'n drop"
     unbind: "délier de l'objet"
+
+  authoringMap:
+    tipPos: "x: %s y: %s"
+    tipObj: "%s (#%s)"
 
   advEditor:
     find: 'Rechercher :'

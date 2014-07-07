@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -21,24 +21,25 @@
 _ = require 'underscore'
 async = require 'async'
 cluster = require 'cluster'
-pathUtils = require 'path'
+{resolve, normalize, join, relative} = require 'path'
 fs = require 'fs'
-utils = require '../util/common'
+{confKey, generateToken, relativePath, fromRule} = require '../util/common'
 Rule = require '../model/Rule'
-ruleUtils = require '../util/rule'
+{timer} = require '../util/rule'
 Executable = require '../model/Executable'
 Map = require '../model/Map'
 notifier = require('../service/Notifier').get()
 modelWatcher = require('../model/ModelWatcher').get()
+ContactService = require('../service/ContactService').get()
 LoggerFactory = require '../util/logger'
 logger = LoggerFactory.getLogger 'service'
 loggerWorker = LoggerFactory.getLogger 'worker'
   
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
-compiledRoot = pathUtils.resolve pathUtils.normalize utils.confKey 'game.executable.target'
-pathToHyperion = utils.relativePath(compiledRoot, pathUtils.join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
-pathToNodeModules = utils.relativePath(compiledRoot, "#{pathUtils.join __dirname, '..', '..', '..', 'node_modules'}/".replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
+compiledRoot = resolve normalize confKey 'game.executable.target'
+pathToHyperion = relativePath(compiledRoot, join(__dirname, '..').replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
+pathToNodeModules = relativePath(compiledRoot, "#{join __dirname, '..', '..', '..', 'node_modules'}/".replace 'src', 'lib').replace /\\/g, '/' # for Sumblime text highligth bug /'
 
 # Pool of workers.
 pool = []
@@ -51,8 +52,10 @@ pool = []
 # @option options module [String] path (relative to the launcher) of the spawned script
 spawn = (poolIdx, options) ->
   worker = cluster.fork options
-  worker.setMaxListeners 150
+  worker.setMaxListeners 0
   pool[poolIdx] = worker
+  
+  loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{worker.process.pid}"
 
   # relaunch immediately dead worker
   worker.on 'exit', (code, signal) ->
@@ -67,6 +70,7 @@ spawn = (poolIdx, options) ->
     spawn poolIdx, options
     loggerWorker.info "respawn worker #{options.module} with pid #{pool[poolIdx].process.pid}"
 
+  # relay important message from worker to master thread
   worker.on 'message', (data) ->
     if data?.event is 'change'
       # trigger the change as if it comes from the master modelWatcher
@@ -74,8 +78,15 @@ spawn = (poolIdx, options) ->
     else if data?.event is notifier.NOTIFICATION
       # trigger the notification as if it comes from the master notifier
       notifier.notify.apply notifier, data.args
+    else if data?.event is 'sendTo'
+      # check data format
+      unless data.msg? and data.players?
+        logger.error "campaign must be an object with 'msg' and 'players' properties:", data
+      # send campaign, and just log results
+      ContactService.sendTo data.players, data.msg, (err, report) =>
+        return logger.error "failed to send campaign: #{err}" if err?
+        logger.info "send campaign", report
     else if data?.event is 'log'
-      # relay log
       LoggerFactory.emit 'log', data.args
 
 # The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
@@ -85,47 +96,57 @@ spawn = (poolIdx, options) ->
 class _RuleService
 
   constructor: ->
-    if cluster.isMaster
-      Executable.resetAll true, (err) ->
-        throw new Error "Failed to initialize RuleService: #{err}" if err?
-        cluster.setupMaster 
-          exec: pathUtils.join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
-
-        options = 
-          module: 'RuleExecutor'
-        spawn 0, options
-        loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{pool[0].process.pid}"
+    # only on master thread
+    return unless cluster.isMaster
+    Executable.resetAll true, (err) ->
+      throw new Error "Failed to initialize RuleService: #{err}" if err?
+      cluster.setupMaster 
+        exec: join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
         
-        options = 
-          module: 'RuleScheduler'
-          # frequency, in seconds.
-          frequency: utils.confKey 'turn.frequency'
-        spawn 1, options
-        loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{pool[1].process.pid}"
+      spawn 0, module: 'RuleExecutor'
+      spawn 1, 
+        module: 'RuleScheduler'
+        # frequency, in seconds.
+        frequency: confKey 'turn.frequency'
 
-        # when a change is detected in master, send it to workers
-        modelWatcher.on 'change', (operation, className, changes, wId) ->
-          # use master pid if it comes from the master
-          wId = if wId? then wId else process.pid
-          for id, worker of cluster.workers when worker.process.pid isnt wId
-            try
-              worker.send event: 'change', args:[operation, className, changes, wId]
-            catch err
-              # silent error: if a worker is closed, it will be automatically restarted
+    # when a change is detected in master, send it to workers
+    modelWatcher.on 'change', (operation, className, changes, wId) ->
+      # use master pid if it comes from the master
+      wId = if wId? then wId else process.pid
+      for id, worker of cluster.workers when worker.process.pid isnt wId
+        try
+          worker.send event: 'change', args:[operation, className, changes, wId]
+        catch err
+          # silent error: if a worker is closed, it will be automatically restarted
 
-      # propagate time changes
-      ruleUtils.timer.on 'change', (time) ->
-        notifier.notify 'time', 'change', time.valueOf()
+    # on version changes, we must reset worker's cache
+    notifier.on notifier.NOTIFICATION, (kind, details) =>
+      return unless details is 'VERSION_RESTORED'
+      Executable.resetAll true, (err) ->
+        # silent error
+        for id, worker of cluster.workers when worker.process.pid isnt process.pid
+          try
+            worker.send event: 'executableReset'
+          catch err
+            # silent error: if a worker is closed, it will be automatically restarted
+
+    # propagate time changes
+    timer.on 'change', (time) ->
+      notifier.notify 'time', 'change', time.valueOf()
         
   # Allow to change game timer
   #
   # @param time [Number] Unix epoch of new time. null to reset to current
-  setTime: (time = null) => ruleUtils.timer.set time
+  setTime: (time = null) => 
+    return if fromRule()
+    timer.set time
 
   # Allow to pause or resume game timer
   #
   # @param stopped [Boolean] true to pause time, false to resumt it
-  pauseTime: (stopped) => ruleUtils.timer.stopped = stopped is true
+  pauseTime: (stopped) => 
+    return if fromRule()
+    timer.stopped = stopped is true
 
   # Exports existing rules to clients: turn rules are ignored and execute() function is not exposed.
   #
@@ -133,6 +154,7 @@ class _RuleService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback rules [Object] exported rules, in text, indexed by rule ids.
   export: (callback) =>
+    return if fromRule callback
     # read all existing executables. @todo: use cached rules.
     Executable.find (err, executables) =>
       throw new Error "Cannot collect rules: #{err}" if err?
@@ -155,7 +177,7 @@ class _RuleService
             try 
               # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
               # and singleton (like ModuleWatcher) will be broken.
-              obj = require pathUtils.relative __dirname, executable.compiledPath
+              obj = require relative __dirname, executable.compiledPath
               # inactive rule: do not export
               return done() unless obj.active
             catch err
@@ -234,8 +256,9 @@ class _RuleService
   # - params [Object] the awaited parameters specification
   # - category [String] the rule category
   resolve: (args..., callback) ->
+    return if fromRule callback
     # generate a random request Id
-    id = utils.generateToken 6
+    id = generateToken 6
     # end callback used to process executor results
     end = (data) =>
       return unless data?.method is 'resolve' and data?.id is id
@@ -280,8 +303,9 @@ class _RuleService
   # @option callback err [String] an error string, or null if no error occured
   # @option callback result [Object] object send back by the executed rule
   execute: (args..., callback) ->
+    return if fromRule callback
     # generate a random request Id
-    id = utils.generateToken 6
+    id = generateToken 6
     # end callback used to process executor results
     end = (data) =>
       return unless data?.method is 'execute' and data?.id is id
@@ -311,8 +335,9 @@ class _RuleService
   # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
   # @option callback err [String] an error string. Null if no error occured.
   triggerTurn: (callback) =>
+    return if fromRule callback
     # generate a random request Id
-    id = utils.generateToken 6
+    id = generateToken 6
     # end callback used to process scheduler results
     end = (data) =>
       return unless data?.method is 'trigger' and data?.id is id

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -29,7 +29,6 @@ EventType = require '../hyperion/src/model/EventType'
 Executable = require '../hyperion/src/model/Executable'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
-versionUtils = require '../hyperion/src/util/versionning'
 request = require 'request'
 fs = require 'fs-extra'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
@@ -85,73 +84,70 @@ describe 'Server tests', ->
       # given a file with binary content
       fs.readFile pathUtils.join(__dirname, 'fixtures', 'image1.png'), (err, imgData) ->
         return done err if err?
-        # given a clean root
-        versionUtils.initGameRepo logger, true, (err) ->
+        authoringService.init (err) ->
           return done err if err?
-          authoringService.init (err) ->
-            return done err if err?
-            
-            file = 
-              path: pathUtils.join 'images', 'image1.png'
-              isFolder: false
-              content: imgData.toString('base64')
+          
+          file = 
+            path: pathUtils.join 'images', 'image1.png'
+            isFolder: false
+            content: imgData.toString('base64')
 
-            newPath = pathUtils.join 'images', 'image2.png'
-            
-            # then the saved fsItem is returned
-            socket.once 'save-resp', (reqId, err, modelName, saved) ->
+          newPath = pathUtils.join 'images', 'image2.png'
+          
+          # then the saved fsItem is returned
+          socket.once 'save-resp', (reqId, err, modelName, saved) ->
+            expect(rid).to.equal reqId
+            return done err if err?
+            expect(modelName).to.equal 'FSItem'
+            expect(saved).not.to.be.null
+            expect(saved).to.have.property('isFolder').that.is.false
+            expect(saved).to.have.property('path').that.is.equal file.path
+            expect(saved).to.have.property('content').that.is.equal file.content
+
+            # then the read fsItem is returned with valid content
+            socket.once 'read-resp', (reqId, err, read) ->
               expect(rid).to.equal reqId
               return done err if err?
-              expect(modelName).to.equal 'FSItem'
-              expect(saved).not.to.be.null
-              expect(saved).to.have.property('isFolder').that.is.false
-              expect(saved).to.have.property('path').that.is.equal file.path
-              expect(saved).to.have.property('content').that.is.equal file.content
+              expect(read).not.to.be.null
+              expect(read).to.have.property('isFolder').that.is.false
+              expect(read).to.have.property('path').that.is.equal file.path
+              expect(read).to.have.property('content').that.is.equal imgData.toString 'base64'
 
-              # then the read fsItem is returned with valid content
-              socket.once 'read-resp', (reqId, err, read) ->
+              # then the moved fsItem is returned with valid content
+              socket.once 'move-resp', (reqId, err, moved) ->
                 expect(rid).to.equal reqId
                 return done err if err?
-                expect(read).not.to.be.null
-                expect(read).to.have.property('isFolder').that.is.false
-                expect(read).to.have.property('path').that.is.equal file.path
-                expect(read).to.have.property('content').that.is.equal imgData.toString 'base64'
+                expect(moved).not.to.be.null
+                expect(moved).to.have.property('isFolder').that.is.false
+                expect(moved).to.have.property('path').that.is.equal newPath
+                expect(moved).to.have.property('content').that.is.null
 
-                # then the moved fsItem is returned with valid content
-                socket.once 'move-resp', (reqId, err, moved) ->
+                # then the fsItem was removed
+                socket.once 'remove-resp', (reqId, err, modelName, removed) ->
                   expect(rid).to.equal reqId
                   return done err if err?
-                  expect(moved).not.to.be.null
-                  expect(moved).to.have.property('isFolder').that.is.false
-                  expect(moved).to.have.property('path').that.is.equal newPath
-                  expect(moved).to.have.property('content').that.is.null
+                  expect(modelName).to.equal 'FSItem'
+                  expect(removed).not.to.be.null
+                  expect(removed).to.have.property('isFolder').that.is.false
+                  expect(removed).to.have.property('path').that.is.equal newPath
+                  done()
 
-                  # then the fsItem was removed
-                  socket.once 'remove-resp', (reqId, err, modelName, removed) ->
-                    expect(rid).to.equal reqId
-                    return done err if err?
-                    expect(modelName).to.equal 'FSItem'
-                    expect(removed).not.to.be.null
-                    expect(removed).to.have.property('isFolder').that.is.false
-                    expect(removed).to.have.property('path').that.is.equal newPath
-                    done()
-
-                  # when removing it
-                  rid = generateId()
-                  socket.emit 'remove', rid, 'FSItem', moved
-
-                # when moving it
+                # when removing it
                 rid = generateId()
-                socket.emit 'move', rid, file, newPath
+                socket.emit 'remove', rid, 'FSItem', moved
 
-              # when reading its content
-              file.content = null
+              # when moving it
               rid = generateId()
-              socket.emit 'read', rid, file
+              socket.emit 'move', rid, file, newPath
 
-            # when saving a new file
+            # when reading its content
+            file.content = null
             rid = generateId()
-            socket.emit 'save', rid, 'FSItem', file
+            socket.emit 'read', rid, file
+
+          # when saving a new file
+          rid = generateId()
+          socket.emit 'save', rid, 'FSItem', file
 
     describe 'given a map, an item type, two characters, an event type and two events', ->
       @bail true
@@ -338,7 +334,7 @@ describe 'Server tests', ->
 
           # when searching all types
           rid = generateId()
-          socket.emit 'searchTypes', rid, JSON.stringify or: [{id: "/#{map.id}/i"}, {id: character.id}]
+          socket.emit 'searchTypes', rid, JSON.stringify or: [{id: map.id}, {id: character.id}]
 
         it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client

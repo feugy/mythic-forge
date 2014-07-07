@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -21,7 +21,7 @@
 _ = require 'underscore'
 fs = require 'fs-extra'
 {join, normalize, resolve} = require 'path'
-{confKey} = require '../util/common'
+{confKey, fromRule} = require '../util/common'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
@@ -55,6 +55,7 @@ class _ImagesService
   #   Saves an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
   uploadImage: (modelName, id, ext, imageData, args...) =>
+    return if fromRule()
     switch args.length
       when 1 
         callback = args[0]
@@ -139,6 +140,7 @@ class _ImagesService
   #   Removes an instance image of the given model at a given index
   #   @param idx [Number] index of the saved instance image
   removeImage: (modelName, id, args...) =>
+    return if fromRule()
     switch args.length
       when 1 
         callback = args[0]

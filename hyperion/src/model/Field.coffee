@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -24,6 +24,7 @@ conn = require './connection'
 modelWatcher = require('./ModelWatcher').get()
 Map = require './Map'
 logger = require('../util/logger').getLogger 'model'
+{fromRule} = require '../util/common'
 
 # Define the schema for fields.
 FieldSchema = new mongoose.Schema 
@@ -75,6 +76,18 @@ FieldSchema.methods.equals = (object) ->
 # Define a virtual getter on model's class name.
 # Handy when models have been serialized to distinguish them
 FieldSchema.virtual('id').set (value) -> @_id = value
+
+# prevent save/remove methods from rules
+FieldSchema.post 'init', ->
+  # prevent remove and save usage from rule, using stack and not module
+  originalRemove = @remove
+  @remove = (next) ->
+    unless fromRule next
+      originalRemove.call @, next 
+  originalSave = @save
+  @save = (next) ->
+    unless fromRule next
+      originalSave.call @, next 
 
 # pre-save middleware: only allow save of new fields. Do not allow updates
 #

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -90,7 +90,9 @@ define [
     getActionBar: =>
       return @_actionBar if @_actionBar?
       # creates the rendering
-      @_actionBar = $('<div><a class="save"></a><a class="remove"></a><a class="addProperty"></a></div>')
+      @_actionBar = $('<div><a href="#" class="save"></a>'+
+        '<a href="#" class="remove"></a>'+
+        '<a href="#" class="addProperty"></a></div>')
       # wire the save button
       @_saveButton = @_actionBar.find('.save')
         .attr('title', i18n.tips.save)

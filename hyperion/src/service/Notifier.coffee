@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -18,6 +18,7 @@
 ###
 'use strict'
 
+{fromRule} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
 EventEmitter = require('events').EventEmitter
 
@@ -27,6 +28,8 @@ module.exports = class Notifier
   _instance = undefined
   @get: ->
     _instance ?= new _Notifier()
+    _instance.setMaxListeners 0
+    _instance
 
 # The Notifier allows services to send notifications across the server and administration
 # clients.
@@ -42,4 +45,5 @@ class _Notifier extends EventEmitter
   # @param event [String] the notification name or kind
   # @param details... [Any] optional data send with notification
   notify: (event, details...) =>
+    return if fromRule()
     @emit.apply @, [NOTIF_EVT, event].concat details

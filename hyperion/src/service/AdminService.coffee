@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -29,8 +29,8 @@ Event = require '../model/Event'
 Player = require '../model/Player'
 Executable = require '../model/Executable'
 ClientConf = require '../model/ClientConf'
-utils = require '../util/common'
-modelUtils = require '../util/model'
+{type, fromRule, generateToken} = require '../util/common'
+{isValidId} = require '../util/model'
 logger = require('../util/logger').getLogger 'service'
 playerService = require('./PlayerService').get()
 authoringService = require('./AuthoringService').get()
@@ -56,9 +56,35 @@ class _AdminService
   # @param id [String] the checked id
   # @option callback err [String] error string. Null if no error occured and id is valid and not used
   isIdValid: (id, callback) =>
-    return callback "#{id} is invalid" unless modelUtils.isValidId id
+    return callback "#{id} is invalid" unless isValidId id
     return callback "#{id} is already used" if ItemType.isUsed id
     callback null
+
+  # Allows an administrator to connect as another player
+  #
+  # @param email [String] email of the player to be embodied
+  # @param adminEmail [String] the administrator email that connect instead of the real player
+  # @param callback [Function] end callback, invoked with two arguments
+  # @option callback err [String] error string. Null if no error occured
+  # @option callback token [String] the generated token to use for connection
+  connectAs: (email, adminEmail, callback) =>
+    # Just check that the connecting email bleongs to an administrator
+    Player.findOne {email: adminEmail}, (err, admin) =>
+      return callback err if err?
+      return callback "No player with email #{adminEmail} found" unless admin?
+      return callback "This functionnality is reserved to administrator" unless admin.isAdmin
+
+      # get the other player
+      Player.findOne {email: email}, (err, player) =>
+        return callback err if err?
+        return callback "No player with email #{email} found" unless player?
+
+        # creates a new token, but avoid changing the connection date and connected list
+        player.token = generateToken 24
+        player.save (err, saved) =>
+          return callback err if err?
+          logger.info "administrator #{adminEmail} connected as #{email}"
+          callback null, saved.token
 
   # The list method retrieve all instances of a given model, in:
   # Map, ItemType, Executable, FieldType, EventType and FSItem (AuthoringService.readRoot()). 
@@ -71,6 +97,7 @@ class _AdminService
   # @option callback models [Array] list (may be empty) of retrieved models
   #
   list: (modelName, callback) =>
+    return if fromRule callback
     return callback "The #{modelName} model can't be listed", modelName unless modelName in listSupported
     switch modelName
       when 'ItemType' then ItemType.find (err, result) -> callback err, modelName, result
@@ -92,6 +119,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   save: (modelName, values, email, callback) =>
+    return if fromRule callback
     return callback "The #{modelName} model can't be saved", modelName unless modelName in supported
 
     _save = (model) ->
@@ -159,7 +187,7 @@ class _AdminService
 
         resolveFrom = (model) ->
           if model.from?
-            id = if 'object' is utils.type model.from then model.from?.id else model.from
+            id = if 'object' is type model.from then model.from?.id else model.from
             # resolve from item
             return Item.findCached [id], (err, froms) ->
               return callback "Failed to save event #{values.id}. Error while resolving its from: #{err}" if err?
@@ -257,6 +285,7 @@ class _AdminService
   # @option callback modelName [String] reminds the saved model class name
   # @option callback model [Object] saved model
   remove: (modelName, values, email, callback) =>
+    return if fromRule callback
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
     unless 'Field' is modelName or 'FSItem' is modelName or 'id' of values
       return callback "Cannot remove #{modelName} because no 'id' specified", modelName 

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -57,6 +57,7 @@ define [
       # wire connection buttons and form
       @$el.find('.google').attr 'href', "#{conf.apiBaseUrl}/auth/google"
       @$el.find('.twitter').attr 'href', "#{conf.apiBaseUrl}/auth/twitter"
+      @$el.find('.github').attr 'href', "#{conf.apiBaseUrl}/auth/github"
       @$el.find('#loginForm').on 'submit', =>
         @$el.find('.loader').show()
         # send back form into body

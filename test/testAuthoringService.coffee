@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -24,16 +24,14 @@ fs = require 'fs-extra'
 FSItem = require '../hyperion/src/model/FSItem'
 Executable = require '../hyperion/src/model/Executable'
 utils = require '../hyperion/src/util/common'
-versionUtils = require '../hyperion/src/util/versionning'
+versionService = require('../hyperion/src/service/VersionService').get()
 service = require('../hyperion/src/service/AuthoringService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
-logger = require('../hyperion/src/util/logger').getLogger 'test'
 assert = require('chai').assert
 
 repoRoot = resolve normalize utils.confKey 'game.repo'
 gameFiles = resolve normalize utils.confKey 'game.client.dev'
 gameRules = resolve normalize utils.confKey 'game.executable.source'
-repo = null
 file = null
 oldPath = null
 notifications = []
@@ -43,9 +41,8 @@ describe 'AuthoringService tests', ->
   before (done) ->
     @timeout 3000
     # re-initialize game repository
-    versionUtils.initGameRepo logger, true, (err, _root, _repo) ->
+    versionService.init true, (err) ->
       return done err if err?
-      repo = _repo
       Executable.resetAll false, (err) ->
         return done err if err?
         service.init done
@@ -211,9 +208,9 @@ describe 'AuthoringService tests', ->
               executable.save (err) ->
                 return done err if err?
                 # first commit
-                repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
+                versionService.repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
                   return done err if err?
-                  repo.commit 'first commit', (err) ->
+                  versionService.repo.commit 'first commit', (err) ->
                     return done err if err?
                     # second version of file and executable
                     fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
@@ -225,9 +222,9 @@ describe 'AuthoringService tests', ->
                         executable.save (err) ->
                           return done err if err?
                           # second commit
-                          repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
+                          versionService.repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
                             return done err if err?
-                            repo.commit 'second commit', done
+                            versionService.repo.commit 'second commit', done
 
     it 'should file content be read at last version', (done) -> 
       service.history file, (err, read, history) ->
@@ -317,12 +314,12 @@ describe 'AuthoringService tests', ->
         return done err if err?
         executable.remove (err) ->
           return done err if err?
-          repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
+          versionService.repo.add [gameFiles.replace(repoRoot+sep, ''), gameRules.replace(repoRoot+sep, '')], {A: true}, (err) ->
             return done err if err?
-            repo.commit 'third commit', (err) ->
+            versionService.repo.commit 'third commit', (err) ->
               return done err if err?
               # when consulting history for this file
-              service.restorables (err, restorables) ->
+              service.restorables [], (err, restorables) ->
                 return done "Cannot get restorables: #{err}" if err?
                 assert.equal 2, restorables.length
                 assert.ok restorables[1].item.equals(file), 'deleted file not found as second restorable'

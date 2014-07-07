@@ -24,7 +24,8 @@ server:
 
 # Authentication details
 authentication:
-  tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  tokenLifeTime: 0 # number of seconds during wich tokens are valid, 0 means no expiration
+  logoutDelay: 25 # number of secons before claiming that disconnected player has quit
   # Key usable on localhost domain with SSL
   google:
     id: 750195776526.apps.googleusercontent.com
@@ -32,6 +33,9 @@ authentication:
   twitter:
     id: DMpozBM7Vt90TLxwMGA
     secret: D8RgRXt9yV32nOxEQjo6NjhanbzpgGKmh6Ap9HHUN4
+  github:
+    id: 0ac7a95c128c88f9da85
+    secret: a53b38b55fae6b07b78c2a1c2effbab910ffb731
 
 # SSL certificates. Do not specify them to use plain Http.
 ssl:
@@ -48,9 +52,21 @@ cache:
   frequency: 1000
   maxAge: 5000
 
-# location of games files
+# Mailgun information for sending emails
+mailgun:
+  key: key-23thw7sif-v21lwsgw83--7wyxvp0sj0
+  domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
+  sender: noreply@mythic-forge.com
+
 game: 
+  # location of games files
   repo: ../proto-game
+
+  # Images storage
+  image: ../proto-game/images # must be INSIDE game.repo
+
+  # localStorage key that will store connection token
+  token: game.token
 
   # Executable scripts 
   executable:
@@ -64,12 +80,9 @@ game:
     production: ../proto-game/final
     save: ../proto-game/previous
 
-  # Images storage
-  image: ../proto-game/images
-
 # Turns execution settings. Frequency in seconds
 turn:
-  frequency: 1
+  frequency: 0
 
 # Use minified rheia
 minified: false

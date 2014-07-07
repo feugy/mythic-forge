@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -18,14 +18,11 @@
 ###
 
 _ = require 'underscore'
-fs = require 'fs-extra'
 async = require 'async'
-{join, sep, normalize, resolve} = require 'path'
-git = require 'gift'
+{join, sep, normalize} = require 'path'
 moment = require 'moment'
 FieldType = require '../hyperion/src/model/FieldType'
 utils = require '../hyperion/src/util/common'
-versionUtils = require '../hyperion/src/util/versionning'
 ruleUtils = require '../hyperion/src/util/rule'
 logger = require('../hyperion/src/util/logger').getLogger 'test'
 {expect} = require 'chai'
@@ -71,16 +68,15 @@ describe 'Utilities tests', ->
     b = join 'root', 'lib'
     expect(utils.relativePath a, b).to.be.equal join '..', '..', '..', 'root', 'lib'
 
-  it 'should fixed-length token be generated', (done) -> 
+  it 'should fixed-length token be generated', -> 
     # when generating tokens with fixed length, then length must be compliant
-    expect(utils.generateToken(10)).to.have.lengthOf 10
-    expect(utils.generateToken(0)).to.have.lengthOf 0
-    expect(utils.generateToken(4)).to.have.lengthOf 4
-    expect(utils.generateToken(20)).to.have.lengthOf 20
-    expect(utils.generateToken(100)).to.have.lengthOf 100
-    done()
+    expect(utils.generateToken 10).to.have.lengthOf 10
+    expect(utils.generateToken 0).to.have.lengthOf 0
+    expect(utils.generateToken 4).to.have.lengthOf 4
+    expect(utils.generateToken 20).to.have.lengthOf 20
+    expect(utils.generateToken 100).to.have.lengthOf 100
 
-  it 'should token be generated with only alphabetical character', (done) -> 
+  it 'should token be generated with only alphabetical character', -> 
     # when generating a token
     token = utils.generateToken 1000
     # then all character are within correct range
@@ -89,7 +85,6 @@ describe 'Utilities tests', ->
       code = char.charCodeAt 0
       expect(code, "character #{char} (#{code}) out of bounds").to.be.at.least(40).and.at.most 90
       expect(code, "characters #{char} (#{code}) is forbidden").to.satisfy (c) -> c < 58 or c > 64
-    done()
 
   it 'should plainObjects keep empty objects', ->
     tree = 
@@ -218,117 +213,6 @@ describe 'Utilities tests', ->
         return done err if err?
         _.delay ->
           return done err if err?
-          expect(FieldType.cachedSince('montain')).to.be.equal 0
+          expect(FieldType.cachedSince('montain')).to.equal 0
           done()
         , 700
-
-  describe 'given an initialized git repository', ->
-    @timeout 5000
-
-    beforeEach (done) ->
-      versionUtils.initGameRepo logger, true, (err, root, rep) ->
-        return done err if err?
-        repo = rep
-        # to avoid too quick access on repository
-        _.delay done, 100
-
-    it 'should quickTags returns nothing', (done) ->
-      versionUtils.quickTags repo, (err, tags) ->
-        return done err if err?
-        expect(tags).to.have.lengthOf 0
-        done()
-
-    it 'should quickTags returns tags with name and id', (done) ->
-      tag1 = 'tag1'
-      tag2 = 'a_more_long_tag_name'
-      # given a first commit and tag
-      commit {file: file1, message: 'commit 1', content: 'v1'}, (err) ->
-        return done err if err?
-        repo.create_tag tag1, (err) ->
-          return done err if err?
-          # given a second commit and tag
-          commit {file: file1, message: 'commit 2', content: 'v2'}, (err) ->
-            return done err if err?
-            repo.create_tag tag2, (err) ->
-              return done err if err?
-
-              # when getting tags
-              versionUtils.quickTags repo, (err, tags) ->
-                return done err if err?
-                # then two tags where retrieved
-                expect(tags).to.have.lengthOf 2
-                expect(_.pluck tags, 'name').to.deep.equal [tag2, tag1]
-
-                # then commit ids are returned
-                repo.commits (err, history) ->
-                  return done err if err?
-                  expect(_.pluck history, 'id').to.deep.equal _.pluck tags, 'id'
-                  done()
-
-    it 'should quickHistory returns commits with name, author, message and id', (done) ->
-      # given a first commit
-      commit {file: file1, message: 'commit 1', content: 'v1'}, (err) ->
-        return done err if err?
-        # given a second commit on another file
-        commit {file: file2, message: 'commit 2', content: 'v1'}, (err) ->
-          return done err if err?
-
-          # when getting history
-          versionUtils.quickHistory repo, (err, history) ->
-            return done err if err?
-            # then two commits were retrieved
-            expect(history).to.have.lengthOf 2
-
-            # then commit details are exact
-            repo.commits (err, commits) ->
-              return done err if err?
-              expect(_.pluck commits, 'id').to.deep.equal _.pluck history, 'id'
-              expect(_.chain(commits).pluck('author').pluck('name').value()).to.deep.equal _.pluck history, 'author'
-              expect(_.pluck commits, 'message').to.deep.equal _.pluck history, 'message'
-              expect(_.pluck commits, 'committed_date').to.deep.equal _.pluck history, 'date'
-
-              # when getting file history
-              versionUtils.quickHistory repo, file1.replace(repository, './'), (err, fileHistory) ->
-                return done err if err?
-                # then only one commit was retrieved
-                expect(fileHistory).to.have.lengthOf 1
-                expect(fileHistory[0]).to.deep.equal history[1]
-                done()
-
-    it 'should listRestorables returns nothing without deletion', (done) ->
-      # given a commited files
-      commit {file: file2, message: 'commit 1', content: 'v1'}, (err) ->
-        return done err if err?
-
-        # when listing restorable whithout deletion
-        versionUtils.listRestorables repo, (err, restorables) ->
-          return done err if err?
-
-          # then no results returned
-          expect(restorables).to.have.lengthOf 0
-          done()
-
-    it 'should listRestorables returns deleted files', (done) ->
-      # given two commited files
-      commit {file: [file1, file2], message: 'commit 1', content: ['v1', 'v1']}, (err) ->
-        return done "Failed on first commit: #{err}" if err?
-        # given another commit on first file
-        commit {file: file1, message: 'commit 2', content: 'v2'}, (err) ->
-          return done "Failed on second commit: #{err}" if err?
-          # given those files removed and commited
-          async.forEach [file1, file2], utils.remove, (err) ->
-            return done "Failed on removal #{err}" if err?
-            repo.commit 'commit 3', all:true, (err) ->
-              return done "Failed on third commit: #{err}" if err?
-              # when listing restorables
-              versionUtils.listRestorables repo, (err, restorables) ->
-                return done "Cannot list restorable: #{err}" if err?
-                # then both files are presents
-                expect(restorables).to.have.lengthOf 2
-                paths = _.pluck restorables, 'path'
-                repository = repository.replace /\\/g, '/'
-                expect(paths).to.include file1.replace(/\\/g, '/').replace "#{repository}/", ''
-                expect(paths).to.include file2.replace(/\\/g, '/').replace "#{repository}/", ''
-                ids = _.pluck restorables, 'id'
-                expect(ids[0]).to.be.equal ids[1]
-                done()

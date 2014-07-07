@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -21,9 +21,8 @@
 define [
   'jquery'
   'underscore'
-  'backbone'
   'moment'
-  'view/TabPerspective'
+  'view/VersionnedPerspective'
   'i18n!nls/common'
   'i18n!nls/authoring'
   'text!tpl/authoringPerspective.html'
@@ -32,12 +31,13 @@ define [
   'view/authoring/File'
   'utils/utilities'
   'utils/validators'
-], ($, _, Backbone, moment, TabPerspective, i18n, i18nAuthoring, template, FSItem, FileExplorer, FileView, utils, validators) ->
+], ($, _, moment, VersionnedPerspective, i18n, i18nAuthoring, template,
+    FSItem, FileExplorer, FileView, utils, validators) ->
 
   i18n = $.extend true, i18n, i18nAuthoring
 
   # The authoring perspective allows to manage game client files
-  class AuthoringPerspective extends TabPerspective
+  class AuthoringPerspective extends VersionnedPerspective
 
     # **private**
     # View's mustache template
@@ -76,20 +76,12 @@ define [
     _removeButton: null
 
     # **private**
-    # Selector that displays current file history list.
-    _historyList: null
-
-    # **private**
-    # 1 second timeout before getting history of currently displayed file
-    _historyTimeout: null
-
-    # **private**
     # FSItem created to catch server error while creating
     _createInProgress: null
 
     # The view constructor.
     constructor: ->
-      super 'authoring'
+      super 'authoring', 'Files', FSItem.collection
 
       # construct explorer
       @_explorer = new FileExplorer()
@@ -98,16 +90,7 @@ define [
       @bindTo @_explorer, 'create', @_onChooseFileName
       @bindTo @_explorer, 'remove', @_onRemove
       @bindTo app.router, 'serverError', @_onServerError
-      @bindTo FSItem.collection, 'reset', =>
-        # removes all views
-        while @_views.length > 0
-          @_forceClose
-          @_views[0].model.off 'history', @_onUpdateHistory
-          @tryCloseTab @_views[0]
       @bindTo FSItem.collection, 'add', @_onItemCreated
-      # removes history update handler
-      @bindTo FSItem.collection, 'remove', (item) => 
-        item.off 'history', @_onUpdateHistory
 
     # **private**
     # Get the id of a given view that can be used inside the DOM as an Id or a class.
@@ -121,10 +104,6 @@ define [
     # oInstanciate bar buttons.
     render: =>
       super()
-      # update button bar on tab change, but after a slight delay to allow internal update when 
-      # tab is removed
-      @_tabs.element.on 'tabsselect tabsadd tabsremove', => _.defer => @_onUpdateFileBar true
-
       # render the explorer on the left
       @$el.find('> .left').append @_explorer.render().$el
 
@@ -169,7 +148,7 @@ define [
         attribute: '_removeButton'
       ,
         icon: 'restore'
-        tip: i18n.tips.restorables
+        tip: i18n.tips.restorableFiles
         disabled: false
         handler: => FSItem.collection.restorables @_onDisplayRestorables
       ]
@@ -184,10 +163,6 @@ define [
 
       # bind file upload
       @$el.find('.file-upload > input').on 'change', @_onFileChoosen
-
-      # get the history selector
-      @_historyList = @$el.find '.action-bar select'
-      @_historyList.on 'change', @_onRequireVersion
 
       # first selection
       @_onSelect null, null
@@ -206,11 +181,11 @@ define [
     # Delegate method the instanciate a view from a type and an id, either
     # when opening an existing view, or when creating a new one.
     #
-    # @param type [String] type of the opened/created instance. Must be null.
+    # @param type [String] type of the opened/created instance. Must 'FSItem'.
     # @param id [String] optional id of the opened instance. Null for creations
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
-      return null if type?
+      return null if type isnt 'FSItem'
       new FileView id
 
     # **private**
@@ -246,7 +221,7 @@ define [
     _onItemCreated: (created) =>
       return unless @_createInProgress?.equals created
       @_createInProgress = null
-      @_onOpenElement null, created.id unless created.isFolder
+      @_onOpenElement 'FSItem', created.id unless created.isFolder
 
     # **private**
     # Server error handler: display errors while creating new folder and files
@@ -259,22 +234,6 @@ define [
       ]
       @_createInProgress = null
 
-    # **private**
-    # Handler invoked when a tab was added to the widget. Render the view inside the tab.
-    #
-    # @param event [Event] tab additon event
-    # @param ui [Object] tab container 
-    _onTabAdded: (event, ui) =>
-      # calls inherited method
-      super event, ui
-      # gets the added view from the internal array
-      id = $(ui.tab).attr('href').replace '#tabs-', ''
-      view = _.find @_views, (view) -> id is md5 view.model.id
-      
-      # bind changes to update tab
-      view.on 'change', @_onUpdateFileBar
-      view.model.on 'history', @_onUpdateHistory
-      view.model.on 'version', @_onChangeVersion
 
     # **private**
     # Item creation/move handler: prompt for name, creates the FSItem and opens it if it's a file, or moves the FSItem
@@ -357,30 +316,15 @@ define [
     # Current edited file change handler: updates the button bar consequently, with history selector.
     #
     # @param withHistory [Boolean] true to retrieve file history. Default to false
-    _onUpdateFileBar: (withHistory = false)=>
-      clearTimeout @_historyTimeout if @_historyTimeout and withHistory is true
-       
+    _onUpdateBar: (withHistory = false)=>
       @_saveButton._setOption 'disabled', true
       @_removeButton._setOption 'disabled', true
-      @_historyList.attr 'disabled', 'disabled'
-      @_historyList.empty()
 
-      view= @_views?[@_tabs.options.selected]
-      # no view selected (after a deletion for example)
+      view = super withHistory
       return unless view?
 
       @_saveButton._setOption 'disabled', !view.canSave()
       @_removeButton._setOption 'disabled', !view.canRemove()
-
-      # disable history if modification pending, and get history if needed
-      if view.canSave()
-        @_historyList.attr 'disabled', 'disabled'
-      else
-        @_historyList.removeAttr 'disabled'
-
-      if withHistory is true
-        @_historyList.empty()
-        @_historyTimeout = setTimeout (-> view.model.fetchHistory()), 1000
 
     # **private**
     # Selection handler inside the file explorer.
@@ -398,7 +342,7 @@ define [
         throw new Error "Unknown fsItem selected #{selected}" unless selectedItem?
         # Open the relevant file view
         unless selectedItem.isFolder
-          @_onOpenElement null, selectedItem.id
+          @_onOpenElement 'FSItem', selectedItem.id
           fileSelected = true
 
       # update button bar
@@ -432,79 +376,3 @@ define [
 
       # read data from file as base64 string
       reader.readAsDataURL file
-
-    # **private**
-    # File history retrieval handler. If file is still displayed as first tab, update the selector content.
-    #
-    # @param file [FSItem] the file on which history have been retrieved
-    _onUpdateHistory: (file) =>
-      # no view displayed
-      return if @_tabs.options.selected is -1
-      displayed = @_views[@_tabs.options.selected]?.model
-      # not the current file
-      return unless displayed?.equals file
-      # cleans an redraw history selector content
-      @_historyList.empty()
-      html = ""
-      for commit in file.history
-        date = moment(commit.date).format i18n.constants.dateTimeFormat
-        html += "<option value='#{commit.id}'>#{_.sprintf i18n.labels.commitDetails, date, commit.author, commit.message}</option>" 
-      @_historyList.append html
-
-    # **private**
-    # File history change handler. Immediately ask versionned content to server.
-    _onRequireVersion: =>
-      return if @_tabs.options.selected is -1
-      version = @_historyList.find(':selected').val()
-      item = @_views[@_tabs.options.selected]?.model
-      item?.fetchVersion version
-
-    # **private**
-    # Display list of restorable files inside a popup
-    #
-    # @param restorables [Array] array of restorables files (may be empty)
-    _onDisplayRestorables: (restorables) =>
-      return if $('#restorablesPopup').length isnt 0
-
-      # displays a popup
-      html = """<div id='restorablesPopup' title='#{i18n.titles.restorables.replace /'/g, '&apos;'}'>
-        #{i18n.msgs[if restorables.length is 0 then 'noRestorables' else 'restorables']}"""
-
-      if restorables.length
-        html += '<ul>'
-        html += "<li>#{restorable.item.path}</li>" for restorable in restorables
-        html += '</ul>'
-
-      html += '</div>'
-
-      buttonSpec = [
-        text: i18n.buttons.close
-        icons:
-          primary: 'ui-icon small valid'
-        click: -> $('#restorablesPopup').remove()
-      ]
-
-      $(html).dialog(
-        modal: false
-        close: (event) -> buttonSpec[0].click()
-        buttons: buttonSpec
-      ).on 'click', 'li', (event) =>
-        # restore file.
-        idx = $(event.target).closest('li').index()
-        return if -1 is idx
-        item = restorables[idx].item
-        
-        # add item to collection to allow opening
-        item.restored = true
-        FSItem.collection.add item
-
-        # when version will be loaded, opens the file
-        opening = (fetched, content) =>
-          item.content = content
-          item.off 'version', opening
-          @_onSelect item.path, null
-        item.on 'version', opening
-
-        # load file content, with special git trick: we need to refer to the parent commit of the
-        # deleting commit.
-        item.fetchVersion "#{restorables[idx].id}~1"

@@ -1,5 +1,5 @@
 /*
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -60,17 +60,31 @@ select
   padding 0.5em 1em
 
 .tooltip
-  padding 0.5em
-  background hoverColor
+  padding 0.5em 
+  cursor default
 
-.tooltip *
-  font-size fontSize*0.8
-  padding 0.25em 0.5em
+  *
+    font-size fontSize*0.8
 
-.tooltip ul
-  margin-left 1em
-  list-style square
+  p
+    padding 0.25em 0.5em
 
+  ul
+    margin-left 1em
+    list-style square
+
+  dfn
+  var
+    display inline-block
+    font-family "Courier New"
+    padding 2px
+
+  dfn
+    margin 1px
+
+  var
+    background-color hoverColor
+    
 .menu.open
 .menu.toggleable 
 .tooltip
@@ -90,6 +104,7 @@ select
 
 .action-bars .ui-button 
 .action-bar .ui-button 
+.action.ui-button
   display: inline-block;
   margin-right 10px
   min-height 27px
@@ -111,9 +126,9 @@ select
 // Icons
 multiIcon(valid invalid cancel warning question help success failure login logout)
 
-multiIcon(save remove open upload unbind rename remove-selection remove-folder restore, 1)
+multiIcon(save remove open upload unbind rename remove-selection remove-folder restore kick, 1)
 
-multiIcon(new-folder new-file add-param add-property new-item new-event new-player embody copy, 2)
+multiIcon(new-folder new-file add-param add-property new-item new-event new-player embody copy connect-as, 2)
 
 multiIcon(map field item event rule turn-rule script player client-conf, 3)
 
@@ -405,21 +420,25 @@ body
       width 100%
 
     > .errors
+    > .external-change
       border-radius radius
       background-color errorColor
+      text-align center
 
       > *
         padding 0.5em 1em
       * 
         color white
 
-    > .external-change
-      border-radius radius
+      .ui-icon
+        margin-left 10px
 
+    > .external-change
+      width auto
+      margin 0
+      
       > *
-        padding 0.5em 1em
-      * 
-        color errorColor
+        margin 2px 10px 5px
         
     .images
       padding-top 0.5em
@@ -541,10 +560,12 @@ body
       text-decoration none
 
     .connect.twitter
+    .connect.github
       color white
         
     connect-button '.connect.google', 0
     connect-button '.connect.twitter', 2
+    connect-button '.connect.github', 3
 
 input[type='range']
   vertical-align top

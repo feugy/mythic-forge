@@ -31,6 +31,6 @@ middle.server.listen(apiPort, function(err) {
 
 // catch error for logging.
 process.on('uncaughtException', function(err) {
-  console.error('Uncaught exception:', err);
+  console.error('Uncaught exception:', err.message || err, err.stack);
   process.exit(1);
 });

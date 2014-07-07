@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -22,7 +22,7 @@ watcher = require('../hyperion/src/model/ModelWatcher').get()
 utils = require '../hyperion/src/util/common'
 pathUtils = require 'path'
 fs = require 'fs'
-assert = require('chai').assert
+{expect} = require 'chai'
 
 executable = null
 listener = null
@@ -54,7 +54,7 @@ describe 'Executable tests', ->
     # then a creation event was issued
     listener = (operation, className, instance) ->
       if operation is 'creation' and className is 'Executable'
-        assert.ok executable.equals instance
+        expect(executable).to.satisfy (o) => o.equals instance
         awaited = true
     watcher.on 'change', listener
 
@@ -67,13 +67,15 @@ describe 'Executable tests', ->
         return done "Can't find executable: #{err}" if err?
 
         # then it's the only one executable
-        assert.equal executables.length, 1
+        expect(executables).to.have.lengthOf 1
         # then it's values were saved
-        assert.equal executables[0].id, id
-        assert.equal executables[0].content, content
-        assert.equal executables[0].lang, 'coffee'
-        assert.propertyVal executables[0].meta, 'kind', 'Script'
-        assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
+        expect(executables[0]).to.have.property 'id', id
+        expect(executables[0]).to.have.property 'content', content
+        expect(executables[0]).to.have.property 'lang', 'coffee'
+        expect(executables[0]).to.have.property 'updated'
+        expect(executables[0].updated.getTime()).to.be.equal new Date().setMilliseconds 0
+        expect(executables[0].meta).to.deep.equal kind: 'Script'
+        expect(awaited, 'watcher was\'nt invoked for new executable').to.be.true
         done()
 
   it 'should js executable be created', (done) ->
@@ -87,7 +89,7 @@ describe 'Executable tests', ->
     # then a creation event was issued
     listener = (operation, className, instance) ->
       if operation is 'creation' and className is 'Executable'
-        assert.ok executable.equals instance
+        expect(executable).to.satisfy (o) => o.equals instance
         awaited = true
     watcher.on 'change', listener
 
@@ -100,14 +102,15 @@ describe 'Executable tests', ->
         return done "Can't find executable: #{err}" if err?
 
         # then it's the only one executable
-        assert.equal executables.length, 1
+        expect(executables).to.have.lengthOf 1
         # then it's values were saved
-        assert.equal executables[0].id, id
-        assert.equal executables[0].content, content
-        assert.equal executables[0].lang, 'js'
-        assert.propertyVal executables[0].meta, 'kind', 'Script'
-        # then a new configuration key was added
-        assert.isTrue awaited, 'watcher was\'nt invoked for new executable'
+        expect(executables[0]).to.have.property 'id', id
+        expect(executables[0]).to.have.property 'content', content
+        expect(executables[0]).to.have.property 'lang', 'js'
+        expect(executables[0]).to.have.property 'updated'
+        expect(executables[0].updated.getTime()).to.be.equal new Date().setMilliseconds 0
+        expect(executables[0].meta).to.deep.equal kind: 'Script'
+        expect(awaited, 'watcher was\'nt invoked for new executable').to.be.true
         done()
         
   it 'should executable compilation error be reported', (done) -> 
@@ -119,14 +122,14 @@ describe 'Executable tests', ->
     # when saving it
     executable.save (err) ->
       # then an error is reported
-      assert.include err, 'unexpected "hello world"'
+      expect(err).to.include 'unexpected "hello world"'
 
       # then it's not on the file system
       Executable.find (err, executables) ->
         return done "Can't find executable: #{err}" if err?
 
         # then no executables found
-        assert.equal executables.length, 0
+        expect(executables).to.have.lengthOf 0
         done()
 
   it 'should js executable compilation error be reported', (done) -> 
@@ -138,14 +141,14 @@ describe 'Executable tests', ->
     # when saving it
     executable.save (err) ->
       # then an error is reported
-      assert.include err, "Expected an identifier and instead saw '('."
+      expect(err).to.include "Expected an identifier and instead saw '('."
 
       # then it's not on the file system
       Executable.find (err, executables) ->
         return done "Can't find executable: #{err}" if err?
 
         # then no executables found
-        assert.equal executables.length, 0
+        expect(executables).to.have.lengthOf 0
         done()
       
   it 'should resetAll recompile all in once', (done) ->
@@ -179,7 +182,7 @@ describe 'Executable tests', ->
         # then it's in the folder anymore
         Executable.find (err, executables) -> 
           return done "Can't find executable file: #{err}" if err?
-          assert.equal executables.length, 0
+          expect(executables).to.have.lengthOf 0
           done()
 
     it 'should executable be updated', (done) ->
@@ -194,16 +197,20 @@ describe 'Executable tests', ->
       # when modifying and saving a executable
       newContent = '# I have accents ! ééàà'
       executable.content = newContent
+      creation = executable.updated
       executable.save ->
         Executable.find (err, executables) ->
           return done "Can't find executable file: #{err}" if err?
           # then it's the only one executable
-          assert.equal executables.length, 1
+          expect(executables).to.have.lengthOf 1
           # then only the relevant values were modified
-          assert.equal executables[0].content, newContent
-          assert.equal executables[0].id, 'test2'
-          assert.propertyVal executables[0].meta, 'kind', 'Script'
-          assert.isNotNull execChanges, "watcher was't invoked for executable: #{execChanges}"
+          expect(executables[0]).to.have.property 'id', 'test2'
+          expect(executables[0]).to.have.property 'content', newContent
+          expect(executables[0].meta).to.deep.equal kind: 'Script'
+          # then update date was modified
+          expect(executables[0].updated).not.to.equal creation
+          expect(executables[0].updated.getTime()).to.be.equal new Date().setMilliseconds 0
+          expect(execChanges, "watcher was't invoked for executable: #{execChanges}").to.exist
           done()
 
     it 'should executable be removed', (done) ->
@@ -212,7 +219,7 @@ describe 'Executable tests', ->
         # then it's in the folder anymore
         Executable.find (err, executables) -> 
           return done "Can't find executable file: #{err}" if err?
-          assert.equal executables.length, 0
+          expect(executables).to.have.lengthOf 0
           done()
 
     it 'should depending executable show updates', (done) ->
@@ -226,7 +233,7 @@ describe 'Executable tests', ->
       ex2.save (err) ->
         return done err if err?
         result = require pathUtils.relative __dirname, ex2.compiledPath
-        assert.equal result, 20
+        expect(result).to.equal 20
         # when modifying existing executable
         newContent = """
           constant = 20
@@ -239,7 +246,7 @@ describe 'Executable tests', ->
           return done err if err?
           # then depending executable was reloaded
           result = require pathUtils.relative __dirname, ex2.compiledPath
-          assert.equal result, 30
+          expect(result).to.equal 30
           done()
 
     it 'should dependencies to hyperion modules be replaced', (done) ->
@@ -253,8 +260,8 @@ describe 'Executable tests', ->
       executable.save (err) ->
         return done err if err?
         result = require pathUtils.relative __dirname, executable.compiledPath
-        assert.property result, 'findCached'
-        assert.equal new result()._className, 'Item'
+        expect(result).to.have.property 'findCached'
+        expect(new result()).to.have.property '_className', 'Item'
         done()
 
     it 'should executable meta for Rule contains category and active', (done) ->
@@ -269,9 +276,10 @@ describe 'Executable tests', ->
             )() """
       executable.save (err) ->
         return done err if err?
-        assert.propertyVal executable.meta, 'kind', 'Rule'
-        assert.propertyVal executable.meta, 'category', 'cat3'
-        assert.propertyVal executable.meta, 'active', false
+        expect(executable.meta).to.deep.equal 
+          kind: 'Rule'
+          category: 'cat3'
+          active: false
         done()
 
     it 'should executable meta for TurnRule contains rank and active', (done) ->
@@ -285,9 +293,10 @@ describe 'Executable tests', ->
             )() """
       executable.save (err) ->
         return done err if err?
-        assert.propertyVal executable.meta, 'kind', 'TurnRule'
-        assert.propertyVal executable.meta, 'rank', 10
-        assert.propertyVal executable.meta, 'active', true
+        expect(executable.meta).to.deep.equal 
+          kind: 'TurnRule'
+          rank: 10
+          active: true
         done()
 
     it 'should executable meta for be updated', (done) ->
@@ -301,10 +310,10 @@ describe 'Executable tests', ->
             )() """
       executable.save (err) ->
         return done err if err?
-
-        assert.propertyVal executable.meta, 'kind', 'TurnRule'
-        assert.propertyVal executable.meta, 'rank', 0
-        assert.propertyVal executable.meta, 'active', false
+        expect(executable.meta).to.deep.equal 
+          kind: 'TurnRule'
+          rank: 0
+          active: false
         execChanges = null
 
         # then a update event was issued
@@ -323,9 +332,10 @@ describe 'Executable tests', ->
           return done err if err?
 
           # then metas were updated
-          assert.propertyVal executable.meta, 'kind', 'TurnRule'
-          assert.propertyVal executable.meta, 'rank', 5
-          assert.propertyVal executable.meta, 'active', true
-          assert.isNotNull execChanges, 'watcher wasn\'t invoked for executable'
-          assert.ok 'meta' of execChanges
+          expect(executable.meta).to.deep.equal 
+            kind: 'TurnRule'
+            rank: 5
+            active: true
+          expect(execChanges, "watcher was't invoked for executable: #{execChanges}").to.exist
+          expect(execChanges).to.have.property 'meta'
           done()

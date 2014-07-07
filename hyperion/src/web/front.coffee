@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -25,7 +25,7 @@ url = require 'url'
 fs = require 'fs'
 http = require 'http'
 coffee = require 'coffee-script'
-utils = require '../util/common'
+{confKey, fromRule} = require '../util/common'
 stylus = require 'stylus'
 gameService = require('../service/GameService').get()
 notifier = require('../service/Notifier').get()
@@ -52,6 +52,7 @@ notifier.on notifier.NOTIFICATION, (event, stateOrEmail, playerOrkey) ->
 # @param app [Object] existing express server. Default to null
 # @return the configures express server, which needs to be started
 module.exports = (app = null) ->
+  return if fromRule()
 
   unless app?
     # creates a single server to serve static files
@@ -122,7 +123,7 @@ module.exports = (app = null) ->
           if err?
             return next if 'ENOENT' is err.code then null else err 
           # try to compile it
-          stylus(content.toString(), {compress:true}).set('paths', [parent]).render (err, css) ->
+          stylus(content.toString(), {compress:true, cache:false}).include(parent).render (err, css) ->
             if err?
               logger.error "Failed to compile #{file}: #{err}"
               return res.send err, 500
@@ -146,17 +147,17 @@ module.exports = (app = null) ->
     app.use "#{base}", express.static rootFolder, maxAge: 0 #if isStatic then 1814400000 else 0
 
   # serve commun static assets
-  app.use express.cookieParser utils.confKey 'server.cookieSecret'
-  app.use '/images', express.static utils.confKey('game.image'), maxAge: 1814400000
+  app.use express.cookieParser confKey 'server.cookieSecret'
+  app.use '/images', express.static confKey('game.image'), maxAge: 1814400000
   # serve static pages from the docs folder
   app.use express.static 'docs'
   app.use express.compress level:9
   
   # configure a game RIA and the administration RIA 
-  configureRIA '/game', utils.confKey('game.client.production'), true
-  configureRIA '/dev', utils.confKey('game.client.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
+  configureRIA '/game', confKey('game.client.production'), true
+  configureRIA '/dev', confKey('game.client.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
 
-  if utils.confKey 'minified', false
+  if confKey 'minified', false
     configureRIA '/rheia', './rheia-min', true
   else
     configureRIA '/rheia', './rheia'

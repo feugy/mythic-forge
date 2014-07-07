@@ -24,6 +24,7 @@ server:
 # Authentication details
 authentication:
   tokenLifeTime: 900 # number of seconds during wich tokens are valid
+  logoutDelay: 25 # number of seconds before claiming that disconnected player has quit
   # Keys usable on localhost domain without SSL
   google:
     id: 750195776526-hkrs2b3a7ueltmu10108r6j9kcii1elo.apps.googleusercontent.com
@@ -31,6 +32,9 @@ authentication:
   twitter:
     id: LosYMjbW1mompu5Dxkg3Bw
     secret: COQe0t413fAcMRlU5eK7ZthPxolV5nf2tfs442lZUU
+  github:
+    id: dd1794b0ed5c0acbb275
+    secret: 866c01643bdaf643195b5eb202c63ffd17f58af1
 
 # SSL certificates. Do not specify them to use plain Http.
 
@@ -44,9 +48,22 @@ cache:
   frequency: 150
   maxAge: 500
 
-# location of games files
+# Mailgun information for sending emails
+mailgun:
+  key: key-23thw7sif-v21lwsgw83--7wyxvp0sj0
+  domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
+  sender: noreply@mythic-forge.com
+
 game: 
+  # location of games files
   repo: ../tmp
+
+  # Images storage
+  image: ../tmp/images # must be INSIDE game.repo
+
+  # localStorage key that will store connection token
+  token: game.token
+
 
   # Executable scripts 
   executable:
@@ -59,9 +76,6 @@ game:
     optimized: ../tmp/optimized
     production: ../tmp/final
     save: ../tmp/previous
-
-  # Images storage
-  image: ../tmp/images
 
 # Turns execution settings. Frequency in seconds
 turn:

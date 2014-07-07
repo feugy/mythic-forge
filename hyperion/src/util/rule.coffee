@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -18,8 +18,8 @@
 ###
 'use strict'
 
-moment = require 'moment'
 _ = require 'underscore'
+moment = require 'moment'
 EventEmitter = require('events').EventEmitter
 
 # Timer object that will propagate time notifications and that manipulates current time
@@ -74,3 +74,17 @@ class Timer extends EventEmitter
 
 module.exports =
   timer: new Timer()
+
+  # Used to send a notification campaign from a rule worker to master thread
+  # Does not crash worker if master is unavailable 
+  #
+  # @param campaigns [Array<Object>] An array of notifications to be sent, containing properties:
+  # @option campaigns msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
+  # @option campaigns players [Player|Array<Player>] an array of players to be notified 
+  processCampaigns: (campaigns) ->
+    if _.isArray campaigns
+      try
+        process.send _.extend {event: 'sendTo'}, campaign for campaign in campaigns
+      catch err
+        # master probably dead.
+        console.error "worker #{process.pid}, module #{process.env.module} failed to send campaign: #{err}"

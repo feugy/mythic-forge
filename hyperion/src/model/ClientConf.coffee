@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -36,7 +36,7 @@ parseSource = (model, source) ->
 
 # Define the schema for configuration values.
 # locale will be the id, other values will be stored arbitrary
-ClientConf = typeFactory 'ClientConf', 
+ClientConf = typeFactory 'ClientConf',
 
   # configuration's source: plain yaml.
   source: 

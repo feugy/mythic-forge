@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -32,11 +32,6 @@ define [
   class BaseLinkedView extends BaseExecutableView
 
     # **private**
-    # Message displayed when an external message was applied.
-    # **Must be defined by subclasses**
-    _externalChangeMessage: null
-
-    # **private**
     # Temporary created model
     _created: null
 
@@ -55,7 +50,7 @@ define [
 
       @_propWidgets = {}
       # Closes external changes warning after 5 seconds
-      @_emptyExternalChange = _.debounce (=> @$el.find('.external-change *').hide 200, -> $(@).remove()), 5000
+      @_autoHideExternal = true
 
     # **private**
     # Effectively creates a new model.
@@ -78,7 +73,7 @@ define [
       bar = super()
       # adds specific buttons
       if bar.find('.copy').length is 0
-        $('<a class="copy"></a>')
+        $('<a href="#" class="copy"></a>')
           .attr('title', i18n.tips.copy)
           .button(
             icons: 
@@ -159,13 +154,6 @@ define [
           current: value
 
       comparable
-
-    # **private**
-    # Avoid warning popup when edited object have been modified externally, and temorary displays a warning inside tab.
-    _notifyExternalChange: =>
-      @_emptyExternalChange()
-      if @$el.find('.external-change *').length is 0
-        @$el.find('.external-change').append "<p>#{@_externalChangeMessage}</p>"
 
     # **private**
     # Avoid warning popup when edited object have been modified removed.

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -134,8 +134,8 @@ define [
         @bindTo model.collection, 'remove', (element, collection) =>
           @_onUpdateCategory element, collection, null, 'remove'
 
-        @bindTo model.collection, 'update', (element, collection, changes) =>
-          @_onUpdateCategory element, collection, changes, 'update'
+        @bindTo model.collection, 'update', (element, changes) =>
+          @_onUpdateCategory element, element.constructor.collection, changes, 'update'
 
     # The `render()` method is invoked by backbone to display view content at screen.
     render: () =>

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -25,33 +25,34 @@ modelWatcher = require('./ModelWatcher').get()
 modelUtils = require '../util/model'
 
 # Define the schema for map item types
-Map = typeFactory 'Map', 
-    # kind of map: square, diamond, hexagon
-    kind: 
-        type: String
-        default: 'hexagon'
+Map = typeFactory 'Map',
 
-    # dimension of a tile in this map
-    tileDim:
-        type: Number
-        default: 100
-  , 
-    strict:true
-    middlewares:
-      # once map is removed, removes also fields and items on it
-      #
-      # @param next [Function] function that must be called to proceed with other middleware.
-      remove: (next) ->
-        # now removes fields and items on it without loading models
-        require('./Field').where('mapId', @id).remove (err) =>
-          return logger.error "Faild to remove fields of deleted map #{@id}: #{err}" if err?
-        require('./Item').where('map', @id).select(_id:1).lean().exec (err, objs) =>
-          return logger.error "Faild to select items of deleted map #{@id}: #{err}" if err?
-          require('./Item').where('map', @id).remove (err) =>
-            return logger.error "Faild to remove items of deleted map #{@id}: #{err}" if err?
-            # issue events for caches and clients
-            modelWatcher.change 'deletion', 'Item', obj for obj in objs
-            # performs removal
-            next()
+  # kind of map: square, diamond, hexagon
+  kind: 
+    type: String
+    default: 'hexagon'
+
+  # dimension of a tile in this map
+  tileDim:
+    type: Number
+    default: 100
+, 
+  strict:true
+  middlewares:
+    # once map is removed, removes also fields and items on it
+    #
+    # @param next [Function] function that must be called to proceed with other middleware.
+    remove: (next) ->
+      # now removes fields and items on it without loading models
+      require('./Field').where('mapId', @id).remove (err) =>
+        return logger.error "Faild to remove fields of deleted map #{@id}: #{err}" if err?
+      require('./Item').where('map', @id).select(_id:1).lean().exec (err, objs) =>
+        return logger.error "Faild to select items of deleted map #{@id}: #{err}" if err?
+        require('./Item').where('map', @id).remove (err) =>
+          return logger.error "Faild to remove items of deleted map #{@id}: #{err}" if err?
+          # issue events for caches and clients
+          modelWatcher.change 'deletion', 'Item', obj for obj in objs
+          # performs removal
+          next()
 
 module.exports = conn.model 'map', Map

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -24,7 +24,7 @@ logger = require('../util/logger').getLogger 'model'
 modelUtils = require '../util/model'
 
 # Define the schema for event types
-EventType = typeFactory 'EventType', 
+EventType = typeFactory 'EventType',
   # descriptive image for this type.
   descImage:
     type: String

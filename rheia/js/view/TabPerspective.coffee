@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -113,6 +113,10 @@ define [
 
       # for chaining purposes
       @
+
+    # invoked when perspective is shown: relay event to displayed tab
+    shown: =>
+      @_views?[@_tabs.options.selected]?.shown()
 
     # tries to close a tab, if the corresponding views allowed it.
     #

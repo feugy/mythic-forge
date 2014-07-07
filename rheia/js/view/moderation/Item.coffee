@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -47,10 +47,6 @@ define [
     _confirmRemoveMessage: i18n.msgs.removeItemConfirm
 
     # **private**
-    # Message displayed when an external message was applied.
-    _externalChangeMessage: i18n.msgs.itemExternalChange
-
-    # **private**
     # indicates wether or not this item has quantity
     _hasQuantity: false
 
@@ -78,6 +74,10 @@ define [
     # select that displays possible transitions
     _transitionList: null
 
+    # **private**
+    # button that allows to embody this Item
+    _embodyButton: null
+
     # The view constructor.
     #
     # @param id [String] the edited object's id, null for creation
@@ -103,6 +103,30 @@ define [
     #
     # @return an object used as template data (this by default)
     _getRenderData: -> i18n: i18n, title: _.sprintf i18n.titles.item, @model.type.id, @model.id or '~'
+
+    # Returns the view's action bar, and creates it if needed.
+    # Adds kick and connect-as buttons 
+    #
+    # @return the action bar rendering.
+    getActionBar: =>
+      bar = super()
+      # adds specific buttons
+      if bar.find('.embody').length is 0
+        @_embodyButton = $('<a href="#" class="embody"></a>')
+          .attr('title', i18n.tips.embody)
+          .button(
+            icons: 
+              primary: 'embody small'
+            text: false
+          ).appendTo(bar)
+          .click(@_onToggleEmbody)
+          .data 'button'
+
+        if app.embodiment is @model
+          @_embodyButton.disable()
+        else
+          @_embodyButton.enable()
+      bar
 
     # **private**
     # Allows subclass to add specific widgets right after the template was rendered and before first 
@@ -153,9 +177,6 @@ define [
 
       @_transitionList = @$el.find '.transition.field'
       @_transitionList.on 'change', => @_onChange()
-
-      @$el.find('.embody').button(icons: primary: 'small embody').on 'click', @_onToggleEmbody
-      @$el.find('.embody').toggleClass 'active', app.embodiment is @model
 
       @_onTransitionListChanged()
 
@@ -283,4 +304,7 @@ define [
       evt?.preventDefault()
       app.embodiment = if app.embodiment is @model then null else @model
       app.router.trigger 'embodyChanged'
-      @$el.find('.embody').toggleClass 'active', app.embodiment is @model
+      if app.embodiment is @model
+        @_embodyButton.disable()
+      else
+        @_embodyButton.enable()

@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -85,11 +85,13 @@ define [
       
     # Called by the TabPerspective each time the view is showned.
     shown: =>
-      @_editorWidget?.resize()
+      @_editorWidget?.resize()?.focus()
 
+    # on dispose, clean version handler and restore if needed
     dispose: =>
-      @model.restored = false
       @model.off 'version', @_onChangeVersion
+      # if was restored from previous version, get back to current
+      @model.fetchVersion() if @model.restored
       super()
 
     # Returns the view's title
@@ -108,10 +110,9 @@ define [
       @className += " #{getMode @model}"
 
       # instanciate the content editor
-      @_editorWidget = $('<div class="content"></div>').advEditor(
-      ).on('change', @_onChange
-      ).data 'advEditor'
-      @$el.empty().append @_editorWidget.$el
+      @$el.append '<div class="external-change"></div>'
+      @_editorWidget = $('<div class="content"></div>').appendTo(@$el)
+        .advEditor().on('change', @_onChange).data 'advEditor'
 
       @_image = $('<img/>').appendTo @$el
 
@@ -122,7 +123,9 @@ define [
       
     # **private**
     # Updates rendering with values from the edited object.
-    _fillRendering: =>
+    #
+    # @param restoredContent [String] content to display during restoration
+    _fillRendering: (restoredContent) =>
       @_mode = getMode @model
       @$el.toggleClass 'image', @_mode is 'img'
       if @_mode is 'img'
@@ -133,7 +136,7 @@ define [
       else
         @_editorWidget.$el.show()
         @_editorWidget.setOption 'mode', @_mode
-        @_editorWidget.setOption 'text', utf8.decode @model.content or ''
+        @_editorWidget.setOption 'text', utf8.decode restoredContent or @model.content or ''
 
       # to update displayed icon
       @_onChange()
@@ -168,11 +171,8 @@ define [
     # Wired to FSItem version changes. Update editor if current model have been changed
     # 
     # @param item [FSItem] concerned item
-    # @param content [String] utf8 encoded content.
+    # @param content [String] utf8 encoded content. Null to get back to current version
     _onChangeVersion: (item, content) =>
       return unless @model.equals item
-      @model.restored = true
-      # update content
-      @model.content = content
-      # and refresh rendering
-      @_fillRendering()
+      # refresh rendering with restored content
+      @_fillRendering content

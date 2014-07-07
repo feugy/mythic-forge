@@ -1,5 +1,5 @@
 ###
-  Copyright 2010,2011,2012 Damien Feugas
+  Copyright 2010~2014 Damien Feugas
   
     This file is part of Mythic-Forge.
 
@@ -26,7 +26,7 @@ Event = require '../model/Event'
 Map = require '../model/Map'
 Executable = require '../model/Executable'
 Player = require '../model/Player'
-utils = require '../util/common'
+{fromRule, type} = require '../util/common'
 async = require 'async'
 _ = require 'underscore'
 logger = require('../util/logger').getLogger 'service'
@@ -44,7 +44,7 @@ validateQuery = (query) ->
       err = validateQuery term
       return err if err?
 
-  else if 'object' is utils.type query
+  else if 'object' is type query
     # we found a term:  `{or: []}`, `{and: []}`, `{toto:1}`, `{toto:''}`, `{toto:true}`, `{toto://}`
     keys = Object.keys query
     return "only one attribute is allowed inside query terms" if keys.length isnt 1
@@ -55,7 +55,7 @@ validateQuery = (query) ->
       return validateQuery value
     else
       # this is a terminal term, validates value's type
-      switch utils.type value
+      switch type value
         when 'string', 'number', 'boolean', 'regexp' then return null
         else return "#{keys[0]}:#{value} is not a valid value"
   else
@@ -75,7 +75,7 @@ enhanceTypeQuery = (query) ->
     attr = Object.keys(query)[0]
     value = query[attr]
     # special case of regexp strings that must be transformed
-    if 'string' is utils.type value
+    if 'string' is type value
       match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
       value = new RegExp match[1], match[2], match[3] if match?
     switch attr
@@ -110,6 +110,7 @@ class _SearchService
   # @param callback [Function] callback invoked when query has been enhanced
   # @option callback err [String] error string, or null if no error occured
   _enhanceInstanceQuery: (query, callback) =>
+    return if fromRule callback
     if Array.isArray query
       # recursive enhancement inside term arrays
       return async.forEachSeries query, (term, next) =>
@@ -119,7 +120,7 @@ class _SearchService
       attr = Object.keys(query)[0]
       value = query[attr]
       # special case of regexp strings that must be transformed
-      if 'string' is utils.type value
+      if 'string' is type value
         match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
         query[attr] = new RegExp match[1], match[2], match[3] if match?
 
@@ -196,8 +197,9 @@ class _SearchService
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching types
   searchTypes: (query, callback) =>
+    return if fromRule callback
     # special case: string query must be parse to object
-    if 'string' is utils.type query
+    if 'string' is type query
       try 
         query = JSON.parse query
       catch exc
@@ -262,8 +264,9 @@ class _SearchService
   # @option callback err [Error] an error, or null if no error occured
   # @option callback results [Array<Object>] array (may be empty) of matching instances
   searchInstances: (query, callback) =>
+    return if fromRule callback
     # special case: string query must be parse to object
-    if 'string' is utils.type query
+    if 'string' is type query
       try 
         query = JSON.parse query
       catch exc
@@ -274,7 +277,6 @@ class _SearchService
     return callback "Failed to parse query: #{err}" if err?
 
     results = []
-
     # second, enhance the query for mongoDB
     @_enhanceInstanceQuery query, (err) =>
       return callback "Failed to enhance query: #{err}" if err?
