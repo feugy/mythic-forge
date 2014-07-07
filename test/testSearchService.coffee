@@ -27,12 +27,15 @@ Player = require '../hyperion/src/model/Player'
 Map = require '../hyperion/src/model/Map'
 Executable = require '../hyperion/src/model/Executable'
 service = require('../hyperion/src/service/SearchService').get()
-assert = require('chai').assert
-
-assert.contains = (array, model, message='') ->
+{expect, Assertion} = require 'chai'
+{flag, inspect} = require 'chai/lib/chai/utils'
+ 
+Assertion.addMethod 'containsModel', (model, msg) ->
+  flag @, 'message', msg if msg?
+  array = flag @, 'object'
   tmp = array.filter (obj) -> model.equals obj
-  assert.ok tmp.length is 1, message
-  assert.ok utils.isA(tmp[0], model.constructor)
+  this.assert tmp.length is 1, "expected \#{this} to include #{inspect model}", "expected \#{this} not to include #{inspect model}"
+  this.assert utils.isA(tmp[0], model.constructor), "expected \#{this} to include #{model.constructor.name}", "expected \#{this} not to include #{model.constructor.name}"
 
 describe 'SearchService tests', ->
 
@@ -140,242 +143,242 @@ describe 'SearchService tests', ->
     it 'should search by map existence', (done) ->
       service.searchInstances {map:'!'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 3
-        assert.contains results, ivanhoe, 'ivanhoe not returned'
-        assert.contains results, arthur, 'arthur not returned'
-        assert.contains results, roland, 'roland not returned'
+        expect(results).to.have.lengthOf 3
+        expect(results, 'ivanhoe not returned').to.containsModel ivanhoe
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'roland not returned').to.containsModel roland
         done()
 
     it 'should search by map id', (done) ->
       service.searchInstances {map:"#{world.id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, ivanhoe, 'ivanhoe not returned'
-        assert.contains results, arthur, 'arthur not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'ivanhoe not returned').to.containsModel ivanhoe
+        expect(results, 'arthur not returned').to.containsModel arthur
         done()
 
     it 'should search by map kind', (done) ->
       service.searchInstances {'map.kind':"square"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, ivanhoe, 'ivanhoe not returned'
-        assert.contains results, arthur, 'arthur not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'ivanhoe not returned').to.containsModel ivanhoe
+        expect(results, 'arthur not returned').to.containsModel arthur
         done()
 
     it 'should search by map regexp', (done) ->
       service.searchInstances {'map.id':/under/i}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, roland, 'roland not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'roland not returned').to.containsModel roland
         done()
 
     it 'should search by type id', (done) ->
       service.searchInstances {type:"#{talk.id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 3
-        assert.contains results, talk1, 'talk1 not returned'
-        assert.contains results, talk2, 'talk2 not returned'
-        assert.contains results, talk3, 'talk3 not returned'
+        expect(results).to.have.lengthOf 3
+        expect(results, 'talk1 not returned').to.containsModel talk1
+        expect(results, 'talk2 not returned').to.containsModel talk2
+        expect(results, 'talk3 not returned').to.containsModel talk3
         done()
 
     it 'should search by type property', (done) ->
       service.searchInstances {'type.color': '!'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 4
-        assert.contains results, durandal, 'durandal not returned'
-        assert.contains results, gladius, 'gladius not returned'
-        assert.contains results, broken, 'broken not returned'
-        assert.contains results, excalibur, 'excalibur not returned'
+        expect(results).to.have.lengthOf 4
+        expect(results, 'durandal not returned').to.containsModel durandal
+        expect(results, 'gladius not returned').to.containsModel gladius
+        expect(results, 'broken not returned').to.containsModel broken
+        expect(results, 'excalibur not returned').to.containsModel excalibur
         done()
 
     it 'should search by type regexp', (done) ->
       service.searchInstances {'type.id':/char|swo/i}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 7
-        assert.contains results, durandal, 'durandal not returned'
-        assert.contains results, gladius, 'gladius not returned'
-        assert.contains results, broken, 'broken not returned'
-        assert.contains results, excalibur, 'excalibur not returned'
-        assert.contains results, arthur, 'arthur not returned'
-        assert.contains results, roland, 'roland not returned'
-        assert.contains results, ivanhoe, 'ivanhoe not returned'
+        expect(results).to.have.lengthOf 7
+        expect(results, 'durandal not returned').to.containsModel durandal
+        expect(results, 'gladius not returned').to.containsModel gladius
+        expect(results, 'broken not returned').to.containsModel broken
+        expect(results, 'excalibur not returned').to.containsModel excalibur
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'roland not returned').to.containsModel roland
+        expect(results, 'ivanhoe not returned').to.containsModel ivanhoe
         done()
 
     it 'should search by multiple terms and type criteria', (done) ->
       service.searchInstances {and:[{'type.id':/r/i}, {strength:10}]}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, arthur, 'arthur not returned'
-        assert.contains results, gladius, 'gladius not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'gladius not returned').to.containsModel gladius
         done()
 
     it 'should search by criteria on linked array', (done) ->
       service.searchInstances {'stock.color': 'silver'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, ivanhoe, 'ivanhoe not returned'
-        assert.contains results, roland, 'roland not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'ivanhoe not returned').to.containsModel ivanhoe
+        expect(results, 'roland not returned').to.containsModel roland
         done()
 
     it 'should search by linked array id', (done) ->
       service.searchInstances {'stock': excalibur.id.toString()}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, arthur, 'arthur not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'arthur not returned').to.containsModel arthur
         done()
 
     it 'should search by criteria on linked object', (done) ->
       service.searchInstances {'to.strength': 15}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, talk2, 'talk2 not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'talk2 not returned').to.containsModel talk2
         done()
 
     it 'should search by linked object id', (done) ->
       service.searchInstances {'to': ivanhoe.id.toString()}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, talk3, 'talk3 not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'talk3 not returned').to.containsModel talk3
         done()
 
     it 'should search event by from id', (done) ->
       service.searchInstances {'from': ivanhoe.id.toString()}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, talk1, 'talk1 not returned'
-        assert.contains results, talk2, 'talk2 not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'talk1 not returned').to.containsModel talk1
+        expect(results, 'talk2 not returned').to.containsModel talk2
         done()
 
     it 'should search event by from property', (done) ->
       service.searchInstances {'from.name': 'Roland'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, talk3, 'talk3 not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'talk3 not returned').to.containsModel talk3
         done()
 
     it 'should search items by id', (done) ->
       service.searchInstances {id:"#{durandal.id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, durandal, 'durandal not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'durandal not returned').to.containsModel durandal
         done()
 
     it 'should search events by id', (done) ->
       service.searchInstances {id:"#{talk2.id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, talk2, 'talk2 not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'talk2 not returned').to.containsModel talk2
         done()
 
     it 'should search by arbitrary property existence', (done) ->
       service.searchInstances {to:'!'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, talk2, 'talk2 not returned'
-        assert.contains results, talk3, 'talk3 not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'talk2 not returned').to.containsModel talk2
+        expect(results, 'talk3 not returned').to.containsModel talk3
         done()
 
     it 'should search by arbitrary property number value', (done) ->
       service.searchInstances {strength: 10}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, arthur, 'arthur not returned'
-        assert.contains results, gladius, 'gladius not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'gladius not returned').to.containsModel gladius
         done()
 
     it 'should search by quantity number value', (done) ->
       service.searchInstances {quantity: 3}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, broken, 'broken not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'broken not returned').to.containsModel broken
         done()
 
     it 'should search players by id', (done) ->
       service.searchInstances {id:"#{dupond.id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, dupond, 'dupond not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'dupond not returned').to.containsModel dupond
         done()
 
     it 'should search players by exact email', (done) ->
       service.searchInstances {email:"#{john.email}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, john, 'john not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'john not returned').to.containsModel john
         done()
 
     it 'should search players by regexp email', (done) ->
       service.searchInstances {email:/j/i}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, jack, 'jack not returned'
-        assert.contains results, john, 'john not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'jack not returned').to.containsModel jack
+        expect(results, 'john not returned').to.containsModel john
         done()
 
     it 'should search players by provider', (done) ->
       service.searchInstances {provider:'!'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, john, 'john not returned'
-        assert.contains results, dupond, 'dupond not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'john not returned').to.containsModel john
+        expect(results, 'dupond not returned').to.containsModel dupond
         done()
 
     it 'should search players by preferences', (done) ->
       service.searchInstances {'prefs.rank':1}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, john, 'john not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'john not returned').to.containsModel john
         done()
 
     it 'should search players by character existence', (done) ->
       service.searchInstances {characters: '!'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, john, 'john not returned'
-        assert.contains results, jack, 'jack not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'john not returned').to.containsModel john
+        expect(results, 'jack not returned').to.containsModel jack
         done()
 
     it 'should search players by character id', (done) ->
       service.searchInstances {characters: roland.id.toString()}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, john, 'john not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'john not returned').to.containsModel john
         done()
 
     it 'should search players by character property value', (done) ->
       service.searchInstances {'characters.strength': 20}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, jack, 'jack not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'jack not returned').to.containsModel jack
         done()
 
     it 'should string query be usable', (done) ->
       service.searchInstances '{"and":[{"type.id":"/r/i"}, {"strength":10}]}', (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, arthur, 'arthur not returned'
-        assert.contains results, gladius, 'gladius not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'gladius not returned').to.containsModel gladius
         done()
 
     it 'should search with boolean operator between condition', (done) ->
       service.searchInstances {or:[{and:[{'type.id':/r/i}, {strength: 10}]}, {'prefs.rank': 1}, {to:'!'}]}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 5
-        assert.contains results, gladius, 'gladius not returned'
-        assert.contains results, arthur, 'arthur not returned'
-        assert.contains results, john, 'john not returned'
-        assert.contains results, talk2, 'talk2 not returned'
-        assert.contains results, talk3, 'talk3 not returned'
+        expect(results).to.have.lengthOf 5
+        expect(results, 'gladius not returned').to.containsModel gladius
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'john not returned').to.containsModel john
+        expect(results, 'talk2 not returned').to.containsModel talk2
+        expect(results, 'talk3 not returned').to.containsModel talk3
         done()
 
     it 'should failed on invalid string query', (done) ->
       service.searchInstances '{"and":[{"type.id":"/r/i"}, {"strength":10}]', (err) ->
-        assert.include err, 'Unexpected end of input'
+        expect(err).to.include 'Unexpected end of input'
         done()
 
     it 'should failed on invalid json query', (done) ->
       service.searchInstances {and:{"type.id":/r/i}}, (err) ->
-        assert.include err, '$and expression must be a nonempty array'
+        expect(err).to.include 'and needs an array'
         done()
 
   describe 'searchTypes', ->
@@ -524,172 +527,172 @@ describe 'SearchService tests', ->
     it 'should search item types by id', (done) ->
       service.searchTypes {id:"#{itemTypes[0].id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, itemTypes[0], 'first item type not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first item type not returned').to.containsModel itemTypes[0]
         done()
 
     it 'should search field types by id', (done) ->
       service.searchTypes {id:"#{fieldTypes[1].id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, fieldTypes[1], 'second field type not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'second field type not returned').to.containsModel fieldTypes[1]
         done()
 
     it 'should search event types by id', (done) ->
       service.searchTypes {id:"#{eventTypes[0].id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, eventTypes[0], 'first event type not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first event type not returned').to.containsModel eventTypes[0]
         done()
 
     it 'should search maps by id', (done) ->
       service.searchTypes {id:"#{maps[1].id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, maps[1], 'first map not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first map not returned').to.containsModel maps[1]
         done()
 
     it 'should search executable by id', (done) ->
       service.searchTypes {id:"#{rules[0].id}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, rules[0], 'first rule not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first rule not returned').to.containsModel rules[0]
         done()
 
     it 'should search by regexp id', (done) ->
       service.searchTypes {id:/t/i}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 6
-        assert.contains results, itemTypes[0], 'first item type not returned'
-        assert.contains results, eventTypes[0], 'first event type not returned'
-        assert.contains results, eventTypes[1], 'second event type not returned'
-        assert.contains results, fieldTypes[1], 'second field type not returned'
-        assert.contains results, rules[1], 'second rule not returned'
-        assert.contains results, turnRules[1], 'second turn-rule not returned'
+        expect(results).to.have.lengthOf 6
+        expect(results, 'first item type not returned').to.containsModel itemTypes[0]
+        expect(results, 'first event type not returned').to.containsModel eventTypes[0]
+        expect(results, 'second event type not returned').to.containsModel eventTypes[1]
+        expect(results, 'second field type not returned').to.containsModel fieldTypes[1]
+        expect(results, 'second rule not returned').to.containsModel rules[1]
+        expect(results, 'second turn-rule not returned').to.containsModel turnRules[1]
         done()
 
     it 'should search by exact content', (done) ->
       service.searchTypes {content:"#{rules[0].content}"}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, rules[0], 'first rule not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first rule not returned').to.containsModel rules[0]
         done()
 
     it 'should search by regexp content', (done) ->
       service.searchTypes {content:/extends rule/i}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, rules[0], 'first rule not returned'
-        assert.contains results, rules[1], 'second rule not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'first rule not returned').to.containsModel rules[0]
+        expect(results, 'second rule not returned').to.containsModel rules[1]
         done()
 
     it 'should search by property existence', (done) ->
       service.searchTypes {strength: '!'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 3
-        assert.contains results, itemTypes[0], 'first item type not returned'
-        assert.contains results, itemTypes[1], 'second item type not returned'
-        assert.contains results, eventTypes[0], 'first event type not returned'
+        expect(results).to.have.lengthOf 3
+        expect(results, 'first item type not returned').to.containsModel itemTypes[0]
+        expect(results, 'second item type not returned').to.containsModel itemTypes[1]
+        expect(results, 'first event type not returned').to.containsModel eventTypes[0]
         done()
 
     it 'should search by property number value', (done) ->
       service.searchTypes {strength: 10}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, itemTypes[0], 'first item type not returned'
-        assert.contains results, itemTypes[1], 'second item type not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'first item type not returned').to.containsModel itemTypes[0]
+        expect(results, 'second item type not returned').to.containsModel itemTypes[1]
         done()
 
     it 'should search by property string value', (done) ->
       service.searchTypes {content: '---'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, eventTypes[1], 'second event type not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'second event type not returned').to.containsModel eventTypes[1]
         done()
 
     it 'should search by property boolean value', (done) ->
       service.searchTypes {knight: false}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, itemTypes[0], 'first item type not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first item type not returned').to.containsModel itemTypes[0]
         done()
 
     it 'should search by property regexp value', (done) ->
       service.searchTypes {content: /.*/}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 5
-        assert.contains results, eventTypes[1], 'second event type not returned'
-        assert.contains results, rules[0], 'first rule not returned'
-        assert.contains results, rules[1], 'second rule not returned'
-        assert.contains results, turnRules[0], 'first turn-rule not returned'
-        assert.contains results, turnRules[1], 'second turn-rule not returned'
+        expect(results).to.have.lengthOf 5
+        expect(results, 'second event type not returned').to.containsModel eventTypes[1]
+        expect(results, 'first rule not returned').to.containsModel rules[0]
+        expect(results, 'second rule not returned').to.containsModel rules[1]
+        expect(results, 'first turn-rule not returned').to.containsModel turnRules[0]
+        expect(results, 'second turn-rule not returned').to.containsModel turnRules[1]
         done()
 
     it 'should search by quantifiable', (done) ->
       service.searchTypes {quantifiable: true}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, itemTypes[1], 'second item type not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'second item type not returned').to.containsModel itemTypes[1]
         done()
 
     it 'should combined search with triple or', (done) ->
       service.searchTypes {or: [{id: 'character'}, {id: 'move'}, {strength:'!'}]}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 4
-        assert.contains results, itemTypes[0], 'first item type not returned'
-        assert.contains results, itemTypes[1], 'second item type not returned'
-        assert.contains results, eventTypes[0], 'first event type not returned'
-        assert.contains results, rules[0], 'first rule not returned'
+        expect(results).to.have.lengthOf 4
+        expect(results, 'first item type not returned').to.containsModel itemTypes[0]
+        expect(results, 'second item type not returned').to.containsModel itemTypes[1]
+        expect(results, 'first event type not returned').to.containsModel eventTypes[0]
+        expect(results, 'first rule not returned').to.containsModel rules[0]
         done()
 
     it 'should combined search with triple and', (done) ->
       service.searchTypes {and: [{id: 'move'}, {content: /extends rule/i}, {category:'map'}]}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, rules[0], 'first rule not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first rule not returned').to.containsModel rules[0]
         done()
 
     it 'should combined search with and or', (done) ->
       service.searchTypes {or: [{and: [{id: 'attack'}, {content: /extends rule/i}]}, {strength:5}]}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, eventTypes[0], 'first event type not returned'
-        assert.contains results, rules[1], 'second rule not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'first event type not returned').to.containsModel eventTypes[0]
+        expect(results, 'second rule not returned').to.containsModel rules[1]
         done()
 
     it 'should search by rank value', (done) ->
       service.searchTypes {rank: 3}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, turnRules[0], 'first turn-rule not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first turn-rule not returned').to.containsModel turnRules[0]
         done()
 
     it 'should search by active value', (done) ->
       service.searchTypes {active: false}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, rules[1], 'second rule not returned'
-        assert.contains results, turnRules[0], 'first turn-rule not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'second rule not returned').to.containsModel rules[1]
+        expect(results, 'first turn-rule not returned').to.containsModel turnRules[0]
         done()
 
     it 'should search by exact category', (done) ->
       service.searchTypes {category: 'map'}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, rules[0], 'first rule not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first rule not returned').to.containsModel rules[0]
         done()
 
     it 'should search by category regexp', (done) ->
       service.searchTypes {category: /m.*/}, (err, results)->
         return done err if err?
-        assert.equal results?.length, 1
-        assert.contains results, rules[0], 'first rule not returned'
+        expect(results).to.have.lengthOf 1
+        expect(results, 'first rule not returned').to.containsModel rules[0]
         done()
 
     it 'should string query be usable', (done) ->
       service.searchTypes '{"or": [{"and": [{"id": "attack"}, {"content": "/extends rule/i"}]}, {"strength":5}]}', (err, results)->
         return done err if err?
-        assert.equal results?.length, 2
-        assert.contains results, eventTypes[0], 'first event type not returned'
-        assert.contains results, rules[1], 'second rule not returned'
+        expect(results).to.have.lengthOf 2
+        expect(results, 'first event type not returned').to.containsModel eventTypes[0]
+        expect(results, 'second rule not returned').to.containsModel rules[1]
         done()

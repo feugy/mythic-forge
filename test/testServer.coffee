@@ -34,7 +34,7 @@ request = require 'request'
 fs = require 'fs-extra'
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 logger = require('../hyperion/src/util/logger').getLogger 'test'
-assert = require('chai').assert
+{expect} = require 'chai'
 
 port = 9090
 rootUrl = "http://localhost:#{port}"
@@ -72,8 +72,8 @@ describe 'Server tests', ->
     it 'should the server be responding', (done) ->
       request "#{rootUrl}/konami", (err, res, body) ->
         return done err if err?
-        assert.equal res.statusCode, 200
-        assert.equal body, '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
+        expect(res.statusCode).to.equal 200
+        expect(body).to.equal '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
         done()
 
     it 'should file be created, read, moved and removed', (done) ->
@@ -100,40 +100,40 @@ describe 'Server tests', ->
             
             # then the saved fsItem is returned
             socket.once 'save-resp', (reqId, err, modelName, saved) ->
-              assert.equal rid, reqId
+              expect(rid).to.equal reqId
               return done err if err?
-              assert.equal modelName, 'FSItem'
-              assert.isNotNull saved
-              assert.isFalse saved.isFolder
-              assert.equal saved.path, file.path
-              assert.equal saved.content, file.content
+              expect(modelName).to.equal 'FSItem'
+              expect(saved).not.to.be.null
+              expect(saved).to.have.property('isFolder').that.is.false
+              expect(saved).to.have.property('path').that.is.equal file.path
+              expect(saved).to.have.property('content').that.is.equal file.content
 
               # then the read fsItem is returned with valid content
               socket.once 'read-resp', (reqId, err, read) ->
-                assert.equal rid, reqId
+                expect(rid).to.equal reqId
                 return done err if err?
-                assert.isNotNull read
-                assert.isFalse read.isFolder
-                assert.equal read.path, file.path
-                assert.equal read.content, imgData.toString('base64')
+                expect(read).not.to.be.null
+                expect(read).to.have.property('isFolder').that.is.false
+                expect(read).to.have.property('path').that.is.equal file.path
+                expect(read).to.have.property('content').that.is.equal imgData.toString 'base64'
 
                 # then the moved fsItem is returned with valid content
                 socket.once 'move-resp', (reqId, err, moved) ->
-                  assert.equal rid, reqId
+                  expect(rid).to.equal reqId
                   return done err if err?
-                  assert.isNotNull moved
-                  assert.isFalse moved.isFolder
-                  assert.equal moved.path, newPath
-                  assert.isNull moved.content
+                  expect(moved).not.to.be.null
+                  expect(moved).to.have.property('isFolder').that.is.false
+                  expect(moved).to.have.property('path').that.is.equal newPath
+                  expect(moved).to.have.property('content').that.is.null
 
                   # then the fsItem was removed
                   socket.once 'remove-resp', (reqId, err, modelName, removed) ->
-                    assert.equal rid, reqId
+                    expect(rid).to.equal reqId
                     return done err if err?
-                    assert.equal modelName, 'FSItem'
-                    assert.isNotNull removed
-                    assert.isFalse removed.isFolder
-                    assert.equal removed.path, newPath
+                    expect(modelName).to.equal 'FSItem'
+                    expect(removed).not.to.be.null
+                    expect(removed).to.have.property('isFolder').that.is.false
+                    expect(removed).to.have.property('path').that.is.equal newPath
                     done()
 
                   # when removing it
@@ -195,13 +195,13 @@ describe 'Server tests', ->
 
         # then john and jack are returned
         socket.once 'consultMap-resp', (reqId, err, items, fields) ->
-          assert.equal rid, reqId
+          expect(rid).to.equal reqId
           return done err if err?
-          assert.equal items.length, 2
-          assert.ok jack.equals items[0]
-          assert.equal items[0].name, 'Jack'
-          assert.ok john.equals items[1]
-          assert.equal items[1].name, 'John'
+          expect(items).to.have.lengthOf 2
+          expect(items[0]).to.satisfy (o) -> jack.equals o
+          expect(items[0]).to.have.property('name').that.is.equal 'Jack'
+          expect(items[1]).to.satisfy (o) -> john.equals o
+          expect(items[1]).to.have.property('name').that.is.equal 'John'
           done()
 
         # when consulting the map
@@ -214,22 +214,20 @@ describe 'Server tests', ->
 
         # then the character type is retrieved
         socket.once 'getTypes-resp', (reqId, err, types) ->
-          assert.equal rid, reqId
+          expect(rid).to.equal reqId
           return done err if err?
-          assert.equal types.length, 2
+          expect(types).to.have.lengthOf 2
           for type in types
             awaited = null
             if character.equals type 
               awaited = character
-              assert.ok 'name' of type.properties
-              assert.equal type.properties.name.type, awaited.properties.name.type
+              expect(type).to.have.deep.property('properties.name.type').that.is.equal awaited.properties.name.type
             else if life.equals type
               awaited = life
-              assert.ok 'step' of type.properties
-              assert.equal type.properties.step.type, awaited.properties.step.type
+              expect(type).to.have.deep.property('properties.step.type').that.is.equal awaited.properties.step.type
             else 
-              assert.fail "Unknown returned type, #{type}"
-            assert.equal type.id, awaited.id
+              throw new Error "Unknown returned type, #{type}"
+            expect(type).to.have.property('id').that.is.equal awaited.id
           done()
 
         # when retrieving types by ids
@@ -242,21 +240,21 @@ describe 'Server tests', ->
 
         # then the items are retrieved with their types
         socket.once 'getItems-resp', (reqId, err, items) ->
-          assert.equal rid, reqId
+          expect(rid).to.equal reqId
           return done err if err?
-          assert.equal items.length, 2
-          assert.ok jack.equals items[0]
-          assert.equal items[0]._className, 'Item'
-          assert.equal items[0].name, 'Jack'
-          assert.ok john.equals items[1]
-          assert.equal items[1]._className, 'Item'
-          assert.equal items[1].name, 'John'
-          assert.equal character.id, items[0].type.id
-          assert.ok 'name' of items[0].type.properties
-          assert.equal items[0].type.properties.name.type, character.properties.name.type
-          assert.equal character.id, items[1].type.id
-          assert.ok 'name' of items[1].type.properties
-          assert.equal items[1].type.properties.name.type, character.properties.name.type
+          expect(items).to.have.lengthOf 2
+          expect(items[0]).to.satisfy (o) -> jack.equals o
+          expect(items[0]).to.have.property('_className').that.is.equal 'Item'
+          expect(items[0]).to.have.property('name').that.is.equal 'Jack'
+          expect(items[1]).to.satisfy (o) -> john.equals o
+          expect(items[1]).to.have.property('_className').that.is.equal 'Item'
+          expect(items[1]).to.have.property('name').that.is.equal 'John'
+          expect(items[1]).to.have.deep.property('type.id').that.is.equal character.id
+          expect(items[0].type).to.have.property('properties').that.have.key 'name'
+          expect(items[0]).to.have.deep.property('type.properties.name.type').that.is.equal character.properties.name.type
+          expect(items[0]).to.have.deep.property('type.id').that.is.equal character.id
+          expect(items[1].type).to.have.property('properties').that.have.key 'name'
+          expect(items[1]).to.have.deep.property('type.properties.name.type').that.is.equal character.properties.name.type
           done()
           # TODO tests link resolution
 
@@ -270,30 +268,28 @@ describe 'Server tests', ->
 
         # then the events are retrieved with their types
         socket.once 'getEvents-resp', (reqId, err, events) ->
-          assert.equal rid, reqId
+          expect(rid).to.equal reqId
           return done err if err?
-          assert.equal events.length, 2
-          assert.ok birth.equals events[0]
-          assert.equal events[0]._className, 'Event'
-          assert.equal events[0].step, 'birth'
-          assert.ok death.equals events[1]
-          assert.equal events[1]._className, 'Event'
-          assert.equal events[1].step, 'death'
-          assert.equal life.id, events[0].type.id
-          assert.ok 'concerns' of events[0].type.properties
-          assert.equal events[0].type.properties.concerns.type, life.properties.concerns.type
-          assert.equal life.id, events[1].type.id
-          assert.ok 'concerns' of events[1].type.properties
-          assert.equal events[1].type.properties.concerns.type, life.properties.concerns.type
+          expect(events).to.have.lengthOf 2
+          expect(events[0]).to.satisfy (o) -> birth.equals o
+          expect(events[0]).to.have.property('_className').that.is.equal 'Event'
+          expect(events[0]).to.have.property('step').that.is.equal 'birth'
+          expect(events[1]).to.satisfy (o) -> death.equals o
+          expect(events[1]).to.have.property('_className').that.is.equal 'Event'
+          expect(events[1]).to.have.property('step').that.is.equal 'death'
+          expect(events[1]).to.have.deep.property('type.id').that.is.equal life.id
+          expect(events[0]).to.have.deep.property('type.properties.concerns.type').that.is.equal life.properties.concerns.type
+          expect(events[0]).to.have.deep.property('type.id').that.is.equal life.id
+          expect(events[1]).to.have.deep.property('type.properties.concerns.type').that.is.equal life.properties.concerns.type
           # then their links where resolved
-          assert.equal events[0].concerns._className, 'Item'
-          assert.ok jack.equals events[0].concerns
-          assert.ok character.equals events[0].concerns.type
-          assert.equal events[0].concerns.name, 'Jack'
-          assert.equal events[1].concerns._className, 'Item'
-          assert.ok john.equals events[1].concerns
-          assert.ok character.equals events[1].concerns.type
-          assert.equal events[1].concerns.name, 'John'
+          expect(events[0]).to.have.deep.property('concerns._className').that.is.equal 'Item'
+          expect(events[0]).to.have.property('concerns').that.satisfy (o) -> jack.equals o
+          expect(events[0]).to.have.deep.property('concerns.type').that.satisfy (o) -> character.equals o
+          expect(events[0]).to.have.deep.property('concerns.name').that.is.equal 'Jack'
+          expect(events[1]).to.have.deep.property('concerns._className').that.is.equal 'Item'
+          expect(events[1]).to.have.property('concerns').that.satisfy (o) -> john.equals o
+          expect(events[1]).to.have.deep.property('concerns.type').that.satisfy (o) -> character.equals o
+          expect(events[1]).to.have.deep.property('concerns.name').that.is.equal 'John'
           done()
 
         # when retrieving events by ids
@@ -331,18 +327,18 @@ describe 'Server tests', ->
 
           # then the item type and rule were found
           socket.once 'searchTypes-resp', (reqId, err, results) ->
-            assert.equal rid, reqId
+            expect(rid).to.equal reqId
             return done err if err?
-            assert.equal results.length, 2
+            expect(results).to.have.lengthOf 2
             tmp = results.filter (obj) -> map.equals obj
-            assert.ok tmp.length is 1, 'map was not found'
+            expect(tmp, 'map was not found').to.have.lengthOf 1
             tmp = results.filter (obj) -> character.equals obj
-            assert.ok tmp.length is 1, 'character was not found'
+            expect(tmp, 'character was not found').to.have.lengthOf 1
             done()
 
           # when searching all types
           rid = generateId()
-          socket.emit 'searchTypes', rid, '{"or": [{"id": "/'+map.id+'/i"}, {"id": "'+character.id+'"}]}'
+          socket.emit 'searchTypes', rid, JSON.stringify or: [{id: "/#{map.id}/i"}, {id: character.id}]
 
         it 'should executable content be retrieved', (done) ->
           # given a connected socket.io client
@@ -350,11 +346,11 @@ describe 'Server tests', ->
 
           # then the items are retrieved with their types
           socket.once 'getExecutables-resp', (reqId, err, executables) ->
-            assert.equal rid, reqId
+            expect(rid).to.equal reqId
             return done err if err?
-            assert.equal executables.length, 1
-            assert.equal executables[0].id, script.id
-            assert.equal executables[0].content, script.content
+            expect(executables).to.have.lengthOf 1
+            expect(executables[0]).to.have.property('id').that.is.equal script.id
+            expect(executables[0]).to.have.property('content').that.is.equal script.content
             done()
 
           # when retrieving executables
@@ -368,44 +364,44 @@ describe 'Server tests', ->
 
           # then the rename rule is returned
           socket.once 'resolveRules-resp', (reqId, err, results) ->
-            assert.equal rid, reqId
+            expect(rid).to.equal reqId
             return done err if err?
-            assert.property results, 'rename'
+            expect(results).to.have.property 'rename'
             match = (res for res in results when jack.equals res.target)?[0]
-            assert.isNotNull match, 'rename does not apply to Jack'
+            expect(match, 'rename does not apply to Jack').not.to.be.null
 
             deleted = false
             created = false
             updated = false
             # then john is renamed in joe
             socket.once 'executeRule-resp', (reqId, err, result) ->
-              assert.equal rid, reqId
+              expect(rid).to.equal reqId
               return done err if err?
-              assert.equal result, 'target renamed'
+              expect(result).to.equal 'target renamed'
               setTimeout ->
-                assert.ok deleted, 'watcher wasn\'t invoked for deletion'
-                assert.ok created, 'watcher wasn\'t invoked for creation'
-                assert.ok updated, 'watcher wasn\'t invoked for update'
+                expect(deleted, 'watcher wasn\'t invoked for deletion').to.be.true
+                expect(created, 'watcher wasn\'t invoked for creation').to.be.true
+                expect(updated, 'watcher wasn\'t invoked for update').to.be.true
                 done()
               , 1000
 
             # then an deletion is received for jack
             socket2.once 'deletion', (className, item) ->
-              assert.equal className, 'Item'
-              assert.ok john.equals item
+              expect(className).to.equal 'Item'
+              expect(item).to.satisfy (o) -> john.equals o
               deleted = true
 
             # then an creation is received for peter
             socket2.once 'creation', (className, item) ->
-              assert.equal className, 'Item'
-              assert.equal item.name, 'Peter'
+              expect(className).to.equal 'Item'
+              expect(item).to.have.property('name').that.is.equal 'Peter'
               created = true
 
             # then an update is received on john's name
             socket2.once 'update', (className, item) ->
-              assert.equal jack.id, item.id
-              assert.equal className, 'Item'
-              assert.equal item.name, 'Joe'
+              expect(jack).to.have.property('id').that.is.equal item.id
+              expect(className).to.equal 'Item'
+              expect(item).to.have.property('name').that.is.equal 'Joe'
               updated = true
 
             # when executing the rename rule for john on jack
@@ -432,11 +428,11 @@ describe 'Server tests', ->
 
         # then john and jack are returned
         socket.once 'list-resp', (reqId, err, modelName, list) ->
-          assert.equal rid, reqId
+          expect(rid).to.equal reqId
           return done err if err?
-          assert.equal list.length, 1
-          assert.equal modelName, 'ItemType'
-          assert.ok character.equals list[0]
+          expect(list).to.have.lengthOf 1
+          expect(modelName).to.equal 'ItemType'
+          expect(list[0]).to.satisfy (o) -> character.equals o
           done()
 
         # when consulting the map
@@ -453,23 +449,23 @@ describe 'Server tests', ->
 
           # then the character type was updated
           socket.once 'uploadImage-resp', (reqId, err, saved) ->
-            assert.equal rid, reqId
+            expect(rid).to.equal reqId
             return done err if err?
             # then the description image is updated in model
-            assert.equal saved.descImage, "#{character.id}-type.png"
+            expect(saved).to.have.property('descImage').that.is.equal "#{character.id}-type.png"
             # then the file exists and is equal to the original file
             file = pathUtils.join utils.confKey('game.image'), saved.descImage
-            assert.ok fs.existsSync file
-            assert.equal fs.readFileSync(file).toString(), data.toString()
+            expect(fs.existsSync file).to.be.true
+            expect(fs.readFileSync(file).toString()).to.equal data.toString()
 
             # then the character type was updated
             socket.once 'removeImage-resp', (reqId, err, saved) ->
-              assert.equal rid, reqId
+              expect(rid).to.equal reqId
               return done err if err?
               # then the type image is updated in model
-              assert.equal saved.descImage, null
+              expect(saved).to.have.property('descImage').that.is.null
               # then the file do not exists anymore
-              assert.ok !(fs.existsSync(file))
+              expect(fs.existsSync file).to.be.false
               done()
 
             rid = generateId()
@@ -490,26 +486,26 @@ describe 'Server tests', ->
 
           # then the character type was updated
           socket.once 'uploadImage-resp', (reqId, err, saved) ->
-            assert.equal rid, reqId
+            expect(rid).to.equal reqId
             return done err if err?
             # then the instance image is updated in model for rank 0
-            assert.equal saved.images.length, 1
-            assert.equal saved.images[0].file, "#{character.id}-0.png"
-            assert.equal saved.images[0].width, 0
-            assert.equal saved.images[0].height, 0
+            expect(saved).to.have.property('images').that.has.lengthOf 1
+            expect(saved.images[0]).to.have.property('file').that.is.equal "#{character.id}-0.png"
+            expect(saved.images[0]).to.have.property('width').that.is.equal 0
+            expect(saved.images[0]).to.have.property('height').that.is.equal 0
             # then the file exists and is equal to the original file
             file = pathUtils.join utils.confKey('game.image'), saved.images[0].file
-            assert.ok fs.existsSync file
-            assert.equal fs.readFileSync(file).toString(), data.toString()
+            expect(fs.existsSync file).to.be.true
+            expect(fs.readFileSync(file).toString()).to.equal data.toString()
 
             # then the character type was updated
             socket.once 'removeImage-resp', (reqId, err, saved) ->
-              assert.equal rid, reqId
+              expect(rid).to.equal reqId
               return done err if err?
               # then the instance image is updated in model for rank 0
-              assert.equal saved.images.length, 0
+              expect(saved.images).to.have.lengthOf 0
               # then the file do not exists anymore
-              assert.ok !(fs.existsSync(file))
+              expect(!(fs.existsSync(file))).to.be.true
               done()
 
             rid = generateId()
