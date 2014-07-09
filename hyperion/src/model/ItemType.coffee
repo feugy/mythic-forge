@@ -71,7 +71,7 @@ ItemType = typeFactory 'ItemType',
     # @param next [Function] function that must be called to proceed with other middleware.
     save: (next) ->
       if @isModified 'quantifiable'
-        quantity = if @get 'quantifiable' then quantity = 0 else quantity = null
+        quantity = if @get('quantifiable') then 0 else null
         # save type
         next()
         # get type instances
@@ -79,8 +79,11 @@ ItemType = typeFactory 'ItemType',
           return next new Error "Failed to update type instances: #{err}" if err?
           # save all the modified instances
           async.forEach instances, (instance, done) -> 
+            logger.debug "set quantity for #{instance.id}: #{quantity}"
             instance.quantity = quantity 
             instance.save done
+          , (err) ->
+            logger.error "failed to change item quantity: #{err}" if err?
       else
         # save type
         next()

@@ -2,6 +2,7 @@
 
 - Hyperion
   - Bugs
+    - [!!!] search boolean property is broken on instances
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - Documentation

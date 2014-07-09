@@ -23,7 +23,7 @@ Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-assert = require('chai').assert
+{expect} = require 'chai'
 
 event = null
 event2 = null
@@ -70,10 +70,10 @@ describe 'Event tests', ->
 
       # then a creation event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'creation'
-        assert.ok event.equals instance
-        assert.equal instance.from, item.id
+        expect(className).to.equal 'Event'
+        expect(operation).to.equal 'creation'
+        expect(instance).to.satisfy (o) -> event.equals o
+        expect(instance).to.have.property('from').that.equal item.id
         awaited = true
 
       # when saving it
@@ -85,13 +85,14 @@ describe 'Event tests', ->
         Event.find {}, (err, docs) ->
           return done "Can't find event: #{err}" if err?
           # then it's the only one document
-          assert.equal docs.length, 1
+          expect(docs).to.have.lengthOf 1
           # then it's values were saved
-          assert.equal docs[0].content, 'hello !'
-          assert.ok item.equals docs[0].from
-          assert.closeTo docs[0].created.getTime(), new Date().getTime(), 500
-          assert.closeTo docs[0].created.getTime(), docs[0].updated.getTime(), 50
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs[0]).to.have.property('content').that.equal 'hello !'
+          expect(docs[0]).to.have.property('from').that.satisfy (o) -> o.equals item
+          expect(docs[0]).to.have.property 'created'
+          expect(docs[0].created.getTime()).to.be.closeTo Date.now(), 500
+          expect(docs[0].created.getTime()).to.be.closeTo docs[0].updated.getTime(), 50
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should new event have default properties values', (done) ->
@@ -100,10 +101,10 @@ describe 'Event tests', ->
       event.save (err)->
         return done "Can't save event: #{err}" if err?
         # then the default value was set
-        assert.equal event.content, '---'
+        expect(event).to.have.property('content').that.equal '---'
         done()
 
-  describe 'given a type with json property and an event', ->
+  describe 'given a type with a json property and an event', ->
 
     beforeEach (done) ->
       type = new EventType id:'talk'
@@ -119,19 +120,18 @@ describe 'Event tests', ->
       event.preferences = 10
 
       event.save (err)->
-        assert.isNotNull err
-        assert.match err, /json only accepts arrays and object/
+        expect(err).to.have.property('message').that.include 'json only accepts arrays and object'
         done()
 
     it 'should modelWatcher detect modification on JSON property', (done) ->
       awaited = false
       # given a listening watcher
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'update'
-        assert.ok event.equals instance
+        expect(className).to.equal 'Event'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> event.equals o
         # then a change was detected on preferences
-        assert.deepEqual Object.keys(instance), ['id', 'updated', 'preferences']
+        expect(instance).to.have.keys ['id', 'updated', 'preferences']
         awaited = true
 
       # when modifying the Json value
@@ -142,8 +142,8 @@ describe 'Event tests', ->
         return done "Can't save event: #{err}" if err?
 
         # then value was updated
-        assert.deepEqual event.preferences, help:true, count: 1
-        assert.ok awaited, "watcher wasn't invoked"
+        expect(event).to.have.property('preferences').that.deep.equal help:true, count: 1
+        expect(awaited, "watcher wasn't invoked").to.be.true
         done()
 
   describe 'given an Event', ->
@@ -159,10 +159,10 @@ describe 'Event tests', ->
     it 'should event be modified', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'update'
-        assert.ok event.equals instance
-        assert.isNull instance.from
+        expect(className).to.equal 'Event'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> event.equals o
+        expect(instance).to.have.property('from').that.is.null
         awaited = true
 
       # when removing an event
@@ -177,21 +177,21 @@ describe 'Event tests', ->
           Event.find {}, (err, docs) ->
             return done "Can't find event: #{err}" if err?
             # then it's the only one document
-            assert.equal docs.length, 1
+            expect(docs).to.have.lengthOf 1
             # then only the relevant values were modified
-            assert.isNull docs[0].from
-            assert.closeTo docs[0].updated.getTime(), new Date().getTime(), 500
-            assert.notEqual docs[0].created.getTime(), docs[0].updated.getTime()
-            assert.ok awaited, 'watcher wasn\'t invoked'
+            expect(docs[0]).to.have.property('from').that.is.null
+            expect(docs[0].updated.getTime()).to.be.closeTo Date.now(), 500
+            expect(docs[0].created.getTime()).not.to.equal docs[0].updated.getTime()
+            expect(awaited, 'watcher wasn\'t invoked').to.be.true
             done()
       , 10
 
     it 'should event be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'deletion'
-        assert.ok event.equals instance
+        expect(className).to.equal 'Event'
+        expect(operation).to.equal 'deletion'
+        expect(instance).to.satisfy (o) -> event.equals o
         awaited = true
 
       # when removing an event
@@ -202,17 +202,17 @@ describe 'Event tests', ->
         # then it's not in mongo anymore
         Event.find {}, (err, docs) ->
           return done "Can't find event: #{err}" if err?
-          assert.equal docs.length, 0
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs).to.have.lengthOf 0
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should dynamic property be modified', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'update'
-        assert.ok event.equals instance
-        assert.equal instance.content, 'world'
+        expect(className).to.equal 'Event'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> event.equals o
+        expect(instance).to.have.property('content').that.equal 'world'
         awaited = true
 
       # when modifying a dynamic property
@@ -224,10 +224,10 @@ describe 'Event tests', ->
         Event.find {}, (err, docs) ->
           return done "Can't find event: #{err}" if err?
           # then it's the only one document
-          assert.equal docs.length, 1
+          expect(docs).to.have.lengthOf 1
           # then only the relevant values were modified
-          assert.equal docs[0].content, 'world'
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs[0]).to.have.property('content').that.equal 'world'
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should event cannot be saved with unknown property', (done) ->
@@ -235,16 +235,14 @@ describe 'Event tests', ->
       event.set 'test', true
       event.save (err)->
         # then an error is raised
-        assert.fail 'An error must be raised when saving event with unknown property' if !err
-        assert.include err?.message, 'unknown property test'
+        expect(err).to.have.property('message').that.include 'unknown property test'
         done()
 
     it 'should save failed if creation date were modified', (done) ->
       event.set 'created', new Date()
       event.save (err) ->
         # then an error is raised
-        assert.fail 'An error must be raised when saving event with modified creation date' if !err
-        assert.include err?.message, 'creation date cannot be modified'
+        expect(err).to.have.property('message').that.include 'creation date cannot be modified'
         done()
 
   describe 'given a type with object properties and several Events', -> 
@@ -275,7 +273,7 @@ describe 'Event tests', ->
       Event.findOne {content: event2.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # then linked events are replaced by their ids
-        assert.equal event.id, doc.father
+        expect(doc).to.have.property('father').that.equal event.id
         done()
 
     it 'should ids be stored for linked arrays', (done) ->
@@ -283,8 +281,8 @@ describe 'Event tests', ->
       Event.findOne {content: event.content}, (err, doc) ->
         return done "Can't find event: #{err}" if err?
         # then linked arrays are replaced by their ids
-        assert.equal doc.children.length, 1
-        assert.equal event2.id, doc.children[0]
+        expect(doc).to.have.property('children').that.has.lengthOf 1
+        expect(doc.children[0]).to.equal event2.id
         done()
 
     it 'should fetch retrieves linked objects', (done) ->
@@ -295,10 +293,12 @@ describe 'Event tests', ->
         doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
-          assert.equal event.id, doc.father.id
-          assert.equal doc.father.content, event.content
-          assert.equal doc.father.father, event.father
-          assert.equal doc.father.children[0], event.children[0]
+          expect(doc).to.have.deep.property('father.id').that.equal event.id
+          expect(doc).to.have.deep.property('father.content').that.equal event.content
+          expect(doc).to.have.deep.property('father.father').that.equal event.father
+          expect(doc).to.have.deep.property 'father.children'
+          expect(doc.father.children).to.have.lengthOf 1
+          expect(doc.father.children[0]).to.equal event.children[0]
           done()
 
     it 'should fetch retrieves linked arrays', (done) ->
@@ -309,12 +309,12 @@ describe 'Event tests', ->
         doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked events are provided
-          assert.equal doc.children.length, 1
+          expect(doc).to.have.property('children').that.has.lengthOf 1
           linked = doc.children[0]
-          assert.equal event2.id, linked.id
-          assert.equal linked.content, event2.content
-          assert.equal linked.father, event2.father
-          assert.equal linked.children.length, 0
+          expect(linked).to.have.property('id').that.equal event2.id
+          expect(linked).to.have.property('content').that.equal event2.content
+          expect(linked).to.have.property('father').that.equal event2.father
+          expect(linked).to.have.property('children').that.has.lengthOf 0
           done()
 
     it 'should fetch retrieves all properties of all objects', (done) ->
@@ -324,18 +324,20 @@ describe 'Event tests', ->
         # when resolving them
         Event.fetch docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
+          expect(docs).to.have.lengthOf 2
           # then the first event has resolved links
-          assert.equal event.id, docs[1].father.id
-          assert.equal docs[1].father.content, event.content
-          assert.equal docs[1].father.father, event.father
-          assert.equal docs[1].father.children[0].id, event.children[0]
+          expect(docs[1]).to.have.deep.property('father.id').that.equal event.id
+          expect(docs[1]).to.have.deep.property('father.content').that.equal event.content
+          expect(docs[1]).to.have.deep.property('father.father').that.equal event.father
+          expect(docs[1]).to.have.deep.property('father.children').that.has.lengthOf 1
+          expect(docs[1].father.children[0]).to.have.property('id').that.equal event.children[0]
           # then the second event has resolved links
-          assert.equal docs[0].children.length, 1
+          expect(docs[0]).to.have.property('children').that.has.lengthOf 1
           linked = docs[0].children[0]
-          assert.equal event2.id, linked.id
-          assert.equal linked.content, event2.content
-          assert.equal linked.father.id, event2.father
-          assert.equal linked.children.length, 0
+          expect(linked).to.have.property('id').that.equal event2.id
+          expect(linked).to.have.property('content').that.equal event2.content
+          expect(linked).to.have.deep.property('father.id').that.equal event2.father
+          expect(linked).to.have.property('children').that.has.lengthOf 0
           done()
 
     it 'should fetch removes null in arrays', (done) ->
@@ -347,15 +349,15 @@ describe 'Event tests', ->
         # given an unresolved events
         Event.findById event.id, (err, doc) ->
           return done "Can't find event: #{err}" if err?
-          assert.equal doc.children.length, 1
-          assert.equal utils.type(doc.children[0]), 'string'
+          expect(doc).to.have.property('children').that.has.lengthOf 1
+          expect(doc.children[0]).to.be.a 'string'
           # when resolving it
           Event.fetch [doc], (err, docs) ->
             return done "Can't resolve links: #{err}" if err?
             # then the property does not contains nulls anymore
-            assert.ok event.equals docs[0]
-            assert.equal docs[0].children.length, 1
-            assert.ok event2.equals docs[0].children[0]
+            expect(docs[0]).to.satisfy (o) -> o.equals event
+            expect(docs[0]).to.have.property('children').that.has.lengthOf 1
+            expect(docs[0].children[0]).to.satisfy (o) -> o.equals event2
             done()
 
     it 'should fetch handle circular references in properties', (done) ->
@@ -370,35 +372,35 @@ describe 'Event tests', ->
           # given an unresolved events
           Event.find _id:$in:[event.id, event2.id], (err, docs) ->
             return done "Can't find event: #{err}" if err?
-            assert.equal docs.length, 2
+            expect(docs).to.have.lengthOf 2
             # when resolving then
             Event.fetch docs, true, (err, docs) ->
               return done "Can't resolve links: #{err}" if err?
               
-              assert.equal docs.length, 2
+              expect(docs).to.have.lengthOf 2
               for doc in docs
                 if event.equals doc
                   # then the dynamic properties where resolves
-                  assert.isNull doc.father
-                  assert.equal doc.children.length, 1
-                  assert.ok event2.equals doc.children[0]
+                  expect(doc).to.have.property('father').that.is.null
+                  expect(doc).to.have.property('children').that.has.lengthOf 1
+                  expect(doc.children[0]).to.satisfy (o) -> o.equals event2
                   # then the circular dependency was broken
-                  assert.equal utils.type(doc.children[0].father), 'string'
+                  expect(doc.children[0]).to.have.property('father').that.is.a 'string'
                 else if event2.equals doc
                   # then the dynamic properties where resolves
-                  assert.ok event.equals doc.father
-                  assert.equal doc.children.length, 0
+                  expect(doc).to.have.property('father').that.satisfy (o) -> o.equals event
+                  expect(doc).to.have.property('children').that.has.lengthOf 0
                   # then the circular dependency was broken
-                  assert.equal doc.father.children.length, 1
-                  assert.equal utils.type(doc.father.children[0]), 'string'
+                  expect(doc).to.have.deep.property('father.children').that.has.lengthOf 1
+                  expect(doc.father.children[0]).to.be.a 'string'
                 else
-                  assert.fail "unkown event: #{doc}"
+                  throw new Error  "unkown event: #{doc}"
 
               # then events can be serialized
               try 
                 JSON.stringify docs
               catch err
-                assert.fail "Fail to serialize item: #{err}"
+                throw new Error "Fail to serialize item: #{err}"
               done()
 
     it 'should fetch handle circular references in from', (done) ->
@@ -413,37 +415,38 @@ describe 'Event tests', ->
            # given an unresolved events
           Event.findById event.id, (err, doc) ->
             return done "Can't find event: #{err}" if err?
-            assert.ok item.equals doc.from
-            assert.equal doc.from.chat.length, 1
-            assert.equal utils.type(doc.from.chat[0]), 'string'
+            expect(doc).to.have.property('from').that.satisfy (o) -> o.equals item
+            expect(doc).to.have.deep.property('from.chat').that.has.lengthOf 1
+            expect(doc.from.chat[0]).to.be.a 'string'
             # when resolving it
             Event.fetch [doc], true, (err, docs) ->
               return done "Can't resolve links: #{err}" if err?
               # then the proeprty were resolved
-              assert.ok item.equals docs[0].from
-              assert.equal docs[0].from.chat.length, 1
-              assert.equal utils.type(docs[0].from.chat[0]), 'string'
+              expect(docs[0]).to.have.property('from').that.satisfy (o) -> o.equals item
+              expect(docs[0]).to.have.deep.property('from.chat').that.has.lengthOf 1
+              expect(docs[0].from.chat[0]).to.be.a 'string'
 
               # given an unresolved item
               Item.findById item.id, (err, doc) ->
                 return done "Can't find item: #{err}" if err?
-                assert.ok item.equals doc
-                assert.equal doc.chat.length, 1
-                assert.equal utils.type(doc.chat[0]), 'string'
+                expect(doc).to.satisfy (o) -> o.equals item
+                expect(doc).to.have.property('chat').that.has.lengthOf 1
+                expect(doc.chat[0]).to.be.a 'string'
                 # when resolving it
                 Item.fetch [doc], true, (err, docs) ->
                   return done "Can't resolve links: #{err}" if err?
                   # then the property were resolved
-                  assert.ok item.equals docs[0]
-                  assert.equal docs[0].chat.length, 1
-                  assert.ok event.equals docs[0].chat[0]
-                  assert.ok item.equals docs[0].chat[0].from
-                  assert.equal utils.type(docs[0].chat[0].from.chat[0]), 'string'
+                  expect(docs[0]).to.satisfy (o) -> o.equals item
+                  expect(docs[0]).to.have.property('chat').that.has.lengthOf 1
+                  expect(docs[0].chat[0]).to.satisfy (o) -> o.equals event
+                  expect(docs[0].chat[0].from).to.satisfy (o) -> o.equals item
+                  expect(docs[0].chat[0].from).to.have.property('chat').that.has.lengthOf 1
+                  expect(docs[0].chat[0].from.chat[0]).to.be.a 'string'
                   # then item can be serialized
                   try 
                     JSON.stringify docs
                   catch err
-                    assert.fail "Fail to serialize item: #{err}"
+                    throw new Error "Fail to serialize item: #{err}"
                   done()
 
     it 'should modelWatcher send linked objects ids and not full objects', (done) ->
@@ -453,13 +456,13 @@ describe 'Event tests', ->
 
       # then a modification was detected on modified properties
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Event'
-        assert.equal operation, 'update'
-        assert.ok event2.equals instance
+        expect(className).to.equal 'Event'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> event2.equals o
         # then modified object ids are shipped
-        assert.equal event2.id, instance.father
-        assert.equal instance.children?.length, 1
-        assert.equal event.id, instance.children[0]
+        expect(instance).to.have.property('father').that.equal event2.id
+        expect(instance).to.have.property('children').that.has.lengthOf 1
+        expect(instance.children[0]).to.equal event.id
         awaited = true
 
       # when saving it
@@ -468,9 +471,9 @@ describe 'Event tests', ->
         return done err if err?
 
         # then the saved object has object ids instead of full objects
-        assert.ok event2.equals saved
-        assert.equal event2.id, saved.father
-        assert.equal saved.children?.length, 1
-        assert.equal event.id, saved.children[0]
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(saved).to.satisfy (o) -> event2.equals o
+        expect(saved).to.have.property('father').that.equal event2.id
+        expect(saved).to.have.property('children').that.has.lengthOf 1
+        expect(saved.children[0]).to.equal event.id
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()

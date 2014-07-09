@@ -187,8 +187,8 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           # then player model is automatically updated
           expect(player.characters).to.have.lengthOf 1
           expect(player.characters[0]).to.be.an.instanceOf Atlas.Item
-          expect(player.characters[0]).to.have.property 'id', 'john'
-          expect(player.characters[0]).to.have.property 'strength', 20
+          expect(player.characters[0]).to.have.property('id').that.equal 'john'
+          expect(player.characters[0]).to.have.property('strength').that.equal 20
           # then a modelChanged event was issued
           expect(kind).to.equal 'update'
           expect(model).to.deep.equal player
@@ -215,7 +215,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             
             # then character model is automatically updated
             expect(character.map).to.be.an.instanceOf Atlas.Map
-            expect(character.map).to.have.property 'id', 'testMap1'
+            expect(character.map).to.have.property('id').that.equal 'testMap1'
             expect(character.map).to.be.deep.equal player.characters[0].map
             expect(character.x).to.be.equal 5
             expect(character.y).to.be.equal 2
@@ -231,16 +231,16 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           return done "Failed to select events: #{err}" if err?
           expect(events).to.have.length 2
           # then default properties have been applied
-          expect(events[0]).to.have.property 'id', 'evt1'
-          expect(events[0]).to.have.property 'content', 's.o.s.'
+          expect(events[0]).to.have.property('id').that.equal 'evt1'
+          expect(events[0]).to.have.property('content').that.equal 's.o.s.'
           # then from have been populated from cache
           expect(events[0].from).to.be.an.instanceOf Atlas.Item
-          expect(events[0].from).to.have.property 'id', 'john'
-          expect(events[1]).to.have.property 'id', 'evt2'
-          expect(events[1]).to.have.property 'content', 'yeah !'
+          expect(events[0].from).to.have.property('id').that.equal 'john'
+          expect(events[1]).to.have.property('id').that.equal 'evt2'
+          expect(events[1]).to.have.property('content').that.equal 'yeah !'
           # then from have been populated from server
           expect(events[1].from).to.be.an.instanceOf Atlas.Item
-          expect(events[1].from).to.have.property 'id', 'bob'
+          expect(events[1].from).to.have.property('id').that.equal 'bob'
           Atlas.Item.findCached ['john', 'bob'], (err, items) ->
             return done "Failed to select items: #{err}" if err?
             expect(events[0].from).to.be.deep.equal items[0]
@@ -260,27 +260,27 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               expect(items).to.have.length 1
               # then item is retrieved
               expect(items[0]).to.be.an.instanceOf Atlas.Item
-              expect(items[0]).to.have.property 'id', 'tim'
-              expect(items[0]).to.have.property 'strength', 10, "tim has wrong strength"
+              expect(items[0]).to.have.property('id').that.equal 'tim'
+              expect(items[0], "tim has wrong strength").to.have.property('strength').that.equal 10
               expect(items[0].type).to.be.an.instanceOf Atlas.ItemType
-              expect(items[0].type).to.have.property 'id', 'testCharacter'
+              expect(items[0].type).to.have.property('id').that.equal 'testCharacter'
               expect(items[0]).to.have.property 'linked'
               # then item as linked array resolved
               expect(items[0].linked).to.have.length 2
               expect(items[0].linked[0]).to.be.an.instanceOf Atlas.Item
-              expect(items[0].linked[0]).to.have.property 'id', 'bob'
+              expect(items[0].linked[0]).to.have.property('id').that.equal 'bob'
               expect(items[0].linked[0].type).to.be.an.instanceOf Atlas.ItemType
-              expect(items[0].linked[0].type).to.have.property 'id', 'testCharacter'
-              expect(items[0].linked[0]).to.have.property 'strength', 10, "bob has wrong strength"
+              expect(items[0].linked[0].type).to.have.property('id').that.equal 'testCharacter'
+              expect(items[0].linked[0], "bob has wrong strength").to.have.property('strength').that.equal 10
               expect(items[0].linked[1]).to.be.an.instanceOf Atlas.Event
-              expect(items[0].linked[1]).to.have.property 'id', 'evt3'
+              expect(items[0].linked[1]).to.have.property('id').that.equal 'evt3'
               expect(items[0].linked[1].type).to.be.an.instanceOf Atlas.EventType
-              expect(items[0].linked[1].type).to.have.property 'id', 'testTalk'
-              expect(items[0].linked[1]).to.have.property 'content', 's.o.s.'
+              expect(items[0].linked[1].type).to.have.property('id').that.equal 'testTalk'
+              expect(items[0].linked[1]).to.have.property('content').that.equal 's.o.s.'
               # then linked object has their own linked object resolved
               expect(items[0].linked[1]).to.have.property 'to'
               expect(items[0].linked[1].to).to.be.an.instanceOf Atlas.Item
-              expect(items[0].linked[1].to).to.have.property 'id', 'bob'
+              expect(items[0].linked[1].to).to.have.property('id').that.equal 'bob'
               done()
 
       it 'should character linked object be changed', (done) ->
@@ -303,30 +303,30 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(item).to.exist
             # then item is retrieved
             expect(item).to.be.an.instanceOf Atlas.Item
-            expect(item).to.have.property 'id', 'tim'
+            expect(item).to.have.property('id').that.equal 'tim'
             expect(item.type).to.be.an.instanceOf Atlas.ItemType
-            expect(item.type).to.have.property 'id', 'testCharacter'
+            expect(item.type).to.have.property('id').that.equal 'testCharacter'
             expect(item).to.have.property 'linked'
             # then item as linked array resolved
             expect(item.linked).to.have.length 2
             expect(item.linked[0]).to.be.an.instanceOf Atlas.Item
-            expect(item.linked[0]).to.have.property 'id', 'bob'
+            expect(item.linked[0]).to.have.property('id').that.equal 'bob'
             expect(item.linked[0].type).to.be.an.instanceOf Atlas.ItemType
-            expect(item.linked[0].type).to.have.property 'id', 'testCharacter'
-            expect(item.linked[0]).to.have.property 'strength', 20
+            expect(item.linked[0].type).to.have.property('id').that.equal 'testCharacter'
+            expect(item.linked[0]).to.have.property('strength').that.equal 20
             expect(item.linked[1]).to.be.an.instanceOf Atlas.Event
-            expect(item.linked[1]).to.have.property 'id', 'evt3'
+            expect(item.linked[1]).to.have.property('id').that.equal 'evt3'
             expect(item.linked[1].type).to.be.an.instanceOf Atlas.EventType
-            expect(item.linked[1].type).to.have.property 'id', 'testTalk'
-            expect(item.linked[1]).to.have.property 'content', 's.o.s.'
+            expect(item.linked[1].type).to.have.property('id').that.equal 'testTalk'
+            expect(item.linked[1]).to.have.property('content').that.equal 's.o.s.'
             # then linked object has their own linked object resolved
             expect(item.linked[0]).to.have.property 'linked'
             expect(item.linked[0].linked).to.have.length 1
             expect(item.linked[0].linked[0]).to.be.an.instanceOf Atlas.Event
-            expect(item.linked[0].linked[0]).to.have.property 'id', 'evt1'
+            expect(item.linked[0].linked[0]).to.have.property('id').that.equal 'evt1'
             expect(item.linked[1]).to.have.property 'to'
             expect(item.linked[1].to).to.be.an.instanceOf Atlas.Item
-            expect(item.linked[1].to).to.have.property 'id', 'bob'
+            expect(item.linked[1].to).to.have.property('id').that.equal 'bob'
             done()
 
       it 'should map fields and items be consulted', (done) ->
@@ -344,13 +344,13 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
               expect(fields.length).to.be.least 2
               fields.sort (f1, f2) -> (f1.x or 0) - (f2.x or 0)
               expect(fields[0]).to.be.an.instanceOf Atlas.Field
-              expect(fields[0]).to.have.property 'x', 0
-              expect(fields[0]).to.have.property 'y', 0
-              expect(fields[0]).to.have.property 'typeId', 'testPlain'
+              expect(fields[0]).to.have.property('x').that.equal 0
+              expect(fields[0]).to.have.property('y').that.equal 0
+              expect(fields[0]).to.have.property('typeId').that.equal 'testPlain'
               expect(fields[1]).to.be.an.instanceOf Atlas.Field
-              expect(fields[1]).to.have.property 'x', 5
-              expect(fields[1]).to.have.property 'y', 2
-              expect(fields[1]).to.have.property 'typeId', 'testPlain'
+              expect(fields[1]).to.have.property('x').that.equal 5
+              expect(fields[1]).to.have.property('y').that.equal 2
+              expect(fields[1]).to.have.property('typeId').that.equal 'testPlain'
               # then contained items are returned
               expect(items).to.have.length 1
               expect(items[0]).to.be.an.instanceOf Atlas.Item
@@ -367,10 +367,10 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
             expect(emitter.emitted[0].args[0]).to.equal 'creation'
             expect(emitter.emitted[0].args[1]).to.be.an.instanceOf Atlas.Field
-            expect(emitter.emitted[0].args[1]).to.be.have.property 'x', 2
-            expect(emitter.emitted[0].args[1]).to.be.have.property 'y', 3
-            expect(emitter.emitted[0].args[1]).to.be.have.property 'typeId', 'testPlain'
-            expect(emitter.emitted[0].args[1]).to.be.have.property 'mapId', 'testMap1'
+            expect(emitter.emitted[0].args[1]).to.be.have.property('x').that.equal 2
+            expect(emitter.emitted[0].args[1]).to.be.have.property('y').that.equal 3
+            expect(emitter.emitted[0].args[1]).to.be.have.property('typeId').that.equal 'testPlain'
+            expect(emitter.emitted[0].args[1]).to.be.have.property('mapId').that.equal 'testMap1'
             fieldId = emitter.emitted[0].args[1].id
             emitter.emitted = []
             # when removing this field
@@ -386,11 +386,11 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
                 expect(emitter.emitted[0].type).to.be.equal 'modelChanged'
                 expect(emitter.emitted[0].args[0]).to.equal 'deletion'
                 expect(emitter.emitted[0].args[1]).to.be.an.instanceOf Atlas.Field
-                expect(emitter.emitted[0].args[1]).to.be.have.property 'id', fieldId
-                expect(emitter.emitted[0].args[1]).to.be.have.property 'x', 2
-                expect(emitter.emitted[0].args[1]).to.be.have.property 'y', 3
-                expect(emitter.emitted[0].args[1]).to.be.have.property 'typeId', 'testPlain'
-                expect(emitter.emitted[0].args[1]).to.be.have.property 'mapId', 'testMap1'
+                expect(emitter.emitted[0].args[1]).to.be.have.property('id').that.equal fieldId
+                expect(emitter.emitted[0].args[1]).to.be.have.property('x').that.equal 2
+                expect(emitter.emitted[0].args[1]).to.be.have.property('y').that.equal 3
+                expect(emitter.emitted[0].args[1]).to.be.have.property('typeId').that.equal 'testPlain'
+                expect(emitter.emitted[0].args[1]).to.be.have.property('mapId').that.equal 'testMap1'
                 done()
 
       it 'should rules be resolved for a target', (done) ->
@@ -428,8 +428,8 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(results).to.have.property 'testRule2'
             expect(results.testRule2).to.have.length 1
             expect(results.testRule2[0].target).to.be.an.instanceOf Atlas.Field
-            expect(results.testRule2[0].target).to.have.property 'x', 5
-            expect(results.testRule2[0].target).to.have.property 'y', 2
+            expect(results.testRule2[0].target).to.have.property('x').that.equal 5
+            expect(results.testRule2[0].target).to.have.property('y').that.equal 2
             done()
 
       it 'should rules be resolved for a player', (done) ->
@@ -510,7 +510,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
             expect(model).to.deep.equal character
             expect(changes).to.deep.equal ['strength']
             # then the character strength has been modified
-            expect(character).to.have.property 'strength', 21
+            expect(character).to.have.property('strength').that.equal 21
             # update raw model that have not been modified
             models.john.strength = character.strength
             done()
@@ -531,7 +531,7 @@ define ['underscore', 'atlas', 'chai', 'async'], (_, AtlasFactory, chai, async) 
           expect(model).to.deep.equal player.characters[0]
           expect(changes).to.deep.equal ['strength']
           # then the character strength has been reseted
-          expect(player.characters[0]).to.have.property 'strength', 10
+          expect(player.characters[0]).to.have.property('strength').that.equal 10
           # update raw model that have not been modified
           models.john.strength = player.characters[0].strength
           done()

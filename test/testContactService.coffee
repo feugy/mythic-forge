@@ -63,14 +63,14 @@ describe 'Contact service tests', ->
       , done
 
     it 'should performs replacement within body', (done) ->
-      template = _.template 'Yu won !\n<p>Congratulations #{player.firstName}, you won the game !</p>', 
+      template = _.template 'Yu won !\n<p>Congratulations #{player.firstName} you won the game !</p>', 
         null, 
         service._templateSettings
       
       service._makeMail players[0], template, (err, data) ->
         expect(err).not.to.exist
-        expect(data).to.have.property 'subject', 'Yu won !'
-        expect(data).to.have.property 'html', "<p>Congratulations #{players[0].firstName}, you won the game !</p>"
+        expect(data).to.have.property('subject').that.equal 'Yu won !'
+        expect(data).to.have.property('html').that.equal "<p>Congratulations #{players[0].firstName} you won the game !</p>"
         done()
 
     it 'should allow empty subjects', (done) ->
@@ -80,8 +80,8 @@ describe 'Contact service tests', ->
       
       service._makeMail players[1], template, (err, data) ->
         expect(err).not.to.exist
-        expect(data).to.have.property 'subject', ''
-        expect(data).to.have.property 'html', "<p>empty subject for #{players[1].lastName}</p>"
+        expect(data).to.have.property('subject').that.equal ''
+        expect(data).to.have.property('html').that.equal "<p>empty subject for #{players[1].lastName}</p>"
         done()
 
     it 'should allow non intentionnal empty subjects', (done) ->
@@ -91,8 +91,8 @@ describe 'Contact service tests', ->
       
       service._makeMail players[2], template, (err, data) ->
         expect(err).not.to.exist
-        expect(data).to.have.property 'subject', ''
-        expect(data).to.have.property 'html', "empty subject for #{players[2].email}"
+        expect(data).to.have.property('subject').that.equal ''
+        expect(data).to.have.property('html').that.equal "empty subject for #{players[2].email}"
         done()
 
     it 'should failed on empty body', (done) ->
@@ -120,7 +120,7 @@ describe 'Contact service tests', ->
         pollEvent recipient: players[0].email, (err, events) ->
           expect(err).not.to.exist
           expect(events).to.have.lengthOf 1
-          expect(events[0]).to.have.property 'event', 'accepted'
+          expect(events[0]).to.have.property('event').that.equal 'accepted'
           done();
 
     it 'should ignore players that have inexistant or misformated emails', (done) ->
@@ -148,7 +148,7 @@ describe 'Contact service tests', ->
             return pollEvent recipient: player.email, (err, events) ->
               expect(err).not.to.exist
               expect(events).to.have.lengthOf 1
-              expect(events[0]).to.have.property 'event', 'accepted'
+              expect(events[0]).to.have.property('event').that.equal 'accepted'
               next()
           next()
         , done

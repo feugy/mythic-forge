@@ -149,8 +149,8 @@ describe 'AdminService tests', ->
       # then the two created executables are retrieved
       expect(list).to.have.lengthOf 2
       expect(modelName).to.equal 'Executable'
-      expect(list[0]).to.have.property 'id', executables[0].id
-      expect(list[1]).to.have.property 'id', executables[1].id
+      expect(list[0]).to.have.property('id').that.equal executables[0].id
+      expect(list[1]).to.have.property('id').that.equal executables[1].id
       done()
 
   it 'should list returns maps', (done) ->
@@ -234,7 +234,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'ItemType' and operation is 'creation'
-      expect(instance).to.have.property 'id', 'itemtype3'
+      expect(instance).to.have.property('id').that.equal 'itemtype3'
       awaited = true
     watcher.on 'change', listener
 
@@ -243,7 +243,7 @@ describe 'AdminService tests', ->
       return done "Can't save itemType: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property('id').that.equal values.id
       expect(model).to.have.property('properties').that.deep.equal values.properties
 
       # then the model exists in DB
@@ -260,7 +260,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'EventType' and operation is 'creation'
-      expect(instance).to.have.property 'id', 'eventtype3'
+      expect(instance).to.have.property('id').that.equal 'eventtype3'
       awaited = true
     watcher.on 'change', listener
 
@@ -269,7 +269,7 @@ describe 'AdminService tests', ->
       return done "Can't save eventType: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property('id').that.equal values.id
       expect(model).to.have.property('properties').that.deep.equal values.properties
 
       # then the model exists in DB
@@ -286,7 +286,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'FieldType' and operation is 'creation'
-      expect(instance).to.have.property 'id', 'fieldtype3'
+      expect(instance).to.have.property('id').that.equal 'fieldtype3'
       awaited = true
     watcher.on 'change', listener
 
@@ -295,7 +295,7 @@ describe 'AdminService tests', ->
       return done "Can't save fieldType: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'id', values.id
+      expect(model).to.have.property('id').that.equal values.id
 
       # then the model exists in DB
       FieldType.findById model.id, (err, obj) ->
@@ -311,7 +311,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Executable' and operation is 'creation'
-      expect(instance).to.have.property 'id', 'rule3'
+      expect(instance).to.have.property('id').that.equal 'rule3'
       awaited = true
     watcher.on 'change', listener
 
@@ -320,8 +320,8 @@ describe 'AdminService tests', ->
       return done "Can't save executable: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'id', values.id
-      expect(model).to.have.property 'content', values.content
+      expect(model).to.have.property('id').that.equal values.id
+      expect(model).to.have.property('content').that.equal values.content
 
       # then the model exists in cache
       Executable.findCached [model.id], (err, objs) ->
@@ -360,7 +360,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Map' and operation is 'creation'
-      expect(instance).to.have.property 'id', 'map3'
+      expect(instance).to.have.property('id').that.equal 'map3'
       awaited = true
     watcher.on 'change', listener
 
@@ -369,8 +369,8 @@ describe 'AdminService tests', ->
       return done "Can't save map: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'id', values.id
-      expect(model).to.have.property 'kind', 'hexagon'
+      expect(model).to.have.property('id').that.equal values.id
+      expect(model).to.have.property('kind').that.equal 'hexagon'
 
       # then the model exists in DB
       Map.findById model.id, (err, obj) ->
@@ -386,9 +386,9 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'creation'
-      expect(instance).to.have.property 'path', values.path
+      expect(instance).to.have.property('path').that.equal values.path
       expect(instance.isFolder).to.be.false
-      expect(instance).to.have.property 'content', values.content
+      expect(instance).to.have.property('content').that.equal values.content
       awaited = true
     watcher.on 'change', listener
 
@@ -397,8 +397,8 @@ describe 'AdminService tests', ->
       return done "Can't save fsitem: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'path', values.path
-      expect(model).to.have.property 'content', values.content
+      expect(model).to.have.property('path').that.equal values.path
+      expect(model).to.have.property('content').that.equal values.content
       expect(model.isFolder).to.be.false
 
       # then the authoring servce serve this fsitem
@@ -415,7 +415,7 @@ describe 'AdminService tests', ->
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'ClientConf' and operation is 'creation'
-      expect(instance).to.have.property 'id', 'jp'
+      expect(instance).to.have.property('id').that.equal 'jp'
       awaited = true
     watcher.on 'change', listener
 
@@ -424,9 +424,9 @@ describe 'AdminService tests', ->
       return done "Can't save conf: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'id', values.id
-      expect(model).to.have.deep.property 'values.names.river', 'kawa'
-      expect(model).to.have.property 'source', values.source
+      expect(model).to.have.property('id').that.equal values.id
+      expect(model).to.have.deep.property('values.names.river').that.equal 'kawa'
+      expect(model).to.have.property('source').that.equal values.source
 
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
@@ -442,7 +442,7 @@ describe 'AdminService tests', ->
     # given an item for this type
     new Item({type: itemTypes[1]}).save (err, item) ->
       return done "Can't save item: #{err}" if err?
-      expect(item).to.have.property 'strength', 10
+      expect(item).to.have.property('strength').that.equal 10
         
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
@@ -461,9 +461,9 @@ describe 'AdminService tests', ->
         return done "Can't save itemType: #{err}" if err?
 
         # then the created values are returned
-        expect(model).to.have.property 'id', itemTypes[1].id
-        expect(model).to.have.deep.property 'properties.desc.type', 'string'
-        expect(model).to.have.deep.property 'properties.desc.def', 'to be defined'
+        expect(model).to.have.property('id').that.equal itemTypes[1].id
+        expect(model).to.have.deep.property('properties.desc.type').that.equal 'string'
+        expect(model).to.have.deep.property('properties.desc.def').that.equal 'to be defined'
 
         # then the model exists in DB
         ItemType.findById model.id, (err, obj) ->
@@ -479,7 +479,7 @@ describe 'AdminService tests', ->
             # then the instance has has only property property desc
             Item.findById item.id, (err, item) ->
               return done "Can't get item from db #{err}" if err?
-              expect(item).to.have.property 'desc', 'to be defined'
+              expect(item).to.have.property('desc').that.equal 'to be defined'
               expect(item).not.to.have.property 'strength'
               done()
 
@@ -490,7 +490,7 @@ describe 'AdminService tests', ->
     # given an event for this type
     new Event({type: eventTypes[1]}).save (err, event) ->
       return done "Can't save event: #{err}" if err?
-      expect(event).to.have.property 'content', 'hello'
+      expect(event).to.have.property('content').that.equal 'hello'
         
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
@@ -508,9 +508,9 @@ describe 'AdminService tests', ->
       service.save 'EventType', values, 'admin', (err, modelName, model) ->
         return done "Can't save eventType: #{err}" if err?
         # then the created values are returned
-        expect(eventTypes[1]).to.have.property 'id', model.id
-        expect(model).to.have.deep.property 'properties.desc.type', 'string'
-        expect(model).to.have.deep.property 'properties.desc.def', 'to be defined'
+        expect(eventTypes[1]).to.have.property('id').that.equal model.id
+        expect(model).to.have.deep.property('properties.desc.type').that.equal 'string'
+        expect(model).to.have.deep.property('properties.desc.def').that.equal 'to be defined'
 
         # then the model exists in DB
         EventType.findById model.id, (err, obj) ->
@@ -526,7 +526,7 @@ describe 'AdminService tests', ->
             # then the instance has has only property property desc
             Event.findById event.id, (err, event) ->
               return done "Can't get event from db #{err}" if err?
-              expect(event).to.have.property 'desc', 'to be defined'
+              expect(event).to.have.property('desc').that.equal 'to be defined'
               expect(event).not.to.have.property 'content'
               done()
 
@@ -547,8 +547,8 @@ describe 'AdminService tests', ->
       return done "Can't save fieldType: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(fieldTypes[1]).to.have.property 'id', model.id
-      expect(model).to.have.property 'descImage', 'to be defined'
+      expect(fieldTypes[1]).to.have.property('id').that.equal model.id
+      expect(model).to.have.property('descImage').that.equal 'to be defined'
 
       # then the model exists in DB
       FieldType.findById model.id, (err, obj) ->
@@ -571,7 +571,7 @@ describe 'AdminService tests', ->
     listener = (operation, className, instance)->
       return unless className is 'Map' and operation is 'update'
       expect(maps[0]).to.satisfy (o) -> o.equals instance
-      expect(instance).to.have.property 'kind', 'square'
+      expect(instance).to.have.property('kind').that.equal 'square'
       awaited = true
     watcher.on 'change', listener
 
@@ -580,8 +580,8 @@ describe 'AdminService tests', ->
       return done "Can't save map: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(maps[0]).to.have.property 'id', model.id
-      expect(model).to.have.property 'kind', 'square' 
+      expect(maps[0]).to.have.property('id').that.equal model.id
+      expect(model).to.have.property('kind').that.equal 'square' 
 
       # then the model exists in DB
       Map.findById model.id, (err, obj) ->
@@ -612,8 +612,8 @@ describe 'AdminService tests', ->
       return done "Can't save executable: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(executables[1]).to.have.property 'id', model.id
-      expect(model).to.have.property 'content', 'console.log("hello world 4");'
+      expect(executables[1]).to.have.property('id').that.equal model.id
+      expect(model).to.have.property('content').that.equal 'console.log("hello world 4");'
 
       # then the model exists in DB
       Executable.findCached [model.id], (err, objs) ->
@@ -630,8 +630,8 @@ describe 'AdminService tests', ->
     # then a update event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'update'
-      expect(instance).to.have.property 'path', fsItem.path
-      expect(instance).to.have.property 'content', newContent
+      expect(instance).to.have.property('path').that.equal fsItem.path
+      expect(instance).to.have.property('content').that.equal newContent
       awaited = true
     watcher.on 'change', listener
 
@@ -640,8 +640,8 @@ describe 'AdminService tests', ->
       return done "Can't save fsitem: #{err}" if err?
       # then the created values are returned
       expect(model).to.exist
-      expect(model).to.have.property 'path', fsItem.path
-      expect(model).to.have.property 'content', newContent
+      expect(model).to.have.property('path').that.equal fsItem.path
+      expect(model).to.have.property('content').that.equal newContent
       expect(model.isFolder).to.be.false
 
       # then the authoring servce serve this fsitem
@@ -649,7 +649,7 @@ describe 'AdminService tests', ->
         return done "Can't find fsitem with authoring servce #{err}" if err?
         expect(obj).to.satisfy (o) -> o.equals model
         expect(awaited, 'watcher wasn\'t invoked').to.be.true
-        expect(obj).to.have.property 'content', newContent
+        expect(obj).to.have.property('content').that.equal newContent
         done()
 
   it 'should save creates new fields', (done) ->
@@ -677,18 +677,18 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Field.findById returned[0].id, (err, obj) ->
         return done "Can't find field in db #{err}" if err?
-        expect(obj).to.have.property 'mapId', toBeSaved[1].mapId
-        expect(obj).to.have.property 'typeId', toBeSaved[1].typeId
-        expect(obj).to.have.property 'x', toBeSaved[1].x
-        expect(obj).to.have.property 'y', toBeSaved[1].y
+        expect(obj).to.have.property('mapId').that.equal toBeSaved[1].mapId
+        expect(obj).to.have.property('typeId').that.equal toBeSaved[1].typeId
+        expect(obj).to.have.property('x').that.equal toBeSaved[1].x
+        expect(obj).to.have.property('y').that.equal toBeSaved[1].y
         expect(obj).to.satisfy (o) -> o.equals returned[0]
         # then the model exists in DB
         Field.findById returned[1].id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          expect(obj).to.have.property 'mapId', toBeSaved[0].mapId
-          expect(obj).to.have.property 'typeId', toBeSaved[0].typeId
-          expect(obj).to.have.property 'x', toBeSaved[0].x
-          expect(obj).to.have.property 'y', toBeSaved[0].y
+          expect(obj).to.have.property('mapId').that.equal toBeSaved[0].mapId
+          expect(obj).to.have.property('typeId').that.equal toBeSaved[0].typeId
+          expect(obj).to.have.property('x').that.equal toBeSaved[0].x
+          expect(obj).to.have.property('y').that.equal toBeSaved[0].y
           expect(obj).to.satisfy (o) -> o.equals returned[1]
           done()
 
@@ -731,10 +731,10 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Field.findById returned[0].id, (err, obj) ->
           return done "Can't find field in db #{err}" if err?
-          expect(obj).to.have.property 'mapId', toBeSaved[1].mapId
-          expect(obj).to.have.property 'typeId', toBeSaved[1].typeId
-          expect(obj).to.have.property 'x', toBeSaved[1].x
-          expect(obj).to.have.property 'y', toBeSaved[1].y
+          expect(obj).to.have.property('mapId').that.equal toBeSaved[1].mapId
+          expect(obj).to.have.property('typeId').that.equal toBeSaved[1].typeId
+          expect(obj).to.have.property('x').that.equal toBeSaved[1].x
+          expect(obj).to.have.property('y').that.equal toBeSaved[1].y
           expect(obj).to.satisfy (o) -> o.equals returned[0]
           done()
 
@@ -769,11 +769,11 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Item.findById returned.id, (err, obj) ->
         return done "Can't find item in db #{err}" if err?
-        expect(obj).to.have.deep.property 'map._id', maps[0].id
-        expect(obj).to.have.deep.property 'type._id', itemTypes[1].id
-        expect(obj).to.have.property 'x', toBeSaved.x
-        expect(obj).to.have.property 'y', toBeSaved.y
-        expect(obj).to.have.property 'strength', toBeSaved.strength
+        expect(obj).to.have.deep.property('map._id').that.equal maps[0].id
+        expect(obj).to.have.deep.property('type._id').that.equal itemTypes[1].id
+        expect(obj).to.have.property('x').that.equal toBeSaved.x
+        expect(obj).to.have.property('y').that.equal toBeSaved.y
+        expect(obj).to.have.property('strength').that.equal toBeSaved.strength
         expect(obj).to.satisfy (o) -> o.equals returned
         done()
 
@@ -802,11 +802,11 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Item.findById returned.id, (err, obj) ->
           return done "Can't find item in db #{err}" if err?
-          expect(obj).to.have.deep.property 'map._id', maps[0].id
-          expect(obj).to.have.deep.property 'type._id', itemTypes[0].id
-          expect(obj).to.have.property 'x', toBeSaved.x
-          expect(obj).to.have.property 'y', toBeSaved.y
-          expect(obj).to.have.property 'strength', toBeSaved.strength
+          expect(obj).to.have.deep.property('map._id').that.equal maps[0].id
+          expect(obj).to.have.deep.property('type._id').that.equal itemTypes[0].id
+          expect(obj).to.have.property('x').that.equal toBeSaved.x
+          expect(obj).to.have.property('y').that.equal toBeSaved.y
+          expect(obj).to.have.property('strength').that.equal toBeSaved.strength
           expect(obj).to.satisfy (o) -> o.equals returned
           done()
 
@@ -832,8 +832,8 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Event.findById returned.id, (err, obj) ->
         return done "Can't find event in db #{err}" if err?
-        expect(obj).to.have.deep.property 'type._id', eventTypes[1].id
-        expect(obj).to.have.property 'content', toBeSaved.content
+        expect(obj).to.have.deep.property('type._id').that.equal eventTypes[1].id
+        expect(obj).to.have.property('content').that.equal toBeSaved.content
         expect(obj).to.satisfy (o) -> o.equals returned
         done()
 
@@ -862,8 +862,8 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Event.findById returned.id, (err, obj) ->
           return done "Can't find event in db #{err}" if err?
-          expect(obj).to.have.deep.property 'type._id', eventTypes[1].id
-          expect(obj).to.have.property 'content', toBeSaved.content
+          expect(obj).to.have.deep.property('type._id').that.equal eventTypes[1].id
+          expect(obj).to.have.property('content').that.equal toBeSaved.content
           expect(obj).to.satisfy (o) -> o.equals returned
           done()
 
@@ -889,9 +889,9 @@ describe 'AdminService tests', ->
       # then the model exists in DB
       Player.findById returned.id, (err, obj) ->
         return done "Can't find player in db #{err}" if err?
-        expect(obj).to.have.property 'email', toBeSaved.email
-        expect(obj).to.have.property 'provider', toBeSaved.provider
-        expect(obj).to.have.property 'isAdmin', toBeSaved.isAdmin
+        expect(obj).to.have.property('email').that.equal toBeSaved.email
+        expect(obj).to.have.property('provider').that.equal toBeSaved.provider
+        expect(obj).to.have.property('isAdmin').that.equal toBeSaved.isAdmin
         expect(obj).to.satisfy (o) -> o.equals returned
         done()
 
@@ -921,9 +921,9 @@ describe 'AdminService tests', ->
         # then the model exists in DB
         Player.findById returned.id, (err, obj) ->
           return done "Can't find player in db #{err}" if err?
-          expect(obj).to.have.property 'email', toBeSaved.email
-          expect(obj).to.have.property 'provider', toBeSaved.provider
-          expect(obj).to.have.property 'isAdmin', toBeSaved.isAdmin
+          expect(obj).to.have.property('email').that.equal toBeSaved.email
+          expect(obj).to.have.property('provider').that.equal toBeSaved.provider
+          expect(obj).to.have.property('isAdmin').that.equal toBeSaved.isAdmin
           expect(obj).to.satisfy (o) -> o.equals returned
           done()
 
@@ -947,9 +947,9 @@ describe 'AdminService tests', ->
       return done "Can't save conf: #{err}" if err?
 
       # then the created values are returned
-      expect(confs[1]).to.have.property 'id', model.id
-      expect(confs[1]).to.have.property 'source', model.source
-      expect(model).to.have.deep.property 'values.names.montain', 'montagne'
+      expect(confs[1]).to.have.property('id').that.equal model.id
+      expect(confs[1]).to.have.property('source').that.equal model.source
+      expect(model).to.have.deep.property('values.names.montain').that.equal 'montagne'
       
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
@@ -1013,7 +1013,7 @@ describe 'AdminService tests', ->
       return done "Can't remove itemType: #{err}" if err?
       # then the removed values are returned
       expect(model).to.exist
-      expect(itemTypes[1]).to.have.property 'id', model.id
+      expect(itemTypes[1]).to.have.property('id').that.equal model.id
 
       # then the model do not exists anymore in DB
       ItemType.findById model.id, (err, obj) ->
@@ -1034,7 +1034,7 @@ describe 'AdminService tests', ->
       return done "Can't remove eventType: #{err}" if err?
       # then the removed values are returned
       expect(model).to.exist
-      expect(eventTypes[1]).to.have.property 'id', model.id
+      expect(eventTypes[1]).to.have.property('id').that.equal model.id
 
       # then the model do not exists anymore in DB
       EventType.findById model.id, (err, obj) ->
@@ -1055,7 +1055,7 @@ describe 'AdminService tests', ->
       return done "Can't remove fieldType: #{err}" if err?
       # then the removed values are returned
       expect(model).to.exist
-      expect(fieldTypes[1]).to.have.property 'id', model.id
+      expect(fieldTypes[1]).to.have.property('id').that.equal model.id
 
       # then the model do not exists anymore in DB
       FieldType.findById model.id, (err, obj) ->
@@ -1076,7 +1076,7 @@ describe 'AdminService tests', ->
       return done "Can't remove executable: #{err}" if err?
       # then the removed values are returned
       expect(model).to.exist
-      expect(executables[1]).to.have.property 'id', model.id
+      expect(executables[1]).to.have.property('id').that.equal model.id
 
       # then the model do not exists anymore in DB
       Executable.findCached [model.id], (err, objs) ->
@@ -1097,7 +1097,7 @@ describe 'AdminService tests', ->
       return done "Can't remove map: #{err}" if err?
       # then the removed values are returned
       expect(model).to.exist
-      expect(maps[1]).to.have.property 'id', model.id
+      expect(maps[1]).to.have.property('id').that.equal model.id
 
       # then the model do not exists anymore in DB
       Map.findById model.id, (err, obj) ->
@@ -1304,7 +1304,7 @@ describe 'AdminService tests', ->
       return done "Can't remove conf: #{err}" if err?
       # then the removed values are returned
       expect(model).to.exist
-      expect(confs[1]).to.have.property 'id', model.id
+      expect(confs[1]).to.have.property('id').that.equal model.id
 
       # then the model do not exists anymore in DB
       ClientConf.findById model.id, (err, obj) ->
@@ -1382,7 +1382,7 @@ describe 'AdminService tests', ->
         # then player token was updated
         Player.findById player.id, (err, result) ->
           return done err if err?
-          expect(result).to.have.property 'token', token
+          expect(result).to.have.property('token').that.equal token
           done()
 
     it 'should not connect if not administrator', (done) ->

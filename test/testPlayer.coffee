@@ -24,7 +24,7 @@ typeFactory = require '../hyperion/src/model/typeFactory'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 ObjectId = require('mongodb').BSONPure.ObjectID
-assert = require('chai').assert
+{expect} = require 'chai'
 
 player = null
 item = null
@@ -59,12 +59,12 @@ describe 'Player tests', ->
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Player'
-      assert.equal operation, 'creation'
-      assert.ok player.equals instance
+      expect(className).to.equal 'Player'
+      expect(operation).to.equal 'creation'
+      expect(instance).to.satisfy (o) -> player.equals o
       # then no password nor token propagated
-      assert.isUndefined instance.password
-      assert.isUndefined instance.token
+      expect(instance).not.to.have.property 'password'
+      expect(instance).not.to.have.property 'token'
       awaited = true
 
     # when saving it
@@ -76,15 +76,15 @@ describe 'Player tests', ->
       Player.find {}, (err, docs) ->
         return done "Can't find player: #{err}" if err?
         # then it's the only one document
-        assert.equal docs.length, 1
+        expect(docs).to.have.lengthOf 1
         # then it's values were saved
-        assert.equal 'Joe', docs[0].email
-        assert.isNotNull docs[0].password
-        assert.isTrue player.checkPassword 'toto'
-        assert.equal 1, docs[0].characters.length
-        assert.isTrue docs[0].prefs.stuff
-        assert.ok item.equals docs[0].characters[0]
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(docs[0]).to.have.property('email').that.is.equal 'Joe'
+        expect(docs[0]).to.have.property('password').that.is.not.null
+        expect(player.checkPassword 'toto').to.be.true
+        expect(docs[0]).to.have.property('characters').that.has.lengthOf 1
+        expect(docs[0]).to.have.deep.property('prefs.stuff').that.is.true
+        expect(docs[0].characters[0]).to.satisfy (o) -> item.equals o
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should invalid json not be accepted in preferences', (done) ->
@@ -92,15 +92,13 @@ describe 'Player tests', ->
     awaited = false
     # when saving an invalid json preferences
     new Player({email:'Joey', prefs:'(function(){console.log("hacked !")})()'}).save (err) ->
-      assert.isDefined err
-      assert.isNotNull err
-      assert.include err.message, 'syntax error'
+      expect(err.message).to.include 'syntax error'
       # then it was not saved
       Player.find {}, (err, docs) ->
         return done "Can't find player: #{err}" if err?
         # then no document found
-        assert.equal docs.length, 0
-        assert.isFalse awaited, 'watcher was invoked'
+        expect(docs).to.have.lengthOf 0
+        expect(awaited, 'watcher was invoked').to.be.false
         done()
 
   describe 'given a Player', ->
@@ -112,16 +110,16 @@ describe 'Player tests', ->
       player.save -> done()
 
     it 'should player password be checked', (done) ->
-      assert.isFalse player.checkPassword('titi'), 'incorrect password must not pass'
-      assert.isTrue player.checkPassword(clearPassword), 'correct password must pass'
+      expect(player.checkPassword('titi'), 'incorrect password must not pass').to.be.false
+      expect(player.checkPassword(clearPassword), 'correct password must pass').to.be.true
       done()
 
     it 'should player be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Player'
-        assert.equal operation,'deletion'
-        assert.ok player.equals instance
+        expect(className).to.equal 'Player'
+        expect(operation).to.equal 'deletion'
+        expect(instance).to.satisfy (o) -> player.equals o
         awaited = true
 
       # when removing a player
@@ -131,16 +129,16 @@ describe 'Player tests', ->
         # then it's not in mongo anymore
         Player.find {}, (err, docs) ->
           return done "Can't find player: #{err}" if err?
-          assert.equal 0, docs.length
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs).to.have.lengthOf 0
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should player password be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Player'
-        assert.equal operation, 'update'
-        assert.ok player.equals instance
+        expect(className).to.equal 'Player'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> player.equals o
         awaited = true
 
       # when modifying password and saving a player
@@ -149,18 +147,18 @@ describe 'Player tests', ->
       player.save (err, saved) ->
         return done "Can't update player password: #{err}" if err?
         # then password was modified
-        assert.ok player.equals saved
-        assert.isTrue player.checkPassword 'titi'
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(saved).to.satisfy (o) -> player.equals o
+        expect(player.checkPassword 'titi').to.be.true
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
     it 'should player be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Player'
-        assert.equal operation, 'update'
-        assert.ok player.equals instance
-        assert.equal 0, instance.characters.length
+        expect(className).to.equal 'Player'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> player.equals o
+        expect(instance).to.have.property('characters').that.has.lengthOf 0
         awaited = true
 
       # when modifying and saving a player
@@ -171,11 +169,11 @@ describe 'Player tests', ->
         Player.find {}, (err, docs) ->
           return done "Can't find player: #{err}" if err?
           # then it's the only one document
-          assert.equal docs.length, 1
+          expect(docs).to.have.lengthOf 1
           # then only the relevant values were modified
-          assert.equal 'Jack', docs[0].email
-          assert.equal 0, docs[0].characters.length
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs[0]).to.have.property('email').that.is.equal 'Jack'
+          expect(docs[0]).to.have.property('characters').that.has.lengthOf 0
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should unknown characters be erased when loading', (done) ->
@@ -184,17 +182,17 @@ describe 'Player tests', ->
         return done err if err?
         Player.collection.findOne _id: player.id, (err, doc) ->
           return done err if err?
-          assert.equal doc.characters.length, 2
+          expect(doc).to.have.property('characters').that.has.lengthOf 2
 
           # when loading character
           Player.findById player.id, (err, doc) ->
             return done "Can't find player: #{err}" if err?
 
             # then only the relevant values were modified
-            assert.equal 'Jack', doc.email
+            expect(doc).to.have.property('email').that.is.equal 'Jack'
             # then the added unknown character was removed
-            assert.equal 1, doc.characters.length
-            assert.ok item.equals, doc.characters[0]
+            expect(doc).to.have.property('characters').that.has.lengthOf 1
+            expect(doc.characters[0]).to.satisfy (o) -> item.equals o
             done()
 
     it 'should unknown characters be erased when saving', (done) ->
@@ -204,13 +202,13 @@ describe 'Player tests', ->
 
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Player'
-        assert.equal operation, 'update'
-        assert.ok player.equals instance
-        assert.equal 3, instance.characters.length
-        assert.equal item.id, instance.characters[0]
-        assert.equal unknown, instance.characters[1]
-        assert.equal item.id, instance.characters[2]
+        expect(className).to.equal 'Player'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> player.equals o
+        expect(instance).to.have.property('characters').that.has.lengthOf 3
+        expect(instance.characters[0]).to.equal item.id
+        expect(instance.characters[1]).to.equal unknown
+        expect(instance.characters[2]).to.equal item.id
         awaited = true
 
       # when saving it and retrieving it
@@ -218,16 +216,16 @@ describe 'Player tests', ->
       player.save (err, saved) ->
         return done err if err?
         # then the added unknown character is still here
-        assert.equal 3, saved.characters.length
-        assert.ok item.equals saved.characters[0]
-        assert.equal unknown, saved.characters[1]
-        assert.ok item.equals saved.characters[2]
+        expect(saved).to.have.property('characters').that.has.lengthOf 3
+        expect(saved.characters[0]).to.satisfy (o) -> item.equals o
+        expect(saved.characters[1]).to.equal unknown
+        expect(saved.characters[2]).to.satisfy (o) -> item.equals o
 
         Player.findById player.id, (err, doc) ->
           return done "Can't find player: #{err}" if err?
           # then the added unknown character was removed
-          assert.equal 2, doc.characters.length
-          assert.ok item.equals doc.characters[0]
-          assert.ok item.equals doc.characters[1]
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(doc).to.have.property('characters').that.has.lengthOf 2
+          expect(doc.characters[0]).to.satisfy (o) -> item.equals o
+          expect(doc.characters[1]).to.satisfy (o) -> item.equals o
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()

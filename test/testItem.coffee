@@ -22,7 +22,7 @@ ItemType = require '../hyperion/src/model/ItemType'
 Map = require '../hyperion/src/model/Map'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-assert = require('chai').assert
+{expect} = require 'chai'
 
 item = null
 item2 = null
@@ -46,9 +46,9 @@ describe 'Item tests', ->
 
     # then a creation event was issued
     watcher.once 'change', (operation, className, instance)->
-      assert.equal className, 'Item'
-      assert.equal operation, 'creation'
-      assert.ok item.equals instance
+      expect(className).to.equal 'Item'
+      expect(operation).to.equal 'creation'
+      expect(instance).to.satisfy (o) -> item.equals o
       awaited = true
 
     # when saving it
@@ -60,11 +60,11 @@ describe 'Item tests', ->
       Item.find {}, (err, docs) ->
         return done "Can't find item: #{err}" if err?
         # then it's the only one document
-        assert.equal docs.length, 1
+        expect(docs).to.have.lengthOf 1
         # then it's values were saved
-        assert.equal docs[0].x, 10
-        assert.equal docs[0].y, -3
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(docs[0]).to.have.property('x').that.equal 10
+        expect(docs[0]).to.have.property('y').that.equal -3
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   it 'should new item have default properties values', (done) ->
@@ -73,7 +73,7 @@ describe 'Item tests', ->
     item.save (err)->
       return done "Can't save item: #{err}" if err?
       # then the default value was set
-      assert.equal item.rocks, 100
+      expect(item).to.have.property('rocks').that.equal 100
       done()
 
   describe 'given an Item', ->
@@ -85,9 +85,9 @@ describe 'Item tests', ->
     it 'should item be removed', (done) ->
       # then a removal event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Item'
-        assert.equal operation, 'deletion'
-        assert.ok item.equals instance
+        expect(className).to.equal 'Item'
+        expect(operation).to.equal 'deletion'
+        expect(instance).to.satisfy (o) -> item.equals o
         awaited = true
 
       # when removing an item
@@ -98,17 +98,17 @@ describe 'Item tests', ->
         # then it's not in mongo anymore
         Item.find {}, (err, docs) ->
           return done "Can't find item: #{err}" if err?
-          assert.equal docs.length, 0
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs).to.have.lengthOf 0
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should item be updated', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Item'
-        assert.equal operation, 'update'
-        assert.ok item.equals instance
-        assert.equal instance.x, -100
+        expect(className).to.equal 'Item'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> item.equals o
+        expect(instance).to.have.property('x').that.equal -100
         awaited = true
 
       # when modifying and saving an item
@@ -119,20 +119,20 @@ describe 'Item tests', ->
         Item.find {}, (err, docs) ->
           return done "Can't find item: #{err}" if err?
           # then it's the only one document
-          assert.equal docs.length, 1
+          expect(docs).to.have.lengthOf 1
           # then only the relevant values were modified
-          assert.equal docs[0].x, -100
-          assert.equal docs[0].y, 300
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(docs[0]).to.have.property('x').that.equal -100
+          expect(docs[0]).to.have.property('y').that.equal 300
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should dynamic property be modified', (done) ->
       # then a modification event was issued
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Item'
-        assert.equal operation, 'update'
-        assert.ok item.equals instance
-        assert.equal instance.rocks, 200
+        expect(className).to.equal 'Item'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> item.equals o
+        expect(instance).to.have.property('rocks').that.equal 200
         awaited = true
 
       # when modifying a dynamic property
@@ -145,10 +145,10 @@ describe 'Item tests', ->
         Item.findOne {_id: item.id}, (err, doc) ->
           return done "Can't find item: #{err}" if err?
           # then only the relevant values were modified
-          assert.equal doc.x, 150
-          assert.equal doc.y, 300
-          assert.equal doc.rocks, 200
-          assert.ok awaited, 'watcher wasn\'t invoked'
+          expect(doc).to.have.property('x').that.equal 150
+          expect(doc).to.have.property('y').that.equal 300
+          expect(doc).to.have.property('rocks').that.equal 200
+          expect(awaited, 'watcher wasn\'t invoked').to.be.true
           done()
 
     it 'should item cannot be saved with unknown property', (done) ->
@@ -156,8 +156,7 @@ describe 'Item tests', ->
       item.set 'test', true
       item.save (err)->
         # then an error is raised
-        assert.fail 'An error must be raised when saving item with unknown property' if !err
-        assert.ok err?.message.indexOf('unknown property test') isnt -1
+        expect(err).to.have.property('message').that.include 'unknown property test'
         done()
 
     it 'should item be removed with map', (done) ->
@@ -169,7 +168,7 @@ describe 'Item tests', ->
           return done err if err?
           Item.find {map: map.id}, (err, items) ->
             return done err if err?
-            assert.equal items.length, 1
+            expect(items).to.have.lengthOf 1
 
             changes = []
             # then only a removal event was issued
@@ -183,12 +182,12 @@ describe 'Item tests', ->
               # then items are not in mongo anymore
               Item.find {map: map.id}, (err, items) ->
                 return done err if err?
-                assert.equal items.length, 0
-                assert.equal 2, changes.length, 'watcher wasn\'t invoked'
-                assert.equal changes[0][1], 'Item'
-                assert.equal changes[0][0], 'deletion'
-                assert.equal changes[1][1], 'Map'
-                assert.equal changes[1][0], 'deletion'
+                expect(items).to.have.lengthOf 0
+                expect(changes).to.have.lengthOf 2
+                expect(changes[0][1]).to.equal 'Item'
+                expect(changes[0][0]).to.equal 'deletion'
+                expect(changes[1][1]).to.equal 'Map'
+                expect(changes[1][0]).to.equal 'deletion'
                 watcher.removeListener 'change', listener
                 done()
 
@@ -202,7 +201,7 @@ describe 'Item tests', ->
         item.save (err, saved) ->
           return done err if err?
           # then quantity is set to null
-          assert.isNull saved.quantity
+          expect(saved).to.have.property('quantity').that.is.null
           done()
 
     it 'should quantity be set on quantifiable type', (done) ->
@@ -215,13 +214,13 @@ describe 'Item tests', ->
         item.save (err, saved) ->
           return done err if err?
           # then quantity is set to relevant quantity
-          assert.equal 10, saved.quantity
+          expect(saved).to.have.property('quantity').that.equal 10
           # when setting quantity to null
           item.quantity= null
           item.save (err, saved) ->
             return done err if err?
             # then quantity is set to 0
-            assert.equal 0, saved.quantity
+            expect(saved).to.have.property('quantity').that.equal 0
             done()
 
   describe 'given a type with object properties and several Items', -> 
@@ -251,7 +250,7 @@ describe 'Item tests', ->
       Item.findOne {name: item2.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # then linked items are replaced by their ids
-        assert.equal item.id, doc.end
+        expect(doc).to.have.property('end').that.equal item.id
         done()
 
     it 'should ids be stored for linked arrays', (done) ->
@@ -259,8 +258,8 @@ describe 'Item tests', ->
       Item.findOne {name: item.name}, (err, doc) ->
         return done "Can't find item: #{err}" if err?
         # then linked arrays are replaced by their ids
-        assert.equal doc.affluents.length, 1
-        assert.equal item2.id, doc.affluents[0]
+        expect(doc).to.have.property('affluents').that.has.lengthOf 1
+        expect(doc.affluents[0]).to.equal item2.id
         done()
 
     it 'should fetch retrieves linked objects', (done) ->
@@ -271,10 +270,10 @@ describe 'Item tests', ->
         doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          assert.equal item.id, doc.end.id
-          assert.equal doc.end.name, item.name
-          assert.equal doc.end.end, item.end
-          assert.equal doc.end.affluents[0], item.affluents[0]
+          expect(doc).to.have.deep.property('end.id').that.equal item.id
+          expect(doc).to.have.deep.property('end.name').that.equal item.name
+          expect(doc).to.have.deep.property('end.end').that.equal item.end
+          expect(doc.end.affluents[0]).to.equal item.affluents[0]
           done()
 
     it 'should fetch retrieves linked arrays', (done) ->
@@ -285,12 +284,12 @@ describe 'Item tests', ->
         doc.fetch (err, doc) ->
           return done "Can't resolve links: #{err}" if err?
           # then linked items are provided
-          assert.equal doc.affluents.length, 1
+          expect(doc).to.have.property('affluents').that.has.lengthOf 1
           linked = doc.affluents[0]
-          assert.equal item2.id, linked.id
-          assert.equal linked.name, item2.name
-          assert.equal linked.end, item2.end
-          assert.equal linked.affluents.length, 0
+          expect(linked).to.have.property('id').that.equal item2.id
+          expect(linked).to.have.property('name').that.equal item2.name
+          expect(linked).to.have.property('end').that.equal item2.end
+          expect(linked).to.have.property('affluents').that.has.lengthOf 0
           done()
 
     it 'should fetch retrieves all properties of all objects', (done) ->
@@ -301,17 +300,18 @@ describe 'Item tests', ->
         Item.fetch docs, (err, docs) ->
           return done "Can't resolve links: #{err}" if err?
           # then the first item has resolved links
-          assert.equal item.id, docs[0].end.id
-          assert.equal docs[0].end.name, item.name
-          assert.equal docs[0].end.end, item.end
-          assert.equal docs[0].end.affluents[0].id, item.affluents[0]
+          expect(docs[0]).to.have.deep.property('end.id').that.equal item.id
+          expect(docs[0]).to.have.deep.property('end.name').that.equal item.name
+          expect(docs[0]).to.have.deep.property('end.end').that.equal item.end
+          expect(docs[0]).to.have.deep.property('end.affluents').that.has.lengthOf 1
+          expect(docs[0].end.affluents[0]).to.have.property('id').that.equal item.affluents[0]
           # then the second item has resolved links
-          assert.equal docs[1].affluents.length, 1
+          expect(docs[1]).to.have.property('affluents').that.has.lengthOf 1
           linked = docs[1].affluents[0]
-          assert.equal item2.id, linked.id
-          assert.equal linked.name, item2.name
-          assert.equal linked.end.id, item2.end
-          assert.equal linked.affluents.length, 0
+          expect(linked).to.have.property('id').that.equal item2.id
+          expect(linked).to.have.property('name').that.equal item2.name
+          expect(linked).to.have.deep.property('end.id').that.equal item2.end
+          expect(linked).to.have.property('affluents').that.has.lengthOf 0
           done()
 
     it 'should fetch removes null in arrays', (done) ->
@@ -323,15 +323,15 @@ describe 'Item tests', ->
         # given an unresolved item
         Item.findById item.id, (err, doc) ->
           return done "Can't find item: #{err}" if err?
-          assert.equal doc.affluents.length, 1
-          assert.equal utils.type(doc.affluents[0]), 'string'
+          expect(doc).to.have.property('affluents').that.has.lengthOf 1
+          expect(doc.affluents[0]).to.be.a 'string'
           # when resolving it
           Item.fetch [doc], (err, docs) ->
             return done "Can't resolve links: #{err}" if err?
             # then the property does not contains nulls anymore
-            assert.ok item.equals docs[0]
-            assert.equal docs[0].affluents.length, 1
-            assert.ok item2.equals docs[0].affluents[0]
+            expect(docs[0]).to.satisfy (o) -> item.equals o
+            expect(docs[0]).to.have.property('affluents').that.has.lengthOf 1
+            expect(docs[0].affluents[0]).to.satisfy (o) -> item2.equals o
             done()
 
     it 'should modelWatcher send linked objects ids and not full objects', (done) ->
@@ -341,13 +341,13 @@ describe 'Item tests', ->
 
       # then a modification was detected on modified properties
       watcher.once 'change', (operation, className, instance)->
-        assert.equal className, 'Item'
-        assert.equal operation, 'update'
-        assert.ok item2.equals instance
+        expect(className).to.equal 'Item'
+        expect(operation).to.equal 'update'
+        expect(instance).to.satisfy (o) -> item2.equals o
         # then modified object ids are shipped
-        assert.equal item2.id, instance.end
-        assert.equal instance.affluents?.length, 1
-        assert.equal item.id, instance.affluents[0]
+        expect(instance).to.have.deep.property('id').that.equal item2.end
+        expect(instance).to.have.deep.property('affluents').that.has.lengthOf 1
+        expect(instance.affluents[0]).to.equal item.id
         awaited = true
 
       # when saving it
@@ -356,11 +356,11 @@ describe 'Item tests', ->
         return done err if err?
 
         # then the saved object has object ids instead of full objects
-        assert.ok item2.equals saved
-        assert.equal item2.id, saved.end
-        assert.equal saved.affluents?.length, 1
-        assert.equal item.id, saved.affluents[0]
-        assert.ok awaited, 'watcher wasn\'t invoked'
+        expect(saved).to.satisfy (o) -> item2.equals o
+        expect(saved).to.have.deep.property('end').that.equal item2.id
+        expect(saved).to.have.deep.property('affluents').that.has.lengthOf 1
+        expect(saved.affluents[0]).to.equal item.id
+        expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
   describe 'given a type with json property', -> 
@@ -383,18 +383,18 @@ describe 'Item tests', ->
         item.name = 'crimson2'
 
         # then only name is detected as modified
-        assert.isTrue item.isModified 'name'
-        assert.isFalse item.isModified 'prefs'
+        expect(item.isModified 'name').to.be.true
+        expect(item.isModified 'prefs').to.be.false
 
         # when modifying its prefs
         item.prefs = imperium:false
 
         # then both properties are detected as modified
-        assert.isTrue item.isModified 'name'
-        assert.isTrue item.isModified 'prefs'
+        expect(item.isModified 'name').to.be.true
+        expect(item.isModified 'prefs').to.be.true
 
         item.save (err, result) ->
           return done err if err?
-          assert.equal result.name, 'crimson2'
-          assert.deepEqual result.prefs, imperium:false
+          expect(result).to.have.property('name').that.equal 'crimson2'
+          expect(result).to.have.property('prefs').that.deep.equal imperium:false
           done()

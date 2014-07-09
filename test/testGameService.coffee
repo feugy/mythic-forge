@@ -127,12 +127,12 @@ describe 'GameService tests', ->
       service.getConf 'root', null, (err, conf) ->
         return done "Can't get configuration: #{err}" if err?
         # then the configuration is returned
-        expect(conf).to.have.property 'separator', pathUtils.sep
-        expect(conf).to.have.property 'basePath', 'root/'
-        expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
-        expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
-        expect(conf).to.have.property 'gameToken', 'game.token'
-        expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
+        expect(conf).to.have.property('separator').that.equal pathUtils.sep
+        expect(conf).to.have.property('basePath').that.equal 'root/'
+        expect(conf).to.have.property('apiBaseUrl').that.equal 'http://localhost:3080'
+        expect(conf).to.have.property('imagesUrl').that.equal 'http://localhost:3080/images/'
+        expect(conf).to.have.property('gameToken').that.equal 'game.token'
+        expect(conf).to.have.property('gameUrl').that.equal 'http://localhost:3080/game'
         expect(conf).to.have.property('custom').that.is.deep.equal [1, 15]
         done()
 
@@ -147,14 +147,14 @@ describe 'GameService tests', ->
         service.getConf 'root', 'fr', (err, conf) ->
           return done "Can't get configuration: #{err}" if err?
           # then the configuration is returned
-          expect(conf).to.have.property 'separator', pathUtils.sep
-          expect(conf).to.have.property 'basePath', 'root/'
-          expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
-          expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
-          expect(conf).to.have.property 'gameToken', 'game.token'
-          expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
-          expect(conf).to.have.deep.property 'names.plain', 'plaine'
-          expect(conf).to.have.deep.property 'names.montain', 'montain'
+          expect(conf).to.have.property('separator').that.equal pathUtils.sep
+          expect(conf).to.have.property('basePath').that.equal 'root/'
+          expect(conf).to.have.property('apiBaseUrl').that.equal 'http://localhost:3080'
+          expect(conf).to.have.property('imagesUrl').that.equal 'http://localhost:3080/images/'
+          expect(conf).to.have.property('gameToken').that.equal 'game.token'
+          expect(conf).to.have.property('gameUrl').that.equal 'http://localhost:3080/game'
+          expect(conf).to.have.deep.property('names.plain').that.equal 'plaine'
+          expect(conf).to.have.deep.property('names.montain').that.equal 'montain'
           done()
 
   it 'should known sublocale configuration be accessible', (done) ->
@@ -171,16 +171,16 @@ describe 'GameService tests', ->
           service.getConf 'root', 'fr_FR', (err, conf) ->
             return done "Can't get configuration: #{err}" if err?
             # then the configuration is returned
-            expect(conf).to.have.property 'separator', pathUtils.sep
-            expect(conf).to.have.property 'basePath', 'root/'
-            expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
-            expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
-            expect(conf).to.have.property 'gameToken', 'game.token'
-            expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
-            expect(conf).to.have.deep.property 'names.plain', 'dèche'
-            expect(conf).to.have.deep.property 'names.montain', 'montagne'
-            expect(conf).to.have.deep.property 'names.river', 'river'
-            expect(conf).to.have.deep.property 'other', 'WTF'
+            expect(conf).to.have.property('separator').that.equal pathUtils.sep
+            expect(conf).to.have.property('basePath').that.equal 'root/'
+            expect(conf).to.have.property('apiBaseUrl').that.equal 'http://localhost:3080'
+            expect(conf).to.have.property('imagesUrl').that.equal 'http://localhost:3080/images/'
+            expect(conf).to.have.property('gameToken').that.equal 'game.token'
+            expect(conf).to.have.property('gameUrl').that.equal 'http://localhost:3080/game'
+            expect(conf).to.have.deep.property('names.plain').that.equal 'dèche'
+            expect(conf).to.have.deep.property('names.montain').that.equal 'montagne'
+            expect(conf).to.have.deep.property('names.river').that.equal 'river'
+            expect(conf).to.have.deep.property('other').that.equal 'WTF'
             done()
 
   it 'should unknown sublocale configuration be accessible', (done) ->
@@ -194,15 +194,15 @@ describe 'GameService tests', ->
         service.getConf 'root', 'fr_BE', (err, conf) ->
           return done "Can't get configuration: #{err}" if err?
           # then the configuration is returned
-          expect(conf).to.have.property 'separator', pathUtils.sep
-          expect(conf).to.have.property 'basePath', 'root/'
-          expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
-          expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
-          expect(conf).to.have.property 'gameToken', 'game.token'
-          expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
-          expect(conf).to.have.deep.property 'names.plain', 'plaine'
-          expect(conf).to.have.deep.property 'names.montain', 'montagne'
-          expect(conf).to.have.deep.property 'names.river', 'river'
+          expect(conf).to.have.property('separator').that.equal pathUtils.sep
+          expect(conf).to.have.property('basePath').that.equal 'root/'
+          expect(conf).to.have.property('apiBaseUrl').that.equal 'http://localhost:3080'
+          expect(conf).to.have.property('imagesUrl').that.equal 'http://localhost:3080/images/'
+          expect(conf).to.have.property('gameToken').that.equal 'game.token'
+          expect(conf).to.have.property('gameUrl').that.equal 'http://localhost:3080/game'
+          expect(conf).to.have.deep.property('names.plain').that.equal 'plaine'
+          expect(conf).to.have.deep.property('names.montain').that.equal 'montagne'
+          expect(conf).to.have.deep.property('names.river').that.equal 'river'
           done()
 
   it 'should unknown locale configuration be accessible', (done) ->
@@ -213,13 +213,13 @@ describe 'GameService tests', ->
       service.getConf 'root', 'en', (err, conf) ->
         return done "Can't get configuration: #{err}" if err?
         # then the configuration is returned
-        expect(conf).to.have.property 'separator', pathUtils.sep
-        expect(conf).to.have.property 'basePath', 'root/'
-        expect(conf).to.have.property 'apiBaseUrl', 'http://localhost:3080'
-        expect(conf).to.have.property 'imagesUrl', 'http://localhost:3080/images/'
-        expect(conf).to.have.property 'gameToken', 'game.token'
-        expect(conf).to.have.property 'gameUrl', 'http://localhost:3080/game'
-        expect(conf).to.have.deep.property 'names.plain', 'plain'
+        expect(conf).to.have.property('separator').that.equal pathUtils.sep
+        expect(conf).to.have.property('basePath').that.equal 'root/'
+        expect(conf).to.have.property('apiBaseUrl').that.equal 'http://localhost:3080'
+        expect(conf).to.have.property('imagesUrl').that.equal 'http://localhost:3080/images/'
+        expect(conf).to.have.property('gameToken').that.equal 'game.token'
+        expect(conf).to.have.property('gameUrl').that.equal 'http://localhost:3080/game'
+        expect(conf).to.have.deep.property('names.plain').that.equal 'plain'
         done()
 
   it 'should invalid yaml not be accepted in configuration', (done) ->
@@ -258,22 +258,22 @@ describe 'GameService tests', ->
         expect(players).to.have.lengthOf 2
 
         # then players data are available
-        expect(players[0]).to.have.property 'email', 'james'
-        expect(players[0]).to.have.property 'firstName', 'Dean'
-        expect(players[0]).to.have.property 'lastName', 'James'
+        expect(players[0]).to.have.property('email').that.equal 'james'
+        expect(players[0]).to.have.property('firstName').that.equal 'Dean'
+        expect(players[0]).to.have.property('lastName').that.equal 'James'
         expect(players[0]).to.have.property('lastConnection').that.is.instanceOf Date
-        expect(players[0]).to.have.property 'connected', true
+        expect(players[0]).to.have.property('connected').that.equal true
         expect(players[0]).not.to.have.property 'password'
         expect(players[0]).not.to.have.property 'characters'
         expect(players[0]).not.to.have.property 'token'
         expect(players[0]).not.to.have.property 'prefs'
         expect(players[0]).not.to.have.property 'key'
 
-        expect(players[1]).to.have.property 'email', 'mm'
-        expect(players[1]).to.have.property 'firstName', 'Monroe'
-        expect(players[1]).to.have.property 'lastName', 'Marylin'
+        expect(players[1]).to.have.property('email').that.equal 'mm'
+        expect(players[1]).to.have.property('firstName').that.equal 'Monroe'
+        expect(players[1]).to.have.property('lastName').that.equal 'Marylin'
         expect(players[1]).to.have.property('lastConnection').that.is.instanceOf Date
-        expect(players[1]).to.have.property 'connected', false
+        expect(players[1]).to.have.property('connected').that.equal false
         expect(players[1]).not.to.have.property 'password'
         expect(players[1]).not.to.have.property 'characters'
         expect(players[1]).not.to.have.property 'token'

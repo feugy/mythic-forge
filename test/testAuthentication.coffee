@@ -24,7 +24,7 @@ Player = require '../hyperion/src/model/Player'
 utils = require '../hyperion/src/util/common'
 request = require('request').defaults jar:true
 parseUrl = require('url').parse
-assert = require('chai').assert
+{expect} = require 'chai'
 
 port = utils.confKey 'server.apiPort'
 staticPort = utils.confKey 'server.staticPort'
@@ -59,9 +59,9 @@ describe 'Authentication tests', ->
         request "#{rootUrl}/auth/twitter", (err, res, body) ->
           return done err if err?
           # then the twitter authentication page is displayed
-          assert.equal 'api.twitter.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-          assert.ok -1 != body.indexOf('id="username_or_email"'), 'No email found in response'
-          assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+          expect(res).to.have.deep.property('request.uri.host').that.equal 'api.twitter.com'
+          expect(body, 'No email found in response').to.include 'id="username_or_email"'
+          expect(body, 'No password found in response').to.include 'id="password"'
 
           # forge form to log-in
           form = 
@@ -84,16 +84,16 @@ describe 'Authentication tests', ->
               return done err if err?
 
               # then the success page is displayed
-              assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+              expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
               token = parseUrl(res.request.uri.href).query.replace 'token=', ''
-              assert.isNotNull token
+              expect(token).to.exist
               # then account has been created and populated
               Player.findOne {email:twitterUser}, (err, saved) ->
                 return done "Failed to find created account in db: #{err}" if err? or !saved?
-                assert.equal saved.firstName, 'Bauer'
-                assert.equal saved.lastName, 'Jack'
-                assert.equal saved.token, token
-                assert.isNotNull saved.lastConnection
+                expect(saved).to.have.property('firstName').that.equal 'Bauer'
+                expect(saved).to.have.property('lastName').that.equal 'Jack'
+                expect(saved).to.have.property('token').that.equal token
+                expect(saved).to.have.property 'lastConnection'
                 lastConnection = saved.lastConnection
                 done()   
 
@@ -104,8 +104,8 @@ describe 'Authentication tests', ->
         request "#{rootUrl}/auth/twitter", (err, res, body) ->
           return done "Failed to be redirected on twitter page: #{err}" if err?
           # then the twitter temporary page is displayed
-          assert.equal 'api.twitter.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-          assert.include body, 'auth/twitter/callback?oauth_token', "Twitter user is not logged-in"
+          expect(res).to.have.deep.property('request.uri.host').that.equal 'api.twitter.com'
+          expect(body, "Twitter user is not logged-in").to.include 'auth/twitter/callback?oauth_token'
 
           # manually follow redirection to localhost
           redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
@@ -113,17 +113,17 @@ describe 'Authentication tests', ->
             return done "Failed to be redirected on localhost target page: #{err}" if err?
 
             # then the success page is displayed
-            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
             token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-            assert.isNotNull token2
-            assert.notEqual token2, token
+            expect(token2).to.exist
+            expect(token2).not.to.equal token
             token = token2
             # then account has been updated with new token
             Player.findOne {email:twitterUser}, (err, saved) ->
               return done "Failed to find created account in db: #{err}" if err?
-              assert.equal saved.token, token2
-              assert.isNotNull saved.lastConnection
-              assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+              expect(saved).to.have.property('token').that.equal token2
+              expect(saved).to.have.property 'lastConnection'
+              expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
               done()    
 
       it 'should existing Twitter user be authenticated after log-in', (done) ->
@@ -145,9 +145,9 @@ describe 'Authentication tests', ->
             request "#{rootUrl}/auth/twitter", (err, res, body) ->
               return done err if err?
               # then the twitter authentication page is displayed
-              assert.equal 'api.twitter.com', res.request.uri.host, "Wrong host: #{res.request.uri.host}"
-              assert.ok -1 != body.indexOf('id="username_or_email"'), 'No email found in response'
-              assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+              expect(res).to.have.deep.property('request.uri.host').that.equal 'api.twitter.com'
+              expect(body, 'No email found in response').to.include 'id="username_or_email"'
+              expect(body, 'No password found in response').to.include 'id="password"'
 
               # forge form to log-in
               form = 
@@ -171,16 +171,16 @@ describe 'Authentication tests', ->
                   return done err if err?
 
                   # then the success page is displayed
-                  assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                  expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
                   token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                  assert.isNotNull token2
-                  assert.notEqual token2, token
+                  expect(token2).to.exist
+                  expect(token2).not.to.equal token
                   # then account has been updated with new token
                   Player.findOne {email:twitterUser}, (err, saved) ->
                     return done "Failed to find created account in db: #{err}" if err?
-                    assert.equal saved.token, token2
-                    assert.isNotNull saved.lastConnection
-                    assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                    expect(saved).to.have.property('token').that.equal token2
+                    expect(saved).to.have.property 'lastConnection'
+                    expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
                     done()
 
     # Do not test on Travis, because Google get's mad on VM's Ip
@@ -198,9 +198,9 @@ describe 'Authentication tests', ->
             return done err if err?
 
             # then the google authentication page is displayed
-            assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
-            assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
-            assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
+            expect(res).to.have.deep.property('request.uri.host').that.equal 'accounts.google.com'
+            expect(body, 'No email found in response').to.include 'id="Email"'
+            expect(body, 'No password found in response').to.include 'id="Passwd"'
 
             # forge form to log-in
             form = 
@@ -244,17 +244,17 @@ describe 'Authentication tests', ->
                   return done err if err?
 
                   # then the success page is displayed
-                  assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                  expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
                   token = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                  assert.isNotNull token
+                  expect(token).to.exist
 
                   # then account has been created and populated
                   Player.findOne {email:googleUser}, (err, saved) ->
                     return done "Failed to find created account in db: #{err}" if err? or saved is null
-                    assert.equal saved.firstName, 'John'
-                    assert.equal saved.lastName, 'Doe'
-                    assert.equal saved.token, token, 'wrong token'
-                    assert.isNotNull saved.lastConnection
+                    expect(saved).to.have.property('firstName').that.equal 'John'
+                    expect(saved).to.have.property('lastName').that.equal 'Doe'
+                    expect(saved).to.have.property('token').that.equal token
+                    expect(saved).to.have.property 'lastConnection'
                     lastConnection = saved.lastConnection
                     done()     
 
@@ -266,18 +266,18 @@ describe 'Authentication tests', ->
             request "#{rootUrl}/auth/google", (err, res, body) ->
               return done err if err?
               # then the success page is displayed
-              assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-              assert.ok -1 is JSON.stringify(body).indexOf('Invalid Credentials'), "Wrong credentials during authentication"
+              expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
+              expect(JSON.stringify(body), "Wrong credentials during authentication").not.to.include 'Invalid Credentials'
               token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-              assert.isNotNull token2
-              assert.notEqual token2, token
+              expect(token2).to.exist
+              expect(token2).not.to.equal token
               token = token2
               # then account has been updated with new token
               Player.findOne {email:googleUser}, (err, saved) ->
                 return done "Failed to find created account in db: #{err}" if err?
-                assert.equal saved.token, token2, 'wrong token'
-                assert.isNotNull saved.lastConnection
-                assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                expect(saved).to.have.property('token').that.equal token2
+                expect(saved).to.have.property 'lastConnection'
+                expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
                 done()  
           , 500  
 
@@ -292,9 +292,9 @@ describe 'Authentication tests', ->
             request "#{rootUrl}/auth/google", (err, res, body) ->
               return done err if err?
               # then the google authentication page is displayed
-              assert.equal res.request.uri.host, 'accounts.google.com', "Wrong host: #{res.request.uri.host}"
-              assert.ok -1 != body.indexOf('id="Email"'), 'No email found in response'
-              assert.ok -1 != body.indexOf('id="Passwd"'), 'No password found in response'
+              expect(res).to.have.deep.property('request.uri.host').that.equal 'accounts.google.com'
+              expect(body, 'No email found in response').to.include 'id="Email"'
+              expect(body, 'No password found in response').to.include 'id="Passwd"'
 
               # forge form to log-in
               form = 
@@ -322,16 +322,16 @@ describe 'Authentication tests', ->
                   return done err if err?
 
                   # then the success page is displayed
-                  assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                  expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
                   token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                  assert.isNotNull token2
-                  assert.notEqual token2, token
+                  expect(token2).to.exist
+                  expect(token2).not.to.equal token
                   # then account has been updated with new token
                   Player.findOne {email:googleUser}, (err, saved) ->
                     return done "Failed to find created account in db: #{err}" if err?
-                    assert.equal saved.token, token2
-                    assert.isNotNull saved.lastConnection
-                    assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                    expect(saved).to.have.property('token').that.equal token2
+                    expect(saved).to.have.property 'lastConnection'
+                    expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
                     done()
 
     describe 'given a Github account', ->
@@ -346,9 +346,9 @@ describe 'Authentication tests', ->
         request "#{rootUrl}/auth/github", (err, res, body) ->
           return done err if err?
           # then the github authentication page is displayed
-          assert.equal res.request.uri.host, 'github.com', "Wrong host: #{res.request.uri.host}"
-          assert.ok -1 != body.indexOf('id="login_field"'), 'No login found in response'
-          assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+          expect(res).to.have.deep.property('request.uri.host').that.equal 'github.com'
+          expect(body, 'No login found in response').to.include 'id="login_field"'
+          expect(body, 'No password found in response').to.include 'id="password"'
 
           # forge form to log-in
           form = 
@@ -368,18 +368,18 @@ describe 'Authentication tests', ->
             return done err if err?
 
             # then the success page is displayed
-            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+            expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
             token = parseUrl(res.request.uri.href).query.replace 'token=', ''
-            assert.isNotNull token
+            expect(token).to.exist
 
             # then account has been created and populated
             Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
               return done "Failed to find created account in db: #{err}" if err? or saved is null
-              assert.isUndefined saved.firstName, 
-              assert.isDefined saved.id
-              assert.equal saved.lastName, 'mythic-forge-test'
-              assert.equal saved.token, token, 'wrong token'
-              assert.isNotNull saved.lastConnection
+              expect(saved).not.to.have.property 'firstName'
+              expect(saved).to.have.property 'id'
+              expect(saved).to.have.property('lastName').that.equal 'mythic-forge-test'
+              expect(saved).to.have.property('token').that.equal token
+              expect(saved).to.have.property 'lastConnection'
               lastConnection = saved.lastConnection
               done()
 
@@ -391,18 +391,18 @@ describe 'Authentication tests', ->
           request "#{rootUrl}/auth/github", (err, res, body) ->
             return done err if err?
             # then the success page is displayed
-            assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
-            assert.ok -1 is JSON.stringify(body).indexOf('Invalid Credentials'), "Wrong credentials during authentication"
+            expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
+            expect(JSON.stringify(body), "Wrong credentials during authentication").not.to.include 'Invalid Credentials'
             token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-            assert.isNotNull token2
-            assert.notEqual token2, token
+            expect(token2).to.exist
+            expect(token2).not.to.equal token
             token = token2
             # then account has been updated with new token
             Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
               return done "Failed to find created account in db: #{err}" if err?
-              assert.equal saved.token, token2, 'wrong token'
-              assert.isNotNull saved.lastConnection
-              assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+              expect(saved).to.have.property('token').that.equal token2
+              expect(saved).to.have.property 'lastConnection'
+              expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
               done()  
         , 500  
 
@@ -425,9 +425,9 @@ describe 'Authentication tests', ->
             request "#{rootUrl}/auth/github", (err, res, body) ->
               return done err if err?
               # then the github authentication page is displayed
-              assert.equal res.request.uri.host, 'github.com', "Wrong host: #{res.request.uri.host}"
-              assert.ok -1 != body.indexOf('id="login_field"'), 'No login found in response'
-              assert.ok -1 != body.indexOf('id="password"'), 'No password found in response'
+              expect(res).to.have.deep.property('request.uri.host').that.equal 'github.com'
+              expect(body, 'No login found in response').to.include 'id="login_field"'
+              expect(body, 'No password found in response').to.include 'id="password"'
 
               # forge form to log-in
               form = 
@@ -447,17 +447,17 @@ describe 'Authentication tests', ->
                 return done err if err?
 
                 # then the success page is displayed
-                assert.equal res.request.uri.host, "localhost:#{staticPort}", "Wrong host: #{res.request.uri.host}"
+                expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
                 token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                assert.isNotNull token2
-                assert.notEqual token2, token
+                expect(token2).to.exist
+                expect(token2).not.to.equal token
 
                 # then account has been created and populated
                 Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
                   return done "Failed to find created account in db: #{err}" if err? or saved is null
-                  assert.equal saved.token, token2, 'wrong token'
-                  assert.isNotNull saved.lastConnection
-                  assert.notEqual lastConnection.getTime(), saved.lastConnection.getTime()
+                  expect(saved).to.have.property('token').that.equal token2
+                  expect(saved).to.have.property 'lastConnection'
+                  expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
                   done()
 
     describe 'given a manually created player', ->
@@ -487,15 +487,15 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 is url.query.indexOf('error='), "Unexpected server error: #{url.query}"
+          expect(url.host).to.equal "localhost:#{staticPort}"
+          expect(url.query, "Unexpected server error: #{url.query}").not.to.include 'error='
           token = url.query.replace 'token=', ''
-          assert.isNotNull token
+          expect(token).to.exist
           # then account has been populated with new token
           Player.findOne {email:player.email}, (err, saved) ->
             return done "Failed to find created account in db: #{err}" if err?
-            assert.equal saved.token, token
-            assert.isNotNull saved.lastConnection
+            expect(saved).to.have.property('token').that.equal token
+            expect(saved).to.have.property 'lastConnection'
             lastConnection = saved.lastConnection
             done()   
 
@@ -512,8 +512,8 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 isnt url.query.indexOf('wrongCredentials'), "unexpected error #{url.query}"
+          expect(url.host).to.equal "localhost:#{staticPort}"
+          expect(url.query, "unexpected error #{url.query}").to.include 'wrongCredentials'
           done()   
 
       it 'should unknown user not be authenticated', (done) ->
@@ -529,8 +529,8 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 isnt url.query.indexOf('wrongCredentials'), "unexpected error #{url.query}"
+          expect(url.host).to.equal "localhost:#{staticPort}"
+          expect(url.query).to.include 'wrongCredentials'
           done()   
 
       it 'should user not be authenticated without password', (done) ->
@@ -545,6 +545,6 @@ describe 'Authentication tests', ->
           return done err if err?
           # then the success page is displayed
           url = parseUrl res.headers.location
-          assert.equal url.host, "localhost:#{staticPort}", "Wrong host: #{url.host}"
-          assert.ok -1 isnt url.query.indexOf('missingCredentials'), "unexpected error #{url.query}"
+          expect(url.host).to.equal "localhost:#{staticPort}"
+          expect(url.query, "unexpected error #{url.query}").to.include 'missingCredentials'
           done()  

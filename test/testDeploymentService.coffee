@@ -28,7 +28,7 @@ utils = require '../hyperion/src/util/common'
 front = require '../hyperion/src/web/front'
 Phantom = require 'phantom-proxy'
 git = require 'gift'
-assert = require('chai').assert
+{expect} = require 'chai'
 service = require('../hyperion/src/service/DeployementService').get()
 authoringService = require('../hyperion/src/service/AuthoringService').get()
 versionService = require('../hyperion/src/service/VersionService').get()
@@ -58,7 +58,8 @@ describe 'Deployement tests', ->
       return unless event is 'deployement'
       notifications.push type
       # then notifications are received in the right order
-      assert.equal number, notifications.length, 'unexpected notification number' unless type.match /FAILED$/
+      unless type.match /FAILED$/
+        expect(notifications).to.have.lengthOf number 
     done()
 
   afterEach (done) ->
@@ -97,10 +98,9 @@ describe 'Deployement tests', ->
         # when optimizing the game client
         service.deploy version, 'admin', (err) ->
           # then an error is reported
-          assert.isNotNull err
-          assert.include err, "46:23: error: unexpected '_showTemplate'", "Unexpected error: #{err}"
+          expect(err).to.include "46:23: error: unexpected '_showTemplate'"
           # then notifications were properly received
-          assert.deepEqual notifications, [
+          expect(notifications).to.deep.equal [
             'DEPLOY_START'
             'COMPILE_STYLUS'
             'COMPILE_COFFEE'
@@ -116,10 +116,9 @@ describe 'Deployement tests', ->
         # when optimizing the game client
         service.deploy version, 'admin', (err) ->
           # then an error is reported
-          assert.isNotNull err
-          assert.include err, "@import 'unexisting'", "Unexpected error: #{err}"
+          expect(err).to.include "@import 'unexisting'"
           # then notifications were properly received
-          assert.deepEqual notifications, [
+          expect(notifications).to.deep.equal [
             'DEPLOY_START'
             'COMPILE_STYLUS'
             'DEPLOY_FAILED'
@@ -134,10 +133,9 @@ describe 'Deployement tests', ->
         # when optimizing the game client
         service.deploy version, 'admin', (err) ->
           # then an error is reported
-          assert.isNotNull err
-          assert.include err, 'no html page including requirejs found', "Unexpected error: #{err}"
+          expect(err).to.include 'no html page including requirejs found'
           # then notifications were properly received
-          assert.deepEqual notifications, [
+          expect(notifications).to.deep.equal [
             'DEPLOY_START'
             'COMPILE_STYLUS'
             'COMPILE_COFFEE'
@@ -154,10 +152,9 @@ describe 'Deployement tests', ->
         # when optimizing the game client
         service.deploy version, 'admin', (err) ->
           # then an error is reported
-          assert.isNotNull err
-          assert.include err, 'no html page including requirejs found', "Unexpected error: #{err}"
+          expect(err).to.include 'no html page including requirejs found'
           # then notifications were properly received
-          assert.deepEqual notifications, [
+          expect(notifications).to.deep.equal [
             'DEPLOY_START'
             'COMPILE_STYLUS'
             'COMPILE_COFFEE'
@@ -178,10 +175,9 @@ describe 'Deployement tests', ->
           # when optimizing the game client
           service.deploy version, 'admin', (err) ->
             # then an error is reported
-            assert.isNotNull err
-            assert.include err, 'optimized.out\\js\\backbone.js', "Unexpected error: #{err}"
+            expect(err).to.include 'optimized.out\\js\\backbone.js'
             # then notifications were properly received
-            assert.deepEqual notifications, [
+            expect(notifications).to.deep.equal [
               'DEPLOY_START'
               'COMPILE_STYLUS'
               'COMPILE_COFFEE'
@@ -198,10 +194,9 @@ describe 'Deployement tests', ->
         # when optimizing the game client
         service.deploy version, 'admin', (err) ->
           # then an error is reported
-          assert.isNotNull err
-          assert.include err, 'no requirejs configuration file found', "Unexpected error: #{err}"
+          expect(err).to.include 'no requirejs configuration file found'
           # then notifications were properly received
-          assert.deepEqual notifications, [
+          expect(notifications).to.deep.equal [
             'DEPLOY_START'
             'COMPILE_STYLUS'
             'COMPILE_COFFEE'
@@ -231,8 +226,8 @@ describe 'Deployement tests', ->
     it 'should no version be registerd', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.isNull state?.current
-        assert.equal 0, state?.versions?.length
+        expect(state).to.have.property('current').that.is.null
+        expect(state).to.have.property('versions').that.have.lengthOf 0
         done()
 
     it 'should file be correctly compiled and deployed', (done) ->
@@ -241,7 +236,7 @@ describe 'Deployement tests', ->
       service.deploy version, 'admin', (err) ->
         return done "Failed to deploy valid client: #{err}" if err?
         # then notifications were properly received
-        assert.deepEqual notifications, [
+        expect(notifications).to.deep.equal [
           'DEPLOY_START'
           'COMPILE_STYLUS'
           'COMPILE_COFFEE'
@@ -260,8 +255,8 @@ describe 'Deployement tests', ->
               browser.evaluate ->
                 $('body').text().trim()
               , (body) ->
-                assert.include body, version
-                assert.include body, 'Edition du monde'
+                expect(body).to.include version
+                expect(body).to.include 'Edition du monde'
                 done()
 
     it 'should deploy, save, remove, move and restoreVersion be disabled while deploying', (done) ->
@@ -274,9 +269,8 @@ describe 'Deployement tests', ->
       ], (spec, next) ->
         # when invoking the medhod
         spec.args.push (err) ->
-          assert.isDefined err
-          assert.include err, ' in progress', "unexpected error #{err}"
-          assert.include err, version, "unexpected error #{err}"
+          expect(err).to.include ' in progress'
+          expect(err).to.include version
           next()
         spec.service[spec.method].apply spec.service, spec.args
       , done
@@ -284,11 +278,11 @@ describe 'Deployement tests', ->
     it 'should state indicates deploy by admin from no version', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.equal state?.author, 'admin'
-        assert.equal state?.deployed, version
-        assert.isFalse state?.inProgress
-        assert.isNull state?.current
-        assert.deepEqual state?.versions, []
+        expect(state).to.have.property('author').that.equal 'admin'
+        expect(state).to.have.property('deployed').that.equal version
+        expect(state).to.have.property('inProgress').that.equal false
+        expect(state).to.have.property('current').that.is.null
+        expect(state).to.have.property('versions').that.is.deep.equal []
         done()
 
     it 'should no other author commit or rollback', (done) ->
@@ -296,8 +290,7 @@ describe 'Deployement tests', ->
         # when invoking the medhod
         service[method.toLowerCase()] 'admin2', (err) ->
           # then error is throwned
-          assert.isDefined err
-          assert.equal err, "#{method} can only be performed be deployement author admin", "unexpected error #{err}"
+          expect(err).to.include "#{method} can only be performed be deployement author admin"
           next()
       , done
 
@@ -308,28 +301,28 @@ describe 'Deployement tests', ->
       service.commit 'admin', (err) ->
         return done "Failed to commit deployement: #{err}" if err?
         # then notifications were properly received
-        assert.deepEqual notifications, ['COMMIT_START', 'VERSION_CREATED', 'COMMIT_END']
+        expect(notifications).to.deep.equal ['COMMIT_START', 'VERSION_CREATED', 'COMMIT_END']
 
         # then a git version was created
         versionService.repo.tags (err, tags) ->
           return done "Failed to consult tags: #{err}" if err?
-          assert.equal 1, tags.length
-          assert.equal tags[0].name, version
+          expect(tags).to.have.lengthOf 1
+          expect(tags[0]).to.have.property('name').that.equal version
 
           # then no more save folder exists
           save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
           fs.exists save, (exists) ->
-            assert.isFalse exists, "#{save} still exists"
+            expect(exists).to.be.false
             done()
 
     it 'should state indicates no deployement from version 1.0.0', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.isNull state?.author
-        assert.isNull state?.deployed
-        assert.isFalse state?.inProgress
-        assert.deepEqual state?.versions, [version]
-        assert.equal state?.current, version
+        expect(state).to.have.property('author').that.is.null
+        expect(state).to.have.property('deployed').that.is.null
+        expect(state).to.have.property('inProgress').that.equal false
+        expect(state).to.have.property('versions').that.is.deep.equal [version]
+        expect(state).to.have.property('current').that.equal version
         done()
 
     it 'should commit and rollback not invokable outside deploy', (done) ->
@@ -337,15 +330,13 @@ describe 'Deployement tests', ->
         # when invoking the medhod
         service[method.toLowerCase()] 'admin', (err) ->
           # then error is throwned
-          assert.isDefined err
-          assert.equal err, "#{method} can only be performed after deploy", "unexpected error #{err}"
+          expect(err).to.include "#{method} can only be performed after deploy"
           next()
       , done
 
     it 'should version not be reused', (done) ->
       service.deploy version, 'admin', (err) ->
-        assert.isDefined err
-        assert.equal err, "Version #{version} already used", "unexpected error #{err}"
+        expect(err).to.include "Version #{version} already used"
         done()
 
     version2 = '2.0.0'
@@ -374,8 +365,8 @@ describe 'Deployement tests', ->
                     browser.evaluate ->
                       $('body').text().trim()
                     , (body) ->
-                      assert.include body, version2
-                      assert.include body, 'Edition du monde 2'
+                      expect(body).to.include version2
+                      expect(body).to.include 'Edition du monde 2'
                       # then the deployement can be commited
                       notifications = []
                       service.commit 'admin', done
@@ -383,11 +374,11 @@ describe 'Deployement tests', ->
     it 'should state indicates no deployement from version 2.0.0', (done) ->
       service.deployementState (err, state) ->
         return done err if err?
-        assert.isNull state?.author
-        assert.isNull state?.deployed
-        assert.isFalse state?.inProgress
-        assert.deepEqual state?.versions, [version2, version]
-        assert.equal state?.current, version2
+        expect(state).to.have.property('author').that.is.null
+        expect(state).to.have.property('deployed').that.is.null
+        expect(state).to.have.property('inProgress').that.equal false
+        expect(state).to.have.property('versions').that.is.deep.equal [version2, version]
+        expect(state).to.have.property('current').that.equal version2
         done()
 
     it 'should previous version be restored', (done) ->
@@ -398,26 +389,26 @@ describe 'Deployement tests', ->
         # then file common.coffee was restored
         fs.readFile pathUtils.join(__dirname, 'fixtures', 'working-client', 'nls', 'common.coffee'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
-            assert.equal content, originalContent, 'Version was not restored'
+            expect(content, 'Version was not restored').to.equal originalContent 
 
             # then test executable is there and not test2
             fs.readFile pathUtils.join(exeRoot, 'test.coffee'), (err, content) ->
-              assert.isNull err, "test executable was not restored"
-              assert.equal content.toString(), 'msg = "hello world"'
+              expect(err).not.to.exist
+              expect(content.toString()).to.equal 'msg = "hello world"' 
 
-              assert.isFalse fs.existsSync pathUtils.join exeRoot, 'test2.coffee'
+              expect(fs.existsSync pathUtils.join exeRoot, 'test2.coffee').to.be.false
 
               # then notifications were properly received
-              assert.deepEqual notifications, ['VERSION_RESTORED']
+              expect(notifications).to.deep.equal ['VERSION_RESTORED']
               
               # then version is now version 1
               service.deployementState (err, state) ->
                 return done err if err?
-                assert.isNull state?.author
-                assert.isNull state?.deployed
-                assert.isFalse state?.inProgress
-                assert.equal state?.current, version
-                assert.deepEqual state?.versions, [version2, version]
+                expect(state).to.have.property('author').that.is.null
+                expect(state).to.have.property('deployed').that.is.null
+                expect(state).to.have.property('inProgress').that.equal false
+                expect(state).to.have.property('current').that.equal version
+                expect(state).to.have.property('versions').that.is.deep.equal [version2, version]
                 done()
 
     it 'should last version be restored', (done) ->
@@ -427,26 +418,26 @@ describe 'Deployement tests', ->
         # then file common.coffee was restored
         fs.readFile pathUtils.join(__dirname, 'fixtures', 'common.coffee.v2'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
-            assert.equal content, originalContent, 'Version was not restored'
+            expect(content, 'Version was not restored').to.equal originalContent 
 
             # then test executable was removed and test2 is there
             fs.readFile pathUtils.join(exeRoot, 'test2.coffee'), (err, content) ->
-              assert.isNull err, "test executable was not restored"
-              assert.equal content.toString(), 'msg2 = "hi there !"'
+              expect(err).not.to.exist
+              expect(content.toString()).to.equal 'msg2 = "hi there !"' 
 
-              assert.isFalse fs.existsSync pathUtils.join exeRoot, 'test.coffee'
+              expect(fs.existsSync pathUtils.join exeRoot, 'test.coffee').to.be.false
 
               # then notifications were properly received
-              assert.deepEqual notifications, ['VERSION_RESTORED']
+              expect(notifications).to.deep.equal ['VERSION_RESTORED']
 
               # then version is now version 2
               service.deployementState (err, state) ->
                 return done err if err?
-                assert.isNull state?.author
-                assert.isNull state?.deployed
-                assert.isFalse state?.inProgress
-                assert.equal state?.current, version2
-                assert.deepEqual state?.versions, [version2, version]
+                expect(state).to.have.property('author').that.is.null
+                expect(state).to.have.property('deployed').that.is.null
+                expect(state).to.have.property('inProgress').that.equal false
+                expect(state).to.have.property('current').that.equal version2
+                expect(state).to.have.property('versions').that.is.deep.equal [version2, version]
                 done()
     
     version3 = '3.0.0'
@@ -470,33 +461,34 @@ describe 'Deployement tests', ->
             return done "Failed to rollback: #{err}" if err?
 
             # then notifications were properly received
-            assert.deepEqual notifications, ['ROLLBACK_START', 'ROLLBACK_END']
+            expect(notifications).to.deep.equal ['ROLLBACK_START', 'ROLLBACK_END']
 
             # then no version was made
             versionService.repo.tags (err, tags) ->
               return done err if err?
-              return assert.fail "Version #{version2} has been tagged" for tag in tags when tag.name is version3
+              for tag in tags when tag.name is version3
+                throw new Error "Version #{version2} has been tagged" 
 
               # then file still modified
               fs.readFile labels, 'utf8', (err, newContent) ->
                 return done err if err?
                 fs.readFile original, 'utf8', (err, content) ->
                   return done err if err?
-                  assert.equal newContent, content, "File was modified"
+                  expect(newContent, "File was modified").to.equal content 
 
                   # then version is still version 2
                   service.deployementState (err, state) ->
                     return done err if err?
-                    assert.isNull state?.author
-                    assert.isNull state?.deployed
-                    assert.isFalse state?.inProgress
-                    assert.equal state?.current, version2
-                    assert.deepEqual state?.versions, [version2, version]
+                    expect(state).to.have.property('author').that.is.null
+                    expect(state).to.have.property('deployed').that.is.null
+                    expect(state).to.have.property('inProgress').that.equal false
+                    expect(state).to.have.property('current').that.equal version2
+                    expect(state).to.have.property('versions').that.is.deep.equal [version2, version]
 
                     # then the save folder do not exists anymore 
                     save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
                     fs.exists save, (exists) ->
-                      assert.isFalse exists, "#{save} still exists"
+                      expect(exists, "#{save} still exists").to.be.false
 
                       # then the client was deployed
                       Phantom.create {}, (_browser) ->
@@ -508,8 +500,8 @@ describe 'Deployement tests', ->
                             browser.evaluate ->
                               $('body').text().trim()
                             , (body) ->
-                              assert.include body, version2
-                              assert.include body, 'Edition du monde 2'
+                              expect(body).to.include version2
+                              expect(body).to.include 'Edition du monde 2'
                               done()
 
     it 'should version be created', (done) ->
@@ -526,18 +518,17 @@ describe 'Deployement tests', ->
           return done err if err?
 
           # then notifications were properly received
-          assert.deepEqual notifications, ['VERSION_CREATED']
+          expect(notifications).to.deep.equal ['VERSION_CREATED']
 
           # then a git version was created
           versionService.repo.tags (err, tags) ->
             return done "Failed to consult tags: #{err}" if err?
-            assert.equal 3, tags.length
-            assert.equal tags[0].name, version
+            expect(tags).to.have.lengthOf 3
+            expect(tags[0]).to.have.property('name').that.equal version 
             done()
 
     it 'should existing version not be created', (done) ->
       # when creating version 3 another time
       service.createVersion version3, 'admin', (err) ->
-        assert.isDefined err
-        assert.equal err, "Cannot reuse existing version #{version3}", "unexpected error #{err}"
+        expect(err).to.include "Cannot reuse existing version #{version3}"
         done()

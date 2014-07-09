@@ -21,7 +21,7 @@ Field = require '../hyperion/src/model/Field'
 FieldType = require '../hyperion/src/model/FieldType'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-assert = require('chai').assert
+{expect} = require 'chai'
 
 type = null
 
@@ -43,9 +43,9 @@ describe 'FieldType tests', ->
       # then it is in mongo
       FieldType.find {}, (err, types) ->
         # then it's the only one document
-        assert.equal types.length, 1
+        expect(types).to.have.lengthOf 1
         # then it's values were saved
-        assert.equal types[0].id, id
+        expect(types[0]).to.have.property('id').that.equal id
         done()
 
   describe 'given a type', ->
@@ -67,5 +67,5 @@ describe 'FieldType tests', ->
         # then it's in mongo anymore
         FieldType.find {}, (err, types) ->
           return done err if err?
-          assert.equal types.length, 0
+          expect(types).to.have.lengthOf 0
           done()

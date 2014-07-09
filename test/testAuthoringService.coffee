@@ -20,6 +20,7 @@
 _ = require 'underscore'
 async = require 'async'
 {join, dirname, resolve, normalize, sep} = require 'path'
+{expect} = require 'chai'
 fs = require 'fs-extra'
 FSItem = require '../hyperion/src/model/FSItem'
 Executable = require '../hyperion/src/model/Executable'
@@ -27,7 +28,6 @@ utils = require '../hyperion/src/util/common'
 versionService = require('../hyperion/src/service/VersionService').get()
 service = require('../hyperion/src/service/AuthoringService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
-assert = require('chai').assert
 
 repoRoot = resolve normalize utils.confKey 'game.repo'
 gameFiles = resolve normalize utils.confKey 'game.client.dev'
@@ -67,9 +67,9 @@ describe 'AuthoringService tests', ->
     service.save item, 'admin', (err, saved) ->
       return done "Cannot save file: #{err}" if err?
       # then the file was saved
-      assert.ok item.equals saved
+      expect(saved).to.satisfy (o) -> item.equals o
       fs.exists join(gameFiles, item.path), (exists) ->
-        assert.ok exists, "file #{item.path} wasn't created"
+        expect(exists, "file #{item.path} wasn't created").to.be.true
         done()
 
   it 'should folder be created', (done) -> 
@@ -79,12 +79,12 @@ describe 'AuthoringService tests', ->
     service.save item, 'admin', (err, saved) ->
       return done "Cannot save folder: #{err}" if err?
       # then nonotification issued
-      assert.equal 0, notifications.length
+      expect(notifications).to.have.lengthOf 0
 
       # then the file was saved
-      assert.ok item.equals saved
+      expect(saved).to.satisfy (o) -> item.equals o
       fs.exists join(gameFiles, item.path), (exists) ->
-        assert.ok exists, "folder #{item.path} wasn't created"
+        expect(exists, "folder #{item.path} wasn't created").to.be.true
         done()
 
   describe 'given an non-empty root', ->
@@ -109,13 +109,13 @@ describe 'AuthoringService tests', ->
       service.readRoot (err, folder) ->
         return done "Cannot retrieve root folder: #{err}" if err?
         # then all awaited subitems are present.
-        assert.equal folder.content.length, content.length
+        expect(folder).to.have.property('content').that.has.lengthOf content.length
         for file in content
           found = false
           for result in folder.content when result.equals file
             found = true
             break
-          assert.isTrue found, "file #{file.path} was not read"
+          expect(found, "file #{file.path} was not read").to.be.true
         done()
 
   describe 'given an existing file', ->
@@ -138,7 +138,7 @@ describe 'AuthoringService tests', ->
         # then read data is correct
         fs.readFile join(__dirname, 'fixtures', 'image1.png'), (err, data) ->
           return done err if err?
-          assert.equal read.content, data.toString('base64')
+          expect(read).to.have.property('content').that.is.equal data.toString 'base64'
           done()
         
     it 'should file content be updated', (done) -> 
@@ -150,12 +150,12 @@ describe 'AuthoringService tests', ->
         service.save file, 'admin', (err, saved) ->
           return done "Cannot save existing file: #{err}" if err?
           # then the file was saved
-          assert.ok file.equals saved
-          assert.equal saved.content, data.toString('base64'),
+          expect(saved).to.satisfy (o) -> file.equals o
+          expect(saved).to.have.property('content').that.is.equal data.toString 'base64'
           # then the saved content is equals
           fs.readFile join(gameFiles, saved.path), (err, readData) ->
             return done err if err?
-            assert.equal readData.toString('base64'), data.toString('base64')
+            expect(readData.toString 'base64').to.equal data.toString 'base64'
             done()
 
     it 'should file content be moved', (done) -> 
@@ -164,15 +164,15 @@ describe 'AuthoringService tests', ->
       service.move file, 'folder5/newFile', 'admin', (err, moved) ->
         return done "Cannot move file: #{err}" if err?
         # then new file is created
-        assert.notEqual moved.path, oldPath
+        expect(moved).to.have.property('path').that.is.not.equal oldPath
         fs.exists join(gameFiles, moved.path), (exists) ->
-          assert.isTrue exists, "file #{file.path} wasn't moved"
+          expect(exists, "file #{file.path} wasn't moved").to.be.true
           # then content is correct
           fs.readFile join(gameFiles, moved.path), (err, data) ->
-            assert.equal moved.content, data.toString('base64'),
+            expect(moved).to.have.property('content').that.is.equal data.toString('base64'),
             # then old one removed
             fs.exists join(gameFiles, oldPath), (exists) ->
-              assert.isFalse exists, "file #{oldPath} wasn't removed"
+              expect(exists, "file #{oldPath} wasn't removed").to.be.false
               file = moved
               done()
 
@@ -181,9 +181,9 @@ describe 'AuthoringService tests', ->
       service.remove file, 'admin', (err, removed) ->
         return done "Cannot remove file: #{err}" if err?
         # then the file was removed
-        assert.ok file.equals removed
+        expect(removed).to.satisfy (o) -> file.equals o
         fs.exists join(gameFiles, file.path), (exists) ->
-          assert.isFalse exists, "file #{file.path} wasn't removed"
+          expect(exists, "file #{file.path} wasn't removed").to.be.false
           done()
 
   describe 'given a version controled file and executable', ->
@@ -229,8 +229,8 @@ describe 'AuthoringService tests', ->
     it 'should file content be read at last version', (done) -> 
       service.history file, (err, read, history) ->
         return done err if err?
-        assert.equal history.length, 2
-        assert.equal history[0].message, 'second commit'
+        expect(history).to.have.lengthOf 2
+        expect(history[0]).to.have.property('message').that.is.equal 'second commit'
 
         # when reading the file at last version
         service.readVersion file, history[0].id, (err, read, content) ->
@@ -238,28 +238,28 @@ describe 'AuthoringService tests', ->
           # then read data is correct
           fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
             return done err if err?
-            assert.equal content, data.toString('base64')
+            expect(content).to.equal data.toString 'base64'
             done()
 
     it 'should executable content be read at last version', (done) -> 
       service.history executable, (err, read, history) ->
         return done err if err?
-        assert.equal history.length, 2
-        assert.equal history[0].message, 'second commit'
+        expect(history).to.have.lengthOf 2
+        expect(history[0]).to.have.property('message').that.is.equal 'second commit'
 
         # when reading the executable at last version
         service.readVersion executable, history[0].id, (err, read, content) ->
           return done "Cannot read file at version: #{err}" if err?
           # then read data is correct
-          assert.ok executable.equals read
-          assert.equal content, new Buffer(exeContent2).toString('base64')
+          expect(read).to.satisfy (o) -> executable.equals o
+          expect(content).to.equal new Buffer(exeContent2).toString 'base64'
           done()
 
     it 'should file content be read at first version', (done) -> 
       service.history file, (err, read, history) ->
         return done err if err?
-        assert.equal history.length, 2
-        assert.equal history[1].message, 'first commit'
+        expect(history).to.have.lengthOf 2
+        expect(history[1]).to.have.property('message').that.is.equal 'first commit'
 
         # when reading the file at first version
         service.readVersion file, history[1].id, (err, read, content) ->
@@ -267,45 +267,45 @@ describe 'AuthoringService tests', ->
           # then read data is correct
           fs.readFile join(__dirname, 'fixtures', 'common.coffee.v1'), (err, data) ->
             return done err if err?
-            assert.equal content, data.toString('base64')
+            expect(content).to.equal data.toString 'base64'
             done()
 
     it 'should executable content be read at first version', (done) -> 
       service.history executable, (err, read, history) ->
         return done err if err?
-        assert.equal history.length, 2
-        assert.equal history[1].message, 'first commit'
+        expect(history).to.have.lengthOf 2
+        expect(history[1]).to.have.property('message').that.is.equal 'first commit'
 
         # when reading the file at first version
         service.readVersion executable, history[1].id, (err, read, content) ->
           return done "Cannot read file at version: #{err}" if err?
           # then read data is correct
-          assert.ok executable.equals read
-          assert.equal content, new Buffer(exeContent1).toString('base64')
+          expect(read).to.satisfy (o) -> executable.equals o
+          expect(content).to.equal new Buffer(exeContent1).toString 'base64'
           done()
 
     it 'should file history be consulted', (done) ->
       # when consulting history for this file
       service.history file, (err, read, history) ->
         return done "Cannot get history: #{err}" if err?
-        assert.equal 2, history.length
-        assert.ok file.equals read
+        expect(history).to.have.lengthOf 2
+        expect(read).to.satisfy (o) -> file.equals o
         for i in [0..1]
-          assert.instanceOf history[i].date, Date
-          assert.equal 'mythic-forge', history[i].author
-        assert.deepEqual ['second commit', 'first commit'], _.pluck history, 'message'
+          expect(history[i]).to.have.property('date').that.is.an.instanceOf Date
+          expect(history[i]).to.have.property('author').that.is.equal 'mythic-forge'
+        expect(_.pluck history, 'message').to.deep.equal ['second commit', 'first commit'], 
         done()
 
     it 'should executable history be consulted', (done) ->
       # when consulting history for this file
       service.history executable, (err, read, history) ->
         return done "Cannot get history: #{err}" if err?
-        assert.ok executable.equals read
-        assert.equal 2, history.length
+        expect(read).to.satisfy (o) -> executable.equals o
+        expect(history).to.have.lengthOf 2
         for i in [0..1]
-          assert.instanceOf history[i].date, Date
-          assert.equal 'mythic-forge', history[i].author
-        assert.deepEqual ['second commit', 'first commit'], _.pluck history, 'message'
+          expect(history[i]).to.have.property('date').that.is.an.instanceOf Date
+          expect(history[i]).to.have.property('author').that.is.equal 'mythic-forge'
+        expect(_.pluck history, 'message').to.deep.equal ['second commit', 'first commit'], 
         done()
 
     it 'should removed file and executable appears in restorable list', (done) ->
@@ -321,9 +321,9 @@ describe 'AuthoringService tests', ->
               # when consulting history for this file
               service.restorables [], (err, restorables) ->
                 return done "Cannot get restorables: #{err}" if err?
-                assert.equal 2, restorables.length
-                assert.ok restorables[1].item.equals(file), 'deleted file not found as second restorable'
-                assert.ok restorables[0].item.equals(executable), 'deleted executable not found as first restorable'
+                expect(restorables).to.have.lengthOf 2
+                expect(restorables[1], 'deleted file not found as second restorable').to.have.property('item').that.satisfy (o) -> file.equals o
+                expect(restorables[0], 'deleted executable not found as first restorable').to.have.property('item').that.satisfy (o) -> executable.equals o
                 done()
 
   describe 'given an existing folder', ->
@@ -349,13 +349,13 @@ describe 'AuthoringService tests', ->
       service.read folder, (err, read) ->
         return done "Cannot read folder: #{err}" if err?
         # then read data is correct
-        assert.equal read.content.length, files.length
+        expect(read).to.have.property('content').that.has.lengthOf files.length
         for file in read.content
           found = false
           for content in read.content when content.equals file
             found = true
             break
-          assert.isTrue found, "file #{file.path} was not read"
+          expect(found, "file #{file.path} was not read").to.be.true
         done()
 
     it 'should folder content be moved', (done) -> 
@@ -364,11 +364,11 @@ describe 'AuthoringService tests', ->
       service.move folder, 'folder3/folder4', 'admin', (err, moved) ->
         return done "Cannot move folder: #{err}" if err?
         # then new folder is created and old one removed
-        assert.notEqual moved.path, oldPath
+        expect(moved).to.have.property('path').that.is.not.equal oldPath
         fs.exists join(gameFiles, moved.path), (exists) ->
-          assert.isTrue exists, "folder #{folder.path} wasn't moved"
+          expect(exists, "folder #{folder.path} wasn't moved").to.be.true
           fs.exists join(gameFiles, oldPath), (exists) ->
-            assert.isFalse exists, "folder #{oldPath} wasn't removed"
+            expect(exists, "folder #{oldPath} wasn't removed").to.be.false
             folder = moved
             done()
 
@@ -377,10 +377,10 @@ describe 'AuthoringService tests', ->
       service.remove folder, 'admin', (err, removed) ->
         return done "Cannot remove folder: #{err}" if err?
         # then nonotification issued
-        assert.equal 0, notifications.length
+        expect(notifications).to.have.lengthOf 0
 
         # then the file was removed
-        assert.ok folder.equals removed
+        expect(removed).to.satisfy (o) -> folder.equals o
         fs.exists join(gameFiles, folder.path), (exists) ->
-          assert.isFalse exists, "folder #{folder.path} wasn't removed"
+          expect(exists, "folder #{folder.path} wasn't removed").to.be.false
           done()

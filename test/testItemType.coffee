@@ -22,7 +22,7 @@ ItemType = require '../hyperion/src/model/ItemType'
 typeFactory = require '../hyperion/src/model/typeFactory'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-assert = require('chai').assert
+{expect} = require 'chai'
 
 item1 = null
 item2 = null
@@ -55,12 +55,8 @@ describe 'ItemType tests', ->
       type2.save (err) ->
         return done err if err?
         # then their properties ar not mixed
-        keys = Object.keys(type.properties)
-        keys2 = Object.keys(type2.properties)
-        assert.equal keys.length, 1 
-        assert.equal keys[0], 'wheels'
-        assert.equal keys2.length, 1
-        assert.equal keys2[0], 'mammal'
+        expect(type.properties).to.have.keys ['wheels']
+        expect(type2.properties).to.have.keys ['mammal']
         done()
 
   it 'should type be created', (done) -> 
@@ -72,7 +68,7 @@ describe 'ItemType tests', ->
     # then a creation event was issued
     listener = (operation, className, instance) ->
       if operation is 'creation' and className is 'ItemType'
-        assert.ok type.equals instance
+        expect(instance).to.satisfy (o) -> type.equals o
         awaited = true
     watcher.on 'change', listener
 
@@ -83,10 +79,10 @@ describe 'ItemType tests', ->
       # then it is in mongo
       ItemType.find {}, (err, types) ->
         # then it's the only one document
-        assert.equal types.length, 1
+        expect(types).to.have.lengthOf 1
         # then it's values were saved
-        assert.equal types[0].id, id
-        assert.isTrue awaited, 'watcher was\'nt invoked for new type'
+        expect(types[0]).to.have.property('id').that.equal id
+        expect(awaited, 'watcher was\'nt invoked for new type').to.be.true
         done()
 
   it 'should date property always be stores as Date', (done) -> 
@@ -98,8 +94,8 @@ describe 'ItemType tests', ->
       return done err if err?
 
       # then the default time value is null
-      assert.property saved.properties, 'time'
-      assert.isNull saved.properties.time.def
+      expect(saved).to.have.deep.property 'properties.time'
+      expect(saved).to.have.deep.property('properties.time.def').that.is.null
       type = saved
           
       # then a saved instance will have a null default value
@@ -107,7 +103,7 @@ describe 'ItemType tests', ->
         return done err if err?
 
         setTimeout ->
-          assert.isNull saved.time
+          expect(saved).to.have.property('time').that.is.null
 
           # when setting the default value to a valid string
           type.setProperty 'time', 'date', "2012-10-12T08:00:00.000Z"
@@ -115,16 +111,18 @@ describe 'ItemType tests', ->
             return done err if err?
 
             # then the default value is a date
-            assert.instanceOf saved.properties.time.def, Date 
-            assert.deepEqual saved.properties.time.def, new Date("2012-10-12T08:00:00.000Z")
+            expect(saved).to.have.deep.property('properties.time.def')
+              .that.is.an.instanceOf(Date)
+              .and.that.deep.equal new Date "2012-10-12T08:00:00.000Z"
             type = saved
 
              # then a saved instance will have a date default value
             new Item(type: type).save (err, saved) ->
               return done err if err?
 
-              assert.instanceOf saved.time, Date
-              assert.deepEqual saved.time, new Date("2012-10-12T08:00:00.000Z")
+              expect(saved).to.have.property('time')
+                .that.is.an.instanceOf(Date)
+                .and.that.deep.equal new Date "2012-10-12T08:00:00.000Z"
 
               # when setting the default value to a valid date
               time = new Date()
@@ -133,27 +131,29 @@ describe 'ItemType tests', ->
                 return done err if err?
 
                 # then the default value is a date
-                assert.instanceOf saved.properties.time.def, Date 
-                assert.deepEqual saved.properties.time.def, time
+                expect(saved).to.have.deep.property('properties.time.def')
+                  .that.is.an.instanceOf(Date)
+                  .and.that.deep.equal time
                 type = saved
 
                 # then a saved instance will have a date default value
                 new Item(type: type).save (err, saved) ->
                   return done err if err? 
 
-                  assert.instanceOf saved.time, Date
-                  assert.deepEqual saved.time, time
+                  expect(saved).to.have.property('time')
+                    .that.is.an.instanceOf(Date)
+                    .and.that.deep.equal time
 
                   # when saving an instance with an invalid date
                   new Item(type: type, time: "invalid").save (err) ->
                     # then an error is raised
-                    assert.include err.message, "isn't a valid date"
+                    expect(err).to.have.property('message').that.include "isn't a valid date"
 
                     # when saving the type property instance with an invalid date
                     type.setProperty 'time', 'date', "true"
                     type.save (err, saved) ->
                       # then an error is raised
-                      assert.include err.message, "isn't a valid date"
+                      expect(err).to.have.property('message').that.include "isn't a valid date"
                       done()
         , 500
 
@@ -171,10 +171,10 @@ describe 'ItemType tests', ->
       result = utils.plainObjects type
 
       # then all empty properties are still here
-      assert.deepEqual result.properties.mission, type: 'json', def: {}
-      assert.deepEqual result.properties.players, type: 'json', def: []
-      assert.deepEqual result.properties.empty, type: 'json', def: null
-      assert.deepEqual result.properties.existing, type: 'json', def: coucou:true
+      expect(result).to.have.deep.property('properties.mission').that.deep.equal type: 'json', def: {}
+      expect(result).to.have.deep.property('properties.players').that.deep.equal type: 'json', def: []
+      expect(result).to.have.deep.property('properties.empty').that.deep.equal type: 'json', def: null
+      expect(result).to.have.deep.property('properties.existing').that.deep.equal type: 'json', def: coucou:true
       done()
 
   describe 'given a type with a property', ->
@@ -197,7 +197,7 @@ describe 'ItemType tests', ->
         # then it's in mongo anymore
         ItemType.find {}, (err, types) ->
           return done err if err?
-          assert.equal types.length, 0
+          expect(types).to.have.lengthOf 0
           done()
 
     it 'should type properties be created', (done) ->
@@ -207,47 +207,43 @@ describe 'ItemType tests', ->
 
         ItemType.find {}, (err, types) ->
           # then it's the only one document
-          assert.equal types.length, 1
+          expect(types).to.have.lengthOf 1
           # then only the relevant values were modified
-          assert.equal types[0].id, 'river',
-          assert.ok 'depth' of types[0].properties, 'no depth in properties'
-          assert.equal types[0].properties.depth?.type, 'integer'
-          assert.equal types[0].properties.depth?.def, 10
+          expect(types[0]).to.have.property('id').that.equal 'river'
+          expect(types[0]).to.have.deep.property('properties.depth.type').that.equal 'integer'
+          expect(types[0]).to.have.deep.property('properties.depth.def').that.equal 10
           done()
 
     it 'should type properties be updated', (done) ->
-      assert.ok 'color' of type.properties, 'no color in properties'
-      assert.equal type.properties.color?.type, 'string'
-      assert.equal type.properties.color?.def, 'blue'
+      expect(type).to.have.deep.property('properties.color.type').that.equal 'string'
+      expect(type).to.have.deep.property('properties.color.def').that.equal 'blue'
 
       # when updating a property 
       type.setProperty 'color', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
-        assert.equal saved.properties.color?.type, 'integer'
-        assert.equal saved.properties.color?.def, 10
+        expect(saved).to.have.deep.property('properties.color.type').that.equal 'integer'
+        expect(saved).to.have.deep.property('properties.color.def').that.equal 10
         done()
 
     it 'should type properties be removed', (done) ->
       # when removing a property
       type.unsetProperty 'color'
       type.save (err, saved) ->
-        if err? 
-          assert.fail "Can't save item: #{err}"
-          return done()
+        return done err if err? 
 
         # then the property was removed
-        assert.ok not ('color' of saved.properties), 'color still in properties'
+        expect(saved).not.to.have.deep.property 'properties.color'
         done()
 
     it 'should unknown type properties fail on remove', (done) ->
       try 
         # when removing an unknown property
         type.unsetProperty 'unknown'
-        assert.fail 'Error must be raised when removing unknwown property'
+        return done 'Error must be raised when removing unknwown property'
       catch err
         # then an error is thrown
-        assert.equal err?.message, 'Unknown property unknown for type river'
+        expect(err).to.have.property('message').that.equal 'Unknown property unknown for type river'
       done()
 
   describe 'given a type and some items', ->
@@ -276,8 +272,8 @@ describe 'ItemType tests', ->
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
         updates.push instance.id
-        assert.equal operation, 'update'
-        assert.equal instance.depth, 30
+        expect(operation).to.equal 'update'
+        expect(instance).to.have.property('depth').that.equal 30
 
       # when setting a property to a type
       defaultDepth = 30
@@ -287,9 +283,8 @@ describe 'ItemType tests', ->
         next = ->
           Item.find {type: type.id}, (err, items) ->
             for item in items
-              assert.isDefined item.depth
-              assert.equal item.depth, defaultDepth
-              assert.ok item.id in updates
+              expect(item).to.have.property('depth').that.equal defaultDepth
+              expect(updates).to.include item.id
             done()
         setTimeout next, 500
 
@@ -298,58 +293,55 @@ describe 'ItemType tests', ->
       # then a modification event was issued
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
-        assert.equal operation, 'update'
+        expect(operation).to.equal 'update'
         updates.push instance.id
-        assert.isNull instance.color
+        expect(instance).to.have.property('color').that.is.null
 
       # when setting a property to a type
       defaultDepth = 30
       type.unsetProperty 'color'
       type.save (err) -> 
-        next done err if err?
-        next = ->
+        return done err if err?
+        setTimeout ->
           Item.find {type: type.id}, (err, items) ->
             return done err if err?
             for item in items
-              assert.isUndefined item.color, 'color still present'
-              assert.ok item.id in updates
+              expect(item).not.to.have.property 'color'
+              expect(updates).to.include item.id
             done()
-        setTimeout next, 50
+        , 100
 
     it 'should items be updated when modifying quantifiable state', (done) ->
       updates = []
       # then a modification event was issued
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Item'
-        assert.equal operation, 'update'
+        expect(operation).to.equal 'update'
         updates.push instance.id
-        assert.ok instance.color is undefined
+        expect(instance).not.to.have.property 'color'
 
       # when setting quantifiable to true
       type.quantifiable = true
       type.save (err) -> 
         return done err if err?
-
-        next = ->
+        setTimeout ->
           Item.find {type: type.id}, (err, items) ->
             return done err if err?
             # then all items have their quantity to 0
             for item in items
-              assert.equal 0, item.quantity , 'quantity not set to 0'
-              assert.ok item.id in updates
+              expect(item).to.have.property('quantity').that.equal 0
+              expect(updates).to.include item.id
 
             # when setting quantifiable to false
             type.quantifiable = false
             type.save (err) -> 
               return done err if err?
-              next2 = ->
+              setTimeout ->
                 Item.find {type: type.id}, (err, items) ->
                   # then all
                   for item in items
-                    assert.isNull item.quantity , 'quantity not set to null'
-                    assert.ok item.id in updates
+                    expect(item).to.have.property('quantity').that.is.null
+                    expect(updates).to.include item.id
                   done()
-
-              setTimeout next2, 50
-
-        setTimeout next, 50
+              , 100
+        , 100

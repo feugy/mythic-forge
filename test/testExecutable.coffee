@@ -69,9 +69,9 @@ describe 'Executable tests', ->
         # then it's the only one executable
         expect(executables).to.have.lengthOf 1
         # then it's values were saved
-        expect(executables[0]).to.have.property 'id', id
-        expect(executables[0]).to.have.property 'content', content
-        expect(executables[0]).to.have.property 'lang', 'coffee'
+        expect(executables[0]).to.have.property('id').that.equal id
+        expect(executables[0]).to.have.property('content').that.equal content
+        expect(executables[0]).to.have.property('lang').that.equal 'coffee'
         expect(executables[0]).to.have.property 'updated'
         expect(executables[0].updated.getTime()).to.be.equal new Date().setMilliseconds 0
         expect(executables[0].meta).to.deep.equal kind: 'Script'
@@ -104,9 +104,9 @@ describe 'Executable tests', ->
         # then it's the only one executable
         expect(executables).to.have.lengthOf 1
         # then it's values were saved
-        expect(executables[0]).to.have.property 'id', id
-        expect(executables[0]).to.have.property 'content', content
-        expect(executables[0]).to.have.property 'lang', 'js'
+        expect(executables[0]).to.have.property('id').that.equal id
+        expect(executables[0]).to.have.property('content').that.equal content
+        expect(executables[0]).to.have.property('lang').that.equal 'js'
         expect(executables[0]).to.have.property 'updated'
         expect(executables[0].updated.getTime()).to.be.equal new Date().setMilliseconds 0
         expect(executables[0].meta).to.deep.equal kind: 'Script'
@@ -204,8 +204,8 @@ describe 'Executable tests', ->
           # then it's the only one executable
           expect(executables).to.have.lengthOf 1
           # then only the relevant values were modified
-          expect(executables[0]).to.have.property 'id', 'test2'
-          expect(executables[0]).to.have.property 'content', newContent
+          expect(executables[0]).to.have.property('id').that.equal 'test2'
+          expect(executables[0]).to.have.property('content').that.equal newContent
           expect(executables[0].meta).to.deep.equal kind: 'Script'
           # then update date was modified
           expect(executables[0].updated).not.to.equal creation
@@ -261,7 +261,7 @@ describe 'Executable tests', ->
         return done err if err?
         result = require pathUtils.relative __dirname, executable.compiledPath
         expect(result).to.have.property 'findCached'
-        expect(new result()).to.have.property '_className', 'Item'
+        expect(new result()).to.have.property('_className').that.equal 'Item'
         done()
 
     it 'should executable meta for Rule contains category and active', (done) ->

@@ -285,7 +285,7 @@ describe 'RuleService tests', ->
                     return done "Unable to retrieve items: #{err}" if err?
                     expect(items).to.have.lengthOf 2
                     for item in items
-                      expect(item).to.have.property 'x', 10
+                      expect(item).to.have.property('x').that.equal 10
                     done()
 
   it 'should linked object (not to actor or target) be modified and saved by a rule', (done) ->
@@ -344,10 +344,10 @@ describe 'RuleService tests', ->
                     Item.where('num').gte(1).exec (err, items) =>
                       return done "Unable to retrieve items: #{err}" if err?
                       expect(items).to.have.lengthOf 2
-                      expect(items[0]).to.have.property 'id', 'containable_3'
-                      expect(items[0]).to.have.property 'num', 3
-                      expect(items[1]).to.have.property 'id', 'containable_2'
-                      expect(items[1]).to.have.property 'num', 2
+                      expect(items[0]).to.have.property('id').that.equal 'containable_3'
+                      expect(items[0]).to.have.property('num').that.equal 3
+                      expect(items[1]).to.have.property('id').that.equal 'containable_2'
+                      expect(items[1]).to.have.property('num').that.equal 2
                       done()
                                  
   describe 'given a player, an event and a dumb rule', ->
@@ -828,7 +828,7 @@ describe 'RuleService tests', ->
             Item.find {x:2}, (err, items) =>
               return done "failed to retrieve items: #{err}" if err?
               expect(items).to.have.lengthOf 1
-              expect(items[0]).to.have.property 'x', 2
+              expect(items[0]).to.have.property('x').that.equal 2
               done()
 
     it 'should modification be detected on dynamic attributes', (done) ->
@@ -1816,8 +1816,8 @@ describe 'RuleService tests', ->
               expect(item.type).to.deep.equal type1
               # then item is on map
               expect(item.map).to.deep.equal map
-              expect(item).to.have.property 'x', 10
-              expect(item).to.have.property 'y', 7
+              expect(item).to.have.property('x').that.equal 10
+              expect(item).to.have.property('y').that.equal 7
               done()
 
   describe 'given some dumb rules with categories', ->
