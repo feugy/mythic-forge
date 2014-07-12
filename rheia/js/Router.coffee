@@ -21,7 +21,7 @@
 # configure requireJs
 requirejs.config  
   paths:
-    'ace': 'lib/ace-1.0-min'
+    'ace': 'lib/ace-1.1.3-min'
     'async': 'lib/async-0.1.22-min'
     'backbone': 'lib/backbone-1.1.0-min'
     'backbone-queryparams': 'lib/backbone-queryparams-min',
@@ -32,7 +32,7 @@ requirejs.config
     'jquery-ui': 'lib/jquery-ui-1.9.2-min'
     'jquery-punch': 'lib/jquery-punch-0.2.2-min'
     'i18n': 'lib/i18n-2.0.1-min'
-    'queryparser': 'lib/queryparser-1.2.0-min'
+    'queryparser': 'lib/queryparser-1.3.0-min'
     'md5': 'lib/md5-2.2-min'
     'moment': 'lib/moment-1.7.0-min'
     'mousewheel': 'lib/jquery-mousewheel-3.0.6-min'

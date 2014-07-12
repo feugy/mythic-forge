@@ -113,7 +113,7 @@ define
           <p>The following search fields are available:</p>
           <ul>
               <li><dfn>id=<var>id</var></dfn> type which id is <var>id</var></li>
-              <li><dfn><var>prop</var>='!'</dfn> types which has a <var>prop</var> property</li>
+              <li><dfn><var>prop</var>=!</dfn> types which has a <var>prop</var> property</li>
               <li><dfn><var>prop</var>=<var>val</var></dfn> types which <var>prop</var> property has value <var>val</var></li>
               <li><dfn>quantifiable=<var>bool</var></dfn> types that are quantifiables or not.</li>
               <li><dfn>category=<var>val</var></dfn> rules which category is <var>val</var></li>

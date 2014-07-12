@@ -61,10 +61,6 @@ define [
     _prompt: null
 
     # **private**
-    # number of occurences previously found
-    _foundNum: 0
-
-    # **private**
     # Builds rendering
     constructor: (element, options) ->
       super element, options
@@ -112,8 +108,18 @@ define [
       # creates prompt
       @_prompt = $(prompt).appendTo @$el
 
-      # progressive find while entering input
-      @_prompt.on 'keyup', '.find input', _.throttle (=> @_onFind()), 100
+      
+      throttledFind = _.throttle (=> @_onFind()), 100
+      # immediate seach during typing, unless key is tab
+      @_prompt.on 'keyup', '.find input', (event) => 
+        throttledFind() unless event.which is 9
+      @_prompt.on 'keydown', '.find input', (event) => 
+        if event.ctrlKey and event.which is 72
+          # hit Ctrl+H: opens replace prompt
+          @_onShowPrompt true, false
+          @_onFind()
+          event.stopImmediatePropagation
+          event.preventDefault()
       # bind prompt commands
       @_prompt.on 'click', '.close', (event) => @_onClosePrompt event
       # search next and previous
@@ -186,10 +192,12 @@ define [
     # Show the find/replace prompt with an animation (Css)
     #
     # @param withReplace [Boolean] display the replace prompt
-    _onShowPrompt: (withReplace) =>
+    # @param useSelection [Boolean] true to set search field content with current selection
+    _onShowPrompt: (withReplace, useSelection = true) =>
       # change the searched content
-      selection = @_editor.session.getTextRange @_editor.getSelectionRange()
-      @_prompt.find('.find input').val if selection then selection else ''
+      if useSelection
+        selection = @_editor.session.getTextRange @_editor.getSelectionRange()
+        @_prompt.find('.find input').val if selection then selection else ''
       # show prompt with replace and focus input
       @_prompt.toggleClass('and-replace', withReplace).addClass 'shown'
       @_prompt.find('.find input').focus()
@@ -205,19 +213,15 @@ define [
       @_editor.focus()
 
     # **private**
-    # Find all, next or previous occurences of the searched text
+    # Find next or previous occurences of the searched text
     #
     # @param event [Event] cancelled click event
-    # @param next [Boolean] true to find next, false to find previous, other to find all
-    _onFind: (event, next) =>
+    # @param next [Boolean] true to find next, false to find previous
+    _onFind: (event = null, next = null) =>
       event?.preventDefault()
-      if next is true
-        @_editor.findNext {}, true
-      else if next is false
-        @_editor.findPrevious {}, true
-      else
-        # search first
-        @_foundNum = @_editor.find @_prompt.find('.find input').val(), {}, true
+      options = {}
+      options.backwards = true if next is false
+      @_editor.find @_prompt.find('.find input').val(), options, true
 
     # **private**
     # Replace first or all occurences of the searched text with replace text
@@ -229,9 +233,13 @@ define [
       value = @_prompt.find('.replace input').val()
       options = needle: @_prompt.find('.find input').val()
       if all
+        # replace with new value, and highlight replacements
         @_editor.replaceAll value, options
+        @_editor.findAll value, {}, true
       else
+        # replace current value, and find next
         @_editor.replace value, options
+        @_onFind()
 
   # widget declaration
   AdvEditor._declareWidget 'advEditor', 

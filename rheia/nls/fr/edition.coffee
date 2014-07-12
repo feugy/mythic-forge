@@ -111,7 +111,7 @@ define
         <p>Les champs de recherche suivants sont disponibles :</p>
         <ul>
             <li><dfn>id=<var>id</var></dfn> types dont l'id est <var>id</var></li>
-            <li><dfn><var>prop</var>='!'</dfn> types qui possèdent la propriété <var>prop</var></li>
+            <li><dfn><var>prop</var>=!</dfn> types qui possèdent la propriété <var>prop</var></li>
             <li><dfn><var>prop</var>=<var>val</var></dfn> types dont la propriété <var>prop</var> a la valeur <var>val</var></li>
             <li><dfn>quantifiable=<var>bool</var></dfn> types quantifiables ou non.</li>
             <li><dfn>category=<var>val</var></dfn> règles dont la catégorie est <var>val</var></li>

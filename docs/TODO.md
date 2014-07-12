@@ -2,7 +2,6 @@
 
 - Hyperion
   - Bugs
-    - [!!!] search boolean property is broken on instances
     - item in player character is still present after a map deletion
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - Documentation
@@ -176,6 +175,7 @@
 
 - Rheia
   - Bugs
+    - search boolean property is broken on instances (moderation)
     - image carousel in field type not properly working with exotic image sizes
     - double numeric contols in newest firfox for number properties
     - player token invalidated after player edition

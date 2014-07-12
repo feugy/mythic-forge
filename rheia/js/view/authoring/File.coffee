@@ -134,7 +134,6 @@ define [
         imageType = "image/#{@model.extension}"
         @_image.attr 'src', "data:#{imageType};base64,#{btoa @model.content}"
       else
-        @_editorWidget.$el.show()
         @_editorWidget.setOption 'mode', @_mode
         @_editorWidget.setOption 'text', utf8.decode restoredContent or @model.content or ''
 

@@ -211,7 +211,7 @@ define [
         isType: false,
         dndType: i18n.constants.instanceAffectation
         tooltipFct: utils.instanceTooltip
-      ).on('search', (event, query) -> app.searchService.searchInstances query
+      ).on('search', (event, query) => app.searchService.searchInstances query
       ).on('openElement', @_onOpenSearchResult
       ).on('removeElement', (event, details) => 
         app.router.trigger 'remove', details.category, details.id

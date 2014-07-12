@@ -39,7 +39,7 @@ Assertion.addMethod 'containsModel', (model, msg) ->
 
 describe 'SearchService tests', ->
 
-  describe 'searchInstances', ->
+  describe 'given som players, items and events', ->
     character = null
     sword = null
     talk = null
@@ -65,6 +65,7 @@ describe 'SearchService tests', ->
         character = new ItemType id: 'character', desc: 'people a player can embody', quantifiable: false, properties:
           name: {type:'string', def:null}
           stock: {type:'array', def:'Item'}
+          dead: {type:'boolean', def:false}
           strength: {type:'integer', def:10}
           knight: {type:'boolean', def:false}
         character.save (err, saved) ->
@@ -107,7 +108,7 @@ describe 'SearchService tests', ->
                           new Item(type: character, name:'Ivanhoe', strength: 20, stock:[gladius, broken], map: world, knight:true).save (err, saved) ->
                             return done err if err?
                             ivanhoe = saved
-                            new Item(type: character, name:'Roland', strength: 15, stock:[durandal], map: underworld, knight:true).save (err, saved) ->
+                            new Item(type: character, name:'Roland', strength: 15, dead: true, stock:[durandal], map: underworld, knight:true).save (err, saved) ->
                               return done err if err?
                               roland = saved
                               new Item(type: character, name:'Arthur', strength: 10, stock:[excalibur], map: world, knight:false).save (err, saved) ->
@@ -239,6 +240,15 @@ describe 'SearchService tests', ->
         return done err if err?
         expect(results).to.have.lengthOf 1
         expect(results, 'talk3 not returned').to.containsModel talk3
+        done()
+
+    it 'should search by boolean property', (done) ->
+      service.searchInstances {'dead': false}, (err, results)->
+        return done err if err?
+        expect(results).to.have.lengthOf 2
+        expect(results, 'ivanhoe not returned').to.containsModel ivanhoe
+        expect(results, 'arthur not returned').to.containsModel arthur
+        expect(results, 'roland returned').not.to.containsModel roland
         done()
 
     it 'should search event by from id', (done) ->
@@ -381,7 +391,7 @@ describe 'SearchService tests', ->
         expect(err).to.include 'and needs an array'
         done()
 
-  describe 'searchTypes', ->
+  describe 'given some types, executables and maps', ->
     itemTypes = []
     eventTypes = []
     fieldTypes = []

@@ -474,6 +474,9 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
 
 .adv-editor 
   overflow hidden
+  wdth 100%
+  display flex
+  flex-direction column
 
   *
     font-family 'Monaco','Menlo','Ubuntu Mono','Droid Sans Mono','Consolas',monospace
@@ -481,8 +484,7 @@ a.ui-button:not(.ui-button-icon-only):not(.ui-button-text-icon-secondary):not(.u
     line-height 16px      
   
   .ace_editor
-    width 100%
-    height 100%
+    flex-grow 1
 
   .prompt
     border-radius 0 0 5px 5px
