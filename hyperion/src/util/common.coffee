@@ -416,6 +416,7 @@ emitter.fromRule = (callback = ->) ->
   foundService = false
   for line, i in stacktrace.get()
     line = line.getFileName()
+    console.log line
     # we found a line coming from services that is not the fromRule() and bind invokation
     foundService = true unless i <= 2  or foundService or -1 is line.indexOf serviceRoot
     # invoked from compilation folder: forbidden
