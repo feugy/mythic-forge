@@ -176,7 +176,6 @@ module.exports = (typeName, spec, options = {}) ->
       when 'deletion' 
         delete caches[typeName][changes.id]
 
-  spec.versionKey = false
   
   if options.typeProperties
     # event properties definition, stored by names
@@ -224,7 +223,11 @@ module.exports = (typeName, spec, options = {}) ->
 
   options._id = false
   spec._id = String
-
+  # Disable versionning on array properties.
+  # Versionning avoid data erasure, but the single-thread architecture of Hyperion already enforece this.
+  # In case of cached values reuse, as we can't handle conflict, we rather prefer to erase data
+  options.versionKey = false
+  
   # Abstract schema, that can contains i18n attributes
   AbstractType = new mongoose.Schema spec, options
 

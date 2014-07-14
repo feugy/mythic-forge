@@ -6,7 +6,6 @@
   - heroku: reload game.repo from s3 at dyno startup, save periodically 
   - Documentation
   - Rule engine
-    - [!] Handle 'No matching document found' version errors while executing rule and revert execution
     - provide rule triggering inside rules, with reloading when imported ruless changed (IA ?)
 
 - Rheia
@@ -41,7 +40,9 @@
     - remove item type property does not update existing items
     - bug with map value when retrieving items with search
     - fix from handling at event creation
-    - save new item on a new map : mapId stored in DB, but map object not affected to item (modelWatcher does not send the map)
+    - save new item on a new map : mapId stored in DB, but map object not affected to item (modelWatcher does not send 
+    the map)
+    - Avoid 'No matching document found' version errors while executing rule: disabled versionning cause conflict can't be property handled, and data erasure is acceptable
   - ImageService to upload and associate images to types
   - remove all images when removing a type
   - Field type CRUD

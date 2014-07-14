@@ -19,6 +19,7 @@
 
 _ = require 'underscore'
 async = require 'async'
+{MongoClient, Server} = require 'mongodb'
 Executable = require '../hyperion/src/model/Executable'
 Item = require '../hyperion/src/model/Item'
 Event = require '../hyperion/src/model/Event'
@@ -609,6 +610,52 @@ describe 'RuleService tests', ->
           # then player returned is calling player
           expect(result).to.satisfy (obj) -> player.equals obj
           done()
+
+    it 'should data erasure occurs during save', (done) ->
+      # given an item
+      new ItemType(id: 'chopper').save (err, type) ->
+        return done err if err?
+        new Item(type: type).save (err, item) ->
+          return done err if err?
+          # given a rule modifing player
+          script.content = """Rule = require 'hyperion/model/Rule'
+            Player = require 'hyperion/model/Player'
+            class MyRule extends Rule
+              canExecute: (actor, target, context, callback) =>
+                callback null, if actor._className is 'Item' then [] else null
+              execute: (actor, target, params, context, callback) =>
+                # reuse cached values
+                Player.findCached ["#{player.id}"], (err, [player]) =>
+                  player.characters.push actor
+                  @saved.push player
+                  callback null, null
+            module.exports = new MyRule()"""
+          script.save (err) ->
+            return done err if err?
+            # given a client to mongoDB
+            new MongoClient(new Server utils.confKey('mongo.host'), utils.confKey 'mongo.port', 27017).open (err, client) ->
+              return done "Unable to open second connection to Mongo #{err}" if err?
+              db = client.db utils.confKey('mongo.db')
+              db.collection 'players', (err, collection) ->
+                return done "Unable to open second connection to Mongo #{err}" if err?
+
+                # given a modification into db
+                collection.update {_id: player._id}, {$push:{characters: event1.id}}, (err) ->
+                  return done "Unable to modify player in DB #{err}" if err?
+
+                  collection.find(_id: player._id).toArray (err, [player]) ->
+                    return done "Unable to consult cached player #{err}" if err?
+                    expect(player).to.have.property('characters').that.has.lengthOf(1).and.that.include event1.id
+
+                    # when executing this rule on the player
+                    service.execute 'rule0', item.id, item.id, null, player.email, (err, result)->
+                      expect(err).not.to.exist
+
+                      # then player in db has rule values
+                      collection.find(_id: player._id).toArray (err, [result]) ->
+                        return done err if err?
+                        expect(result).to.have.property('characters').that.has.lengthOf(1).and.that.include item.id
+                        done()
 
   describe 'given items, events, fields and a dumb rule', ->
 

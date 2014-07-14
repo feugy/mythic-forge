@@ -15,6 +15,12 @@
     "express": "3.10.3",
     "fs-extra": "0.9.1",
     "gift": "0.4.2",
+    "gulp": "3.7.0",
+    "gulp-clean": "0.3.0",
+    "gulp-coffee": "2.0.1",
+    "gulp-plumber": "0.6.2",
+    "gulp-stylus": "1.0.2",
+    "gulp-util": "2.2.16",
     "isemail": "1.0.1",
     "js-yaml": "3.0.2",
     "jshint": "2.5.1",
@@ -37,12 +43,6 @@
   },
   "devDependencies": {
     "chai": "1.9.1",
-    "gulp": "3.7.0",
-    "gulp-clean": "0.3.0",
-    "gulp-coffee": "2.0.1",
-    "gulp-plumber": "0.6.2",
-    "gulp-stylus": "1.0.2",
-    "gulp-util": "2.2.16",
     "mocha": "1.20.1",
     "phantom-proxy": "0.1.792",
     "request": "2.36.0",
@@ -51,8 +51,8 @@
   },
   "scripts": {
     "start": "node hyperion/bin/start",
-    "postinstall": "gulp cleanBuild",
-    "test": "gulp test"
+    "postinstall": "node node_modules/gulp/bin/gulp.js cleanBuild",
+    "test": "node node_modules/gulp/bin/gulp.js test"
   },
   "licence": "LGPL v3",
   "engines": {
