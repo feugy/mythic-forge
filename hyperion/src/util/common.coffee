@@ -70,7 +70,7 @@ parseConf = ->
   catch err
     throw new Error "Cannot read or parse configuration file '#{confPath}': #{err}"
   # init required rule
-  forbidRoot = resolve(normalize emitter.confKey 'game.executable.target').replace /\//g, '\\'
+  forbidRoot = resolve(normalize emitter.confKey 'game.executable.target').replace /[\/\\]/g, sep
 
 parseConf()
 
@@ -399,7 +399,7 @@ emitter.plainObjects = (args) ->
   if isArray then args else args[0]
   
 serviceRoot = join 'hyperion', 'lib', 'service'
-console.log serviceRoot
+console.log serviceRoot, forbidRoot
 
 # Prevent using critical functionnalities from rules, scripts and turn rules.
 # Intended to be used synchronously in a test:
@@ -416,7 +416,6 @@ emitter.fromRule = (callback = ->) ->
   foundService = false
   for line, i in stacktrace.get()
     line = line.getFileName()
-    console.log line
     # we found a line coming from services that is not the fromRule() and bind invokation
     foundService = true unless i <= 2  or foundService or -1 is line.indexOf serviceRoot
     # invoked from compilation folder: forbidden
