@@ -399,6 +399,7 @@ emitter.plainObjects = (args) ->
   if isArray then args else args[0]
   
 serviceRoot = join 'hyperion', 'lib', 'service'
+console.log serviceRoot
 
 # Prevent using critical functionnalities from rules, scripts and turn rules.
 # Intended to be used synchronously in a test:
