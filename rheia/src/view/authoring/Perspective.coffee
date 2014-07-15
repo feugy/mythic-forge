@@ -124,16 +124,12 @@ define [
       # creates a search widget
       @_search.content = null
       @_search.field = @$el.find '> .left .search .content'
+      @_search.field.on 'keyup', @_onSearchChanged
       @_search.filter = @$el.find '> .left .search .filter'
-      @_search.field.on 'keyup', (event) =>
-        clearTimeout @_search.timeout if @_search.timeout?
-        # manually triggers research
-        return @_triggerSearch true if event.keyCode is $.ui.keyCode.ENTER
-        # defer search
-        @_search.timeout = setTimeout (=> @_triggerSearch()), 1000
+      @_search.filter.on 'keyup', @_onSearchChanged
 
       @_search.numbers = @$el.find '> .left .search .nb-results'
-      @_search.icon = @$el.find '> .left .search .ui-icon'
+      @_search.icon = @$el.find '> .left .search .ui-icon-search'
       @_search.icon.on 'click', @_onClearSearch
       tip = @$el.find('> .left .search .help-content').toggleable().data 'toggleable'
       help = @$el.find('> .left .search .help').mouseover (event) => 
@@ -225,10 +221,21 @@ define [
       filters = @_search.filter.val().trim()
       exclude = filters.match /^\-/
       filters = (ext.trim() for ext in filters.replace(/^\-/, '').split ',')
-      filter = "\\.(?#{if exclude then '!' else '='}#{filters.join '|'})"
+      filter = "\\.(?#{if exclude then '!' else '='}#{filters.join '|'})[^\.]+$"
 
       console.log "new search of #{@_search.content} (filter #{filter})"
       app.searchService.searchFiles @_search.content, filter
+
+    # **private**
+    # Trigger search on keyup within fields
+    #
+    # @param event [Event] keyboard event
+    _onSearchChanged: (event) =>
+      clearTimeout @_search.timeout if @_search.timeout?
+      # manually triggers research
+      return @_triggerSearch true if event.keyCode is $.ui.keyCode.ENTER
+      # defer search
+      @_search.timeout = setTimeout (=> @_triggerSearch()), 1000
 
     # **private**
     # Clear search results and query
