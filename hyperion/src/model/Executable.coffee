@@ -297,7 +297,6 @@ class Executable
               worker.send event: 'executableReset' for id, worker of cluster.workers
             callback err
 
-
   # Find existing executables.
   #
   # @param query [Object|String] optionnal condition to select relevant executables. Same syntax as MongoDB queries, supports:

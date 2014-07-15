@@ -27,30 +27,37 @@ define
     rename: 'renommer'
     
   labels:
-    newFolder: 'Créer un dossier'
-    newFile: 'Créer un fichier'
-    rootFolder: 'la racine'
     fsItemName: 'nom'
+    newFile: 'Créer un fichier'
+    newFolder: 'Créer un dossier'
     openFSItem: 'Ouvrir "%s"'
-    renameFSItem: 'Renommer "%s"'
     removeFSItem: 'Supprimer "%s"'
+    renameFSItem: 'Renommer "%s"'
+    rootFolder: 'la racine'
 
   msgs:
-    newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b> :'
+    closeFileConfirm: "<p>Vous avez modifié le fichier <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
+    externalChangeFSItem: "Ce fichier a été modifié par ailleurs. Son contenu à été mis à jour"
+    fsItemCreationFailed: "<p><b>%1$s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2$s</p>" 
     newFile: 'Veuillez choisir un nom (avec extension) pour le fichier dans <b>%s</b> :'
-    renameFolder: 'Veuillez choisir un nouveau nom ou chemin pour le dossier :'
-    renameFile: 'Veuillez choisir un nouveau nom ou chemin pour le fichier :'
+    newFolder: 'Veuillez choisir un nom pour le dossier dans <b>%s</b> :'
     removeFileConfirm: "<p>Voulez-vous vraiment supprimer le fichier <b>%s</b> ?</p>"
     removeFolderConfirm: "<p>Voulez-vous vraiment supprimer le dosser <b>%s</b> et tout son contenu ?</p>"
-    closeFileConfirm: "<p>Vous avez modifié le fichier <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
-    fsItemCreationFailed: "<p><b>%1$s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2$s</p>" 
-    externalChangeFSItem: "Ce fichier a été modifié par ailleurs. Son contenu à été mis à jour"
+    renameFile: 'Veuillez choisir un nouveau nom ou chemin pour le fichier :'
+    renameFolder: 'Veuillez choisir un nouveau nom ou chemin pour le dossier :'
 
   tips:
-    newFolder: 'Crée un nouveau dossier dans le dossier séléctioné ou la racine'
     newFile: 'Crée un nouveau fichier dans le dossier séléctioné ou la racine'
+    newFolder: 'Crée un nouveau dossier dans le dossier séléctioné ou la racine'
     uploadInSelected: 'Upload un nouveau fichier dans le dossier séléctioné ou la racine'
-    renameSelected: 'Renome le fichier ou dossier séléctioné'
-    removeFolder: 'Supprime le dossier séléctioné'
-    saveFile: "Sauve le fichier en cours d'édition"
     removeFile: "Supprime le fichier en cours d'édition"
+    removeFolder: 'Supprime le dossier séléctioné'
+    renameSelected: 'Renome le fichier ou dossier séléctioné'
+    saveFile: "Sauve le fichier en cours d'édition"
+    searchFiles: """
+      <p>Filtrez les fichiers de l'explorateur en fonction de leur contenu.</p>
+      <p>Vous pouvez utiliser une expression régulière, avec le caractère '/' en début et en fin.</p>
+      <p>Les modifieurs 'i' et 'm' sont supportés : par exemple <var>/app(llication)?/i</var></p>
+      <p>Vous pouvez indiquer les extensions des fichiers dans lesquels rechercher, en les séparant par des virgules. Par exemple <var>css,styl</var> pour chercher dans les feuilles de styles.</p>
+      <p>Pour exclure des extensions, préfixez le tout par '-'. Par exemple : <var>-jpg,png,gif</var> pour chercher partout sauf dans les images.</p>
+    """

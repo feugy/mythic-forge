@@ -318,7 +318,7 @@ adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->
   exposeMethods adminService, socket, ['save', 'remove', 'connectAs']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
-  exposeMethods authoringService, socket, ['move'], ['readRoot', 'save', 'remove']
+  exposeMethods authoringService, socket, [], ['readRoot', 'save', 'remove', 'find']
   exposeMethods deployementService, socket, ['deploy', 'commit', 'rollback', 'createVersion']
   exposeMethods ruleService, socket, [], ['export', 'resolve', 'execute']
 

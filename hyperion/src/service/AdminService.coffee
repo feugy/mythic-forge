@@ -233,7 +233,7 @@ class _AdminService
         return unqueue null, null 
 
       when 'FSItem'
-        return authoringService.save values, email, (err, saved) -> callback err, modelName, saved
+        return authoringService.save values, (err, saved) -> callback err, modelName, saved
 
     # do not directly save Mongoose models
     if 'toObject' of values and values.toObject instanceof Function
@@ -319,7 +319,7 @@ class _AdminService
         return unqueue null
 
       when 'FSItem'
-        return authoringService.remove values, email, (err, removed) -> callback err, modelName, removed
+        return authoringService.remove values, (err, removed) -> callback err, modelName, removed
 
     # get existing values
     modelClass.findCached [values.id], (err, models) ->

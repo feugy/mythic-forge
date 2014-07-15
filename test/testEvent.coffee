@@ -113,7 +113,9 @@ describe 'Event tests', ->
         return done err if err?
         Event.collection.drop -> Event.loadIdCache ->
           event = new Event {type: type}
-          event.save done
+          event.save (err) ->
+            # wait a little to avoid to fast save+update that prevent 'updated' to be detected as modified
+            setTimeout (-> done err), 10
 
     it 'should not accept invalid JSON property', (done) ->
       # when modifying the Json value with invalid JSON

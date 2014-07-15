@@ -22,45 +22,44 @@ define
   root: 
     logs:
       dateFormat: 'DD-MM-YY HH:mm:ss'
-      nameMaxLength: 15
       levelMaxLength: 5
+      nameMaxLength: 15
 
     titles:
-      deployView: 'Game client'
-      turnView: 'Turn'
-      createVersion: 'New version'
       confirmDeploy: 'Production deployment'
-      deployed: 'Finished deployment'
       confirmRestore: 'Restore confirmation'
+      createVersion: 'New version'
+      deployed: 'Finished deployment'
+      deployView: 'Game client'
       logView: 'Server logs'
-      timeView: 'Game time'
       ruleError: 'Rule error'
+      timeView: 'Game time'
+      turnView: 'Turn'
 
     labels:
-      gameVersions: 'Development version'
-      deployVersion: 'Deploy in production'
-      waitingCommit: 'Waiting confirmation from %s'
-      DEPLOY_START: 'deployment started...'
-      COMPILE_STYLUS: 'Stylus compilation...'
       COMPILE_COFFEE: 'CoffeeScript compilation...'
-      OPTIMIZE_JS: 'JavaScript optimization...'
-      OPTIMIZE_HTML: 'Html optimization...'
-      DEPLOY_FILES: 'files deployment...'
-      DEPLOY_END: 'deployment ended !'
-      COMMIT_START: 'commiting deployment...'
+      COMPILE_STYLUS: 'Stylus compilation...'
       COMMIT_END: 'déployment commited !'
-      ROLLBACK_START: 'starting rollback...'
-      ROLLBACK_END: 'deployment rollbacked !'
+      COMMIT_START: 'commiting deployment...'
+      DEPLOY_END: 'deployment ended !'
+      DEPLOY_START: 'deployment started...'
+      deployVersion: 'Deploy in production'
+      gameVersions: 'Development version'
       noRules: 'no available rule'
+      OPTIMIZE_HTML: 'Html optimization...'
+      OPTIMIZE_JS: 'JavaScript optimization...'
+      ROLLBACK_END: 'deployment rollbacked !'
+      ROLLBACK_START: 'starting rollback...'
+      waitingCommit: 'Waiting confirmation from %s'
       
     buttons:
-      deploy: 'Go !'
-      createVersion: 'Create'
       commit: 'Commit'
-      rollback: 'Rollback'
-      triggerTurn: 'Trigger turn'
+      createVersion: 'Create'
+      deploy: 'Go !'
       pauseTime: 'Pause'
       playTime: 'Resume'
+      triggerTurn: 'Trigger turn'
+      rollback: 'Rollback'
 
     msgs: 
       confirmDeploy: """<p>You're about to deploy devlopment game client to production.</p>
@@ -72,18 +71,18 @@ define
           <li>If you rollback it, previous production version will be restored and onlined</li>
         </ol>
         <p>Please name the deployed version:</p>"""
-      createVersion: 'Choose a name for the new version:'
       confirmRestore: """<p>You're about to restore version \'%1s\'.</p>
         <p><b>All modification from development version (%2s) will be lost.</b></p>
         <p>Do you really wish to proceed ?</p>"""
+      createVersion: 'Choose a name for the new version:'
       deployed: """<p>Deployment has succeeded !</p>
         <p>From now, you can check the deployed version.</p>
         <p>To end the deployment, you must commit or rollback it.</p>"""
 
     errors:
-      missingVersion: 'Version is required'
-      versionWithSpace: 'Spaces are not allowed'
-      version: "<p>Restoration or creation of a new version failed:</p><p>%s</p>"
       deploy: """<p>Deployment has failed:</p>
         <p>%s</p>
         <p>Game client currently in production was not modified.</p>"""
+      missingVersion: 'Version is required'
+      version: "<p>Restoration or creation of a new version failed:</p><p>%s</p>"
+      versionWithSpace: 'Spaces are not allowed'

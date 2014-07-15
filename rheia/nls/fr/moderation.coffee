@@ -20,56 +20,56 @@
 define
 
   titles:
-    item: '%1$s (%2$s)'
-    event: '%1$s (%2$s)'
-    player: '%1$s (%2$s)'
-    createItem: "Création d'un objet"
-    createEvent: "Création d'un évènement"
-    shadowObj: 'Operation impossible'
-    copyItem: "Copie d'un objet"
     copyEvent: "Copie d'un évènement"
+    copyItem: "Copie d'un objet"
+    createEvent: "Création d'un évènement"
+    createItem: "Création d'un objet"
+    event: '%1$s (%2$s)'
+    item: '%1$s (%2$s)'
+    player: '%1$s (%2$s)'
+    shadowObj: 'Operation impossible'
 
   labels: 
-    maps: 'Cartes'
-    map: 'Carte'
     abscissa: 'X'
-    ordinate: 'Y'
-    noMap: 'aucune'
-    quantity: 'Quantité'
-    from: 'Par'
+    characters: 'Personnages'
     creationDate: 'Créé le'
-    updateDate: 'Modifié le'
-    newEmail: 'Login/E-mail'
     email: 'Login'
+    embodiment: 'Incarné'
+    firstName: 'Prénom'
+    from: 'Par'
     isAdmin: 'Administrateur'
+    lastConnection: 'Connexion le'
+    lastName: 'Nom'
+    map: 'Carte'
+    maps: 'Cartes'
+    newEmail: 'Login/E-mail'
+    noEmbodiment: '~~'
+    noMap: 'aucune'
+    noTransition: 'aucune'
+    ordinate: 'Y'
+    password: 'Mot de passe'
+    prefs: 'Préférences'
     provider: 'Origine'
     providers: [
-      value: 'Google', label: 'Google'
-    ,
-      value: 'Twitter', label: 'Twitter'
+      value: null, label: 'Manuel'
     ,
       value: 'Github', label: 'Github'
     ,
-      value: null, label: 'Manuel'
+      value: 'Google', label: 'Google'
+    ,
+      value: 'Twitter', label: 'Twitter'
     ]
-    password: 'Mot de passe'
-    characters: 'Personnages'
-    firstName: 'Prénom'
-    lastName: 'Nom'
-    lastConnection: 'Connexion le'
-    prefs: 'Préférences'
+    quantity: 'Quantité'
     transition: 'Transition'
-    noTransition: 'aucune'
-    noEmbodiment: '~~'
-    embodiment: 'Incarné'
+    updateDate: 'Modifié le'
 
   tips:
     connectAs: 'Faites vous passer pour ce joueur dans client de jeu'
     copy: "Duplique l'objet ou l'évènement"
     embody: 'Incarnez cet objet pour lancer des règles depuis Rheia'
     kick: 'Déconnectez le joueur !'
-    newItem: 'Créer un nouvel objet'
     newEvent: 'Créer un nouvel évènement'
+    newItem: 'Créer un nouvel objet'
     newPlayer: 'Créer un nouvel compte joueur'
     searchInstances: """
         <p>Une requête de recherche se compose d'un ou plusieurs champs, séparé par des opérateurs ('or', 'and') et groupé avec des parenthèses.</p>
@@ -103,18 +103,18 @@ define
        </ul>"""
         
   msgs:
+    chooseEventType: "<p>Choisissez un type et un identifiant pour le nouvel évènement.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
+    chooseItemType: "<p>Choisissez un type et un identidiant pour le nouvel objet.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
+    executeRule: """<p>Impossible d'éxécuter la règle %s sur %s:</p><p>%s</p>"""
+    externalChangeEvent: "Cet évènement à été modifié par ailleurs. Ses valeurs ont été mises à jour"
+    externalChangeItem: "Cet objet à été modifié par ailleurs. Ses valeurs ont été mises à jour"
+    externalChangePlayer: "Ce joueur à été modifié par ailleurs. Ses valeurs ont été mises à jour"
+    invalidEmail: 'Le login/e-mail est vide ou contient des caractères invalides'
+    invalidPrefs: 'Préférences : erreur de syntaxe JSON'
+    noEmbodiment: 'Pour appliquer les règles, il faut au préalable incarner un objet de votre choix.'
+    noTypes: 'Aucun type disponible. Veuillez en créer un dans la perspective d\'Edition.'
     removeItemConfirm: "<p>Voulez-vous vraiment supprimer l'objet <b>%s</b> ?</p>"
     removeEventConfirm: "<p>Voulez-vous vraiment supprimer l'évènement <b>%s</b> ?</p>"
     removePlayerConfirm: "<p>Voulez-vous vraiment supprimer le joueur <b>%s</b> ?</p>"
-    externalChangeItem: "Cet objet à été modifié par ailleurs. Ses valeurs ont été mises à jour"
-    externalChangeEvent: "Cet évènement à été modifié par ailleurs. Ses valeurs ont été mises à jour"
-    externalChangePlayer: "Ce joueur à été modifié par ailleurs. Ses valeurs ont été mises à jour"
-    chooseItemType: "<p>Choisissez un type et un identidiant pour le nouvel objet.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
-    chooseEventType: "<p>Choisissez un type et un identifiant pour le nouvel évènement.</p><p><b>Attention :</b> ses données ne pourront pas être modifiée par la suite.</p>"
-    invalidPrefs: 'Préférences : erreur de syntaxe JSON'
-    shadowObj: "<p>L'objet en question n'existe plus: il a dû être supprimé depuis votre dernière recherche.</p><p>Votre recherche a été mise à jour.<p/>"
-    invalidEmail: 'Le login/e-mail est vide ou contient des caractères invalides'
-    noTypes: 'Aucun type disponible. Veuillez en créer un dans la perspective d\'Edition.'
-    noEmbodiment: 'Pour appliquer les règles, il faut au préalable incarner un objet de votre choix.'
     resolveRules: """<p>Impossible de résoudre les règles pour %s:</p><p>%s</p>"""
-    executeRule: """<p>Impossible d'éxécuter la règle %s sur %s:</p><p>%s</p>"""
+    shadowObj: "<p>L'objet en question n'existe plus: il a dû être supprimé depuis votre dernière recherche.</p><p>Votre recherche a été mise à jour.<p/>"

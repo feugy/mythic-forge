@@ -64,7 +64,7 @@ describe 'AuthoringService tests', ->
     # given a new file
     item = new FSItem 'file.txt', false
     # when saving it 
-    service.save item, 'admin', (err, saved) ->
+    service.save item, (err, saved) ->
       return done "Cannot save file: #{err}" if err?
       # then the file was saved
       expect(saved).to.satisfy (o) -> item.equals o
@@ -76,7 +76,7 @@ describe 'AuthoringService tests', ->
     # given a new file
     item = new FSItem "folder", true
     # when saving it 
-    service.save item, 'admin', (err, saved) ->
+    service.save item, (err, saved) ->
       return done "Cannot save folder: #{err}" if err?
       # then nonotification issued
       expect(notifications).to.have.lengthOf 0
@@ -125,7 +125,7 @@ describe 'AuthoringService tests', ->
         return done err if err?
         file = new FSItem 'folder/image1.png', false
         file.content = data
-        service.save file, 'admin', (err, saved) ->
+        service.save file, (err, saved) ->
           return done err if err?
           file = saved
           done()
@@ -147,7 +147,7 @@ describe 'AuthoringService tests', ->
         return done err if err?
         file.content = data
         # when saving it 
-        service.save file, 'admin', (err, saved) ->
+        service.save file, (err, saved) ->
           return done "Cannot save existing file: #{err}" if err?
           # then the file was saved
           expect(saved).to.satisfy (o) -> file.equals o
@@ -161,7 +161,7 @@ describe 'AuthoringService tests', ->
     it 'should file content be moved', (done) -> 
       # when reading the folder
       oldPath = "#{file.path}"
-      service.move file, 'folder5/newFile', 'admin', (err, moved) ->
+      service.move file, 'folder5/newFile', (err, moved) ->
         return done "Cannot move file: #{err}" if err?
         # then new file is created
         expect(moved).to.have.property('path').that.is.not.equal oldPath
@@ -178,7 +178,7 @@ describe 'AuthoringService tests', ->
 
     it 'should file be removed', (done) -> 
       # when removing the file
-      service.remove file, 'admin', (err, removed) ->
+      service.remove file, (err, removed) ->
         return done "Cannot remove file: #{err}" if err?
         # then the file was removed
         expect(removed).to.satisfy (o) -> file.equals o
@@ -202,7 +202,7 @@ describe 'AuthoringService tests', ->
             return done err if err?
             file = new FSItem 'common.coffee', false
             file.content = data
-            service.save file, 'admin', (err, saved) ->
+            service.save file, (err, saved) ->
               return done err if err?
               executable = new Executable id: 'test', content: exeContent1
               executable.save (err) ->
@@ -216,7 +216,7 @@ describe 'AuthoringService tests', ->
                     fs.readFile join(__dirname, 'fixtures', 'common.coffee.v2'), (err, data) ->
                       return done err if err?
                       file.content = data
-                      service.save file, 'admin', (err, saved) ->
+                      service.save file, (err, saved) ->
                         return done err if err?
                         executable.content = exeContent2
                         executable.save (err) ->
@@ -310,7 +310,7 @@ describe 'AuthoringService tests', ->
 
     it 'should removed file and executable appears in restorable list', (done) ->
       # given a removed file
-      service.remove file, 'admin', (err) ->
+      service.remove file, (err) ->
         return done err if err?
         executable.remove (err) ->
           return done err if err?
@@ -332,13 +332,13 @@ describe 'AuthoringService tests', ->
 
     before (done) ->
       folder = new FSItem 'folder/folder2', true
-      service.save folder, 'admin', (err, saved) ->
+      service.save folder, (err, saved) ->
         return done err if err?
         folder = saved
         async.forEachSeries ['file1.txt', 'file2.txt'], (file, next) ->
           item = new FSItem join(folder.path, file), false
           files.push item
-          service.save item, 'admin', next
+          service.save item, next
         , (err) ->
           return done err if err?
           done()
@@ -361,7 +361,7 @@ describe 'AuthoringService tests', ->
     it 'should folder content be moved', (done) -> 
       # when reading the folder
       oldPath = "#{folder.path}"
-      service.move folder, 'folder3/folder4', 'admin', (err, moved) ->
+      service.move folder, 'folder3/folder4', (err, moved) ->
         return done "Cannot move folder: #{err}" if err?
         # then new folder is created and old one removed
         expect(moved).to.have.property('path').that.is.not.equal oldPath
@@ -374,7 +374,7 @@ describe 'AuthoringService tests', ->
 
     it 'should folder be removed', (done) -> 
       # when removing the folder
-      service.remove folder, 'admin', (err, removed) ->
+      service.remove folder, (err, removed) ->
         return done "Cannot remove folder: #{err}" if err?
         # then nonotification issued
         expect(notifications).to.have.lengthOf 0

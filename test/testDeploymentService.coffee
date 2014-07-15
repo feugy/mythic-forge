@@ -262,9 +262,9 @@ describe 'Deployement tests', ->
     it 'should deploy, save, remove, move and restoreVersion be disabled while deploying', (done) ->
       async.forEach [
         {method: 'deploy', args: ['2.0.0', 'admin'], service: service}
-        {method: 'save', args: ['index.html', 'admin'], service: authoringService}
-        {method: 'remove', args: ['index.html', 'admin'], service: authoringService}
-        {method: 'move', args: ['index.html', 'index.html2', 'admin'], service: authoringService}
+        {method: 'save', args: ['index.html'], service: authoringService}
+        {method: 'remove', args: ['index.html'], service: authoringService}
+        {method: 'move', args: ['index.html', 'index.html2'], service: authoringService}
         {method: 'restoreVersion', args: [version], service: service}
       ], (spec, next) ->
         # when invoking the medhod

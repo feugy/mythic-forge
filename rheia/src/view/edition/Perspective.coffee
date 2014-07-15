@@ -69,8 +69,7 @@ define [
       @_explorer = new Explorer()
 
       # bind to global events
-      @bindTo app.router, 'searchResults', (err, instances, results) =>
-        return if instances is true
+      @bindTo app.router, 'searchTypesResults', (err, results) =>
         if err?
           # displays an error
           @_searchWidget.setOption 'results', []

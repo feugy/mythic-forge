@@ -377,6 +377,7 @@ describe 'Authentication tests', ->
               return done "Failed to find created account in db: #{err}" if err? or saved is null
               expect(saved).not.to.have.property 'firstName'
               expect(saved).to.have.property 'id'
+              expect(saved).to.have.property('provider').that.equal 'Github'
               expect(saved).to.have.property('lastName').that.equal 'mythic-forge-test'
               expect(saved).to.have.property('token').that.equal token
               expect(saved).to.have.property 'lastConnection'
@@ -400,6 +401,7 @@ describe 'Authentication tests', ->
             # then account has been updated with new token
             Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
               return done "Failed to find created account in db: #{err}" if err?
+              expect(saved).to.have.property('provider').that.equal 'Github'
               expect(saved).to.have.property('token').that.equal token2
               expect(saved).to.have.property 'lastConnection'
               expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
@@ -455,6 +457,7 @@ describe 'Authentication tests', ->
                 # then account has been created and populated
                 Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
                   return done "Failed to find created account in db: #{err}" if err? or saved is null
+                  expect(saved).to.have.property('provider').that.equal 'Github'
                   expect(saved).to.have.property('token').that.equal token2
                   expect(saved).to.have.property 'lastConnection'
                   expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()

@@ -18,6 +18,9 @@
 ###
 'use strict'
 
+async = require 'async'
+_ = require 'underscore'
+{relative} = require 'path'
 ItemType = require '../model/ItemType'
 Item = require '../model/Item'
 FieldType = require '../model/FieldType'
@@ -26,10 +29,11 @@ Event = require '../model/Event'
 Map = require '../model/Map'
 Executable = require '../model/Executable'
 Player = require '../model/Player'
-{fromRule, type} = require '../util/common'
-async = require 'async'
-_ = require 'underscore'
+{fromRule, type, find} = require '../util/common'
+authoringService = require('../service/AuthoringService').get()
 logger = require('../util/logger').getLogger 'service'
+
+regDetection = /^\/(.*)\/(i|m)?(i|m)?$/
 
 # Function that validate the query content, regarding what is possible in `searchType()`
 # 
@@ -76,7 +80,7 @@ enhanceTypeQuery = (query) ->
     value = query[attr]
     # special case of regexp strings that must be transformed
     if 'string' is type value
-      match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
+      match = regDetection.exec value
       value = new RegExp match[1], match[2], match[3] if match?
     switch attr
       when 'and', 'or'
@@ -121,7 +125,7 @@ class _SearchService
       value = query[attr]
       # special case of regexp strings that must be transformed
       if 'string' is type value
-        match = /^\/(.*)\/(i|m)?(i|m)?$/.exec value
+        match = regDetection.exec value
         query[attr] = new RegExp match[1], match[2], match[3] if match?
 
       switch attr
@@ -292,6 +296,39 @@ class _SearchService
         # return aggregated results
         return callback err if err?
         callback null, results
+
+  # Search for content into authoring files.
+  #
+  # @param searched [String] the search string. RegExp values are supported: "/.*/i" will be parsed into /.*/i
+  # @param include [String] file include RegExp, to filter files. Default to /^.*$/
+  # @param callback [Function] result callback, invoked with arguments
+  # @option callback err [Error] an error, or null if no error occured
+  # @option callback results [Array<FSItem>] array (may be empty) of matching (unread) file
+  searchFiles: (searched, include, callback) =>
+    # default value for include, if not specified
+    if _.isFunction include 
+      callback = include
+      include = '^.*$'
+    # handle regExp searched value
+    match = regDetection.exec searched
+
+    try 
+      if match?
+        searched = new RegExp match[1], match[2], match[3]
+      else
+        # replace meaningfull character
+        searched = new RegExp searched.replace /([.?*+^$[\]\\(){}|-])/g, '\\$1'
+    catch exc
+      return callback new Error "invalid file content expression: #{exc}"
+
+    try
+      include = new RegExp include
+    catch exc
+      return callback new Error "invalid file name expression: #{exc}"
+
+    logger.debug "search in files #{include} for content #{searched}"
+    # delegate to authoringService
+    authoringService.find include, searched, callback
 
 # singleton instance
 _instance = undefined

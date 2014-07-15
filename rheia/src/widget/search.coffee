@@ -46,7 +46,7 @@ define [
 
     # **private**
     # input search timeout.
-    _searchTimout: null
+    _searchTimeout: null
 
     # **private**
     # result show timeout.
@@ -59,6 +59,10 @@ define [
     # **private**
     # Stores the name of the tree widget used
     _treeWidget: null
+
+    # **private**
+    # Action used to search or clear search
+    _actionIcon: null
 
     # Builds rendering
     constructor: (element, options) ->
@@ -75,14 +79,16 @@ define [
         <div class="results"></div>"""
 
       # help tooltip, made with toggleable
-      tip = @$el.find('.help-content').toggleable(closeOnOut: false, firstShowDelay: 0).data 'toggleable'
+      tip = @$el.find('.help-content').toggleable().data 'toggleable'
       help = @$el.find('.help').mouseover (event) => 
         {left, top} = help.offset()
         tip.open left, top
       
       # bind on input changes and click events
       @$el.find('input').keyup @_onChange
-      @$el.find('.ui-icon-search').click (event) => @triggerSearch()
+      @_actionIcon = @$el.find '.ui-icon-search'
+      @_actionIcon.click @_onClearSearch
+
       @_results = @$el.find('.results').hide()[@_treeWidget]
         openAtStart: true
         hideEmpty: true
@@ -98,7 +104,8 @@ define [
 
     # Frees DOM listeners
     dispose: =>
-      @$el.find('input, .ui-icon-search').off()
+      @_actionIcon.off()
+      @$el.find('input').off()
       super()
 
     # Parse the input query, and if correct, trigger the server call.
@@ -119,7 +126,7 @@ define [
       # avoid empty queries unless told to do
       return if query is '' and !force
       @_searchPending = true
-      clearTimeout @_searchTimout if @_searchTimout?
+      clearTimeout @_searchTimeout if @_searchTimeout?
 
       # hide results
       @_refresh = refresh
@@ -139,13 +146,13 @@ define [
       switch key
         when 'results'
           # checks that results are an array
-          return unless Array.isArray value
           @_searchPending = false
           @options.results = value
-
           # displays results number
           @_displayResultNumber()
+          @_actionIcon.removeClass('ui-icon-search').addClass 'ui-icon-close'
 
+          return unless Array.isArray value
           # set max height because results are absolutely positionned
           @_results.css 'max-height', @$el.offsetParent().height()*0.75
           # update tree content
@@ -156,14 +163,23 @@ define [
 
     # display result number
     _displayResultNumber: =>
-      html = ''
-      if @options.results.length is 0
-        html = i18n.search.noResults
-      else if @options.results.length is 1
-        html = i18n.search.oneResult
-      else
-        html = _.sprintf i18n.search.nbResults, @options.results.length
-      @$el.find('.nb-results').html html
+      @$el.find('.nb-results').html (
+        switch @options.results?.length
+          when 0 then html = i18n.search.noResults
+          when 1 then html = i18n.search.oneResult
+          when undefined then ''
+          else _.sprintf i18n.search.nbResults, @options.results.length
+      )
+
+    # **private**
+    # Clear search results and query
+    _onClearSearch: =>
+      @$el.find('input').val ''
+      @_actionIcon.removeClass('ui-icon-close').addClass 'ui-icon-search'
+      # hide results before reseting them
+      @_onHideResults()
+      @options.results = null
+      @_displayResultNumber()
 
     # **private**
     # Displays the result popup, with a slight delay to avoir openin if mouse leave the widget.
@@ -190,11 +206,11 @@ define [
     #
     # @param event [Event] keyboard event
     _onChange: (event) =>
-      clearTimeout @_searchTimout if @_searchTimout?
+      clearTimeout @_searchTimeout if @_searchTimeout?
       # manually triggers research
       return @triggerSearch false, true if event.keyCode is $.ui.keyCode.ENTER
       # defer search
-      @_searchTimout = setTimeout (=> @triggerSearch()), 1000
+      @_searchTimeout = setTimeout (=> @triggerSearch()), 1000
 
   # widget declaration
   Search._declareWidget 'search', 

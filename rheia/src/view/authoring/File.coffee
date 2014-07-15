@@ -69,12 +69,18 @@ define [
     # File rendering in image mode
     _image: null
 
+    # **private**
+    # At opening, highlight some string if comming from search
+    _highlight: null
+
     # The view constructor. The edited file system item must be a file, with its content poplated
     #
     # @param file [FSItem] the edited object.
-    constructor: (id) ->
+    # @param highlight [String] highlighten content, if item is a file. Default to null
+    constructor: (id, highlight = null) ->
       super id, 'file'
-      
+      @_highlight = highlight
+
       # only if content is not already loaded
       unless @model.content?
         # get the file content, and display it when arrived without external warning
@@ -136,6 +142,9 @@ define [
       else
         @_editorWidget.setOption 'mode', @_mode
         @_editorWidget.setOption 'text', utf8.decode restoredContent or @model.content or ''
+        if @_highlight?
+          @_editorWidget.find @_highlight
+          @_highlight = null
 
       # to update displayed icon
       @_onChange()

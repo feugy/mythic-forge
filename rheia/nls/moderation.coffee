@@ -21,56 +21,56 @@ define
   fr: true
   root: 
     titles:
-      item: '%1$s (%2$s)'
-      event: '%1$s (%2$s)'
-      player: '%1$s (%2$s)'
-      createItem: 'Object creation'
-      createEvent: 'Event creation'
-      shadowObj: 'Outdated result'
-      copyItem: 'Object duplication'
       copyEvent: 'Event duplication'
+      copyItem: 'Object duplication'
+      createEvent: 'Event creation'
+      createItem: 'Object creation'
+      event: '%1$s (%2$s)'
+      item: '%1$s (%2$s)'
+      player: '%1$s (%2$s)'
+      shadowObj: 'Outdated result'
 
     labels: 
-      maps: 'Maps'
-      map: 'Map'
       abscissa: 'X'
-      ordinate: 'Y'
-      noMap: 'none'
-      quantity: 'Quantity'
-      from: 'From'
+      characters: 'Characters'
       creationDate: 'Created on'
-      updateDate: 'Updated on'
-      newEmail: 'Login/mail'
+      embodiment: 'Embodied'
       email: 'Login'
+      from: 'From'
+      firstName: 'First name'
       isAdmin: 'Administrator'
+      lastConnection: 'Connected on'
+      lastName: 'Last name'
+      map: 'Map'
+      maps: 'Maps'
+      newEmail: 'Login/mail'
+      noEmbodiment: '~~'
+      noMap: 'none'
+      noTransition: 'none'
+      ordinate: 'Y'
+      password: 'Password'
+      prefs: 'Settings'
       provider: 'Provider'
       providers: [
-        value: 'Google', label: 'Google'
-      ,
-        value: 'Twitter', label: 'Twitter'
+        value: null, label: 'Manual'
       ,
         value: 'Github', label: 'Github'
       ,
-        value: null, label: 'Manual'
+        value: 'Google', label: 'Google'
+      ,
+        value: 'Twitter', label: 'Twitter'
       ]
-      password: 'Password'
-      characters: 'Characters'
-      firstName: 'First name'
-      lastName: 'Last name'
-      lastConnection: 'Connected on'
-      prefs: 'Settings'
+      quantity: 'Quantity'
+      updateDate: 'Updated on'
       transition: 'Transition'
-      noTransition: 'none'
-      noEmbodiment: '~~'
-      embodiment: 'Embodied'
 
     tips:
       connectAs: 'Connect as this player in the game client'
       copy: 'Duplicate existing object or event'
-      kick: "Kick player's ass !"
       embody: "Embody this actor to trigger rules from Rheia"
-      newItem: 'Creates a new object'
+      kick: "Kick player's ass !"
       newEvent: 'Creates a new event'
+      newItem: 'Creates a new object'
       newPlayer: 'Creates a new player account'
       searchInstances: """
           <p>A search request is composed of one or more fields, separated with operators ('or', 'and') and grouped with parenthesis.</p>
@@ -104,18 +104,18 @@ define
           </ul>"""
           
     msgs:
-      removeItemConfirm: "<p>Do you really whish to remove object <b>%s</b> ?</p>"
-      removeEventConfirm: "<p>Do you really whish to remove event <b>%s</b> ?</p>"
-      removePlayerConfirm: "<p>Do you really whish to remove player <b>%s</b> ?</p>"
-      externalChangeItem: "This object has been externally modified. Its values where updated"
-      externalChangeEvent: "This event has been externally modified. Its values where updated"
-      externalChangePlayer: "This player has been externally modified. Its values where updated"
-      chooseItemType: "<p>Please choose a type and an identifier for the created object.</p><p><b>Beware:</b> thoses values cannot be changed in the future.</p>"
       chooseEventType: "<p>Please choose a type and an identifier for the created event.</p><p><b>Beware:</b> thoses values cannot be changed in the future.</p>"
-      invalidPrefs: 'Settings: JSON syntax error'
-      shadowObj: "<p>This object/event/player does not exist anymore: it has probably removed since your last search.</p><p>Search results where updated consequently.<p/>"
-      invalidEmail: 'Login/email is empty or has invalid characters'
-      noTypes: 'No available type. Please create one first in Edition perspective.'
-      noEmbodiment: 'To apply rules, you must first embody an object.'
-      resolveRules: """<p>Cannot resolve rules for object %s:</p><p>%s</p>"""
+      chooseItemType: "<p>Please choose a type and an identifier for the created object.</p><p><b>Beware:</b> thoses values cannot be changed in the future.</p>"
       executeRule: """<p>Cannot execute rule %s on object %s:</p><p>%s</p>"""
+      externalChangeEvent: "This event has been externally modified. Its values where updated"
+      externalChangeItem: "This object has been externally modified. Its values where updated"
+      externalChangePlayer: "This player has been externally modified. Its values where updated"
+      invalidEmail: 'Login/email is empty or has invalid characters'
+      invalidPrefs: 'Settings: JSON syntax error'
+      noEmbodiment: 'To apply rules, you must first embody an object.'
+      noTypes: 'No available type. Please create one first in Edition perspective.'
+      removeEventConfirm: "<p>Do you really whish to remove event <b>%s</b> ?</p>"
+      removeItemConfirm: "<p>Do you really whish to remove object <b>%s</b> ?</p>"
+      removePlayerConfirm: "<p>Do you really whish to remove player <b>%s</b> ?</p>"
+      resolveRules: """<p>Cannot resolve rules for object %s:</p><p>%s</p>"""
+      shadowObj: "<p>This object/event/player does not exist anymore: it has probably removed since your last search.</p><p>Search results where updated consequently.<p/>"

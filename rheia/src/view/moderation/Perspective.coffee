@@ -186,8 +186,7 @@ define [
         @bindTo app.router, 'embodyChanged', @_onRefreshEmbodiment
         @bindTo app.router, 'copy', @_onCopy
 
-        @bindTo app.router, 'searchResults', (err, instances, results) =>
-          return unless instances is true
+        @bindTo app.router, 'searchInstancesResults', (err, results) =>
           if err?
             # displays an error
             @_searchWidget.setOption 'results', []

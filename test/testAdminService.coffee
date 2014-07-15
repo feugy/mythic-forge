@@ -200,7 +200,7 @@ describe 'AdminService tests', ->
           path: 'folder/test.txt'
           isFolder: false
           content: new Buffer('Hi !').toString 'base64'
-        , 'admin', (err, result) ->
+        , (err, result) ->
           return callback err if err?
           fsItem = result
           

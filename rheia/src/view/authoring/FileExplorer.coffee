@@ -71,6 +71,23 @@ define [
     path2 = item2.path.toLowerCase()
     if path1 < path2 then -1 else if path1 > path2 then 1 else 0
 
+  # Comparator function that sort alphabetically FSItem regarding the last part of their path
+  # For files, group by extension 
+  #
+  # @param item1 [FSItem] the first compared FSItem
+  # @param item2 [FSItem] the second compared FSItem
+  # @return -1 if the first FSItem should come before the second, 0 if they 
+  # are of the same rank and 1 if the first FSItem should come after. 
+  restrictedComparator = (item1, item2) =>
+    path1 = item1.path[item1.path.lastIndexOf(conf.separator)+1..].toLowerCase()
+    path2 = item2.path[item2.path.lastIndexOf(conf.separator)+1..].toLowerCase()
+    ext1 = path1[path1.lastIndexOf('.')+1..].toLowerCase()
+    ext2 = path2[path2.lastIndexOf('.')+1..].toLowerCase()
+    # use extensions instead of paths if extension differs, allow grouping
+    [path1, path2] = [ext1, ext2] if ext1 isnt ext2
+    if path1 < path2 then -1 else if path1 > path2 then 1 else 0
+
+
   # The FileExplorer view allow to navigate within folders and files of the game client.
   class FileExplorer extends Backbone.View
     
@@ -105,7 +122,7 @@ define [
       super tagName: 'div', className:"file explorer"
 
       # bind to global events
-      @bindTo FSItem.collection, 'reset', @_onReset
+      @bindTo FSItem.collection, 'reset', => @displayFiles()
       @bindTo FSItem.collection, 'update', @_onUpdate
       @bindTo FSItem.collection, 'add', @_onAdd
       @bindTo FSItem.collection, 'remove', @_onRemove
@@ -124,6 +141,25 @@ define [
       # for chaining purposes
       @
       
+    # Effectively display the root content, with optionnal filter (for search results)
+    #
+    # @param restrict [Array<String>] an array of FSItem path to display. Don't specify to display all collection
+    displayFiles: (restrict = null) =>
+      # use filter to choose which item to render
+      if restrict? 
+        # display only filtered results, and sort alphabetically
+        models = FSItem.collection.filter (o) -> o.path in restrict 
+        models.sort restrictedComparator
+      else 
+        # takes only first level element and sort them
+        models = FSItem.collection.filter (o) -> 0 is _.count o.path, conf.separator
+        models.sort comparator
+
+      # redraw all content inside parent.
+      @$el.empty()
+      @$el.append renderItem subItem for subItem in models
+      @$el.append @_menu.$el
+
     # **private**
     # Fills and displays contextual menu
     #
@@ -157,19 +193,6 @@ define [
       """
       @_menu.$el.append content
       @_menu.open event?.pageX, event?.pageY
-
-    # **private**
-    # Handler invoked when the root content have been retrieved
-    #
-    # @param collection [FSItem.collection] the list of root FSItem
-    _onReset: (collection) =>
-      # sort content: first folder, then item
-      collection.models.sort comparator
-
-      # redraw all content inside parent.
-      @$el.empty()
-      @$el.append renderItem subItem for subItem in collection.models
-      @$el.append @_menu.$el
 
     # **private**
     # New item added handler: update the tree if this item should appear

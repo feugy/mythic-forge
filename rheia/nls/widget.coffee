@@ -24,25 +24,25 @@ define
       noImage: 'No image'
 
     search:
+      nbResults: '%d results'
       noResults: 'Empty results'
       oneResult: '1 result'
-      nbResults: '%d results'
 
     spriteImage:
+      add: 'Add'
       dimensions: 'w x h '
+      duration: 'Duration'
+      name: 'Name'
+      newName: 'sprite'
+      number: 'Number'
       sprites: 'Sprites:'
       rank: 'Rank'
-      name: 'Name'
-      number: 'Number'
-      duration: 'Duration'
-      add: 'Add'
-      newName: 'sprite'
       unsavedSprite: 'Sprite name "%s" is already used, please choose another one'
 
     property:
+      isFalse: 'false'
       isNull: 'null'
       isTrue: 'true'
-      isFalse: 'false'
       objectTypes: [{
         val:'Any'
         name:"objects/events"
@@ -68,13 +68,13 @@ define
       unbind: "unlink object/event"
 
     authoringMap:
-      tipPos: "x: %s y: %s"
       tipObj: "%s (#%s)"
+      tipPos: "x: %s y: %s"
 
     advEditor:
       find: 'Search:'
-      replaceBy: 'Replace with:'
-      findPrev: 'previous result'
       findNext: 'next result'
+      findPrev: 'previous result'
       replace: 'replace first result'
       replaceAll: 'replace all results'
+      replaceBy: 'Replace with:'

@@ -22,7 +22,7 @@ _ = require 'underscore'
 FSItem = require '../model/FSItem'
 Executable = require '../model/Executable'
 {resolve, normalize, join, relative, extname} = require 'path'
-{purgeFolder, confKey, fromRule} = require '../util/common'
+{purgeFolder, confKey, fromRule, find} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
 versionService = require('./VersionService').get()
 deployementService = require('./DeployementService').get()
@@ -60,6 +60,18 @@ class _AuthoringService
       root = resolve normalize confKey 'game.client.dev'
       callback null
 
+  # Find existing FSItem (only files, not folders).
+  #
+  # @param name [RegExp] file name regular expression.
+  # @param content [RegExp] file content regular expression.
+  # @param callback [Function] result callback, invoked with arguments
+  # @option callback err [Error] an error, or null if no error occured
+  # @option callback results [Array<FSItem>] array (may be empty) of matching (unread) file
+  find: (name, content, callback) =>
+    find root, name, content, (err, results) =>
+      # do not return relative results
+      callback err, (new FSItem(path: relative root, item) for item in results)
+
   # Retrieves the root FSItem, populated with its content.
   #
   # @param callback [Function] end callback, invoked with two arguments
@@ -82,7 +94,7 @@ class _AuthoringService
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback saved [FSItem] the saved fSItem
-  save: (item, email, callback) =>
+  save: (item, callback) =>
     return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
@@ -103,11 +115,10 @@ class _AuthoringService
   # Only one deletion event will be triggered.
   #
   # @param item [FSItem] removed FSItem
-  # @param email [String] the author email, that must be an existing player email
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback removed [FSItem] the removed fSItem
-  remove: (item, email, callback) =>
+  remove: (item, callback) =>
     return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
@@ -130,11 +141,10 @@ class _AuthoringService
   #
   # @param item [FSItem] moved FSItem
   # @param newPath [String] new path for this item
-  # @param email [String] the author email, that must be an existing player email
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
   # @option callback moved [FSItem] the moved fSItem
-  move: (item, newPath, email, callback) =>
+  move: (item, newPath, callback) =>
     return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?

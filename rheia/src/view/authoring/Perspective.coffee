@@ -79,6 +79,17 @@ define [
     # FSItem created to catch server error while creating
     _createInProgress: null
 
+    # **private**
+    # search content field, result number field, action icon, timeout and pending flag 
+    _search:
+      content: null
+      filter: null
+      field: null
+      numbers: null
+      icon: null
+      timeout: null
+      pending: false
+
     # The view constructor.
     constructor: ->
       super 'authoring', 'Files', FSItem.collection
@@ -91,6 +102,9 @@ define [
       @bindTo @_explorer, 'remove', @_onRemove
       @bindTo app.router, 'serverError', @_onServerError
       @bindTo FSItem.collection, 'add', @_onItemCreated
+
+      # bind to global events
+      @bindTo app.router, 'searchFilesResults', @_onSearchResults
 
     # **private**
     # Get the id of a given view that can be used inside the DOM as an Id or a class.
@@ -106,6 +120,25 @@ define [
       super()
       # render the explorer on the left
       @$el.find('> .left').append @_explorer.render().$el
+      
+      # creates a search widget
+      @_search.content = null
+      @_search.field = @$el.find '> .left .search .content'
+      @_search.filter = @$el.find '> .left .search .filter'
+      @_search.field.on 'keyup', (event) =>
+        clearTimeout @_search.timeout if @_search.timeout?
+        # manually triggers research
+        return @_triggerSearch true if event.keyCode is $.ui.keyCode.ENTER
+        # defer search
+        @_search.timeout = setTimeout (=> @_triggerSearch()), 1000
+
+      @_search.numbers = @$el.find '> .left .search .nb-results'
+      @_search.icon = @$el.find '> .left .search .ui-icon'
+      @_search.icon.on 'click', @_onClearSearch
+      tip = @$el.find('> .left .search .help-content').toggleable().data 'toggleable'
+      help = @$el.find('> .left .search .help').mouseover (event) => 
+        {left, top} = help.offset()
+        tip.open left, top
 
       # build buttons.
       buttons = [
@@ -171,6 +204,65 @@ define [
       return @
 
     # **private**
+    # Parse the input searched content, and if correct, trigger the server call.
+    #
+    # @param force [Boolean] force the request sending, even if request is empty. But invalid request cannot be forced.
+    _triggerSearch: (force = false) =>
+      # do NOT send multiple search in the same time
+      return if @_search.pending
+      @_search.content = @_search.field.val().trim()
+
+      # avoid empty queries unless told to do
+      if @_search.content is '' and !force
+        return @_search.content = null 
+      # reset search if no content
+      return @_onClearSearch() if content is ''
+      @_search.pending = true
+      @_search.active = true
+      clearTimeout @_search.timeout if @_search.timeout?
+
+      # build regexp from filters: may be exclusive or inclusive
+      filters = @_search.filter.val().trim()
+      exclude = filters.match /^\-/
+      filters = (ext.trim() for ext in filters.replace(/^\-/, '').split ',')
+      filter = "\\.(?#{if exclude then '!' else '='}#{filters.join '|'})"
+
+      console.log "new search of #{@_search.content} (filter #{filter})"
+      app.searchService.searchFiles @_search.content, filter
+
+    # **private**
+    # Clear search results and query
+    _onClearSearch: =>
+      @_explorer.displayFiles null
+      @_search.content = null
+      @_search.field.val ''
+      @_search.numbers.html ''
+      @_search.icon.removeClass('ui-icon-close').addClass 'ui-icon-search'
+
+    # **private**
+    # Filter explorer content with search results
+    #
+    # @param err [String] error message, or null if no error occured
+    # @param results [Array<FSItem>] array of matching files, may be empty
+    _onSearchResults: (err, results) =>
+      @_search.pending = false
+      if err?
+        # displays an error
+        return utils.popup i18n.titles.serverError, _.sprintf(i18n.msgs.searchFailed, err), 'cancel', [text: i18n.buttons.ok]
+      
+      # change ui-icon
+      @_search.icon.removeClass('ui-icon-search').addClass 'ui-icon-close'
+
+      # change explorer result in case of results
+      @_explorer.displayFiles if results.length > 0 then (item.path for item in results) else null
+      # display the number of results
+      @_search.numbers.html (switch results.length
+        when 0 then i18n.search.noResults
+        when 1 then i18n.search.oneResult
+        else _.sprintf i18n.search.nbResults, results.length
+      )
+
+    # **private**
     # Provide template data for rendering
     #
     # @return an object used as template data
@@ -186,7 +278,7 @@ define [
     # @return the created view, or null to cancel opening/creation
     _constructView: (type, id) =>
       return null if type isnt 'FSItem'
-      new FileView id
+      new FileView id, @_search.content
 
     # **private**
     # Creates or move a FSItem with the given name into the selected fodler.

@@ -187,6 +187,16 @@ define [
           @$el.toggleClass 'disabled', value
           @_editor.setReadOnly @options.disabled
           @_editor.getSession().clearAnnotations() if value
+
+    # Find all occurence of a searched string, navigate to first one, and display search prompt
+    #
+    # @param searched [String] search string.
+    find: (searched) =>
+      unless searched?.trim()?.length > 0
+        return @_onClosePrompt()
+      @_prompt.find('.find input').val searched
+      @_onShowPrompt false, false
+      _.delay @_onFind, 500
    
     # **private**
     # Show the find/replace prompt with an animation (Css)

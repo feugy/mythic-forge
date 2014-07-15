@@ -14,8 +14,6 @@
     - when affecting a field on existing field, new field isn't drawn (edition perspective)
     - refresh edition and moderation map content (is there any cache ?) when removing a field type
   - Documentation
-  - Authoring perspective
-    - [!!] multiple file search
   - use non rectangular clipping when removing field in map widgets http://jsfiddle.net/alnitak/6ABp7/
   - use tileDim in hexagon and diamond map renderers
 
@@ -220,6 +218,7 @@
       - upload in selected
       - rename selected
       - delete selected
+      - multiple file search
     - File Explorer
       - items loading
       - items navigation and selection
@@ -355,7 +354,7 @@
   - rendering template for events
   - live log displayal on Rheia
   - faster game client optimization process, automatic versionning
-  - game client files and rules history, with possible rollback (even for removed/renamed files)
+  - game client files and rules history, with possible rollback (even for removed/renamed files) and file search
   - a central configuration and i18n file for clients to store types names, rules results, and any labels
   - contact service to send emails to players
   - administrator can connect as any players

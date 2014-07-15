@@ -174,7 +174,9 @@ describe 'Executable tests', ->
           module.exports = 
             constant: constant, 
             utility: (num) -> constant+num"""
-      executable.save done
+      executable.save (err) ->
+        # wait a little to avoid to fast save+update that prevent 'updated' to be detected as modified
+        setTimeout (-> done err), 10
 
     it 'should executable be removed', (done) ->
       # when removing an executable

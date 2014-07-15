@@ -21,132 +21,131 @@ define
   fr: true
   root: 
     constants:
-      fieldAffectation: 'affectField'
       dateFormat: 'YY/MM/DD'
-      timeFormat: 'HH:mm:ss'
       dateTimeFormat: 'YY/MM/DD HH:mm:ss'
+      defaultFileFilter: '-jpg,jpeg,png,gif'
+      fieldAffectation: 'affectField'
       instanceAffectation: 'affectInstances'
-      uidRegex: /^[\w$-]+$/i
       emailRegex: /^[$_\u0041-\uff70]+$/i
-
       # map that indicates to which extension corresponds which editor mode
       # extensions are keys, mode are values
       extToMode:
         coffee: 'coffee'
-        json: 'json'
-        js: 'javascript'
+        css: 'css'
+        gif: 'img'
         html: 'html'
         htm: 'html'
-        css: 'css'
-        xml: 'xml'
-        svg: 'svg'
-        yaml: 'yaml'
-        yml: 'yaml'
-        stylus: 'stylus'
-        styl: 'stylus'
-        png: 'img'
         jpg: 'img'
         jpeg: 'img'
-        gif: 'img'
+        json: 'json'
+        js: 'javascript'
+        png: 'img'
+        stylus: 'stylus'
+        styl: 'stylus'
+        svg: 'svg'
+        xml: 'xml'
+        yaml: 'yaml'
+        yml: 'yaml'
+      timeFormat: 'HH:mm:ss'
+      uidRegex: /^[\w$-]+$/i
     
     titles:
-      serverError: 'Server error'
-      loginError: 'Connection error'
-      editionPerspective: 'World edition'
-      authoringPerspective: 'Game client'
       administrationPerspective: 'Administration tools'
-      moderationPerspective: 'World moderation'
-      removeConfirm: 'Removal'
-      closeConfirm: 'Closure'
-      external: 'External modification'
+      authoringPerspective: 'Game client'
       categories:
+        clientConfs: 'Configurations'
+        events: 'Events'
+        fields: 'Fields'
         items: 'Objects'
         maps: 'Maps'
-        events: 'Events'
-        rules: 'Rules'
-        turnRules: 'Turn Rules'
-        fields: 'Fields'
         players: 'Players'
+        rules: 'Rules'
         scripts: 'Scripts'
-        clientConfs: 'Configurations'
+        turnRules: 'Turn Rules'
+      closeConfirm: 'Closure'
+      editionPerspective: 'World edition'
+      external: 'External modification'
       login: 'Rheia - Connection'
+      loginError: 'Connection error'
+      moderationPerspective: 'World moderation'
+      removeConfirm: 'Removal'
       restorableFiles: "Restorable files"
       restorableExecutables: "Restorable rules/scripts"
+      serverError: 'Server error'
         
     labels:
-      enterLogin: 'Login: '
-      enterPassword: 'Password: '
-      connectWith: 'Connect with:'
-      orConnect: 'or'
-      fieldSeparator: ': '
-      deployementInProgress: 'deploying...'
-      zoom: 'Zoom'
-      gridShown: 'Grid'
-      markersShown: 'Markers'
-      noX: '~'
-      noY: '~'
-      noMap: 'none'
-      noQuantity: '~'
-      noFrom: 'nobody'
-      connectedNumber: 'connected'
       commitDetails: '%3$s: %1$s (%2$s)'
       commitDetailsLast: 'current: %1$s'
+      connectedNumber: 'connected'
+      connectWith: 'Connect with:'
+      deployementInProgress: 'deploying...'
+      enterLogin: 'Login: '
+      enterPassword: 'Password: '
+      fieldSeparator: ': '
+      gridShown: 'Grid'
       history: 'history'
+      markersShown: 'Markers'
+      noFrom: 'nobody'
+      noMap: 'none'
+      noQuantity: '~'
+      noX: '~'
+      noY: '~'
+      orConnect: 'or'
+      zoom: 'Zoom'
 
     buttons:
+      applyRule: 'Apply...'
+      cancel: 'Cancel'
       close: 'Close'
       create: 'Create'
-      login: 'Login'
-      google: 'Google'
-      twitter: 'Twitter'
       github: 'Github'
-      yes: 'Yes'
+      google: 'Google'
+      login: 'Login'
+      logout: 'Logout'
       no: 'No'
       ok: 'Ok'
-      cancel: 'Cancel'
-      logout: 'Logout'
-      applyRule: 'Apply...'
+      twitter: 'Twitter'
+      yes: 'Yes'
 
     validator:
+      invalidHandler: 'invalid value'
       required: '"%s"\'s value is required'
       spacesNotAllowed: '"%s" cannot contain spaces'
       unmatch: '"%s" does not match expected value'
-      invalidHandler: 'invalid value'
       
     tips:
-      save: "Saves currently edited tab"
-      remove: "Removes currently edited tab"
-      item: '<div>Map: %2$s</div><div>X: %3$s</div><div>Y: %4$s</div><div>Quantity: %1$s</div>'
       event: '<div>From: %2$s</div><div>Updated: %1$s</div>'
+      item: '<div>Map: %2$s</div><div>X: %3$s</div><div>Y: %4$s</div><div>Quantity: %1$s</div>'
       player: '<div>%1$s %2$s</div><div>Characters:<ul>%3$s</ul></div>'
       playerCharacter: '<li>%s</li>'
+      remove: "Removes currently edited tab"
       restorableFiles: "Displays list of removed/renamed files"
       restorableExecutables: "Displays list of removed rules or scripts"
+      save: "Saves currently edited tab"
 
     msgs:
+      alreadyUsedId: "This identifier is already used by another type, rule, script, configuration, object or event"
       closeConfirm: "<p>You had modified <b>%s</b>.</p><p>Do you wish to save modifications before closing tab ?</p>"
+      confirmUnload: 'At least one tab from perspective %1s has been modified.'
+      copyright: '&copy; 2010-2014 Damien Feugas'
       externalChange: "<b>%s</b> has been externally modified. Its values have been updated"
       externalRemove: "<p><b>%s</b> has been removed by another administratot.</p><p>Tab has been closed.</p>"
-      saveFailed: "<p><b>%1s</b> can't be saved on server:</p><p>%2s</p>" 
-      removeFailed: "<p><b>%1s</b> can't be removed from server:</p><p>%2s</p>"
-      searchFailed: '<p>Search has failed:</p><p>%s</p>'
-      powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
-      copyright: '&copy; 2010-2014 Damien Feugas'
-      confirmUnload: 'At least one tab from perspective %1s has been modified.'
       invalidId: 'Identifiers can only contain "_", "$", "-" and unaccentuated alphanumerical characters'
-      alreadyUsedId: "This identifier is already used by another type, rule, script, configuration, object or event"
-      restorableFiles: "<p>This is the whole list of removed/renamed files.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
-      noRestorableFiles: "<p>No files to restore.</p>"
-      restorableExecutables: "<p>This is the whole list of removed rules or scripts.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
       noRestorableExecutables: "<p>No rules/scripts to restore.</p>"
-
+      noRestorableFiles: "<p>No files to restore.</p>"
+      powered: 'Rheia, powering <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
+      removeFailed: "<p><b>%1s</b> can't be removed from server:</p><p>%2s</p>"
+      restorableFiles: "<p>This is the whole list of removed/renamed files.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
+      restorableExecutables: "<p>This is the whole list of removed rules or scripts.</p><p>Click on one file to get its content, and then save it to restore it.</p>"
+      saveFailed: "<p><b>%1s</b> can't be saved on server:</p><p>%2s</p>" 
+      searchFailed: '<p>Search has failed:</p><p>%s</p>'
+      
     errors:
-      wrongCredentials: '<p>Login is unknown or password is errored.</p><p>Please give another try.</p>'
-      unauthorized: "<p>You haven't enought right to access to Rheia.</p><p>If you which to became administrator, please contact the game author.</p>"
+      clientAccessDenied: '<p>You must be identified and have enought right to access to this resource.</p>'
+      deploymentInProgress: '<p>A new version is currently beeing deployed.</p><p>Please wait a moment before connecting again.</p>'
+      disconnected: "<p>Connection to server is lost.</p><p>Please check your network connectivity, and wait a moment: once the server is reachable, you'll be automatically reconnected.</p>"
       expiredToken: '<p>Your session has expired.</p><p>Please connect again.</p>'
       invalidToken: '<p>This session token is invalid.</p><p>Please connect again.</p>'
-      disconnected: "<p>Connection to server is lost.</p><p>Please check your network connectivity, and wait a moment: once the server is reachable, you'll be automatically reconnected.</p>"
       kicked: "<p>You've been disconnected from server.</p>"
-      deploymentInProgress: '<p>A new version is currently beeing deployed.</p><p>Please wait a moment before connecting again.</p>'
-      clientAccessDenied: '<p>You must be identified and have enought right to access to this resource.</p>'
-
+      unauthorized: "<p>You haven't enought right to access to Rheia.</p><p>If you which to became administrator, please contact the game author.</p>"
+      wrongCredentials: '<p>Login is unknown or password is errored.</p><p>Please give another try.</p>'

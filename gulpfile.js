@@ -9,7 +9,7 @@
  *   cleanBuild - clean and then build tasks
  *   test - runs all tests with mocha (configuration in test/mocha.opts)
  *   deploy - compile, minify and make production ready version of rheia administration client
- *   dev (default) - clean, compiles coffee-script, and use watcher to recompile on the fly
+ *   watch (default) - clean, compiles coffee-script, and use watcher to recompile on the fly
  */
 var _ = require('underscore');
 var spawn = require('child_process').spawn;
@@ -112,8 +112,8 @@ gulp.task('deploy-minify', ['deploy-compileCoffee', 'deploy-compileStylus'], fun
   var config = {
     appDir: deployTarget,
     dir: deployTemp,
-    baseUrl: './js/',
-    mainConfigFile: deployTarget + '/js/Router.js',
+    baseUrl: './src/',
+    mainConfigFile: deployTarget + '/src/Router.js',
     optimizeCss: 'standard',
     preserveLicenseComments: false,
     locale: null,

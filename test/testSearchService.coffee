@@ -25,7 +25,9 @@ Item = require '../hyperion/src/model/Item'
 Event = require '../hyperion/src/model/Event'
 Player = require '../hyperion/src/model/Player'
 Map = require '../hyperion/src/model/Map'
+FSItem = require '../hyperion/src/model/FSItem'
 Executable = require '../hyperion/src/model/Executable'
+authoringService = require('../hyperion/src/service/AuthoringService').get()
 service = require('../hyperion/src/service/SearchService').get()
 {expect, Assertion} = require 'chai'
 {flag, inspect} = require 'chai/lib/chai/utils'
@@ -705,4 +707,117 @@ describe 'SearchService tests', ->
         expect(results).to.have.lengthOf 2
         expect(results, 'first event type not returned').to.containsModel eventTypes[0]
         expect(results, 'second rule not returned').to.containsModel rules[1]
+        done()
+
+  describe 'given some FSItem', ->
+    files = []
+
+    before (done) ->
+      # Empties the source folder
+      utils.empty utils.confKey('game.client.dev'), (err) -> 
+        return done err if err?
+        authoringService.init (err) ->
+          return done err if err?
+          created = [
+            new FSItem(
+              path: 'index.html'
+              content: new Buffer '''
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta version="{{version}}">
+    <link href="style/common.css" rel="stylesheet">
+    <script src="script/vendor/modernizr-2.7.1-min.js"></script>
+  </head>
+  <body>
+    <div id="view" data-ng-view class="ng-class:routeName">
+      <progress></progress>
+    </div>
+    <script src="conf.js"></script>
+    <script data-main='script/main' src="script/vendor/require-2.1.11-min.js"></script>
+  </body>
+</html>
+              ''')
+            new FSItem(
+              path: 'script/app.coffee'
+              content: new Buffer '''
+define [
+  'angular', 
+  'util/common'
+  'controller/login'
+  'angular-route'
+], (angular, utils, LoginCtrl) ->
+
+  app = angular.module 'app', ['ngRoute']
+  
+  app.config ['$locationProvider', '$routeProvider', (location, route) ->
+
+    # use push state
+    location.html5Mode true
+    # configure routing
+    route.when "#{conf.basePath}login", 
+      name: 'login'
+      templateUrl: "#{conf.rootPath}template/login.html"
+      controller: LoginCtrl
+      controllerAs: 'ctrl'
+      resolve: LoginCtrl.checkRedirect
+    route.otherwise 
+      redirectTo: "#{conf.basePath}login"
+  ]
+  app
+              ''')
+            new FSItem(
+              path: 'script/controller/login.coffee'
+              content: new Buffer '''
+define ['jquery', 'util/common'], ($, {parseError}) ->
+  
+  class Login
+              
+    @$inject: ['check', '$location', '$filter']
+    
+    error: null
+    
+    location: null
+    
+    constructor: (err, @location, filter) -> 
+      document.title = filter('i18n') 'titles.login'
+      @error = parseError err if err?
+              ''')
+          ]
+          create = (item) ->
+            return done() unless item?
+            authoringService.save item, (err, saved) ->
+              return done err if err?
+              files.push saved unless item.isFolder
+              create created.splice(0, 1)[0]
+          create created.splice(0, 1)[0]
+
+    it 'should string search within files', (done) ->
+      service.searchFiles 'conf', (err, results) ->
+        return done err if err?
+        expect(results).to.have.lengthOf 2
+        expect(results).to.containsModel files[0]
+        expect(results).to.containsModel files[1]
+        done()
+
+    it 'should regexp search within files', (done) ->
+      service.searchFiles '/App/i', (err, results) ->
+        return done err if err?
+        expect(results).to.have.lengthOf 1
+        expect(results).to.containsModel files[1]
+        done()
+
+    it 'should string search within files with filters', (done) ->
+      service.searchFiles 'conf', '\.html$', (err, results) ->
+        return done err if err?
+        expect(results).to.have.lengthOf 1
+        expect(results).to.containsModel files[0]
+        done()
+
+    it 'should regexp search within files with filters', (done) ->
+      service.searchFiles '/define/', 'controller', (err, results) ->
+        return done err if err?
+        expect(results).to.have.lengthOf 1
+        expect(results).to.containsModel files[2]
         done()

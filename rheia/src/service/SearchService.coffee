@@ -29,7 +29,8 @@ define [
   'model/Event'
   'model/Player'
   'model/Map'
-], (_, utils, Executable, ItemType, EventType, FieldType, Item, Event, Player, Map) ->
+  'model/FSItem'
+], (_, utils, Executable, ItemType, EventType, FieldType, Item, Event, Player, Map, FSItem) ->
 
   classesByName = 
     'ItemType': ItemType
@@ -67,9 +68,9 @@ define [
       # bind to server responses
       app.sockets.admin.on 'searchTypes-resp', @_onSearchTypesResults
       app.sockets.admin.on 'searchInstances-resp', @_onSearchInstancesResults
+      app.sockets.admin.on 'searchFiles-resp', @_onSearchFilesResults
 
-    # Performs a type search. At the end, triggers a `searchResults` event with error and results in parameter
-    # (and false as `instances` second parameter).
+    # Performs a type search. At the end, triggers a `searchTypesResults` event with error and results in parameter
     #  
     # @param query [Object] the search query, modelized with objects and arrays.
     searchTypes: (query) ->
@@ -79,8 +80,7 @@ define [
       console.log "triggers new search on type with query: #{query}"
       app.sockets.admin.emit 'searchTypes', utils.rid(), query
     
-    # Performs an instance search. At the end, triggers a `searchResults` event with error and results in parameter
-    # (and true as `instances` second parameter).
+    # Performs an instance search. At the end, triggers a `searchInstancesResults` event with error and results in parameter
     #  
     # @param query [Object] the search query, modelized with objects and arrays.
     searchInstances: (query) ->
@@ -89,17 +89,29 @@ define [
       query = JSON.stringify query
       console.log "triggers new search on instances with query: #{query}"
       app.sockets.admin.emit 'searchInstances', utils.rid(), query
+    
+    # Performs a file search. At the end, triggers a `searchFilesResult` event with error and results in parameter
+    #  
+    # @param content [String] the searched content, may be a regexp string (starts/ends with / and optionnal i/m modifiers)
+    # @param name [String] the file name filter, processed as regexp, optionnal
+    searchFiles: (content, name) ->
+      console.log "triggers new search on files with content: #{content} and name #{name}"
+      rid = utils.rid()
+      if name?
+        app.sockets.admin.emit 'searchFiles', rid, content, name
+      else
+        app.sockets.admin.emit 'searchFiles', rid, content
 
     # **private**
     # Type search results handler. 
     # Parse returned types, dispatch them to their corresponding collection, and trigger the
-    # `searchResults` event with parsed models (and false as `instances` second parameter).
+    # `searchTypesResults` event with parsed models.
     #
     # @param reqId [String] client request id
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched types
     _onSearchTypesResults: (reqId, err, results) =>
-      return app.router.trigger 'searchResults', err, false, [] if err?
+      return app.router.trigger 'searchTypesResults', err, [] if err?
 
       models = []
       for result in results
@@ -110,18 +122,18 @@ define [
         # keep the parse model for results
         models.push model
 
-      app.router.trigger 'searchResults', null, false, models
+      app.router.trigger 'searchTypesResults', null, models
 
     # **private**
-    # Type search instances handler. 
+    # Isntance search instances handler. 
     # Parse returned instance, dispatch them to their corresponding collection, and trigger the
-    # `searchResults` event with parsed models (and false as `instances` second parameter).
+    # `searchInstancesResults` event with parsed models.
     #
     # @param reqId [String] client request id
     # @param err [String] the server error string, null it no error occured
     # @param results [Array] raw representation of searched instances
     _onSearchInstancesResults: (reqId, err, results) =>
-      return app.router.trigger 'searchResults', err, true, [] if err?
+      return app.router.trigger 'searchInstancesResults', err, [] if err?
 
       models = []
       for result in results
@@ -141,4 +153,25 @@ define [
           # keep the parse model for results
           models.push model
 
-      app.router.trigger 'searchResults', null, true, models
+      app.router.trigger 'searchInstancesResults', null, models
+
+    # **private**
+    # Files search results handler. 
+    # Parse returned files, replace by FSItem collection content and trigger the
+    # `searchFilesResults` event with parsed models.
+    #
+    # @param reqId [String] client request id
+    # @param err [String] the server error string, null it no error occured
+    # @param results [Array] raw representation of searched types
+    _onSearchFilesResults: (reqId, err, results) =>
+      return app.router.trigger 'searchFilesResults', err, [] if err?
+
+      models = []
+      for result in results
+        # construct the relevant Backbone.Model
+        model = new FSItem result
+        FSItem.collection.add model
+        # keep the parse model for results
+        models.push model
+
+      app.router.trigger 'searchFilesResults', null, models

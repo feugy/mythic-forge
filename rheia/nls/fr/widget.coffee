@@ -22,25 +22,25 @@ define
     noImage: 'Aucune image'
 
   search:
+    nbResults: '%d résultats'
     noResults: 'Aucun résultat'
     oneResult: '1 résultat'
-    nbResults: '%d résultats'
 
   spriteImage:
-    dimensions: 'l x h '
-    sprites: 'Sprites :'
-    rank: 'Rang'
-    name: 'Nom'
-    number: 'Nombre'
-    duration: 'Durée'
     add: 'Nouveau'
+    dimensions: 'l x h '
+    duration: 'Durée'
+    name: 'Nom'
     newName: 'sprite'
+    number: 'Nombre'
+    rank: 'Rang'
+    sprites: 'Sprites :'
     unsavedSprite: 'Le nom du sprite "%s" est déjà utilisé, merci d\'en choisir un autre'
 
   property:
+    isFalse: 'faux'
     isNull: 'nul'
     isTrue: 'vrai'
-    isFalse: 'faux'
     objectTypes: [{
       val:'Any'
       name:"n'importe quoi"
@@ -66,13 +66,13 @@ define
     unbind: "délier de l'objet"
 
   authoringMap:
-    tipPos: "x: %s y: %s"
     tipObj: "%s (#%s)"
+    tipPos: "x: %s y: %s"
 
   advEditor:
     find: 'Rechercher :'
-    replaceBy: 'Remplacer par :'
-    findPrev: 'occurence précédente'
     findNext: 'occurence suivante'
+    findPrev: 'occurence précédente'
     replace: 'remplace la première occurence'
     replaceAll: 'remplace toutes les orrucrences'
+    replaceBy: 'Remplacer par :'

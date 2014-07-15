@@ -19,102 +19,100 @@
 
 define
   titles:
-    serverError: 'Erreur server'
-    loginError: 'Erreur de connexion'
-    editionPerspective: 'Edition du monde'
-    authoringPerspective: 'Client de jeu'
     administrationPerspective: "Outils d'administration"
-    moderationPerspective: "Modération du monde"
-    removeConfirm: 'Suppression'
-    closeConfirm: 'Fermeture'
-    external: 'Modification externe'
+    authoringPerspective: 'Client de jeu'
     categories:
+      clientConfs: 'Configurations'
+      events: 'Evènements'
+      fields: 'Terrains'
       items: 'Objets'
       maps: 'Cartes'
-      events: 'Evènements'
-      rules: 'Règles'
-      turnRules: 'Règles de tour'
-      fields: 'Terrains'
       players: 'Joueurs'
+      rules: 'Règles'
       scripts: 'Scripts'
-      clientConfs: 'Configurations'
+      turnRules: 'Règles de tour'
+    closeConfirm: 'Fermeture'
+    editionPerspective: 'Edition du monde'
+    external: 'Modification externe'
     login: 'Rheia - Connexion'
+    loginError: 'Erreur de connexion'
+    moderationPerspective: "Modération du monde"
+    removeConfirm: 'Suppression'
     restorableFiles: "Fichiers supprimés/déplacés"
     restorableExecutables: "Règles/Scripts supprimés"
+    serverError: 'Erreur server'
       
   labels:
-    enterLogin: 'Identifiant : '
-    enterPassword: 'Mot de passe : '
-    connectWith: 'Connectez vous avec :'
-    orConnect: 'ou'
-    fieldSeparator: ' : '
-    deployementInProgress: 'déploiement...'
-    zoom: 'Zoom'
-    gridShown: 'Grille'
-    markersShown: 'Graduation'
-    noX: '~'
-    noY: '~'
-    noMap: 'aucune'
-    noQuantity: '~'
-    noFrom: 'personne'
-    connectedNumber: 'connectés'
     commitDetails: '%3$s: %1$s (%2$s)'
     commitDetailsLast: 'en cours: %1$s'
+    connectedNumber: 'connectés'
+    connectWith: 'Connectez vous avec :'
+    deployementInProgress: 'déploiement...'
+    enterLogin: 'Identifiant : '
+    enterPassword: 'Mot de passe : '
+    fieldSeparator: ' : '
+    gridShown: 'Grille'
     history: 'historique'
+    markersShown: 'Graduation'
+    noFrom: 'personne'
+    noMap: 'aucune'
+    noQuantity: '~'
+    noX: '~'
+    noY: '~'
+    orConnect: 'ou'
+    zoom: 'Zoom'
 
   buttons:
+    applyRule: 'Appliquer...'
+    cancel: 'Annuler'
     close: 'Fermer'
     create: 'Créer'
-    login: 'Entrer'
-    google: 'Google'
-    twitter: 'Twitter'
     github: 'Github'
-    yes: 'Oui'
+    google: 'Google'
+    login: 'Entrer'
+    logout: 'Sortir'
     no: 'Non'
     ok: 'Ok'
-    cancel: 'Annuler'
-    logout: 'Sortir'
-    applyRule: 'Appliquer...'
+    twitter: 'Twitter'
+    yes: 'Oui'
 
   validator:
+    invalidHandler: 'valeur incorrecte'
     required: 'la valeur de "%s" est requise'
     spacesNotAllowed: '"%s" ne peut pas contenir d\'espaces'
     unmatch: '"%s" ne correspond pas à la valeur attendue'
-    invalidHandler: 'valeur incorrecte'
     
   tips:
-    save: "Enregistrer l'onglet en cours d'édition"
-    remove: "Supprimer l'onglet en cours d'édition"
-    item: '<div>Carte : %2$s</div><div>X : %3$s</div><div>Y : %4$s</div><div>Quantité : %1$s</div>'
     event: '<div>Par : %2$s</div><div>Mise à jour : %1$s</div>'
+    item: '<div>Carte : %2$s</div><div>X : %3$s</div><div>Y : %4$s</div><div>Quantité : %1$s</div>'
     player: '<div>%1$s %2$s</div><div>Personnages:<ul>%3$s</ul></div>'
     playerCharacter: '<li>%s</li>'
-    restorableFiles: "Liste les fichiers ayant été supprimés ou déplacés"
+    remove: "Supprimer l'onglet en cours d'édition"
     restorableExecutables: "Liste les règles ou scripts ayant été supprimés"
-
+    restorableFiles: "Liste les fichiers ayant été supprimés ou déplacés"
+    save: "Enregistrer l'onglet en cours d'édition"
+    
   msgs:
+    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"
     closeConfirm: "<p>Vous avez modifié <b>%s</b>.</p><p>Voulez-vous sauver les modifications avant de fermer l'onglet ?</p>"
+    confirmUnload: 'Au moins une vue de la perspective %1s à été modifiée.'
     externalChange: "<b>%s</b> a été modifié par ailleurs. Ses valeurs ont été mises à jour"
     externalRemove: "<p><b>%s</b> a été supprimé par un autre administrateur.</p><p>L'onglet a été fermé.</p>"
-    saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
-    removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
-    searchFailed: 'La recherche à échouée :<br/><br/>%s'
-    powered: 'Powered by <a target="blanck" href="http://github.com/feugy/mythic-forge">Mythic-Forge</a>'
-    copyright: '&copy; 2010-2014 Damien Feugas'
-    confirmUnload: 'Au moins une vue de la perspective %1s à été modifiée.'
     invalidId: 'les identifiant ne peuvent contenir que par des caractères alphanumériques non accentués ainsi que "_", "$" et "-"'
-    alreadyUsedId: "cet identifiant est déjà utilisé par un autre type, règle, configuration, objet ou évènement"
-    restorableFiles: "<p>Voici la liste des fichiers supprimés ou déplacés.</p><p>Cliquez sur un fichier pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
-    noRestorableFiles: "<p>Il n'y a pas de fichiers à restaurer.</p>"
-    restorableExecutables: "<p>Voici la liste des règles/scripts supprimés.</p><p>Cliquez sur celui de votre choix pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
     noRestorableExecutables: "<p>Il n'y a pas de règles/scripts à restaurer.</p>"
-
+    noRestorableFiles: "<p>Il n'y a pas de fichiers à restaurer.</p>"
+    removeFailed: "<p><b>%1s</b> n'a pas pû être supprimé du serveur :</p><p>%2s</p>"
+    restorableExecutables: "<p>Voici la liste des règles/scripts supprimés.</p><p>Cliquez sur celui de votre choix pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
+    restorableFiles: "<p>Voici la liste des fichiers supprimés ou déplacés.</p><p>Cliquez sur un fichier pour visualiser son contenu, mais il faudra le sauvegarder pour le restraurer définitivement.</p>"
+    saveFailed: "<p><b>%1s</b> n'a pas pû être sauvé sur le serveur :</p><p>%2s</p>" 
+    searchFailed: 'La recherche à échouée :<br/><br/>%s'
+ 
   errors:
-    wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'
-    unauthorized: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, merci de contacter l'auteur du jeu.</p>"
+    clientAccessDenied: '<p>Vous devez être authentifié et disposer des droits suffisants pour accéder à cette resource.</p>'
+    deploymentInProgress: '<p>Une version est en cours de déploiement.</p><p>Veuillez patienter quelques instants avant de vous reconnecter.</p>'
+    disconnected: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants : dès que le serveur sera joignable, vous serez automatiquement reconnecté.</p>'
     expiredToken: '<p>Votre session a expirée.</p><p>Veuillez vous reconnecter.</p>'
     invalidToken: '<p>Ce jeton de session est invalide.</p><p>Veuillez vous reconnecter.</p>'
-    disconnected: '<p>La connexion avec le serveur est perdue.</p><p>Veuillez vérifier votre connexion internet, et attendre quelques instants : dès que le serveur sera joignable, vous serez automatiquement reconnecté.</p>'
     kicked: '<p>Vous avez été déconnecté du serveur.</p>'
-    deploymentInProgress: '<p>Une version est en cours de déploiement.</p><p>Veuillez patienter quelques instants avant de vous reconnecter.</p>'
-    clientAccessDenied: '<p>Vous devez être authentifié et disposer des droits suffisants pour accéder à cette resource.</p>'
+    unauthorized: "<p>Vous n'avez pas les droits nécessaires pour accéder à Rheia.</p><p>Si vous souhaitez devenir administrateur, merci de contacter l'auteur du jeu.</p>"
+    wrongCredentials: '<p>Le login est inconnu ou le mot de passe érroné.</p><p>Veuillez rééssayer.</p>'

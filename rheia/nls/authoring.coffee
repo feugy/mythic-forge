@@ -29,30 +29,37 @@ define
       rename: 'rename'
       
     labels:
-      newFolder: 'Create a folder'
-      newFile: 'Create a file'
-      rootFolder: 'root'
       fsItemName: 'name'
+      newFile: 'Create a file'
+      newFolder: 'Create a folder'
       openFSItem: 'Openr "%s"'
-      renameFSItem: 'Rename/move "%s"'
       removeFSItem: 'Remove "%s"'
+      renameFSItem: 'Rename/move "%s"'
+      rootFolder: 'root'
 
     msgs:
-      newFolder: 'Please choose a name for folder in <b>%s</b>:'
+      closeFileConfirm: "<p>You've modified file <b>%s</b>.</p><p>Du you whish to save modifications before closing tab ?</p>"
+      externalChangeFSItem: "This file has been externally modified. Its values where updated"
+      fsItemCreationFailed: "<p><b>%1$s</b> cannot be saved on server:</p><p>%2$s</p>" 
       newFile: 'Please choose a name (with its extension) for file in <b>%s</b>:'
-      renameFolder: 'Please choose a new name (or path) for folder:'
-      renameFile: 'Please choose a new name (or path) for file:'
+      newFolder: 'Please choose a name for folder in <b>%s</b>:'
       removeFileConfirm: "<p>Do you really whish to remove file <b>%s</b> ?</p>"
       removeFolderConfirm: "<p>Do you really whish to remove folder <b>%s</b> and all its content ?</p>"
-      closeFileConfirm: "<p>You've modified file <b>%s</b>.</p><p>Du you whish to save modifications before closing tab ?</p>"
-      fsItemCreationFailed: "<p><b>%1$s</b> cannot be saved on server:</p><p>%2$s</p>" 
-      externalChangeFSItem: "This file has been externally modified. Its values where updated"
+      renameFile: 'Please choose a new name (or path) for file:'
+      renameFolder: 'Please choose a new name (or path) for folder:'
 
     tips:
-      newFolder: 'Creates a new folder in the selected parent or at root'
       newFile: 'Creates a new file in the selected parent or at root'
+      newFolder: 'Creates a new folder in the selected parent or at root'
       uploadInSelected: 'Uploads a new file in the selected parent or at root'
-      renameSelected: 'Renames/moves the selected file or folder'
-      removeFolder: 'Removes the selecte file or folder'
-      saveFile: "Saves the currently edited file"
       removeFile: "Removes the currently edited file"
+      removeFolder: 'Removes the selecte file or folder'
+      renameSelected: 'Renames/moves the selected file or folder'
+      saveFile: "Saves the currently edited file"
+      searchFiles: """
+        <p>Fiter explorer's files depending on their content.</p>
+        <p>You can use regular expression, by starting and finishing with '/' character.</p>
+        <p>Modifiers 'i' and 'm' are supported: for example <var>/app(llication)?/i</var></p>
+        <p>You can choose extensions of searched files, separated by comas. For example <var>css,styl</var> to search in style sheets.</p>
+        <p>To exclude extensions, prefixed them with '-'. For example: <var>-jpg,png,gif</var> to search everywhere except in images.</p>
+      """
