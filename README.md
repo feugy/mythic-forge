@@ -50,7 +50,7 @@ Grab the code from github:
   
   > git clone https://github.com/feugy/mythic-forge
 
-Then follows [Build instructions](blob/master/docs/Build.md)
+Then follows [Build instructions](https://github.com/feugy/mythic-forge/blob/master/docs/Build.md)
 
 
 ## Project layout
