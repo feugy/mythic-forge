@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ define [
     reverseStr: _string.reverse
 
   # enhance Backbone views with close() mechanism
-  _.extend Backbone.View.prototype, 
+  _.extend Backbone.View.prototype,
 
     # **protected**
     # For views that wants templating, put their the string version of a mustache template,
@@ -60,7 +60,7 @@ define [
       debugger unless emitter?
       emitter.on events, callback
       @_bounds.push [emitter, events, callback]
-      
+
     # Unbounds a callback of this view from the specified emitter
     #
     # @param emitter [Backbone.Event] the emitter on which callback is unbound
@@ -86,8 +86,8 @@ define [
     # if a template is defined, use it
     render: () ->
       # template rendering
-      if @_template? 
-        # first compilation if necessary  
+      if @_template?
+        # first compilation if necessary
         @_template = Hogan.compile @_template if _.isString @_template
         # then rendering
         @$el.empty().append @_template.render @_getRenderData()
@@ -104,12 +104,13 @@ define [
   prefix = if $.browser.webkit or $.browser.chrome then 'webkit' else 'moz'
 
   # define a getter for page visibility
-  Object.defineProperty document, 'hidden', 
+  Object.defineProperty document, 'hidden',
     get: () ->
       document["#{prefix}Hidden"]
   # unified event name
   $(document).on "#{prefix}visibilitychange", (event) -> $(document).trigger 'visibilitychange', event
 
   # use same name for animation frames facilities
-  window.requestAnimationFrame = window[prefix+'RequestAnimationFrame']
-  window.cancelAnimationFrame = window[prefix+'CancelAnimationFrame']
+  unless window.requestAnimationFrame?
+    window.requestAnimationFrame = window[prefix+'RequestAnimationFrame']
+    window.cancelAnimationFrame = window[prefix+'CancelAnimationFrame']
