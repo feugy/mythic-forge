@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -32,18 +32,18 @@ if process.env.MONGOHQ_URL?
 else
   host = utils.confKey 'mongo.host', 'localhost'
   port = utils.confKey 'mongo.port', 27017
-  db = utils.confKey 'mongo.db' 
+  db = utils.confKey 'mongo.db'
   user = utils.confKey('mongo.user', null)
   pass = utils.confKey('mongo.password', null)
-  url = "mongodb://#{if user? and pass? then "#{user}:#{pass}@" else ''}#{host}:#{port}/#{db}" 
+  url = "mongodb://#{if user? and pass? then "#{user}:#{pass}@" else ''}#{host}:#{port}/#{db}"
 
-# load ids of all existing models from database
 
 # exports the connection
 module.exports = mongoose.createConnection url, {}, (err) ->
   throw new Error "Unable to connect to MongoDB: #{err}" if err?
   logger.info "Connection established with MongoDB on database #{db}"
 
+# load ids of all existing models from database
 # opens a dedicated connection to load all table ids.
 # connection is immediately closed afterward.
 # If no callback is provided, errors will be raised.
@@ -53,11 +53,11 @@ module.exports = mongoose.createConnection url, {}, (err) ->
 module.exports.loadIdCache = (idCache, callback = null) ->
   MongoClient.connect url, (err, db) ->
     if err?
-      err = new Error "Failed to connect to mongo to get ids: #{err}" 
+      err = new Error "Failed to connect to mongo to get ids: #{err}"
       if callback? then callback err else throw err
     # get ids in each collections
     async.forEach ['players', 'items', 'itemtypes', 'events', 'eventtypes', 'maps', 'fieldtypes', 'clientconfs'], (name, next) ->
-      db.collection(name).find({},fields: _id:1).toArray (err, results) ->
+      db.collection(name).find({}, fields: _id:1).toArray (err, results) ->
         return next err if err?
         idCache[obj._id] = 1 for obj in results
         next()
@@ -66,6 +66,6 @@ module.exports.loadIdCache = (idCache, callback = null) ->
       # end the connection
       db.close()
       if err?
-        err = new Error "Failed to retrieve ids: #{err}" 
+        err = new Error "Failed to retrieve ids: #{err}"
         throw err unless callback?
       callback?(err)

@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 {relative} = require 'path'
 {isA, type, fromRule} = require '../../util/common'
@@ -30,6 +30,14 @@ notifier = require('../Notifier').get()
 logger = require('../../util/logger').getLogger 'scheduler'
 
 frequency = process.env.frequency
+
+# security mechanism that allows to restr'ict access to DB/services functions
+# set this local variable to true to deny access
+# This only works because this file is executed in a dedicated worker
+isLimited = false
+Object.defineProperty process.env, 'limited',
+  enumerable: true,
+  get: () -> isLimited
 
 # Compute the remaining time in milliseconds before the next turn execution
 #
@@ -57,7 +65,7 @@ trigger = (callback, _auto = false) ->
   logger.debug 'triggers turn rules...'
   notifier.notify 'turns', 'begin'
 
-  turnEnd = -> 
+  turnEnd = ->
     logger.debug 'end of turn'
     notifier.notify 'turns', 'end'
     # trigger the next turn
@@ -92,7 +100,7 @@ trigger = (callback, _auto = false) ->
         # and singleton (like ModuleWatcher) will be broken.
         obj = require relative __dirname, executable.compiledPath
         if obj? and isA(obj, TurnRule)
-          rules.push obj 
+          rules.push obj
           obj.id = executable.id
           obj.rank = 0 unless 'number' is type obj.rank
       catch err
@@ -110,20 +118,20 @@ trigger = (callback, _auto = false) ->
       utils.purgeDuplicates removed
 
       # first removals
-      async.forEach removed, (obj, removeEnd) -> 
+      async.forEach removed, (obj, removeEnd) ->
         logger.debug "remove #{obj._className} #{obj.id}"
         obj.remove removeEnd
-      , (err) => 
+      , (err) =>
         return if checkFailure rule, err, end
 
         # removes duplicates and sort to save new objects first
         utils.purgeDuplicates saved
         saved.sort (o1, o2) -> if o1.id? and not o2.id? then 1 else if o2.id? and not o1.id? then -1 else 0
-        
+
         # then save
-        async.forEach saved, (obj, saveEnd) -> 
+        async.forEach saved, (obj, saveEnd) ->
           # do not re-save models that were already removed !
-          return saveEnd() if _.any rule.removed, (removed) -> removed?.equals?(obj)
+          return saveEnd() if _.some rule.removed, (removed) -> removed?.equals?(obj)
           logger.debug "save modified #{obj._className} #{obj.id}, #{obj.modifiedPaths().join(',')}"
           obj.save saveEnd
         , (err) =>
@@ -142,6 +150,7 @@ trigger = (callback, _auto = false) ->
 
       # catch asynchronous errors and perform reporting before leaving
       error = (err) =>
+        isLimited = false
         process.removeListener 'uncaughtException', error
         # exit at the first execution error
         msg = "failed to select or execute rule #{rule.id}: #{err}"
@@ -150,7 +159,9 @@ trigger = (callback, _auto = false) ->
 
       process.on 'uncaughtException', error
 
+      isLimited = true
       rule.select (err, targets) =>
+        isLimited = false
         # Do not emit an error, but stops this rule a first selection error.
         if err?
           err = "failed to select rule #{rule.id}: #{err}"
@@ -160,7 +171,7 @@ trigger = (callback, _auto = false) ->
         unless Array.isArray(targets)
           process.removeListener 'uncaughtException', error
           notifier.notify 'turns', 'success', rule.id
-          return end() 
+          return end()
 
         logger.debug "rule #{rule.id} selected #{targets.length} target(s)"
         # arrays of modified objects
@@ -176,7 +187,9 @@ trigger = (callback, _auto = false) ->
           # campaign handling
           rule.sendCampaign = (campaign) => campaigns.push campaign
 
+          isLimited = true
           rule.execute target, (err) =>
+            isLimited = false
             # stop a first execution error.
             return executeEnd "failed to execute rule #{rule.id}: #{err}" if err?
             # store modified object for later
@@ -191,13 +204,13 @@ trigger = (callback, _auto = false) ->
           updateDb rule, saved, removed, campaigns, end
 
     # select and execute each turn rule, NOT in parallel !
-    async.forEachSeries rules, selectAndExecute, turnEnd
+    async.eachSeries rules, selectAndExecute, turnEnd
 
 # For tests, do not use the automatic triggering
 unless process.env.NODE_ENV is 'test'
   # Trigger automatic
-  process.on 'rulesInitialized', -> trigger (->), true 
+  process.on 'rulesInitialized', -> trigger (->), true
 
-module.exports = 
+module.exports =
 
   trigger: trigger

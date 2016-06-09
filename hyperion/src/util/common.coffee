@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -21,9 +21,8 @@
 yaml = require 'js-yaml'
 fs = require 'fs-extra'
 {resolve, normalize, join, sep} = require 'path'
-stacktrace = require 'stack-trace'
 async = require 'async'
-_ = require 'underscore'
+_ = require 'lodash'
 EventEmitter = require('events').EventEmitter
 
 
@@ -31,21 +30,18 @@ EventEmitter = require('events').EventEmitter
 emitter = new EventEmitter()
 emitter.setMaxListeners 0
 
-# value search to forbid usage from executables target
-forbidRoot = null
-
 # Read a configuration key inside the YAML configuration file (utf-8 encoded).
 # At first call, performs a synchronous disk access, because configuraiton is very likely to be read
 # before any other operation. The configuration is then cached.
-# 
-# The configuration file read is named 'xxx-conf.yaml', where xxx is the value of NODE_ENV (dev if not defined) 
+#
+# The configuration file read is named 'xxx-conf.yaml', where xxx is the value of NODE_ENV (dev if not defined)
 # and located in a "conf" folder under the execution root.
 #
 # @param key [String] the path to the requested key, splited with dots.
-# @param def [Object] the default value, used if key not present. 
+# @param def [Object] the default value, used if key not present.
 # If undefined, and if the key is missing, an error is thrown.
 # @return the expected key.
-emitter.confKey = (key, def) -> 
+emitter.confKey = (key, def) ->
   path = key.split '.'
   obj = conf
   last = path.length-1
@@ -57,7 +53,7 @@ emitter.confKey = (key, def) ->
     unless i is last
       # goes deeper
       obj = obj[step]
-    else 
+    else
       # last step: returns value
       return obj[step]
 
@@ -65,12 +61,10 @@ emitter.confKey = (key, def) ->
 conf = null
 confPath = resolve "#{process.cwd()}/conf/#{if process.env.NODE_ENV then process.env.NODE_ENV else 'dev'}-conf.yml"
 parseConf = ->
-  try 
+  try
     conf = yaml.load fs.readFileSync confPath, 'utf8'
   catch err
     throw new Error "Cannot read or parse configuration file '#{confPath}': #{err}"
-  # init required rule
-  forbidRoot = resolve(normalize emitter.confKey 'game.executable.target').replace /[\/\\]/g, sep
 
 parseConf()
 
@@ -89,7 +83,7 @@ fs.watch confPath, ->
 # @see http://bonsaiden.github.com/JavaScript-Garden/#types.typeof
 emitter.type = (obj) -> Object::toString.call(obj).slice(8, -1)?.toLowerCase() or 'undefined'
 
-# isA() is an utility method that check if an object belongs to a certain class, or to one 
+# isA() is an utility method that check if an object belongs to a certain class, or to one
 # of it's subclasses. Uses the classes names to performs the test.
 #
 # @param obj [Object] the object which is tested
@@ -116,12 +110,12 @@ emitter.enforceFolderSync = (folderPath, forceRemove = false, logger = null) ->
 
   # force Removal if specified
   if forceRemove and exists
-    fs.removeSync folderPath 
+    fs.removeSync folderPath
     exists = false
-  
-  # creates if needed  
+
+  # creates if needed
   unless exists
-    try 
+    try
       fs.mkdirsSync folderPath
       logger?.info "Folder '#{folderPath}' successfully created"
     catch err
@@ -141,9 +135,9 @@ emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
   fs.exists folderPath, (exists) ->
     create = (err) ->
       return callback "Failed to remove #{folderPath}: #{err}" if err?
-      # creates only if needed  
+      # creates only if needed
       return callback null if exists
-    
+
       fs.mkdirs folderPath, (err) ->
         return callback "Failed to create #{folderPath}: #{err}" if err
         logger?.info "Folder '#{folderPath}' successfully created"
@@ -152,7 +146,7 @@ emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
     # force Removal if specified
     if forceRemove and exists
       exists = false
-      return fs.remove folderPath, create 
+      return fs.remove folderPath, create
 
     create()
 
@@ -163,7 +157,7 @@ emitter.enforceFolder = (folderPath, forceRemove, logger, callback) ->
 # @param contentRegEx [RegExp] regexp on which file content are tested. Optionnal
 # @param callback [Function] search end function:
 # @option callback err [String] an error string, or null if no error occured
-# @option callback results [Array] matching file names (may be empty)   
+# @option callback results [Array] matching file names (may be empty)
 emitter.find = (path, regex, contentRegEx, callback) ->
   return if emitter.fromRule callback
   if 'function' is emitter.type contentRegEx
@@ -182,7 +176,7 @@ emitter.find = (path, regex, contentRegEx, callback) ->
       return callback null, [path] unless contentRegEx?
       fs.readFile path, (err, content) ->
         return callback err if err?
-        callback null, (if contentRegEx.test content then [path] else []) 
+        callback null, (if contentRegEx.test content then [path] else [])
 
     else
       # or recurisvely search in folders
@@ -200,7 +194,7 @@ emitter.find = (path, regex, contentRegEx, callback) ->
           callback null, results
 
 # Simple utility that generate a random token containing alphanumerical characters
-# 
+#
 # @param length [Number] the generated token length
 # @return a random token
 emitter.generateToken = (length) ->
@@ -220,8 +214,8 @@ emitter.generateToken = (length) ->
 # @option callback err [Object] an error object, or null if removal succeeded
 _processOp = (path, err, callback) ->
   unless err?
-    return callback null 
-  switch err.code 
+    return callback null
+  switch err.code
     when 'EPERM'
       # removal not allowed: try to change permissions
       fs.chmod path, '755', (err) ->
@@ -244,7 +238,7 @@ _processOp = (path, err, callback) ->
 # @param err [Object] underlying error, or null if removal succeeded
 _processOpSync = (path, err) ->
   return unless err?
-  switch err.code 
+  switch err.code
     when 'EPERM'
       # removal not allowed: try to change permissions
       try
@@ -266,7 +260,7 @@ _processOpSync = (path, err) ->
 # @param callback [Function] end callback, executed with one parameter:
 # @option callback err [String] error message. Null if no error occured.
 emitter.remove = (path, callback) ->
-  callback ||= -> 
+  callback ||= ->
   return if emitter.fromRule callback
   fs.stat path, (err, stats) ->
     _processOp path, err, (err) ->
@@ -289,7 +283,7 @@ emitter.remove = (path, callback) ->
 # @throws err if the removal failed
 emitter.removeSync = (path) ->
   return if emitter.fromRule()
-  try 
+  try
     stats = fs.statSync path
     # a file: unlink it
     if stats.isFile()
@@ -302,7 +296,7 @@ emitter.removeSync = (path) ->
       contents = (join path, content for content in fs.readdirSync path)
       emitter.removeSync content for content in contents
       # remove folder once empty
-      try 
+      try
         fs.rmdirSync path
       catch err
         _processOpSync path, err
@@ -319,13 +313,13 @@ emitter.empty = (path, callback) ->
   return if emitter.fromRule callback
   fs.readdir path, (err, files) ->
     return callback err if err?
-    
+
     async.forEachSeries files, (file, next) ->
       emitter.remove join(path, file), next
     , (err) ->
       return callback err if err?
       # use a slight delay to let underlying os really remove content
-      _.defer -> 
+      _.defer ->
         callback null
       , 50
 
@@ -341,7 +335,7 @@ emitter.relativePath = (aPath, bPath) ->
   bPath = normalize bPath
   bPathSteps = bPath.split sep
   bLength = bPathSteps.length
-  
+
   suffix = ''
   stepBack = 0
 
@@ -365,14 +359,14 @@ emitter.relativePath = (aPath, bPath) ->
   for i in [0...stepBack]
     path += '..'
     path += sep unless i is stepBack-1
-  "#{path}#{suffix}" 
+  "#{path}#{suffix}"
 
 # Simple method to remove occurence of the root path from error messages
 #
 # @param err [Error|String] purged error or string
 # @param root [String] root folder path removed from string.
 # @return the pureged string.
-emitter.purgeFolder = (err, root) -> 
+emitter.purgeFolder = (err, root) ->
   return if emitter.fromRule()
   err = err.message if emitter.isA err, Error
   err.replace new RegExp("#{root.replace /\\/g, '\\\\'}", 'g'), '' if 'string'
@@ -387,17 +381,17 @@ emitter.purgeFolder = (err, root) ->
 emitter.plainObjects = (args) ->
   isArray = 'array' is emitter.type args
   unless isArray
-    args = [args] 
-  for arg, i in args 
+    args = [args]
+  for arg, i in args
     if 'array' is emitter.type arg
       args[i] = emitter.plainObjects arg
-    if 'object' is emitter.type(arg) 
+    if 'object' is emitter.type(arg)
       if 'function' is emitter.type arg.toJSON
         args[i] = arg.toJSON()
       else
         arg[attr] = emitter.plainObjects([val])[0] for attr, val of arg
   if isArray then args else args[0]
-  
+
 serviceRoot = join 'hyperion', 'lib', 'service'
 
 # Prevent using critical functionnalities from rules, scripts and turn rules.
@@ -411,18 +405,9 @@ serviceRoot = join 'hyperion', 'lib', 'service'
 # @option callback error [Error] an error object
 # @return a function to invoke true if caller is not allowed, false otherwise
 emitter.fromRule = (callback = ->) ->
-  # rank of the first line containing service
-  foundService = false
-  for line, i in stacktrace.get()
-    line = line.getFileName()
-    # we found a line coming from services that is not the fromRule() and bind invokation
-    foundService = true unless i <= 2  or foundService or -1 is line.indexOf serviceRoot
-    # invoked from compilation folder: forbidden
-    if 0 is line.indexOf forbidRoot
-      # invoked from a service: do not goes further cause its allowed
-      return false if foundService
-      callback new Error "this functionnality is denied to executables"
-      return true
+  if 'limited' of process.env and process.env.limited
+    callback new Error 'functionnality is denied to executables'
+    return true
   false
 
 module.exports = emitter

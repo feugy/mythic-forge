@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 {MongoClient, Server} = require 'mongodb'
 Executable = require '../hyperion/src/model/Executable'
@@ -34,7 +34,7 @@ service = require('../hyperion/src/service/RuleService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
 utils = require '../hyperion/src/util/common'
 {expect} = require 'chai'
- 
+
 map= null
 map2= null
 player= null
@@ -52,19 +52,19 @@ notifications = []
 listener = null
 
 describe 'RuleService tests', ->
-  
+
   beforeEach (done) ->
-    notifications = []           
+    notifications = []
     # given a registered notification listener
     notifier.on notifier.NOTIFICATION, listener = (event, args...) ->
       return unless event is 'turns'
       notifications.push args
-    ItemType.collection.drop -> Item.collection.drop ->
+    ItemType.remove {}, -> Item.remove {}, ->
       # Empties the compilation and source folders content
-      utils.empty utils.confKey('game.executable.source'), (err) -> 
-        FieldType.collection.drop -> Field.collection.drop ->
-          EventType.collection.drop -> Event.collection.drop ->
-            Map.collection.drop -> Map.loadIdCache ->
+      utils.empty utils.confKey('game.executable.source'), (err) ->
+        FieldType.remove {}, -> Field.remove {}, ->
+          EventType.remove {}, -> Event.remove {}, ->
+            Map.remove {}, -> Map.loadIdCache ->
               map = new Map {id: 'map-Test'}
               map.save (err) ->
                 return done err if err?
@@ -84,7 +84,7 @@ describe 'RuleService tests', ->
   it 'should rule create new objects', (done) ->
     # given a rule that creates an object
     script = new Executable
-      id:'rule4', 
+      id:'rule4',
       content: """Rule = require 'hyperion/model/Rule'
         Item = require 'hyperion/model/Item'
         module.exports = new (class AddPart extends Rule
@@ -108,7 +108,7 @@ describe 'RuleService tests', ->
         new Item({type: type1, name:'base'}).save (err, saved) ->
           return done err if err?
           item1 = saved
-              
+
           # given the rules that are applicable for himself
           service.resolve item1.id, item1.id, null, 'admin', (err, results)->
             return done "Unable to resolve rules: #{err}" if err?
@@ -133,7 +133,7 @@ describe 'RuleService tests', ->
   it 'should rule delete existing objects', (done) ->
     # given a rule that creates an object
     script = new Executable
-      id:'rule5', 
+      id:'rule5',
       content: """Rule = require 'hyperion/model/Rule'
         module.exports = new (class RemovePart extends Rule
           canExecute: (actor, target, context, callback) =>
@@ -147,11 +147,11 @@ describe 'RuleService tests', ->
       return done err if err?
       new ItemType(
         id: 'container'
-        properties: 
-          name: 
+        properties:
+          name:
             type: 'string'
             def: ''
-          stock: 
+          stock:
             type: 'array'
             def: 'Item'
           compose:
@@ -166,7 +166,7 @@ describe 'RuleService tests', ->
           item2 = saved
           new Item(type: type1, name:'base', stock:[item2]).save (err, saved) ->
             return done err if err?
-            item1 = saved  
+            item1 = saved
 
             # given the rules that are applicable for the both items
             service.resolve item1.id, item2.id, null, 'admin', (err, results)->
@@ -195,7 +195,7 @@ describe 'RuleService tests', ->
   it 'should rule delete existing objects by ids', (done) ->
     # given a rule that creates an object
     script = new Executable
-      id:'rule29', 
+      id:'rule29',
       content: """Rule = require 'hyperion/model/Rule'
         module.exports = new (class RemovePart extends Rule
           canExecute: (actor, target, context, callback) =>
@@ -236,8 +236,8 @@ describe 'RuleService tests', ->
 
   it 'should linked object be modified and saved by a rule', (done) ->
     # given a rule that need links resolution
-    script = new Executable 
-      id:'rule3', 
+    script = new Executable
+      id:'rule3',
       content: """Rule = require 'hyperion/model/Rule'
         class DriveLeft extends Rule
           canExecute: (actor, target, context, callback) =>
@@ -269,8 +269,8 @@ describe 'RuleService tests', ->
             new Item({x:9, y:0, type: type2, pilot:item1}).save (err, saved) ->
               return done err if err?
               item2 = saved
-              
-              # given the rules that are applicable for a target 
+
+              # given the rules that are applicable for a target
               service.resolve item1.id, item2.id, null, 'admin', (err, results)->
                 return done "Unable to resolve rules: #{err}" if err?
                 return done 'the rule3 was not resolved' unless 'rule3' of results
@@ -291,8 +291,8 @@ describe 'RuleService tests', ->
 
   it 'should linked object (not to actor or target) be modified and saved by a rule', (done) ->
     # given a rule that modifies linked objects
-    script = new Executable 
-      id:'rule3', 
+    script = new Executable
+      id:'rule3',
       content: """Rule = require 'hyperion/model/Rule'
         Item = require 'hyperion/model/Item'
 
@@ -332,7 +332,7 @@ describe 'RuleService tests', ->
                 return done err if err?
                 item0 = saved
 
-                # given the rules that are applicable for a target 
+                # given the rules that are applicable for a target
                 service.resolve item0.id, item0.id, null, 'admin', (err, results)->
                   return done "Unable to resolve rules: #{err}" if err?
                   return done 'the rule3 was not resolved' unless 'rule3' of results
@@ -350,7 +350,7 @@ describe 'RuleService tests', ->
                       expect(items[1]).to.have.property('id').that.equal 'containable_2'
                       expect(items[1]).to.have.property('num').that.equal 2
                       done()
-                                 
+
   describe 'given a player, an event and a dumb rule', ->
 
     beforeEach (done) ->
@@ -368,16 +368,16 @@ describe 'RuleService tests', ->
         # Creates a player
         return done err if err?
         script = saved
-        Player.collection.drop ->
+        Player.remove {}, ->
           new Player({email: 'Loïc', password:'toto'}).save (err, saved) ->
             return done err if err?
             player = saved
             # Creates an arbitrary script
-            new Executable( 
+            new Executable(
               id:'script1'
               content:"""
                 _const = 10
-                module.exports = 
+                module.exports =
                   const: _const
                   _private: -> console.log 'not exported !'
                   add: (a) -> module.exports.const + a
@@ -389,7 +389,7 @@ describe 'RuleService tests', ->
                 return done err if err?
                 eventType = saved
                 # Drop existing events
-                Event.collection.drop -> Event.loadIdCache ->
+                Event.remove {}, -> Event.loadIdCache ->
                   new Event(type: eventType).save (err, saved) ->
                     return done err if err?
                     event1 = saved
@@ -424,7 +424,7 @@ describe 'RuleService tests', ->
         done()
 
     it 'should rule be executed for player', (done) ->
-      # given an applicable rule for a target 
+      # given an applicable rule for a target
       service.resolve player.id, null, player.email, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
@@ -437,7 +437,7 @@ describe 'RuleService tests', ->
           done()
 
     it 'should rule be executed for player over event', (done) ->
-      # given an applicable rule for a target 
+      # given an applicable rule for a target
       service.resolve player.id, event1.id, null, player.email, (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
@@ -465,9 +465,9 @@ describe 'RuleService tests', ->
 
         # then module.exports was replaced by return
         expect(rule).not.to.contain 'module.exports =', 'still module.exports'
-        
+
         # then the execute() function isnt available
-        expect(rule).not.to.contain 'execute', 'still execute() in rule' 
+        expect(rule).not.to.contain 'execute', 'still execute() in rule'
         expect(rule).not.to.contain 'hello !', 'still execute() code in rule'
 
         expect(rules).to.have.property 'script1'
@@ -480,9 +480,9 @@ describe 'RuleService tests', ->
 
         # then module.exports was replaced by return
         expect(rule).not.to.contain 'module.exports =', 'still module.exports'
-        
+
         # then the private code isnt available
-        expect(rule).not.to.contain '_private' , 'still private code in script' 
+        expect(rule).not.to.contain '_private' , 'still private code in script'
         expect(rule).to.contain '_const = 10', 'missing arbitrary code in script'
         expect(rule).to.contain 'add', 'missing public method code in script'
         done()
@@ -522,7 +522,7 @@ describe 'RuleService tests', ->
 
           # then module.exports was replaced by return
           expect(rule).not.to.contain 'module.exports =', 'still module.exports'
-          
+
           expect(rule.replace /[\n\r]/g, '').to.equal "define('rule0', ['moment'], function(moment){"+
             "var _time;"+
             "_time = null;"+
@@ -556,7 +556,7 @@ describe 'RuleService tests', ->
         module.exports = new MyRule()"""
       script.save (err) ->
         return done err if err?
-        # given an applicable rule for a target 
+        # given an applicable rule for a target
         service.resolve player.id, null, player.email, (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
@@ -633,9 +633,8 @@ describe 'RuleService tests', ->
           script.save (err) ->
             return done err if err?
             # given a client to mongoDB
-            new MongoClient(new Server utils.confKey('mongo.host'), utils.confKey 'mongo.port', 27017).open (err, client) ->
+            new MongoClient.connect "mongodb://#{utils.confKey('mongo.host')}:#{utils.confKey 'mongo.port', 27017}/#{utils.confKey('mongo.db')}", (err, db) ->
               return done "Unable to open second connection to Mongo #{err}" if err?
-              db = client.db utils.confKey('mongo.db')
               db.collection 'players', (err, collection) ->
                 return done "Unable to open second connection to Mongo #{err}" if err?
 
@@ -661,8 +660,8 @@ describe 'RuleService tests', ->
 
     beforeEach (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 
-        id:'rule1', 
+      script = new Executable
+        id:'rule1',
         content: """Rule = require 'hyperion/model/Rule'
           class MyRule extends Rule
             canExecute: (actor, target, context, callback) =>
@@ -675,11 +674,11 @@ describe 'RuleService tests', ->
         return done err if err?
         new ItemType(
           id: 'spare'
-          properties: 
-            name: 
+          properties:
+            name:
               type: 'string'
               def: ''
-            parts: 
+            parts:
               type: 'array'
               def: 'Item'
             compose:
@@ -698,12 +697,12 @@ describe 'RuleService tests', ->
               return done err if err?
               eventType = saved
               # Drop existing events
-              Event.collection.drop ->
+              Event.remove {}, ->
                 new Event(type: eventType).save (err, saved) ->
                   return done err if err?
                   event1 = saved
                   # Drops existing items
-                  Item.collection.drop -> Field.collection.drop -> Item.loadIdCache ->
+                  Item.remove {}, -> Field.remove {}, -> Item.loadIdCache ->
                     # Creates some items
                     new Item(map: map, x:0, y:0, type: type1).save (err, saved) ->
                       return done err if err?
@@ -753,7 +752,7 @@ describe 'RuleService tests', ->
         # then the dumb rule has matched the first field
         expect(_.find results, (res) -> field1.equals res.target).not.to.be.null
         done()
-        
+
     it 'should rule be applicable on coordinates with map isolation', (done) ->
       # when resolving applicable rules at a coordinate of the second map
       service.resolve item4.id, 1, 2, null, 'admin', (err, results)->
@@ -774,7 +773,7 @@ describe 'RuleService tests', ->
       # when resolving applicable rules for a target
       service.resolve item1.id, item2.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
-         
+
         expect(results).to.exist
         # then the dumb rule has matched the second item
         expect(results).to.have.property 'rule1'
@@ -782,7 +781,7 @@ describe 'RuleService tests', ->
         done()
 
     it 'should rule be executed for item target', (done) ->
-      # given an applicable rule for a target 
+      # given an applicable rule for a target
       service.resolve item1.id, item2.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
@@ -793,12 +792,12 @@ describe 'RuleService tests', ->
           # then the rule is executed.
           expect(result).equal 'hello !'
           done()
-        
+
     it 'should rule be applicable on event target', (done) ->
       # when resolving applicable rules for a target
       service.resolve item1.id, event1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
-         
+
         expect(results).to.exist
         # then the dumb rule has matched the second item
         expect(results).to.have.property 'rule1'
@@ -806,7 +805,7 @@ describe 'RuleService tests', ->
         done()
 
     it 'should rule be executed for event target', (done) ->
-      # given an applicable rule for a target 
+      # given an applicable rule for a target
       service.resolve item1.id, event1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
@@ -817,12 +816,12 @@ describe 'RuleService tests', ->
           # then the rule is executed.
           expect(result).to.equal 'hello !'
           done()
-        
+
     it 'should rule be applicable on field target', (done) ->
       # when resolving applicable rules for a target
       service.resolve item1.id, field1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
-         
+
         expect(results).to.exist
         # then the dumb rule has matched the second item
         expect(results).to.have.property 'rule1'
@@ -830,7 +829,7 @@ describe 'RuleService tests', ->
         done()
 
     it 'should rule be executed for field target', (done) ->
-      # given an applicable rule for a target 
+      # given an applicable rule for a target
       service.resolve item1.id, field1.id, null, 'admin', (err, results)->
         return done "Unable to resolve rules: #{err}" if err?
 
@@ -845,7 +844,7 @@ describe 'RuleService tests', ->
     it 'should rule execution modifies item in database', (done) ->
       # given a rule that modified coordinates
       script = new Executable
-        id:'rule2', 
+        id:'rule2',
         content: """Rule = require 'hyperion/model/Rule'
           class MoveRule extends Rule
             canExecute: (actor, target, context, callback) =>
@@ -858,7 +857,7 @@ describe 'RuleService tests', ->
       script.save (err) ->
         return done err if err?
 
-        # given the rules that are applicable for a target 
+        # given the rules that are applicable for a target
         service.resolve item1.id, item2.id, null, 'admin', (err, results)->
           return done "Unable to resolve rules: #{err}" if err?
 
@@ -961,7 +960,7 @@ describe 'RuleService tests', ->
                 service.execute 'rule35', item1.id, item2.id, {}, 'admin', (err, result)->
                   return done "Unable to execute rule: #{err}" if err?
                   # then the rule is executed.
-                  
+
                   # then the first item was modified on database
                   Item.findById item1.id, (err, item) =>
                     return done "failed to retrieve item: #{err}" if err?
@@ -1176,7 +1175,7 @@ describe 'RuleService tests', ->
               expect(invokation).to.equal 1
               [player, msg] = sendArgs[0]
               expect(player).to.satisfy (o) -> admin.equals o
-              expect(msg).to.equal "message for #{item1.id}" 
+              expect(msg).to.equal "message for #{item1.id}"
               done()
 
       it 'should campaign not being sent during select', (done) ->
@@ -1235,8 +1234,8 @@ describe 'RuleService tests', ->
   describe 'given an item type and an item', ->
 
     beforeEach (done) ->
-      ItemType.collection.drop ->
-        Item.collection.drop -> Item.loadIdCache ->
+      ItemType.remove {}, ->
+        Item.remove {}, -> Item.loadIdCache ->
           # given a type
           return done err if err?
           type1 = new ItemType id: 'dog'
@@ -1253,7 +1252,7 @@ describe 'RuleService tests', ->
               new Item({type: type1, name:'medor'}).save (err, saved) ->
                 return done err if err?
                 item2 = saved
-                done()  
+                done()
 
     it 'should turn rule be executed', (done) ->
       # given a turn rule on dogs
@@ -1277,7 +1276,7 @@ describe 'RuleService tests', ->
           Item.findOne {type: type1.id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
             expect(existing.fed).to.equal 1, 'lassie wasn\'t fed'
-         
+
             Item.findOne {type: type1.id, name: 'medor'}, (err, existing) =>
               return done "Unable to find item: #{err}" if err?
               expect(existing.fed).to.equal 1, 'medor wasn\'t fed'
@@ -1330,7 +1329,7 @@ describe 'RuleService tests', ->
           expect(notifications[3]).to.deep.equal ['rule', 'rule7']
           expect(notifications[4]).to.deep.equal ['success', 'rule7']
           expect(notifications[5]).to.deep.equal ['end']
-        
+
           # then lassie fed status was reseted, and execution order is correct
           Item.findOne {type: type1.id, name: 'lassie'}, (err, existing) =>
             return done "Unable to find item: #{err}" if err?
@@ -1340,13 +1339,13 @@ describe 'RuleService tests', ->
 
     it 'should turn selection failure be reported', (done) ->
       async.forEach [
-        # given a turn rule with broken select 
+        # given a turn rule with broken select
         new Executable
           id:'rule12'
           content: """TurnRule = require 'hyperion/model/TurnRule'
             Item = require 'hyperion/model/Item'
 
-            module.exports = new (class Dumb extends TurnRule
+            module.exports = new (class Dumb1 extends TurnRule
               select: (callback) =>
                 callback "selection failure"
               execute: (target, callback) =>
@@ -1359,7 +1358,7 @@ describe 'RuleService tests', ->
           content: """TurnRule = require 'hyperion/model/TurnRule'
             Item = require 'hyperion/model/Item'
 
-            module.exports = new (class Dumb extends TurnRule
+            module.exports = new (class Dumb2 extends TurnRule
               constructor: ->
                 @rank= 2
               select: (callback) =>
@@ -1388,14 +1387,14 @@ describe 'RuleService tests', ->
 
     it 'should turn asynchronous selection failure be reported', (done) ->
       # Creates a rule with an asynchronous error in execute
-      script = new Executable 
-        id:'rule27', 
+      script = new Executable
+        id:'rule27',
         content: """TurnRule = require 'hyperion/model/TurnRule'
           Item = require 'hyperion/model/Item'
 
           module.exports = new (class Dumb extends TurnRule
             select: (callback) =>
-              setTimeout => 
+              setTimeout =>
                 throw new Error @id+' throw error'
               , 5
             execute: (target, callback) =>
@@ -1418,7 +1417,7 @@ describe 'RuleService tests', ->
 
     it 'should turn execution failure be reported', (done) ->
       async.forEach [
-        # given a turn rule with broken execute 
+        # given a turn rule with broken execute
         new Executable
           id:'rule14'
           content: """TurnRule = require 'hyperion/model/TurnRule'
@@ -1464,11 +1463,11 @@ describe 'RuleService tests', ->
           expect(notifications[4]).to.deep.equal ['success', 'rule15']
           expect(notifications[5]).to.deep.equal ['end']
           done()
-        
+
     it 'should turn asynchronous execution failure be reported', (done) ->
       # Creates a rule with an asynchronous error in execute
-      script = new Executable 
-        id:'rule28', 
+      script = new Executable
+        id:'rule28',
         content: """TurnRule = require 'hyperion/model/TurnRule'
           Item = require 'hyperion/model/Item'
 
@@ -1476,7 +1475,7 @@ describe 'RuleService tests', ->
             select: (callback) =>
               Item.find {name: 'lassie'}, callback
             execute: (target, callback) =>
-              setTimeout => 
+              setTimeout =>
                 throw new Error @id+' throw error'
               , 5
           )()"""
@@ -1497,7 +1496,7 @@ describe 'RuleService tests', ->
 
     it 'should turn update failure be reported', (done) ->
       async.forEach [
-        # given a turn rule with broken update 
+        # given a turn rule with broken update
         new Executable
           id:'rule16'
           content: """TurnRule = require 'hyperion/model/TurnRule'
@@ -1594,7 +1593,7 @@ describe 'RuleService tests', ->
     it 'should disabled turn rule not be executed', (done) ->
       # given a disabled turn rule on lassie
       script = new Executable
-        id:'rule9', 
+        id:'rule9',
         content: """TurnRule = require 'hyperion/model/TurnRule'
           Item = require 'hyperion/model/Item'
 
@@ -1621,10 +1620,10 @@ describe 'RuleService tests', ->
 
     it 'should disabled rule not be resolved nor exported', (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 
-        id:'rule10', 
+      script = new Executable
+        id:'rule10',
         content: """Rule = require 'hyperion/model/Rule'
-          
+
           module.exports = new (class Dumb extends Rule
             constructor: ->
               @active = false
@@ -1650,10 +1649,10 @@ describe 'RuleService tests', ->
 
     it 'should disabled rule not be executed', (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 
-        id:'rule11', 
+      script = new Executable
+        id:'rule11',
         content: """Rule = require 'hyperion/model/Rule'
-          
+
           module.exports = new (class Dumb extends Rule
             constructor: ->
               @active = false
@@ -1682,10 +1681,10 @@ describe 'RuleService tests', ->
 
     it 'should failling rule not be resolved', (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 
-        id:'rule20', 
+      script = new Executable
+        id:'rule20',
         content: """Rule = require 'hyperion/model/Rule'
-          
+
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               @error 'coucou'
@@ -1700,18 +1699,18 @@ describe 'RuleService tests', ->
         service.resolve item1.id, item1.id, null, 'admin', (err) ->
           # then the error is reported
           expect(err).to.exist
-          expect(err).to.include 'has no method'
+          expect(err).to.include 'error is not a function'
           done()
 
     it 'should asynchronous failling rule not be resolved', (done) ->
       # Creates a rule with an asynchronous error in canExecute
-      script = new Executable 
-        id:'rule25', 
+      script = new Executable
+        id:'rule25',
         content: """Rule = require 'hyperion/model/Rule'
-          
+
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
-              setTimeout => 
+              setTimeout =>
                 throw new Error @id+' throw error'
               , 5
             execute: (actor, target, params, context, callback) =>
@@ -1728,10 +1727,10 @@ describe 'RuleService tests', ->
 
     it 'should failling rule not be executed', (done) ->
       # Creates a dumb rule that always match
-      script = new Executable 
-        id:'rule21', 
+      script = new Executable
+        id:'rule21',
         content: """Rule = require 'hyperion/model/Rule'
-          
+
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
@@ -1746,20 +1745,20 @@ describe 'RuleService tests', ->
         service.execute 'rule21', item1.id, item1.id, {}, 'admin', (err, results) ->
           # then the error is reported
           expect(err).to.exist
-          expect(err).to.include 'has no method'
+          expect(err).to.include 'error is not a function'
           done()
 
     it 'should asynchronous failling rule not be executed', (done) ->
       # Creates a rule with an asynchronous error in execute
-      script = new Executable 
-        id:'rule26', 
+      script = new Executable
+        id:'rule26',
         content: """Rule = require 'hyperion/model/Rule'
-          
+
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, []
             execute: (actor, target, params, context, callback) =>
-              setTimeout => 
+              setTimeout =>
                 throw new Error @id+' throw error'
               , 5
           )()"""
@@ -1774,8 +1773,8 @@ describe 'RuleService tests', ->
 
     it 'should incorrect parameter rule not be executed', (done) ->
       # Creates a rule with invalid parameter
-      script = new Executable 
-        id:'rule23', 
+      script = new Executable
+        id:'rule23',
         content: """Rule = require 'hyperion/model/Rule'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
@@ -1798,8 +1797,8 @@ describe 'RuleService tests', ->
 
     it 'should parameterized rule be executed', (done) ->
       # Creates a rule with valid parameter
-      script = new Executable 
-        id:'rule24', 
+      script = new Executable
+        id:'rule24',
         content: """Rule = require 'hyperion/model/Rule'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
@@ -1843,7 +1842,7 @@ describe 'RuleService tests', ->
                 return callback err if err?
                 ralph = new Item id: '#{itemId}', type: Dog, map: map, x: 10, y: 7
                 @saved.push ralph
-                callback null, 
+                callback null,
           )()"""
 
       script.save (err) ->
@@ -1872,42 +1871,42 @@ describe 'RuleService tests', ->
     # rule30, rule31: cat1, rule32: cat2, rule33: no category
     beforeEach (done) ->
       async.each [
-        new Executable 
-          id:'rule30', 
+        new Executable
+          id:'rule30',
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
-                callback null, [] 
+                callback null, []
               execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             ) 'cat1' """
       ,
-        new Executable 
-          id:'rule31', 
+        new Executable
+          id:'rule31',
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
-                callback null, [] 
+                callback null, []
               execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             ) 'cat1' """
       ,
-        new Executable 
-          id:'rule32', 
+        new Executable
+          id:'rule32',
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
-                callback null, [] 
+                callback null, []
               execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             ) 'cat2' """
       ,
-        new Executable 
-          id:'rule33', 
+        new Executable
+          id:'rule33',
           content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
               canExecute: (actor, target, context, callback) =>
-                callback null, [] 
+                callback null, []
               execute: (actor, target, params, context, callback) =>
                 callback null, params.p1
             )() """
@@ -1919,7 +1918,7 @@ describe 'RuleService tests', ->
           return done err if err?
           itemType = saved
           # Drop existing events
-          Item.collection.drop -> Item.loadIdCache ->
+          Item.remove {}, -> Item.loadIdCache ->
             new Item(type: itemType).save (err, saved) ->
               return done err if err?
               item1 = saved
@@ -1977,15 +1976,15 @@ describe 'RuleService tests', ->
 
     beforeEach (done) ->
       new Executable(
-        id:'rule36', 
+        id:'rule36',
         content: """Rule = require 'hyperion/model/Rule'
-          _ = require 'underscore'
+          _ = require 'lodash'
           module.exports = new (class Dumb extends Rule
             canExecute: (actor, target, context, callback) =>
               callback null, [
                 {name: 'id', type: 'string'}
                 {name: 'delay', type: 'integer'}
-              ] 
+              ]
             execute: (actor, target, params, context, callback) =>
               _.delay =>
                 callback null, params.id
@@ -1997,7 +1996,7 @@ describe 'RuleService tests', ->
           return done err if err?
           itemType = saved
           # Drop existing events
-          Item.collection.drop -> Item.loadIdCache ->
+          Item.remove {}, -> Item.loadIdCache ->
             new Item(type: itemType).save (err, saved) ->
               return done err if err?
               item1 = saved

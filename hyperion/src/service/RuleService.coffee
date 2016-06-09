@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 cluster = require 'cluster'
 {resolve, normalize, join, relative} = require 'path'
@@ -34,7 +34,7 @@ ContactService = require('../service/ContactService').get()
 LoggerFactory = require '../util/logger'
 logger = LoggerFactory.getLogger 'service'
 loggerWorker = LoggerFactory.getLogger 'worker'
-  
+
 # Regular expression to extract dependencies from rules
 depReg = /(.*)\s=\srequire\((.*)\);\n/
 compiledRoot = resolve normalize confKey 'game.executable.target'
@@ -45,7 +45,7 @@ pathToNodeModules = relativePath(compiledRoot, "#{join __dirname, '..', '..', '.
 pool = []
 
 # Spawn a worker with respawn facilities and changes propagations
-# 
+#
 # @param poolIdx [Number] index under which the spawned worker is store
 # @param options [Object] worker creation options. All of them are passed as environement variables to
 # the spawned worker. Only one is mandatory:
@@ -54,7 +54,7 @@ spawn = (poolIdx, options) ->
   worker = cluster.fork options
   worker.setMaxListeners 0
   pool[poolIdx] = worker
-  
+
   loggerWorker.info "#{process.pid} spawn worker #{options.module} with pid #{worker.process.pid}"
 
   # relaunch immediately dead worker
@@ -89,10 +89,10 @@ spawn = (poolIdx, options) ->
     else if data?.event is 'log'
       LoggerFactory.emit 'log', data.args
 
-# The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation 
+# The RuleService is somehow the rule engine: it indicates which rule are applicables at a given situation
 # It also manage turn rules, and game timer.
 #
-# @Todo: refresh cache when executable changes... 
+# @Todo: refresh cache when executable changes...
 class _RuleService
 
   constructor: ->
@@ -100,11 +100,11 @@ class _RuleService
     return unless cluster.isMaster
     Executable.resetAll true, (err) ->
       throw new Error "Failed to initialize RuleService: #{err}" if err?
-      cluster.setupMaster 
+      cluster.setupMaster
         exec: join __dirname, '..', '..', 'lib', 'service', 'worker', 'Launcher'
-        
+
       spawn 0, module: 'RuleExecutor'
-      spawn 1, 
+      spawn 1,
         module: 'RuleScheduler'
         # frequency, in seconds.
         frequency: confKey 'turn.frequency'
@@ -133,18 +133,18 @@ class _RuleService
     # propagate time changes
     timer.on 'change', (time) ->
       notifier.notify 'time', 'change', time.valueOf()
-        
+
   # Allow to change game timer
   #
   # @param time [Number] Unix epoch of new time. null to reset to current
-  setTime: (time = null) => 
+  setTime: (time = null) =>
     return if fromRule()
     timer.set time
 
   # Allow to pause or resume game timer
   #
   # @param stopped [Boolean] true to pause time, false to resumt it
-  pauseTime: (stopped) => 
+  pauseTime: (stopped) =>
     return if fromRule()
     timer.stopped = stopped is true
 
@@ -164,17 +164,17 @@ class _RuleService
         fs.readFile executable.compiledPath, (err, content) =>
           return callback "Failed to export rules. Error while reading rule #{executable.compiledPath}: #{err}" if err?
           content = content.toString()
-          
+
           # rules specific behaviour
           if -1 isnt content.indexOf 'model/Rule'
             # removes the executable part
-            content = content.replace '\n    this.execute = __bind(this.execute, this);\n', '\n'
+            content = content.replace '\n    this.execute = bind(this.execute, this);\n', '\n'
 
             start = content.search /^  .*\.prototype\.execute\s=\sfunction\(.*\)\s\{/im
             end = content.indexOf('\n  };', start)-1
 
             content = content[0...start]+content[end+6..]
-            try 
+            try
               # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
               # and singleton (like ModuleWatcher) will be broken.
               obj = require relative __dirname, executable.compiledPath
@@ -209,24 +209,24 @@ class _RuleService
               return ''
 
             # removes also the scope declaration
-            content = content.replace " #{vars[vars.length-1]},", ''
+            content = content.replace new RegExp(",? #{vars[vars.length-1]}"), ''
 
           # replace module.exports by return
           content = content.replace 'module.exports =', 'return'
-          
+
           # adds the define part
           content = "define('#{executable.id}', [#{deps.join ','}], function(#{vars.join ','}){\n#{content}\n});"
-          
+
           # and keep the remaining code
-          rules[executable.id] = content 
+          rules[executable.id] = content
           done()
 
       # read content of all existing executables
       async.forEach executables, readContent, (err) =>
         callback err, rules
-     
+
   # Resolves the applicable rules for a given situation.
-  # Arguments are specified inside an array, and may be interpreted as: 
+  # Arguments are specified inside an array, and may be interpreted as:
   #
   # @overload resolve(playerId, restriction, email, callback)
   #   Resolves applicable rules at for a player
@@ -243,7 +243,7 @@ class _RuleService
   #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjectId] the targeted item/event id
   #
-  # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId. 
+  # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId.
   # If an array, only rule that match one of the specified category is resolved.
   # If a single string, only rule that has this id is resolved.
   # Otherwise all rules are resolved.
@@ -265,12 +265,12 @@ class _RuleService
       pool[0].removeListener 'message', end
       # special case: worker not ready yet. Try later.
       if data.results[0] is 'worker not ready'
-        return _.delay => 
+        return _.delay =>
           @resolve.apply @, args.concat callback
         , 10
       return callback null, data.results[1] unless data.results[0]?
       # in case of error, wait for the executor to be respawned
-      _.delay -> 
+      _.delay ->
         callback data.results[0]
       , 150
 
@@ -281,7 +281,7 @@ class _RuleService
     catch err
       pool[0].removeListener 'message', end
       callback "Executor process dead: #{err}"
-   
+
   # Execute a particular rule for a given situation.
   # As a first validation, the rule is resolved for the target.
   # All objects modified by the rule will be registered in database.
@@ -312,12 +312,12 @@ class _RuleService
       pool[0].removeListener 'message', end
       # special case: worker not ready yet. Try later.
       if data.results[0] is 'worker not ready'
-        return _.delay => 
+        return _.delay =>
           @execute.apply @, args.concat callback
         , 10
       return callback null, data.results[1]  unless data.results[0]?
       # in case of error, wait for the executor to be respawned
-      _.delay -> 
+      _.delay ->
         callback data.results[0]
       , 150
 
@@ -329,7 +329,7 @@ class _RuleService
       pool[0].removeListener 'message', end
       callback "Executor process dead: #{err}"
 
-     
+
   # Trigger a turn by executing turn rules
   #
   # @param callback [Function] Callback invoked at the end of the turn execution, with one parameter:
@@ -344,12 +344,12 @@ class _RuleService
       pool[1].removeListener 'message', end
       # special case: worker not ready yet. Try later.
       if data.results[0] is 'worker not ready'
-        return _.delay => 
+        return _.delay =>
           @triggerTurn.apply @, [callback]
         , 10
       return callback null unless data.results[0]?
       # in case of error, wait for the executor to be respawned
-      _.delay -> 
+      _.delay ->
         callback data.results[0]
       , 150
 

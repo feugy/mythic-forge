@@ -1,11 +1,11 @@
 ( ->
 
   # Atlas library has some dependencies:
-  # 
-  # - async@0.2.7
+  #
+  # - async@2.0.0
   # - jquery@2.0.0
-  # - socket.io@1.0.0-pre2
-  # - underscore@1.4.4
+  # - socket.io@1.4.6
+  # - lodash@4.13.1
   #
   # Atlas needs an event bus to propagate changes on models
   # This event bus may be passed as argument of the factory, and must contain the following methods
@@ -13,7 +13,7 @@
   # - emit: [Function] creates an event. Invoked with event type as first parameter, and event arguments as other parameters.
   # - on: [function] bind a listener to an event. Invoked with the event type as first parameter, and listener as second.
   # - off: [Function] removes a listener event. Invoked with the event type as first parameter, and listener as second.
-  # If listener is ommited, all listeners of this event are removed. 
+  # If listener is ommited, all listeners of this event are removed.
   # If event type is ommited, all listeners of all events are removed
   #
   # The following events will be emitted:
@@ -23,12 +23,12 @@
   # @param player [Player] the connected player model
   #
   # - modelChanged
-  # When a model creation, update or deletion is received. 
+  # When a model creation, update or deletion is received.
   # Local cache object are immediately updated, right before the event it triggered.
   # @param operation [String] operation kind: 'creation', 'update' or 'deletion'
   # @param model [Object] concerned model
   # @param changes [Array<String>] for updates, a list of properties that have been updated
-  # 
+  #
   # The factory accepts a options parameter, that may include:
   # - debug [Boolean] true to ouput debug message on console.
   # - preCreate [Function] extension point invoked when a creation is received from server, before processing data. Invoked with parameters :
@@ -44,51 +44,51 @@
   # @param deleted [Object] raw deleted model
   # @param  callback [Function] end callback to resume update process. Invoke with null and deleted, or with truthy value as first argument to cancel update
   @factory = (eventEmitter, options = {}) ->
-      
+
     # internal state
     isLoggingOut = false
     connected = false
     connecting = false
     player = null
     playersCache = {}
-      
+
     # Atlas global namespace
-    Atlas = 
+    Atlas =
       # socket.io high level object
       socket: null
 
       # socket.io namespace for incoming updates
       updateNS: null
-      
+
       # socket.io namespace for sending messages to server
       gameNS: null
-      
+
       # refer current options
       options: options
-      
+
       # keep event emitter
       eventEmitter: eventEmitter
-       
+
     # read-only player, populated by `connect()`
-    Object.defineProperty Atlas, 'player', 
+    Object.defineProperty Atlas, 'player',
       get: -> player
       enumerable: true
-            
+
     # read-only connection flag, populated by `connect()`
-    Object.defineProperty Atlas, 'connected', 
+    Object.defineProperty Atlas, 'connected',
       get: -> connected
       enumerable: true
-      
+
     #-----------------------------------------------------------------------------
     # Utilities
 
     classToType = {}
     for name in 'Boolean Number String Function Array Date RegExp Undefined Null'.split ' '
       classToType["[object " + name + "]"] = name.toLowerCase()
-      
+
     # Util namespace embed commonly used function
     utils = Atlas.utils =
-      
+
       # This method is intended to replace the broken typeof() Javascript operator.
       #
       # @param obj [Object] any check object
@@ -99,8 +99,8 @@
       type: (obj) ->
         strType = Object::toString.call obj
         classToType[strType] or "object"
-      
-      # isA() is an utility method that check if an object belongs to a certain class, or to one 
+
+      # isA() is an utility method that check if an object belongs to a certain class, or to one
       # of it's subclasses. Uses the classes names to performs the test.
       #
       # @param obj [Object] the object which is tested
@@ -113,38 +113,38 @@
           return true  if currentClass.name == clazz.name
           currentClass = currentClass.__super__?.constructor
         false
-        
+
       # Generate a unic id for request
       # @return a generated id
-      rid: -> 
+      rid: ->
         id = "#{Math.floor Math.random()*10000}"
         "req#{('0' for i in [0..5-id.length]).join ''}#{id}"
-      
+
     #-----------------------------------------------------------------------------
     # Connection to server
-      
+
     # Needed on firefox to avoid errors when refreshing the page
     if $? and window?
       $(window).on 'beforeunload', () ->
         isLoggingOut = true
         undefined
-      
-    # Tries to connect with server. 
+
+    # Tries to connect with server.
     # The current player will be identified and stored.
     # You must use this function with the authentication token obtained after sending
     # the player on the `http://host:port/api/auth/xxx` server API.
-    # 
+    #
     # @param token [String] the autorization token, obtained during authentication
     # @param callback [Function] invoked when player is connected, with arguments
-    # @option callback err [Error] the error object, or null if no error occured 
+    # @option callback err [Error] the error object, or null if no error occured
     # @option callback token [String] the autorization token used
-    Atlas.connect = (token, callback) =>    
+    Atlas.connect = (token, callback) =>
       isLoggingOut = false
       connecting = true
       connected = false
-        
-      Atlas.socket = io.connect conf.apiBaseUrl+'/', 
-        query:"token=#{token}", 
+
+      Atlas.socket = io.connect conf.apiBaseUrl+'/',
+        query:"token=#{token}",
         transports: ['websocket', 'polling', 'flashsocket']
 
       Atlas.socket.on 'close', => console.log "connect_failed", arguments
@@ -161,12 +161,12 @@
         return if isLoggingOut
         options.debug and console.log "disconnected for #{reason}"
         callback new Error 'disconnected'
-      
+
       Atlas.socket.io.on 'reconnect_attempt', ->
         # don't forget to set connecting flag again for error handling
         connecting = true
 
-      Atlas.socket.on 'connect', => 
+      Atlas.socket.on 'connect', =>
         raw = null
         # in parallel, get connected user and wired namespaces
         async.parallel [
@@ -180,7 +180,7 @@
               end()
           (end) ->
             # wired both namespaces
-            async.forEach [
+            async.each [
               {attr:'gameNS', ns:'game'}
               {attr:'updateNS', ns:'updates'}
             ], (spec, next) ->
@@ -196,9 +196,9 @@
           player = new Atlas.Player raw, (err) ->
             eventEmitter.emit 'connected', player
             callback err, player
-        
-    # Disconnect current player from server 
-    # 
+
+    # Disconnect current player from server
+    #
     # @param callback [Function] invoked when player is properly disconnected.
     Atlas.disconnect = (callback) =>
       return callback() unless connected
@@ -211,7 +211,7 @@
 
     #-----------------------------------------------------------------------------
     # Abstract models
-    
+
     # Per-class model caches
     models =
       Player: {}
@@ -221,7 +221,7 @@
       EventType: {}
       Map: {}
       FieldType: {}
-      
+
     # For each sent request, corresponding name, arguments and callback
     # request id is used as key
     requests = {}
@@ -272,7 +272,7 @@
           if Atlas[className]._fetchMethod?
             return Atlas[className].fetch [changes.id], (err, models) -> callback err, models?[0]
           else
-            return callback null 
+            return callback null
         options.debug and console.log "process update for model #{model.id} (#{className})", changes
         # then, update the local cache
         modifiedFields = []
@@ -280,14 +280,14 @@
           unless attr in Atlas[className]._notUpdated
             # ignore change if value is identical or if field ignored
             modifiedFields.push attr
-            model[attr] = value 
+            model[attr] = value
             options.debug and console.log "update property #{attr}"
 
         # performs update propagation
         end = (err) ->
           options.debug and console.log "end of update for model #{model.id} (#{className})", modifiedFields, err
           if modifiedFields.length isnt 0 and !err?
-            eventEmitter.emit 'modelChanged', 'update', model, modifiedFields 
+            eventEmitter.emit 'modelChanged', 'update', model, modifiedFields
           callback err, model
 
         # enrich specific models properties
@@ -304,7 +304,7 @@
             (next) ->
               enrichTypeProperties model, model, next
           ], end
-        else 
+        else
           end null
 
     # Removes cached model when removed on server
@@ -324,7 +324,7 @@
       return callback null unless removed?
       delete models[className][removed.id]
       options.debug and console.log "delete instance #{className} #{model.id}"
-      
+
       # update player characters
       for id, player of models.Player when _.isArray player.characters
         length = player.characters.length
@@ -357,7 +357,7 @@
 
       # performs removal propagation
       eventEmitter.emit 'modelChanged', 'deletion', removed
-      callback null 
+      callback null
 
     # Models locally represents object within Mythic-forge.
     # This class provide simple mechanisms to load a model from JSON representation
@@ -388,7 +388,7 @@
       # **private**
       # Load the model values from raw JSON
       # Ensure the existence of fixed attributes
-      # 
+      #
       # @param raw [Object] raw attributes
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
@@ -399,9 +399,9 @@
             @[attr] = if attr of raw then raw[attr] else null
         callback null
 
-    # Cached models are automatically wired to server once fetched. 
+    # Cached models are automatically wired to server once fetched.
     # Any modification from server will be propagated: models are always up to date.
-    # they are read-only: creation, modification and deletion are server privileges. 
+    # they are read-only: creation, modification and deletion are server privileges.
     #
     # Models maintains a per-class local cache: once wired, they are stored for further use.
     class CachedModel extends Model
@@ -429,22 +429,22 @@
       # Find models within the cache.
       # No server access done.
       #
-      # @param conditions [Object] conditions the selected models must match  
+      # @param conditions [Object] conditions the selected models must match
       # @param callback [Function] end callback, invoked with arguments:
       # @option err [Error] an Error object or null if no error occured
       # @option models [Array<Model>] the matching models, may be empty if no model matched given conditions
       @find: (conditions, callback = ->) ->
-        _.defer => callback null, _.where models[@_className], conditions
-      
+        _.defer => callback null, _.filter models[@_className], conditions
+
       # Find a model within the cache.
       # No server access done.
       #
-      # @param conditions [Object] conditions the selected models must match  
+      # @param conditions [Object] conditions the selected models must match
       # @param callback [Function] end callback, invoked with arguments:
       # @option err [Error] an Error object or null if no error occured
       # @option model [Model] the first matching models, may be null if no model matched given conditions
       @findOne: (conditions, callback = ->) ->
-        _.defer => callback null, _.findWhere models[@_className], conditions
+        _.defer => callback null, _.find models[@_className], conditions
 
       # Find a model with its id within the cache.
       # No server access done.
@@ -516,16 +516,16 @@
         super raw, (err) =>
           if err?
             delete models[@constructor._className][@id]
-            return callback err 
+            return callback err
           eventEmitter.emit 'modelChanged', 'creation', @
           callback null, @
         # store inside models immediately
         models[@constructor._className][@id] = @
-    
+
     #-----------------------------------------------------------------------------
     # Model enrichment methods
 
-    # Replace model's type by corresponding type model. 
+    # Replace model's type by corresponding type model.
     # If type is not cached yet, retrieve it on server and update model.
     #
     # @param model [Model] the enriched model
@@ -533,7 +533,7 @@
     # @option callback error [Error] an Error object, or null if no error occured
     enrichType = (model, callback = ->) ->
       return callback new Error "no type defined for #{model.constructor._className} #{model.id}" unless model.type?
-      
+
       id = if 'object' is utils.type model.type then model.type.id else model.type
       TypeClass = Atlas["#{model.constructor._className}Type"]
 
@@ -553,7 +553,7 @@
           model.type = types[0]
           callback null
 
-    # Replace item's map by corresponding Map model. 
+    # Replace item's map by corresponding Map model.
     # If Map is not cached yet, retrieve it on server and update item.
     #
     # @param item [Item] the enriched item
@@ -561,7 +561,7 @@
     # @option callback error [Error] an Error object, or null if no error occured
     enrichMap = (item, callback = ->) ->
       return callback null unless item.map?
-      
+
       id = if 'object' is utils.type item.map then item.map.id else item.map
       Atlas.Map.findById id, (err, map) ->
         return callback err if err?
@@ -574,7 +574,7 @@
         # not cached: as we cannot fetch maps, just add available data (may only be an id)
         item.map = new Atlas.Map (if 'object' is utils.type item.map then item.map else id:item.map), callback
 
-    # Replace players's characters by corresponding Item models. 
+    # Replace players's characters by corresponding Item models.
     # If Items are not cached yet, retrieve them on server and update player.
     #
     # @param player [Player] the enriched player
@@ -611,7 +611,7 @@
           player.characters.push character for character in characters
           callback null
 
-    # Replace event's from by corresponding Item model. 
+    # Replace event's from by corresponding Item model.
     # If Item is not cached yet, retrieve it on server and update item.
     #
     # @param event [Event] the enriched event
@@ -619,7 +619,7 @@
     # @option callback error [Error] an Error object, or null if no error occured
     enrichFrom = (model, callback = ->) ->
       return callback null unless model.from?
-      
+
       # try to build model from raw version of item
       id = if 'object' is utils.type model.from then model.from.id else model.from
       Atlas.Item.findById id, (err, from) ->
@@ -647,13 +647,13 @@
     enrichTypeProperties = (model, raw, callback = ->) ->
       return callback new Error "no type found for model #{model.constructor._className} #{model.id}" unless model.type?
       delete model.__dirty__
-      async.each _.pairs(model.type.properties), ([attr, spec], next) ->
+      async.each _.toPairs(model.type.properties), ([attr, spec], next) ->
         model[attr] = (
           if attr of raw
             raw[attr]
           else
             switch spec.type
-              when 'object' then null 
+              when 'object' then null
               when 'array' then []
               else spec.def
         )
@@ -739,7 +739,7 @@
       # @option args low y [Number] ordinate lower bound (included)
       # @param up [Object] upper-right coordinates of the rectangle
       # @option args up x [Number] abscissa upper bound (included)
-      # @option args up y [Number] ordinate upper bound (included)  
+      # @option args up y [Number] ordinate upper bound (included)
       # @param callback [Function] consultation end callback, invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
       # @option callback fields [Array<Field>] array of retrieved fields (may be empty)
@@ -763,12 +763,12 @@
         return unless @_rid is reqId
         @_rid = null
         if err?
-          options.debug and console.error "Fail to retrieve map content: #{err}" 
+          options.debug and console.error "Fail to retrieve map content: #{err}"
           return @_consultCallback new Error err
         options.debug and console.log "#{items.length} item(s) and #{fields.length} field(s) received for map #{@id}"
         # enrich returned models: items will be cached, not fields, but all will trigger events
         async.map items, (raw, next) ->
-          Atlas.Item.findById raw.id, (err, item) -> 
+          Atlas.Item.findById raw.id, (err, item) ->
             return next err if err?
             return next null, item if item?
             new Atlas.Item raw, next
@@ -822,15 +822,15 @@
       # **private**
       # List of properties that must be defined in this instance.
       @_fixedAttributes: ['descImage', 'images', 'properties', 'quantifiable']
-    
+
     # manages transition changes on Item's updates
     eventEmitter.on 'modelChanged', (event, operation, model, changes) ->
-      return unless operation is 'update' and model.constructor._className is 'Item' and 'transition' in changes 
+      return unless operation is 'update' and model.constructor._className is 'Item' and 'transition' in changes
       model._transition = model.transition
 
     # Item modelize any objects and actor that can be found on a map, and may be controlled by players
     # An item always have a type, which is systematically populated from cache or server during initialization.
-    # Links to other items and event are resolved locally from cache. 
+    # Links to other items and event are resolved locally from cache.
     # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetchinf the item.
     class Atlas.Item extends CachedModel
 
@@ -849,16 +849,16 @@
       # **private**
       # List of properties that must be defined in this instance.
       @_fixedAttributes: ['map', 'x', 'y', 'imageNum', 'state', 'transition', 'quantity', 'type']
-      
+
       # **private**
       # Provide the transition used to animate items.
       # Do not use directly used `model.getTransition` because it's not reset when not appliable.
       _transition: null
-      
+
       # **private**
       # Load the model values from raw JSON
       # Ensure the existence of fixed attributes
-      # 
+      #
       # @param raw [Object] raw attributes
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
@@ -875,13 +875,13 @@
               return callback err if err?
               # then enrich map
               enrichMap @, callback
-      
+
       # Returns the Item's transition. Designed to be used only one time.
       # When restrieved, the transition is reset until its next change.
       #
       # @return the current transition, or null if no transition available.
       getTransition: =>
-        transition = @_transition 
+        transition = @_transition
         @_transition = null
         transition
 
@@ -905,7 +905,7 @@
 
     # Event modelize anything that can be issued by an Item, and that is not on map
     # An event always have a type and a from item, which are systematically populated from cache or server during initialization.
-    # Links to other items and event are resolved locally from cache. 
+    # Links to other items and event are resolved locally from cache.
     # If some of them are not resolved, a `__dirty__` attrribute is added, and you can resolve them by fetching the event.
     class Atlas.Event extends CachedModel
 
@@ -928,7 +928,7 @@
       # **private**
       # Load the model values from raw JSON
       # Ensure the existence of fixed attributes
-      # 
+      #
       # @param raw [Object] raw attributes
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
@@ -963,7 +963,7 @@
       # **private**
       # Load the model values from raw JSON
       # Ensure the existence of fixed attributes
-      # 
+      #
       # @param raw [Object] raw attributes
       # @param callback [Function] optionnal loading end callback. invoked with arguments:
       # @option callback error [Error] an Error object, or null if no error occured
@@ -980,7 +980,7 @@
     # The rule service is responsible for resolving and executing rules.
     # It send relevant instruction to server to performs those tasks.
     class RuleService
-      
+
       # Constructor: import rules
       constructor: ->
         eventEmitter.on 'connected', connectedCb = =>
@@ -990,7 +990,7 @@
         connectedCb() if connected
 
       # Triggers rules resolution for a given actor, **on server side**.
-      # 
+      #
       # @overload resolve(player, callback)
       #   Resolves applicable rules for a spacific player
       #   @param player [Player|String] the player or its id
@@ -1006,26 +1006,26 @@
       #   @param actor [Item|String] the actor item or its id
       #   @param target [Item|String] the targeted item or its id
       #
-      # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId. 
+      # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId.
       # If an array, only rule that match one of the specified category is resolved.
       # If a single string, only rule that has this id is resolved.
       # Otherwise all rules are resolved.
       # @param callback [Function] resolution end callback, invoked with arguments
       # @option callback err [Error] an Error object, or null if no error occured
-      # @option callback results [Object] applicable rules in an associative array, where rule id is key, 
+      # @option callback results [Object] applicable rules in an associative array, where rule id is key,
       # and value an array of applicable targets :
       # - params [Array] awaited parameters (may be empty)
       # - category [String] rule category
       # - target [Model] applicable target (enriched model)
       resolve: (args..., restriction, callback = ->) =>
         rid = utils.rid()
-        requests[rid] = 
+        requests[rid] =
           restriction: if _.isArray restriction then restriction.sort().join ',' else restriction
           resolve: true
           callback: callback
         params = requests[rid]
         params.actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
-            
+
         if args.length is 1
           # resolve for player
           options.debug and console.log "resolve rules for player #{params.actorId}"
@@ -1041,7 +1041,7 @@
           params.y = args[2]
           options.debug and console.log "resolve rules for #{params.actorId} at #{params.x}:#{params.y}"
           Atlas.gameNS.emit 'resolveRules', rid, params.actorId, params.x, params.y, restriction
-        else 
+        else
           return _.defer -> callback new Error "Can't resolve rules with arguments #{JSON.stringify arguments, null, 2}"
 
       # Triggers a specific rule execution for a given actor on a target
@@ -1062,14 +1062,14 @@
       # @option callback result [Object] arbitrary rule results.
       execute: (ruleName, args..., params, callback = ->) =>
         rid = utils.rid()
-        requests[rid] = 
+        requests[rid] =
           name: ruleName
           execute: true
           params: params
           callback: callback
         params = requests[rid]
         params.actorId = if 'object' is utils.type args[0] then args[0].id else args[0]
-        
+
         if args.length is 1
           # execute over a player
           options.debug and console.log "execute rule #{params.name} for player #{params.actorId}"
@@ -1079,16 +1079,16 @@
           params.targetId = if 'object' is utils.type args[1] then args[1].id else args[1]
           options.debug and console.log "execute rule #{params.name} for #{params.actorId} and target #{params.targetId}"
           Atlas.gameNS.emit 'executeRule', rid, params.name, params.actorId, params.targetId, params.params
-        else 
+        else
           return _.defer -> callback new Error "Can't execute rules with arguments #{JSON.stringify arguments, null, 2}"
-        
+
       # Indicates that service is currently resolving or executing a given rule
       #
       # @param conditions [Object] an object of condition to check:
       # @option conditions resolved [Array<String>|String] optionnal resolved restriction. if null check any rule resolution
       # @option conditions executed [String] optionnal rule name. if null check any rule execution
       # @return true if busy condition are successful (that is, a resolution or execution is already in progress).
-      isBusy: ({resolved, executed} = {})=> 
+      isBusy: ({resolved, executed} = {})=>
         # check resolution
         if resolved?
           # flatten restriction arrays
@@ -1097,22 +1097,22 @@
         # check execution
         return true for rid, req of requests when req.execute and (not executed? or req.name is executed)
         return false
-      
+
       # **private**
       # Rules resolution handler: enrich results with models and invoke original callback.
       #
       # @param reqId [String] the request unic identifier
       # @param err [String] an error string, or null if no error occured
-      # @param results [Object] applicable rules, where rule id is key, 
+      # @param results [Object] applicable rules, where rule id is key,
       # and value an array of object targets with params array (may be empty), category and applicable target
       _onResolveRules: (reqId, err, results) =>
         return unless reqId of requests
         callback = requests[reqId].callback
         # reset to allow further calls.
         delete requests[reqId]
-        
+
         if err?
-          options.debug and console.error "Fail to resolve rules: #{err}" 
+          options.debug and console.error "Fail to resolve rules: #{err}"
           return callback new Error err
 
         # enrich targets with models
@@ -1150,9 +1150,9 @@
         callback = requests[reqId].callback
         # reset to allow further calls.
         delete requests[reqId]
-        
+
         return callback null, result unless err?
-        options.debug and console.error "Fail to execute rule: #{err}" 
+        options.debug and console.error "Fail to execute rule: #{err}"
         return callback new Error err
 
     # Only provide a singleton of RuleService
@@ -1166,27 +1166,27 @@
 
     # The rule service is responsible for retreiveing and storring images in a cache.
     # When requesting multiple time the same image, it stacks requester callback and invoke
-    # them when the image is ready. 
-    # It immediately returns the existing image when cached. 
+    # them when the image is ready.
+    # It immediately returns the existing image when cached.
     class ImageService
 
-      # **private**        
+      # **private**
       # Temporary storage of caller callback  for pending images
       _pendingStacks: {}
 
       # **private**
       # Image local cache, that store Image objects
       _cache: {}
-      
+
       # **private**
-      # Image data local cache, that store Image objects. 
+      # Image data local cache, that store Image objects.
       # Retention to 3 seconds only because it cost a lot of memory
       _dataCache: {}
-      
+
       # **private**
       # Timestamps added to image request to server, avoiding cache
       _timestamps: {}
-      
+
       # Load an image. Once it's available, the callback is invoked
       # If this image has already been loaded (url used as key), the event is imediately emitted.
       #
@@ -1217,13 +1217,13 @@
           imgData.src = "#{image}?#{@_timestamps[image]}"
 
       # Returns the image content from the cache, or null if the image was not requested yet
-      # 
+      #
       # @param key [String] image key requested
       # @return the loaded DOM image node, or null if no image corresponding to key
       getImage: (key) =>
         return null unless key of @_cache
         @_cache[key]
-        
+
       # Gets the base 64 image data from an image
       #
       # @param key [String] image key requested
@@ -1245,17 +1245,17 @@
           delete @_dataCache[key]
         , 3000
         data
-      
+
       # **private**
-      # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event. 
+      # Handler invoked when an image finisedh to load. Emit the `imageLoaded` event.
       #
       # @param event [Event] image loading success event
       _onImageLoaded: (event) =>
         # get only the image without host, port and base path
         key = null
         src = event.target.src.replace /\?\d*$/, ''
-        for image of @_pendingStacks when new RegExp("#{image}$").test src 
-          key = image 
+        for image of @_pendingStacks when new RegExp("#{image}$").test src
+          key = image
           break
         return unless key?
         # remove pending stack
@@ -1265,7 +1265,7 @@
         # strore image data and invoke callbacks
         @_cache[key] = event.target
         callback null, key, @_cache[key] for callback in stack
-    
+
       # **private**
       # Handler invoked when an image failed loading. Also emit the `imageLoaded` event.
       # @param event [Event] image loading fail event
@@ -1274,7 +1274,7 @@
         key = null
         src = event.target.src.replace /\?\d*$/, ''
         for image of @_pendingStacks when new RegExp("#{image}$").test src
-          key = image 
+          key = image
           break
         return unless key?
         # remove pending stack
@@ -1297,18 +1297,18 @@
     # @param emails [Array<String>] list of player email to consult
     # @param callback [Function] retrieval end callback, invoked with arguments
     # @option callback err [Error] an Error object, or null if no error occured
-    # @option callback players [Array<Object>] List of corresponding players, 
+    # @option callback players [Array<Object>] List of corresponding players,
     # with only public informations: email, firstName, lastName, lastConnection, connected
     Atlas.getPlayers = (emails, callback) =>
       return callback new Error 'Not connected' unless connected
       # delay to let other calls being respond in order to use cache
       rid = utils.rid()
-  
+
       Atlas.gameNS.on 'getPlayers-resp', process = (reqId, err, results) =>
         return unless reqId is rid
         Atlas.gameNS.removeListener 'getPlayers-resp', process
         return callback err if err?
-        
+
         now = new Date().getTime()
         # add player results in cache
         playersCache[result.email] = model: result, since: now for result in results
@@ -1318,7 +1318,7 @@
 
       # cache eviction
       limit = new Date().getTime() - 5000
-      delete playersCache[email] for email, cached of playersCache when cached.since < limit 
+      delete playersCache[email] for email, cached of playersCache when cached.since < limit
 
       # first check in cache
       notCached = _.compact _.difference emails, _.keys playersCache

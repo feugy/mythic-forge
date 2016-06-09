@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -29,18 +29,18 @@ item2 = null
 type = null
 awaited = false
 
-describe 'Item tests', -> 
+describe 'Item tests', ->
 
   beforeEach (done) ->
-    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> ItemType.loadIdCache ->
+    ItemType.remove {}, -> Item.remove {}, -> Map.remove {}, -> ItemType.loadIdCache ->
       type = new ItemType id: 'warehouse'
       type.setProperty 'rocks', 'integer', 100
       type.save done
 
   afterEach (done) ->
-    ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> ItemType.loadIdCache done
+    ItemType.remove {}, -> Item.remove {}, -> Map.remove {}, -> ItemType.loadIdCache done
 
-  it 'should item be created', (done) -> 
+  it 'should item be created', (done) ->
     # given a new Item
     item = new Item x: 10, y:-3, type:type
 
@@ -223,7 +223,7 @@ describe 'Item tests', ->
             expect(saved).to.have.property('quantity').that.equal 0
             done()
 
-  describe 'given a type with object properties and several Items', -> 
+  describe 'given a type with object properties and several Items', ->
 
     beforeEach (done) ->
       type = new ItemType id: 'river'
@@ -231,13 +231,13 @@ describe 'Item tests', ->
       type.setProperty 'end', 'object', 'Item'
       type.setProperty 'affluents', 'array', 'Item'
       type.save ->
-        Item.collection.drop -> Item.loadIdCache ->
+        Item.remove {}, -> Item.loadIdCache ->
           item = new Item {name: 'Rhône', end: null, type: type, affluents:[]}
           item.save (err, saved) ->
             return done err  if err?
             item = saved
             item2 = new Item {name: 'Durance', end: item, type: type, affluents:[]}
-            item2.save (err, saved) -> 
+            item2.save (err, saved) ->
               return done err  if err?
               item2 = saved
               item.affluents= [item2]
@@ -319,7 +319,7 @@ describe 'Item tests', ->
       item.affluents = [null, item2, null]
       item.save (err) ->
         return done err if err?
-      
+
         # given an unresolved item
         Item.findById item.id, (err, doc) ->
           return done "Can't find item: #{err}" if err?
@@ -363,7 +363,7 @@ describe 'Item tests', ->
         expect(awaited, 'watcher wasn\'t invoked').to.be.true
         done()
 
-  describe 'given a type with json property', -> 
+  describe 'given a type with json property', ->
 
     beforeEach (done) ->
       type = new ItemType id: 'squad'

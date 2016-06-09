@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 {join, sep, normalize} = require 'path'
 moment = require 'moment'
@@ -46,7 +46,7 @@ commit = (spec, done) ->
     return done err if err?
     repo.commit spec.message, all:true, done
 
-describe 'Utilities tests', -> 
+describe 'Utilities tests', ->
 
   it 'should path aside to another one be made relative to each other', ->
     a = join 'folder1', 'folder2', 'compiled', 'rule'
@@ -68,7 +68,7 @@ describe 'Utilities tests', ->
     b = join 'root', 'lib'
     expect(utils.relativePath a, b).to.be.equal join '..', '..', '..', 'root', 'lib'
 
-  it 'should fixed-length token be generated', -> 
+  it 'should fixed-length token be generated', ->
     # when generating tokens with fixed length, then length must be compliant
     expect(utils.generateToken 10).to.have.lengthOf 10
     expect(utils.generateToken 0).to.have.lengthOf 0
@@ -76,7 +76,7 @@ describe 'Utilities tests', ->
     expect(utils.generateToken 20).to.have.lengthOf 20
     expect(utils.generateToken 100).to.have.lengthOf 100
 
-  it 'should token be generated with only alphabetical character', -> 
+  it 'should token be generated with only alphabetical character', ->
     # when generating a token
     token = utils.generateToken 1000
     # then all character are within correct range
@@ -87,8 +87,8 @@ describe 'Utilities tests', ->
       expect(code, "characters #{char} (#{code}) is forbidden").to.satisfy (c) -> c < 58 or c > 64
 
   it 'should plainObjects keep empty objects', ->
-    tree = 
-      subObj: 
+    tree =
+      subObj:
         empty: {}
         emptyArray: []
       subArray: [
@@ -111,7 +111,7 @@ describe 'Utilities tests', ->
     it 'should time event be fired any seconds', (done) ->
       events = []
       now = null
-      saveTick = (tick) -> 
+      saveTick = (tick) ->
         now = moment() unless now?
         events.push tick
 
@@ -130,7 +130,7 @@ describe 'Utilities tests', ->
       events = []
       now = moment()
       stop = null
-      saveTick = (tick) -> 
+      saveTick = (tick) ->
         stop = moment()
         events.push tick
         ruleUtils.timer.stopped = true
@@ -147,9 +147,9 @@ describe 'Utilities tests', ->
 
     it 'should timer be modified and restarted', (done) ->
       events = []
-      future = moment().add 'y', 1
+      future = moment().add 1, 'y'
       saveTick = (tick) -> events.push tick
-      
+
       _.delay ->
         ruleUtils.timer.set future
         ruleUtils.timer.stopped = false
@@ -170,14 +170,14 @@ describe 'Utilities tests', ->
 
     beforeEach (done) ->
       # empty field types.
-      FieldType.collection.drop -> FieldType.loadIdCache done
+      FieldType.remove {}, -> FieldType.loadIdCache done
 
     it 'should be loaded into cache at creation', (done) ->
       now = moment()
       type = new FieldType id:'montain'
       type.save (err) ->
         return done err if err?
-        expect(moment(FieldType.cachedSince 'montain').diff(now)).to.be.closeTo 0, 50
+        expect(moment(FieldType.cachedSince 'montain').diff(now)).to.be.below 500
         done()
 
     it 'should cache since be refreshed at update', (done) ->
@@ -191,7 +191,7 @@ describe 'Utilities tests', ->
           type.save (err) ->
             return done err if err?
             expect(save.diff(now)).to.be.at.least 100
-            expect(moment(FieldType.cachedSince 'montain').diff(save)).to.be.closeTo 0, 50
+            expect(moment(FieldType.cachedSince 'montain').diff(save)).to.be.below 500
             done()
         , 100
 
@@ -205,7 +205,7 @@ describe 'Utilities tests', ->
             expect(FieldType.cachedSince('montain')).to.be.equal 0
             done()
         , 100
-      
+
     it 'should cache be evicted after a while', (done) ->
       @timeout 1000
       type = new FieldType id:'montain'

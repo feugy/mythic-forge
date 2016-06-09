@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -32,12 +32,12 @@ awaited = false
 item = null
 itemType = null
 
-describe 'Event tests', -> 
+describe 'Event tests', ->
 
   before (done) ->
     # given an item type and an item
-    # empty events and types. 
-    Event.collection.drop -> EventType.collection.drop -> Item.collection.drop -> ItemType.collection.drop -> Event.loadIdCache ->
+    # empty events and types.
+    Event.remove {}, -> EventType.remove {}, -> Item.remove {}, -> ItemType.remove {}, -> Event.loadIdCache ->
       new ItemType(
         id: 'character'
         properties:
@@ -53,7 +53,7 @@ describe 'Event tests', ->
           done()
 
   afterEach (done) ->
-    EventType.collection.drop -> Event.collection.drop -> Event.loadIdCache done
+    EventType.remove {}, -> Event.remove {}, -> Event.loadIdCache done
 
   describe 'given a type', ->
 
@@ -62,9 +62,9 @@ describe 'Event tests', ->
       type.setProperty 'content', 'string', '---'
       type.save (err, saved) ->
         return done err if err?
-        Event.collection.drop -> Event.loadIdCache done
+        Event.remove {}, -> Event.loadIdCache done
 
-    it 'should event be created', (done) -> 
+    it 'should event be created', (done) ->
       # given a new Event
       event = new Event {type:type, from: item, content:'hello !'}
 
@@ -111,7 +111,7 @@ describe 'Event tests', ->
       type.setProperty 'preferences', 'json', {help:true}
       type.save (err, saved) ->
         return done err if err?
-        Event.collection.drop -> Event.loadIdCache ->
+        Event.remove {}, -> Event.loadIdCache ->
           event = new Event {type: type}
           event.save (err) ->
             # wait a little to avoid to fast save+update that prevent 'updated' to be detected as modified
@@ -174,7 +174,7 @@ describe 'Event tests', ->
       setTimeout ->
         event.save (err) ->
           return done "Failed to save event: #{err}" if err?
-          
+
 
           Event.find {}, (err, docs) ->
             return done "Can't find event: #{err}" if err?
@@ -247,7 +247,7 @@ describe 'Event tests', ->
         expect(err).to.have.property('message').that.include 'creation date cannot be modified'
         done()
 
-  describe 'given a type with object properties and several Events', -> 
+  describe 'given a type with object properties and several Events', ->
 
     beforeEach (done) ->
       type = new EventType {id: 'talk'}
@@ -256,13 +256,13 @@ describe 'Event tests', ->
       type.setProperty 'children', 'array', 'Event'
       type.save (err) ->
         return done err if err?
-        Event.collection.drop -> 
+        Event.remove {}, ->
           event = new Event {content: 't1', father: null, type: type, children:[]}
           event.save (err, saved) ->
             return done err if err?
             event = saved
             event2 = new Event {content: 't2', father: event, type: type, children:[]}
-            event2.save (err, saved) -> 
+            event2.save (err, saved) ->
               return done err if err?
               event2 = saved
               event.children = [event2]
@@ -347,7 +347,7 @@ describe 'Event tests', ->
       event.children = [null, event2, null]
       event.save (err) ->
         return done err if err?
-      
+
         # given an unresolved events
         Event.findById event.id, (err, doc) ->
           return done "Can't find event: #{err}" if err?
@@ -378,7 +378,7 @@ describe 'Event tests', ->
             # when resolving then
             Event.fetch docs, true, (err, docs) ->
               return done "Can't resolve links: #{err}" if err?
-              
+
               expect(docs).to.have.lengthOf 2
               for doc in docs
                 if event.equals doc
@@ -399,7 +399,7 @@ describe 'Event tests', ->
                   throw new Error  "unkown event: #{doc}"
 
               # then events can be serialized
-              try 
+              try
                 JSON.stringify docs
               catch err
                 throw new Error "Fail to serialize item: #{err}"
@@ -445,7 +445,7 @@ describe 'Event tests', ->
                   expect(docs[0].chat[0].from).to.have.property('chat').that.has.lengthOf 1
                   expect(docs[0].chat[0].from.chat[0]).to.be.a 'string'
                   # then item can be serialized
-                  try 
+                  try
                     JSON.stringify docs
                   catch err
                     throw new Error "Fail to serialize item: #{err}"

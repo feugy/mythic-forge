@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 async = require 'async'
-_ = require 'underscore'
+_ = require 'lodash'
 {relative} = require 'path'
 ItemType = require '../model/ItemType'
 Item = require '../model/Item'
@@ -36,7 +36,7 @@ logger = require('../util/logger').getLogger 'service'
 regDetection = /^\/(.*)\/(i|m)?(i|m)?$/
 
 # Function that validate the query content, regarding what is possible in `searchType()`
-# 
+#
 # @param query [Object] the validated query
 # @return null if query is syntaxically valid, or an error explaining the syntax invalidity
 validateQuery = (query) ->
@@ -52,7 +52,7 @@ validateQuery = (query) ->
     # we found a term:  `{or: []}`, `{and: []}`, `{toto:1}`, `{toto:''}`, `{toto:true}`, `{toto://}`
     keys = Object.keys query
     return "only one attribute is allowed inside query terms" if keys.length isnt 1
-    
+
     value = query[keys[0]]
     if keys[0] is 'and' or keys[0] is 'or'
       # this is a boolean term: validates inside
@@ -97,11 +97,11 @@ enhanceTypeQuery = (query) ->
         delete query[attr]
         attr = "properties.#{attr}"
         if value is '!'
-          query[attr] = {$exists:true} 
-        else 
+          query[attr] = {$exists:true}
+        else
           query["#{attr}.def"] = value
 
-# The SearchService allows to performs search on some attributes of types 
+# The SearchService allows to performs search on some attributes of types
 # (ItemType, FieldType, EventType, Map, Executable)
 class _SearchService
 
@@ -145,12 +145,12 @@ class _SearchService
           if attr is 'id'
             delete query.id
             query._id = value
-          else 
+          else
             query[attr] = value
         else
           # manage existing value
           if value is '!' and !attr.match /^\w*\./
-            query[attr] = {$ne:null} 
+            query[attr] = {$ne:null}
 
           if !(attr.match /^prefs\./) and attr.match /^\w*\./
             # search on link fields, maps, from, type...: we must first get ids with a sub query
@@ -163,23 +163,23 @@ class _SearchService
               return @searchTypes subQuery, (err, results) =>
                 return callback err if err?
                 # then we can search instance of a given map/type ids
-                query[match[1]] = {$in:_.pluck(results, 'id')}
+                query[match[1]] = {$in:_.map(results, 'id')}
                 callback null
             else
               # others: search in instances
               return @searchInstances subQuery, (err, results) =>
                 return callback err if err?
                 # then we can search instance linked to given ids (stored as strings, unless for from and characters)
-                ids = if match[1] in ['from', 'characters'] then _.pluck(results, 'id') else _.chain(results).pluck('id').value()
+                ids = if match[1] in ['from', 'characters'] then _.map(results, 'id') else _.chain(results).map('id').value()
                 query[match[1]] = {$in:ids}
                 callback null
 
     # everything was fine.
     callback null
 
-  # Performs a type search. 
+  # Performs a type search.
   # A search is an array of tokens, organized with 'and' and 'or' boolean operators within objects ('and' has precedence above 'or').
-  # for example: 
+  # for example:
   # - 1 -> 1
   # - 1 or 2 -> {or: [1, 2]}
   # - 1 or 2 or 3 -> {or: [1, 2, 3]}
@@ -204,10 +204,10 @@ class _SearchService
     return if fromRule callback
     # special case: string query must be parse to object
     if 'string' is type query
-      try 
+      try
         query = JSON.parse query
       catch exc
-        return callback "Failed to parse query: #{exc}" 
+        return callback "Failed to parse query: #{exc}"
 
     # first, validate query syntax
     err = validateQuery query
@@ -232,9 +232,9 @@ class _SearchService
         # return aggregated results
         callback null, results
 
-  # Performs an instance search. 
+  # Performs an instance search.
   # A search is an array of tokens, organized with 'and' and 'or' boolean operators within objects ('and' has precedence above 'or').
-  # for example: 
+  # for example:
   # - 1 -> 1
   # - 1 or 2 -> {or: [1, 2]}
   # - 1 or 2 or 3 -> {or: [1, 2, 3]}
@@ -271,10 +271,10 @@ class _SearchService
     return if fromRule callback
     # special case: string query must be parse to object
     if 'string' is type query
-      try 
+      try
         query = JSON.parse query
       catch exc
-        return callback "Failed to parse query: #{exc}" 
+        return callback "Failed to parse query: #{exc}"
 
     # first, validate query syntax
     err = validateQuery query
@@ -306,13 +306,13 @@ class _SearchService
   # @option callback results [Array<FSItem>] array (may be empty) of matching (unread) file
   searchFiles: (searched, include, callback) =>
     # default value for include, if not specified
-    if _.isFunction include 
+    if _.isFunction include
       callback = include
       include = '^.*$'
     # handle regExp searched value
     match = regDetection.exec searched
 
-    try 
+    try
       if match?
         searched = new RegExp match[1], match[2], match[3]
       else

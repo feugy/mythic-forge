@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -33,12 +33,12 @@ describe 'Model utilities tests', ->
 
   circular = {one: 1, two:2}
   circular.three = circular
-        
+
   describe 'checkParameters() tests', ->
 
     it 'should multiple parameters be checked', (done) ->
       # when checking multiple correct parameters
-      modelUtils.checkParameters 
+      modelUtils.checkParameters
         p1: true
         param2: 10
         param3: ['hey', 'you']
@@ -136,12 +136,12 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: 10}, [name: 'p1', type: 'integer', numMin: 2], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-   
+
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: [10,11,12]}, [name: 'p1', type: 'integer', numMax: 2], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
           done()
-   
+
       'should accept optionnal values': (done) ->
         expected = [name: 'p1', type: 'integer', numMin: 0]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
@@ -194,12 +194,12 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: 10}, [name: 'p1', type: 'float', numMin: 2], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-   
+
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: [10,11,12]}, [name: 'p1', type: 'float', numMax: 2], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
           done()
-   
+
       'should accept optionnal values': (done) ->
         expected = [name: 'p1', type: 'float', numMin: 0]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
@@ -220,17 +220,17 @@ describe 'Model utilities tests', ->
     ,
       type: 'string'
       values: [0, 4.5, true, null, undefined, [['yes']], {}, new Date()]
- 
+
       'should fail if value is not within possibilities': (done) ->
         modelUtils.checkParameters {param2: 'stuff'}, [name: 'param2', type: 'string', within: ['one', 'two']], null, null, (err) ->
           expect(err).to.include 'param2UnallowedValue'
           done()
- 
+
       'should accept value within possibilities': (done) ->
         modelUtils.checkParameters {p1: 'two'}, [name: 'p1', type: 'string', within: ['one', 'two']], null, null, (err) ->
           expect(err).not.to.exist
           done()
-  
+
       'should fail if value does not match regular expression': (done) ->
         modelUtils.checkParameters {param2: 'stuff'}, [name: 'param2', type: 'string', match: '^.{1,3}$'], null, null, (err) ->
           expect(err).to.include 'param2UnallowedValue'
@@ -245,12 +245,12 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: 'stuff'}, [name: 'p1', type: 'string', numMin: 3], null, null, (err) ->
           expect(err).to.include 'p1TooFew 3'
           done()
-   
+
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: ['one', 'two', 'three', 'four']}, [name: 'p1', type: 'string', numMax: 3], null, null, (err) ->
           expect(err).to.include 'p1TooMany 3'
           done()
-   
+
       'should accept optionnal values': (done) ->
         expected = [name: 'p1', type: 'string', numMin: 0]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
@@ -276,12 +276,12 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: 'stuff'}, [name: 'p1', type: 'text', numMin: 2], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-   
+
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: ['one', 'two', 'three']}, [name: 'p1', type: 'text', numMax: 2], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
           done()
-   
+
       'should accept optionnal values': (done) ->
         expected = [name: 'p1', type: 'text', numMin: 0]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
@@ -307,12 +307,12 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: false}, [name: 'p1', type: 'boolean', numMin: 2], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-   
+
       'should fail on more occurences than expected': (done) ->
         modelUtils.checkParameters {p1: [false, true, true]}, [name: 'p1', type: 'boolean', numMax: 2], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
           done()
-   
+
       'should accept optionnal values': (done) ->
         expected = [name: 'p1', type: 'boolean', numMin: 0]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
@@ -335,31 +335,31 @@ describe 'Model utilities tests', ->
       values: [18, -1.2, '', null, undefined, [[new Date()]], {test:new Date()}, true]
 
       'should fail if value is lower than min': (done) ->
-        modelUtils.checkParameters {p1: new Date()}, [name: 'p1', type: 'date', min: moment().add('d', 1).toDate()], null, null, (err) ->
+        modelUtils.checkParameters {p1: new Date()}, [name: 'p1', type: 'date', min: moment().add(1, 'd').toDate()], null, null, (err) ->
           expect(err).to.include 'p1UnderMin'
           done()
 
       'should fail if value is higher than max': (done) ->
-        modelUtils.checkParameters {p1: new Date()}, [name: 'p1', type: 'date', max: moment().subtract('d', 1).toDate()], null, null, (err) ->
+        modelUtils.checkParameters {p1: new Date()}, [name: 'p1', type: 'date', max: moment().subtract(1, 'd').toDate()], null, null, (err) ->
           expect(err).to.include 'p1OverMax'
           done()
 
       'should fail if value is out of bounds': (done) ->
         now = moment()
-        expected = [name: 'p1', type: 'date', min: now.clone().subtract('h', 1).toDate(), max: now.clone().add('h', 1).toDate()]
-        modelUtils.checkParameters {p1: now.clone().subtract('h', 2).toDate()}, expected, null, null, (err) ->
+        expected = [name: 'p1', type: 'date', min: now.clone().subtract(1, 'h').toDate(), max: now.clone().add(1, 'h').toDate()]
+        modelUtils.checkParameters {p1: now.clone().subtract(2, 'h').toDate()}, expected, null, null, (err) ->
           expect(err).to.include 'p1UnderMin'
-          modelUtils.checkParameters {p1: now.clone().add('h', 2).toDate()}, expected, null, null, (err) ->
+          modelUtils.checkParameters {p1: now.clone().add(2, 'h').toDate()}, expected, null, null, (err) ->
             expect(err).to.include 'p1OverMax'
             done()
 
       'should accept value within bounds': (done) ->
         now = moment()
-        modelUtils.checkParameters {p1: now.toDate()}, [name: 'p1', type: 'date', min: now.clone().subtract('h', 1).toDate()], null, null, (err) ->
+        modelUtils.checkParameters {p1: now.toDate()}, [name: 'p1', type: 'date', min: now.clone().subtract(1, 'h').toDate()], null, null, (err) ->
           expect(err).not.to.exist
-          modelUtils.checkParameters {p1: now.toDate()}, [name: 'p1', type: 'date', max: now.clone().add('h', 1).toDate()], null, null, (err) ->
+          modelUtils.checkParameters {p1: now.toDate()}, [name: 'p1', type: 'date', max: now.clone().add(1, 'h').toDate()], null, null, (err) ->
             expect(err).not.to.exist
-            modelUtils.checkParameters {p1: now.toDate()}, [name: 'p1', type: 'date', min: now.clone().subtract('h', 1).toDate(), max: now.clone().add('h', 1).toDate()], null, null, (err) ->
+            modelUtils.checkParameters {p1: now.toDate()}, [name: 'p1', type: 'date', min: now.clone().subtract(1, 'h').toDate(), max: now.clone().add(1, 'h').toDate()], null, null, (err) ->
               expect(err).not.to.exist
               done()
 
@@ -368,13 +368,13 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: now}, [name: 'p1', type: 'date', numMin: 2], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-     
+
       'should fail on more occurences than expected': (done) ->
         now = moment().toDate()
         modelUtils.checkParameters {p1: [now, now, now]}, [name: 'p1', type: 'date', numMax: 2], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
           done()
-   
+
       'should accept optionnal values': (done) ->
         now = moment().toDate()
         expected = [name: 'p1', type: 'date', numMin: 0]
@@ -403,22 +403,22 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: {one:1, two:2}}, [name: 'p1', type: 'json', numMin: 2], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-     
+
       'should fail on more occurences than expected': (done) ->
         now = moment().toDate()
         modelUtils.checkParameters {p1: [{one:1}, {two:2}, {three:3}]}, [name: 'p1', type: 'json', numMax: 2], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
-          done() 
+          done()
 
       'should accept array values': (done) ->
         modelUtils.checkParameters {p1: [{one:1}]}, [name: 'p1', type: 'json'], null, null, (err) ->
           expect(err).not.to.exist
-          done()   
+          done()
 
       'should accept object values': (done) ->
         modelUtils.checkParameters {p1: {one:1, two:2}}, [name: 'p1', type: 'json'], null, null, (err) ->
           expect(err).not.to.exist
-          done()     
+          done()
     ]
 
     for fixture in fixtures
@@ -453,13 +453,13 @@ describe 'Model utilities tests', ->
 
       before (done) ->
         # Drops existing items and events, as well as their types
-        Item.collection.drop -> Event.collection.drop -> ItemType.collection.drop -> EventType.collection.drop -> Item.loadIdCache ->
+        Item.remove {}, -> Event.remove {}, -> ItemType.remove {}, -> EventType.remove {}, -> Item.loadIdCache ->
           # given a first unquantifiable type with properties
           new ItemType(
             id: 'brick'
             quantifiable: false
-            properties: 
-              parts: 
+            properties:
+              parts:
                 type: 'array'
                 def: 'Item'
               compose:
@@ -501,7 +501,7 @@ describe 'Model utilities tests', ->
                           new EventType(
                             id: 'thunder'
                             properties:
-                              linked: 
+                              linked:
                                 type: 'array'
                                 def: 'Any'
                           ).save (err, saved) ->
@@ -537,12 +537,12 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: b1.id}, [name: 'p1', type: 'object', numMin: 2, within: [b1.id]], null, null, (err) ->
           expect(err).to.include 'p1TooFew 2'
           done()
-     
+
       it 'should fail on more occurences than expected', (done) ->
         modelUtils.checkParameters {p1: [b1.id, b1.id, b1.id]}, [name: 'p1', type: 'object', numMax: 2, within: [b1.id]], null, null, (err) ->
           expect(err).to.include 'p1TooMany 2'
           done()
-   
+
       it 'should accept optionnal values', (done) ->
         expected = [name: 'p1', type: 'object', numMin: 0, within: [b1.id]]
         modelUtils.checkParameters {p1: []}, expected, null, null, (err) ->
@@ -605,7 +605,7 @@ describe 'Model utilities tests', ->
         modelUtils.checkParameters {p1: {id:s1.id, qty:2}}, [name: 'p1', type: 'object', property: {from: 'target', path: 'linked'}], b2, e1, (err) ->
           expect(err).not.to.exist
           done()
-      
+
   describe 'checkPropertyType() tests',  ->
     property = {}
 
@@ -615,13 +615,13 @@ describe 'Model utilities tests', ->
           property.type = type
           property.def = def
           done()
-      
+
         specs.forEach (spec) ->
           it "should #{spec.name} be #{spec.status}", ->
             err = modelUtils.checkPropertyType spec.value, property
             if 'accepted' is spec.status
               expect(err).not.to.exist
-            else 
+            else
               expect(err).to.match /isn't a valid|doesn't hold a valid|only accepts/
 
     describe 'given an integer definition', generateTest 'integer', 10, [
@@ -664,7 +664,7 @@ describe 'Model utilities tests', ->
       {name: 'an object array', value: [{test:true}], status: 'rejected'}
       {name: 'an empty array', value: [], status: 'rejected'}
     ]
-     
+
     # boolean value tests
     describe 'given a boolean definition', generateTest 'boolean', true, [
       {name: 'null', value: null, status: 'accepted'}
@@ -685,7 +685,7 @@ describe 'Model utilities tests', ->
       {name: 'an object array', value: [{test:true}], status: 'rejected'}
       {name: 'an empty array', value: [], status: 'rejected'}
     ]
-     
+
     # string value tests
     describe 'given a string definition', generateTest 'string', null, [
       {name: 'null', value: null, status: 'accepted'}

@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 moment = require 'moment'
-_ = require 'underscore'
+_ = require 'lodash'
 Player = require '../model/Player'
 Item = require '../model/Item'
 utils = require '../util/common'
@@ -31,7 +31,7 @@ logger = require('../util/logger').getLogger 'service'
 expiration = 0
 init = ->
   expiration = utils.confKey 'authentication.tokenLifeTime'
-    
+
 # on configuration change, reinit
 utils.on 'confChanged', init
 init()
@@ -61,7 +61,7 @@ class _PlayerService
         throw "Unable to create admin account: #{err}" if err?
         logger.warn '"admin" account has been created with password "admin". Please change it immediately'
 
-  # Create a new player account. Check the email unicity before creation. 
+  # Create a new player account. Check the email unicity before creation.
   #
   # @param email [String] the player email
   # @param password [String] the player password.
@@ -82,7 +82,7 @@ class _PlayerService
         logger.info "New player (#{newPlayer.id}) registered with email: #{email}"
         callback err, Player.purge newPlayer
 
-  # Authenticate a manually created account. 
+  # Authenticate a manually created account.
   # Usable with passport-local
   #
   # @param email [String] User email
@@ -118,7 +118,7 @@ class _PlayerService
     email = profile.emails[0].value
     return callback 'No email found in profile' unless email?
     logger.debug "Authenticate Google player with email: #{email}"
-    
+
     # check user existence
     @getByEmail email, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
@@ -150,7 +150,7 @@ class _PlayerService
     id = profile.id
     return callback 'No id found in profile' unless id?
     logger.debug "Authenticate Github player with id: #{id}"
-    
+
     # check user existence
     @getByEmail id, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
@@ -182,7 +182,7 @@ class _PlayerService
     email = profile.username
     return callback 'No email found in profile' unless email?
     logger.debug "Authenticate Twitter player with email: #{email}"
-    
+
     # check user existence
     @getByEmail email, false, (err, player) =>
       return callback "Failed to check player existence: #{err}" if err?
@@ -218,10 +218,10 @@ class _PlayerService
           return callback err, null if err?
           player.characters = instances
           callback null, player
-      else 
+      else
         callback null, player
 
-  # Retrieve a player by its token. 
+  # Retrieve a player by its token.
   # If a player is found, its token is reseted to null to avoid reusing it.
   #
   # @param token [String] the concerned token
@@ -248,7 +248,7 @@ class _PlayerService
             @connectedList.splice idx, 1
             notifier.notify 'players', 'disconnect', saved, 'expired'
           callback "expiredToken"
-      else 
+      else
         # change token for security reason
         player.token = utils.generateToken 24
         player.save (err, saved) =>
@@ -283,7 +283,7 @@ class _PlayerService
         callback null, saved
 
   # **private**
-  # Mutualize authentication mecanism last part: generate a token and save player. 
+  # Mutualize authentication mecanism last part: generate a token and save player.
   # Sends also a `connect` notification.
   #
   # @param player [Object] saved player, whose token are generated

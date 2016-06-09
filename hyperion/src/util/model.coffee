@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,9 +18,9 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
-ObjectId = require('mongodb').BSONPure.ObjectID
+ObjectId = require('mongodb').ObjectID
 Model = require('mongoose').Model
 watcher = require('../model/ModelWatcher').get()
 utils = require '../util/common'
@@ -31,14 +31,14 @@ eviction = null
 # string and text: null or type is string
 checkString = (val, property) ->
   return null if val is null or 'string' is utils.type val
-  "'#{val}' isn't a valid #{property.type}" 
+  "'#{val}' isn't a valid #{property.type}"
 
-# object: null or string (id) or object with a collection that have the good name.    
+# object: null or string (id) or object with a collection that have the good name.
 checkObject = (val, property) ->
   return null if val is null or 'string' is utils.type val
   return "#{val} isn't a valid #{property.def}" unless 'object' is utils.type val
   unless val?.collection?.name is "#{property.def.toLowerCase()}s" or property.def.toLowerCase() is 'any' and utils.isA val, Model
-    "#{val} isn't a valid #{property.def}" 
+    "#{val} isn't a valid #{property.def}"
   else
     null
 
@@ -51,13 +51,13 @@ checkJSON = (val, property) ->
     check = (val) ->
       throw 'circular reference are not valid JSON values' if val in previous
       switch utils.type val
-        when 'array' 
+        when 'array'
           previous.push val
           check v for v,i in val
-        when 'object' 
+        when 'object'
           previous.push val
           check v for k,v of val
-        when 'function' then throw 'function are not valid JSON values' 
+        when 'function' then throw 'function are not valid JSON values'
     check val
   catch err
     return "#{property.type} doesn't hold a valid JSON object"
@@ -65,31 +65,31 @@ checkJSON = (val, property) ->
 
 checkPropertyType = (value,  property) ->
   err = null
-  switch property.type 
+  switch property.type
     # integer: null or float = int value of a number/object
-    when 'integer' then err = "#{value} isn't a valid integer" unless value is null or 
+    when 'integer' then err = "#{value} isn't a valid integer" unless value is null or
       ('number' is utils.type(value) and parseFloat(value, 10) is parseInt(value, 10))
     # foat: null or float value of a number/object
-    when 'float' then err = "#{value} isn't a valid float" unless value is null or 
+    when 'float' then err = "#{value} isn't a valid float" unless value is null or
       ('number' is utils.type(value) and not isNaN parseFloat(value, 10))
     # boolean: null or value is false or true and not a string nor array
-    when 'boolean' 
+    when 'boolean'
       strVal = "#{value}".toLowerCase()
       err = "#{value} isn't a valid boolean" if value isnt null and
         ('array' is utils.type(value) or 'string' is utils.type(value) or (strVal isnt 'true' and strVal isnt 'false'))
     # date : null or type is date
-    when 'date', 'time', 'datetime' 
+    when 'date', 'time', 'datetime'
       if value isnt null
-        if 'string' is utils.type value 
+        if 'string' is utils.type value
           err = "#{value} isn't a valid date" if isNaN new Date(value).getTime()
         else if 'date' isnt utils.type(value) or isNaN value.getTime()
-          err = "#{value} isn't a valid date" 
+          err = "#{value} isn't a valid date"
     when 'object' then err = checkObject value, property
     # array: array that contains object at each index.
     when 'array'
       if Array.isArray value
         err = checkObject obj, property for obj in value
-      else 
+      else
         err = "#{value} isn't a valid array of #{property.def}"
     when 'string' then err = checkString value, property
     when 'text' then err = checkString value, property
@@ -100,10 +100,10 @@ checkPropertyType = (value,  property) ->
 getProp = (obj, path, callback) ->
   return callback "invalid path '#{path}'" unless 'string' is utils.type path
   steps = path.split '.'
-  
+
   processStep = (obj) ->
     step = steps.splice(0, 1)[0]
-    
+
     # first check sub-array
     bracket = step.indexOf '['
     index = -1
@@ -113,20 +113,20 @@ getProp = (obj, path, callback) ->
       if bracketEnd > bracket
         index = parseInt step.substring bracket+1, bracketEnd
         step = step.substring 0, bracket
-        
+
     # check the property existence
     return callback null, undefined unless 'object' is utils.type(obj) and step of obj
-    
+
     # store obj inside the list of updatable objects
     subObj = if index isnt -1 then obj[step][index] else obj[step]
-    
+
     endStep = ->
       # iterate on sub object or returns value
       if steps.length is 0
         return callback null, subObj
       else
         processStep subObj
-        
+
     # if the object has a type and the path is along an object/array property
     if obj.type?.properties?[step]?.type is 'object' or obj.type?.properties?[step]?.type is 'array'
       # we may need to load object.
@@ -139,7 +139,7 @@ getProp = (obj, path, callback) ->
         endStep()
     else
       endStep()
-  
+
   processStep obj
 
 module.exports =
@@ -158,9 +158,9 @@ module.exports =
     i = 0
     while i < length
       model = arr[i]
-      if model.id? 
+      if model.id?
         # check on id equality
-        duplicate = _.any(uniq, (obj) -> obj?.equals and obj.equals model)
+        duplicate = _.some(uniq, (obj) -> obj?.equals and obj.equals model)
       else
         # or on strict equality
         duplicate = -1 isnt uniq.indexOf model
@@ -191,19 +191,19 @@ module.exports =
   # - min: [Number/Date] minimum accepted value (included) for integer, float, date, time and datetime
   # - max: [Number/Date] maximum accepted value (included) for integer, float, date, time and datetime
   # - within: [Array<String>] list of acceptable values for string, acceptable ids for objects.
-  # - property: [Object] path to a given property, specified by 'path' attribute (a string) and from 
+  # - property: [Object] path to a given property, specified by 'path' attribute (a string) and from
   # (a string that may be 'actor' or 'target'), for object
   # - match: [String] string representation of a regular expression that will contraint string
   # - numMin: [Number] indicate the minium number of awaited value occurence. For all types, default to 1
   # - numMax: [Number] indicate the maximum number of awaited value occurence. For all types, default to 1
   #
-  # The 'object' parameters have particular behaviour. 
-  # Their values are always constrained within a list of choices ('within' constraint, or content of the 
-  # property aimed by 'path' constraint) 
+  # The 'object' parameters have particular behaviour.
+  # Their values are always constrained within a list of choices ('within' constraint, or content of the
+  # property aimed by 'path' constraint)
   # The awaited values are object ids for events and unquantifiable items or JSON object with object id ('id' attribute)
   # and quantity ('qty' attribute) for quantifiable items
   #
-  # The 'json' parameters only accepts plain JS object values. Use numMin/numMax to allow multiple values 
+  # The 'json' parameters only accepts plain JS object values. Use numMin/numMax to allow multiple values
   #
   # @param actual [Array] Array of execution parameter values
   # @param expected [Array] Array of parameter constraints
@@ -237,7 +237,7 @@ module.exports =
         for value in values
           # check value's type, except for 'object'
           unless param.type is 'object'
-            err = checkPropertyType value, param 
+            err = checkPropertyType value, param
             return next "typeError #{param.name} #{err}" if err?
 
           # specific types checks:
@@ -274,7 +274,7 @@ module.exports =
               objValue = _.find possibles, (obj) -> id is obj?.id
               return next "#{param.name}UnallowedValue #{id}" unless objValue?
 
-              # check quantity 
+              # check quantity
               return next "#{param.name}MissingQuantity #{id}" if objValue.type.quantifiable and qty is null
               return next "#{param.name}NotEnoughtFor #{id} #{qty}" if qty > objValue.quantity
 
@@ -287,9 +287,9 @@ module.exports =
       if Array.isArray param.within
         possibles = []
         ids = []
-        for obj in param.within 
+        for obj in param.within
           if utils.isA obj, Model
-            possibles.push obj 
+            possibles.push obj
           else
             ids.push obj if 'string' is utils.type obj
         return process possibles if ids.length is 0
@@ -297,16 +297,16 @@ module.exports =
         # first look for items
         return require('../model/Item').findCached ids, (err, objs) ->
           return next "#{param.name}: failed to resolve possible items: #{err}" if err?
-          ids = _.difference ids, _.pluck objs, 'id'
+          ids = _.difference ids, _.map objs, 'id'
           possibles = possibles.concat objs
           return process possibles if ids.length is 0
           # then look for events
           require('../model/Event').findCached ids, (err, objs) ->
             return next "#{param.name}: failed to resolve possible events: #{err}" if err?
-            ids = _.difference ids, _.pluck objs, 'id'
+            ids = _.difference ids, _.map objs, 'id'
             possibles = possibles.concat objs
-            process possibles 
-      
+            process possibles
+
       if 'object' is utils.type(param.property) and param.property.path? and param.property.from?
         return getProp (if param.property.from is 'target' then target else actor), param.property.path, (err, objs) ->
           return next "#{param.name}: failed to resolve possible values: #{err}" if err?
@@ -314,7 +314,7 @@ module.exports =
 
       return next "missing 'within' constraint or invalid 'property' constraint (#{JSON.stringify param}) for parameter #{param.name}"
 
-    , (err) -> 
+    , (err) ->
       # end callback
       callback err or null
 
@@ -331,12 +331,12 @@ module.exports =
       if property.type is 'object'
         if value isnt null and 'object' is utils.type(value) and value?.id?
           # Use internal model storage to avoid infinite call stack
-          instance._doc[name] = value.id 
+          instance._doc[name] = value.id
           instance.markModified name
       else if property.type is 'array'
         if 'array' is utils.type value
           for linked, i in value when 'object' is utils.type(linked) and linked?.id?
-            value[i] = linked.id 
+            value[i] = linked.id
             instance.markModified name
           # filter null values. Use internal model storage to avoid infinite call stack
           instance._doc[name] = _.filter value, (obj) -> obj?
@@ -369,7 +369,7 @@ module.exports =
     if obj?._className is 'Player'
       # recurse if needed on characters
       module.exports.filterModified(value, modified, _parsed) for value in obj.characters when value? and 'string' isnt utils.type value
-      return 
+      return
     # do not go further if not an obj
     return unless obj?._className is 'Item' or obj?._className is 'Event'
     properties = obj.type.properties
@@ -394,7 +394,7 @@ module.exports =
     true
 
   # Evict models from cache that were loaded since a long time
-  # Recursively triggers itself periodically. 
+  # Recursively triggers itself periodically.
   # Inneffective if called multiple times: only the first call launches the period, and only the process exit will end it.
   #
   # @param caches [Object] inmemory caches.

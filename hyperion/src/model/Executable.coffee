@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,14 +18,14 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 fs = require 'fs-extra'
 path = require 'path'
 async = require 'async'
 coffee = require 'coffee-script'
 cluster = require 'cluster'
 pathUtils = require 'path'
-jshint = require('jshint').JSHINT
+linter = require('eslint').linter
 modelWatcher = require('./ModelWatcher').get()
 logger = require('../util/logger').getLogger 'model'
 {enforceFolder, type, isA, confKey, relativePath, fromRule} = require '../util/common'
@@ -33,25 +33,27 @@ modelUtils = require '../util/model'
 Rule = require '../model/Rule'
 TurnRule = require '../model/TurnRule'
 
-# Options used for js syntax checking with jshint
-hintOpts = 
-  asi: true
-  boss: true
-  debug: false
-  eqnull: true
-  evil: true
-  iterator: true
-  laxcomma: true
-  loopfunc: true
-  multistr: true
-  notypeof: true
-  proto: true
-  smarttabs: true
-  shadow: true
-  sub: true
-  supernew: true
-  validthis: true
-  node: true
+# Options used for js syntax checking with linter
+lintOpts =
+  rules:
+    asi: true
+    boss: true
+    debug: false
+    eqnull: true
+    evil: true
+    iterator: true
+    laxcomma: true
+    loopfunc: true
+    multistr: true
+    notypeof: true
+    proto: true
+    smarttabs: true
+    shadow: true
+    sub: true
+    supernew: true
+    validthis: true
+  env:
+    node: true
 
 Item = null
 root = path.resolve path.normalize confKey 'game.executable.source'
@@ -67,7 +69,7 @@ modelWatcher.on 'change', (operation, className, changes, wId) ->
   return unless wId? and className is 'Executable'
   # update the executable cache
   switch operation
-    when 'creation' 
+    when 'creation'
       executables[changes.id] = changes
     when 'update'
       return unless changes.id of executables
@@ -75,7 +77,7 @@ modelWatcher.on 'change', (operation, className, changes, wId) ->
       executables[changes.id][attr] = value for attr, value of changes when !(attr in ['id'])
       # clean require cache.
       cleanNodeCache()
-    when 'deletion' 
+    when 'deletion'
       return unless changes.id of executables
       # clean require cache.
       cleanNodeCache()
@@ -102,14 +104,14 @@ compileFile = (executable, callback) ->
   # replace requires with references to node_modules
   content = content.replace new RegExp("(require\\s*\\(?\\s*[\"'])(?!\\.)", 'g'), "$1#{pathToNodeModules}/"
   # compile results
-  try 
-    switch executable.lang 
+  try
+    switch executable.lang
       when 'coffee'
         content = coffee.compile content, bare: true
       when 'js'
         # Only takes in account first error
-        unless jshint content, hintOpts
-          throw "#{jshint.errors[0].line}:#{jshint.errors[0].character}, #{jshint.errors[0].reason}"
+        report = linter.verify content, lintOpts
+        throw "#{report[0].line}:#{report[0].column}, #{report[0].message}" if report.length
   catch exc
     return callback "Error while compilling executable #{executable.id}: #{exc}"
 
@@ -132,8 +134,8 @@ compileFile = (executable, callback) ->
 # @option callback executable [Executable] the compiled executable
 requireExecutable = (executable, silent, callback) ->
   previousMeta = _.clone executable.meta
-  try 
-    executable.meta = 
+  try
+    executable.meta =
       kind: 'Script'
     # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
     # and singleton (like ModuleWatcher) will be broken.
@@ -184,7 +186,7 @@ search = (query, all, _operator = null) ->
       if _operator is 'and' and i isnt 0
         # logical AND: retain only global results that match current results
         results = results.filter (result) -> -1 isnt tmp.indexOf result
-      else 
+      else
         # logical OR: concat to global results, and avoid duplicates
         results = results.concat tmp.filter (result) -> -1 is results.indexOf result
     return results
@@ -193,8 +195,8 @@ search = (query, all, _operator = null) ->
     # we found a term:  `{or: []}`, `{and: []}`, `{toto:1}`, `{toto:''}`, `{toto://}`
     keys = Object.keys query
     throw new Error "only one attribute is allowed inside query terms" if keys.length isnt 1
-    
-    field = keys[0] 
+
+    field = keys[0]
     value = query[field]
     # special case of regexp strings that must be transformed
     if 'string' is type(value)
@@ -208,7 +210,7 @@ search = (query, all, _operator = null) ->
       candidates = all.concat()
       if field is 'category' or field is 'rank' or field is 'active'
         # We must replace executables by their exported object.
-        candidates = all.map (candidate) -> 
+        candidates = all.map (candidate) ->
           # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
           # and singleton (like ModuleWatcher) will be broken.
           return require path.relative __dirname, candidate.compiledPath
@@ -223,7 +225,7 @@ search = (query, all, _operator = null) ->
           # performs regexp match
           candidates.filter (candidate, i) -> ids.push i if value.test candidate[field]
         else throw new Error "#{field}:#{value} is not a valid value"
-      # return the matching executable. Do not use candidates array because it may contains exported rules, 
+      # return the matching executable. Do not use candidates array because it may contains exported rules,
       # not executables
       return all.filter (executable, i) -> i in ids
   else
@@ -237,7 +239,7 @@ class Executable
 
   # Reset the executable local cache. It recompiles all existing executables
   #
-  # @param clean [Boolean] true to clean the compilation folder and recompile everything. 
+  # @param clean [Boolean] true to clean the compilation folder and recompile everything.
   # False to only popuplate the local executable cache.
   # @param callback [Function] invoked when the reset is done.
   # @option callback err [String] an error callback. Null if no error occured.
@@ -255,7 +257,7 @@ class Executable
       fs.readdir root, (err, files) ->
         return callback "Error while listing executables: #{err}" if err?
 
-        readFile = (file, end) -> 
+        readFile = (file, end) ->
           # only take coffeescript in account
           ext = path.extname file
           return end() unless ext in supported
@@ -267,14 +269,14 @@ class Executable
               return end() if err.code is 'ENOENT'
               return callback "Error while reading executable '#{executable.id}': #{err}"
 
-            # keep last update time 
+            # keep last update time
             executable.updated = stat.mtime
             executable.updated.setMilliseconds 0
 
             fs.readFile executable.path, encoding, (err, content) ->
               if err?
                 return callback "Error while reading executable '#{executable.id}': #{err}"
-                
+
               # complete the executable content, and add it to the array.
               executable.content = content
               compileFile executable, (err) ->
@@ -282,7 +284,7 @@ class Executable
                 end()
 
         # each individual file must be read
-        async.each files, readFile, (err) -> 
+        async.each files, readFile, (err) ->
           return callback err if err?
 
           # know, require files
@@ -359,8 +361,8 @@ class Executable
   compiledPath: ''
 
   # Create a new executable, with its file name.
-  # 
-  # @param attributes object raw attributes, containing: 
+  #
+  # @param attributes object raw attributes, containing:
   # @option attributes id [String] its file name (without it's path).
   # @option attributes content [String] the file content. Empty by default.
   constructor: (attributes) ->
@@ -371,7 +373,7 @@ class Executable
     @compiledPath = path.join compiledRoot, @id+'.js'
 
   # Save (or update) a executable and its content.
-  # 
+  #
   # @param callback [Function] called when the save is finished, with two arguments:
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the saved item
@@ -390,12 +392,12 @@ class Executable
         # update last access date
         @updated = new Date()
         @updated.setMilliseconds 0
-        
+
         # and require immediately
         requireExecutable @, false, callback
 
   # Remove an existing executable.
-  # 
+  #
   # @param callback [Function] called when the removal is finished, with two arguments:
   #   @param err [String] error string. Null if save succeeded
   #   @param item [Item] the removed item

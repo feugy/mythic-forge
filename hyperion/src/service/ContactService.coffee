@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 Mailgun = require 'mailgun-js'
 isEmail = require 'isemail'
@@ -32,7 +32,7 @@ module.exports = class ContactService
   @get: ->
     _instance ?= new _ContactService()
 
-# The ContactService allows rule to send notification to players, through emails or other means, 
+# The ContactService allows rule to send notification to players, through emails or other means,
 # depending on player preferences and providers
 #
 # It's a singleton class. The unic instance is retrieved by the `get()` method.
@@ -51,9 +51,9 @@ class _ContactService
   # **private**
   # Settings used for underscore's template
   _templateSettings:
-    # use coffee instead of ERB delimiter 
-    interpolate: /#\{(.+?)\}/g
-    evaluate: /#\{(.+?)\}/g
+    # use coffee instead of ERB delimiter
+    interpolate: /#{(.+?)}/g
+    evaluate: /#{(.+?)}/g
     # used to referenciate data within template
     variable: 'player'
 
@@ -72,10 +72,10 @@ class _ContactService
 
   # **private**
   # Separate subject (first line) from body (other lines)
-  # Performs replacement to personalize email. 
+  # Performs replacement to personalize email.
   # Templating is done with _.template
   # Fails if body is empty, or contains only blank characters
-  # 
+  #
   # @param player [Player] player to which message is sent
   # @param template [Function] underscore precompiled template that will create the message
   # @param callback [Function] end callback, invoked with arguments
@@ -90,7 +90,7 @@ class _ContactService
     # check body presence
     return callback new Error "body cannot be empty" if html.trim().length is 0
 
-    callback null, 
+    callback null,
       # allow empty subject rather than fails
       subject: if bk > 0 then message[0...bk] else ''
       html: html
@@ -114,19 +114,19 @@ class _ContactService
 
     report = []
     # compile template once for all
-    template = _.template message, null, @_templateSettings
+    template = _.template message, @_templateSettings
 
     # asynchronously send email to single players
     async.each players, (player, next) =>
       # prepare common utilities
       endpoint = player.email
-      operation = 
+      operation =
         success: false
         kind: 'email'
         endpoint: endpoint
 
       # check email format and domain existence
-      isEmail endpoint, {checkDNS: true, errorLevel: true}, (valid) =>
+      isEmail.validate endpoint, {checkDNS: true, errorLevel: true}, (valid) =>
         unless valid is 0
           logger.log "cannot send email to #{endpoint} due to lack of usable email"
           operation.err = new Error if valid in [5, 6] then "unexistent domain in email #{endpoint}" else "invalid email #{endpoint}"

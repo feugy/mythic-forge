@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,8 +17,10 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
+async = require 'async'
 fs = require 'fs-extra'
 pathUtils = require 'path'
+connection = require '../hyperion/src/model/connection'
 Item = require '../hyperion/src/model/Item'
 ItemType = require '../hyperion/src/model/ItemType'
 Player = require '../hyperion/src/model/Player'
@@ -32,7 +34,7 @@ service = require('../hyperion/src/service/GameService').get()
 adminService = require('../hyperion/src/service/AdminService').get()
 playerService = require('../hyperion/src/service/PlayerService').get()
 {expect} = require 'chai'
-     
+
 type = null
 item1 = null
 item2 = null
@@ -41,16 +43,16 @@ map = null
 field1 = null
 field2 = null
 
-describe 'GameService tests', -> 
+describe 'GameService tests', ->
 
   beforeEach (done) ->
     # cleans ItemTypes and Items
-    utils.empty utils.confKey('game.executable.source'), (err) -> 
+    utils.empty utils.confKey('game.executable.source'), (err) ->
       return done err if err?
-      Executable.resetAll true, (err) -> 
+      Executable.resetAll true, (err) ->
         return done err if err?
-        ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> FieldType.collection.drop -> 
-        Field.collection.drop -> ClientConf.collection.drop -> Map.loadIdCache ->
+        ItemType.remove {}, -> Item.remove {}, -> Map.remove {}, -> FieldType.remove {}, -> Field.remove {}, ->
+        ClientConf.remove {}, -> Map.loadIdCache (err) ->
           # given a map
           new Map(id: 'test-game').save (err, saved) ->
             return done err if err?
@@ -100,7 +102,7 @@ describe 'GameService tests', ->
       expect(fields).to.have.lengthOf 1
       expect(field1).to.satisfy (o) -> o.equals fields[0]
       done()
-        
+
   it 'should consultMap returned nothing if no item found', (done) ->
     # when retrieving items within coordinate -1:-1 and -5:-5
     service.consultMap map.id, -1, -1, -5, -5, (err, items, fields) ->
@@ -110,7 +112,7 @@ describe 'GameService tests', ->
       # then no fields returned
       expect(fields).to.have.lengthOf 0
       done()
-        
+
   it 'should importRules returned nothing', (done) ->
     # when importing rules
     service.importRules (err, rules) ->
@@ -236,7 +238,7 @@ describe 'GameService tests', ->
 
     before (done) ->
       # given two players
-      Player.collection.drop (err)->
+      Player.remove {}, (err)->
         return done err if err?
         new Player(email: 'james', password:'j@m3s', firstName: 'Dean', lastName: 'James', lastConnection: new Date(), characters: ['123456'], token:'a1b2', prefs: hi: 'hello').save (err) ->
           return done err if err?

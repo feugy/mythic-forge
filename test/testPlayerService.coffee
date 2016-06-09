@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@ utils = require '../hyperion/src/util/common'
 service = require('../hyperion/src/service/PlayerService').get()
 notifier = require('../hyperion/src/service/Notifier').get()
 {expect} = require 'chai'
-     
+
 player = null
 type = null
 item1 = null
@@ -37,7 +37,7 @@ describe 'PlayerService tests', ->
   beforeEach (done) ->
     notifications = []
     # cleans Players, ItemTypes and Items
-    Player.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> Item.loadIdCache ->
+    Player.remove {}, -> ItemType.remove {}, -> Item.remove {}, -> Item.loadIdCache ->
       # given an item type
       type = new ItemType id: 'character'
       type.setProperty 'friends', 'array', 'Item'
@@ -102,7 +102,7 @@ describe 'PlayerService tests', ->
 
     beforeEach (done) ->
       new Player(
-        email: 'Joe', 
+        email: 'Joe',
         characters: [item2]
         token: token
         lastConnection: date
@@ -111,7 +111,7 @@ describe 'PlayerService tests', ->
         return done err if err?
         player = saved
         done()
-        
+
     it 'should register failed when reusing email', (done) ->
       # when registering with used email
       service.register player.email, 'toto', (err, account) ->
@@ -120,7 +120,7 @@ describe 'PlayerService tests', ->
         expect(err).to.include "Email #{player.email} is already used"
         expect(account).to.be.null
         done()
-         
+
     it 'should getByEmail returned player without character resolved', (done) ->
       # when retrieving the player by email
       service.getByEmail player.email, (err, account) ->
@@ -133,21 +133,21 @@ describe 'PlayerService tests', ->
         expect(account.characters[0]).to.satisfy (obj) -> item2.equals obj
         # then the character linked has not been resolved
         expect(account.characters[0].friends[0]).to.equal item1.id
-        done()  
-       
+        done()
+
     it 'should getByEmail returned player with character resolved', (done) ->
       # when retrieving the player by email
       service.getByEmail player.email, true, (err, account) ->
         return done "Can't get by email: #{err}" if err?
         # then the player was retrieved
         expect(account).to.exist
-        expect(account).to.satisfy (obj) -> player.equals 
+        expect(account).to.satisfy (obj) -> player.equals
         # then the character was retrievedobj
         expect(account.characters).to.have.lengthOf 1
         expect(account.characters[0]).to.satisfy (obj) -> item2.equals obj
         # then the character linked has not been resolved
         expect(account.characters[0].friends[0]).to.satisfy (obj) -> item1.equals obj
-        done()   
+        done()
 
     it 'should getByToken returned player', (done) ->
       # when retrieving the player by token
@@ -184,12 +184,12 @@ describe 'PlayerService tests', ->
           Player.findOne {email:player.email}, (err, saved) ->
             return done err if err?
             expect(saved.token).to.be.null
-            done()    
+            done()
 
     it 'should not check expiration if not needed', (done) ->
       # given a null expiration period
       original = utils.confKey
-      utils.confKey = (args...) -> 
+      utils.confKey = (args...) ->
         if args[0] is 'authentication.tokenLifeTime' then 0 else original.apply utils, args
       utils.emit 'confChanged'
 
@@ -221,7 +221,7 @@ describe 'PlayerService tests', ->
         # then an error is send
         expect(err).to.exist
         expect(err).to.equal 'No player with email toto found'
-        done()    
+        done()
 
     it 'should disconnect reset token to null', (done) ->
       # given a connected account
@@ -240,4 +240,4 @@ describe 'PlayerService tests', ->
         Player.findOne {email:player.email}, (err, saved) ->
           return done err if err?
           expect(saved.token).to.be.null
-          done()    
+          done()

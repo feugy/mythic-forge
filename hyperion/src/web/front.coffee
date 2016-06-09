@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -25,6 +25,8 @@ url = require 'url'
 fs = require 'fs'
 http = require 'http'
 coffee = require 'coffee-script'
+cookieParser = require 'cookie-parser'
+compression = require 'compression'
 {confKey, fromRule} = require '../util/common'
 stylus = require 'stylus'
 gameService = require('../service/GameService').get()
@@ -38,7 +40,7 @@ notifier.on notifier.NOTIFICATION, (event, stateOrEmail, playerOrkey) ->
   return unless event in ['admin-connect', 'players']
   if event is 'admin-connect'
     logger.debug "allow static connection from player #{stateOrEmail}"
-    # adds an entry to grant access on secured RIA 
+    # adds an entry to grant access on secured RIA
     authorizedKeys[playerOrkey] = stateOrEmail
   else if stateOrEmail is 'disconnect'
     # removes entry from the cache
@@ -59,7 +61,7 @@ module.exports = (app = null) ->
     app = express()
 
   # Register a specific route to return configuration file
-  # 
+  #
   # @param base [String] base part of the RIA url. Files will be served under this url. Must not end with '/'
   registerConf = (base) ->
     logger.debug "register configuration endpoint for client #{base}"
@@ -101,12 +103,12 @@ module.exports = (app = null) ->
       app.get new RegExp("^#{base}/(.*)\.js$") , (req, res, next) ->
         # read the coffe corresponding file
         file = path.join rootFolder, "#{req.params[0]}.coffee"
-        fs.readFile file, (err, content) => 
+        fs.readFile file, (err, content) =>
           # file not found.
           if err?
             return next if 'ENOENT' is err.code then null else err
           # try to compile it
-          try 
+          try
             res.header 'Content-Type', 'application/javascript'
             res.send coffee.compile content.toString()
           catch exc
@@ -118,10 +120,10 @@ module.exports = (app = null) ->
         # read the stylus corresponding file
         file = path.join rootFolder, "#{req.params[0]}.styl"
         parent = path.dirname file
-        fs.readFile file, (err, content) => 
+        fs.readFile file, (err, content) =>
           # file not found.
           if err?
-            return next if 'ENOENT' is err.code then null else err 
+            return next if 'ENOENT' is err.code then null else err
           # try to compile it
           stylus(content.toString(), {compress:true, cache:false}).include(parent).render (err, css) ->
             if err?
@@ -129,7 +131,7 @@ module.exports = (app = null) ->
               return res.send err, 500
             res.header 'Content-Type', 'text/css'
             res.send css
-           
+
     # SPA root need to be treaten differently, because of pushState. Must be after compilation middleware.
     app.get new RegExp("^#{base}.*(?!\\.\\w+)$"), (req, res, next) ->
       # redirects with trailing slash to avoid relative path errors from browser
@@ -147,13 +149,13 @@ module.exports = (app = null) ->
     app.use "#{base}", express.static rootFolder, maxAge: 0 #if isStatic then 1814400000 else 0
 
   # serve commun static assets
-  app.use express.cookieParser confKey 'server.cookieSecret'
+  app.use cookieParser confKey 'server.cookieSecret'
   app.use '/images', express.static confKey('game.image'), maxAge: 1814400000
   # serve static pages from the docs folder
   app.use express.static 'docs'
-  app.use express.compress level:9
-  
-  # configure a game RIA and the administration RIA 
+  app.use compression level:9
+
+  # configure a game RIA and the administration RIA
   configureRIA '/game', confKey('game.client.production'), true
   configureRIA '/dev', confKey('game.client.dev'), false, if process.env.NODE_ENV is 'test' then null else '/rheia/login'
 

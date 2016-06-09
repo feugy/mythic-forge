@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -29,14 +29,14 @@ item2 = null
 item3 = null
 type = null
 
-describe 'ItemType tests', -> 
-  
+describe 'ItemType tests', ->
+
   listener = null
 
   beforeEach (done) ->
     listener = null
     # empty items and types.
-    Item.collection.drop -> ItemType.collection.drop -> Item.loadIdCache done
+    Item.remove {}, -> ItemType.remove {}, -> Item.loadIdCache done
 
   afterEach (done) ->
     # remove all listeners
@@ -59,7 +59,7 @@ describe 'ItemType tests', ->
         expect(type2.properties).to.have.keys ['mammal']
         done()
 
-  it 'should type be created', (done) -> 
+  it 'should type be created', (done) ->
     # given a new ItemType
     id = 'montain'
     type = new ItemType id:id
@@ -85,7 +85,7 @@ describe 'ItemType tests', ->
         expect(awaited, 'watcher was\'nt invoked for new type').to.be.true
         done()
 
-  it 'should date property always be stores as Date', (done) -> 
+  it 'should date property always be stores as Date', (done) ->
     # given a new ItemType with a null time property
     type = new ItemType id:'test-date'
     type.setProperty 'time', 'date', null
@@ -97,7 +97,7 @@ describe 'ItemType tests', ->
       expect(saved).to.have.deep.property 'properties.time'
       expect(saved).to.have.deep.property('properties.time.def').that.is.null
       type = saved
-          
+
       # then a saved instance will have a null default value
       new Item(type: type).save (err, saved) ->
         return done err if err?
@@ -138,7 +138,7 @@ describe 'ItemType tests', ->
 
                 # then a saved instance will have a date default value
                 new Item(type: type).save (err, saved) ->
-                  return done err if err? 
+                  return done err if err?
 
                   expect(saved).to.have.property('time')
                     .that.is.an.instanceOf(Date)
@@ -164,7 +164,7 @@ describe 'ItemType tests', ->
     type.setProperty 'players', 'json', []
     type.setProperty 'empty', 'json', null
     type.setProperty 'existing', 'json', coucou:true
-    type.save (err, type) -> 
+    type.save (err, type) ->
       return done err if err?
 
       # when transforming into plain objects
@@ -182,13 +182,13 @@ describe 'ItemType tests', ->
       # creates a type with a property color which is a string.
       type = new ItemType id: 'river'
       type.setProperty 'color', 'string', 'blue'
-      type.save (err, saved) -> 
+      type.save (err, saved) ->
         type = saved
         done err
 
     afterEach (done) ->
       # removes the type at the end.
-      ItemType.collection.drop -> Item.collection.drop -> Item.loadIdCache done
+      ItemType.remove {}, -> Item.remove {}, -> Item.loadIdCache done
 
     it 'should type be removed', (done) ->
       # when removing an item
@@ -218,7 +218,7 @@ describe 'ItemType tests', ->
       expect(type).to.have.deep.property('properties.color.type').that.equal 'string'
       expect(type).to.have.deep.property('properties.color.def').that.equal 'blue'
 
-      # when updating a property 
+      # when updating a property
       type.setProperty 'color', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
@@ -230,14 +230,14 @@ describe 'ItemType tests', ->
       # when removing a property
       type.unsetProperty 'color'
       type.save (err, saved) ->
-        return done err if err? 
+        return done err if err?
 
         # then the property was removed
         expect(saved).not.to.have.deep.property 'properties.color'
         done()
 
     it 'should unknown type properties fail on remove', (done) ->
-      try 
+      try
         # when removing an unknown property
         type.unsetProperty 'unknown'
         return done 'Error must be raised when removing unknwown property'
@@ -253,7 +253,7 @@ describe 'ItemType tests', ->
       type = new ItemType id: 'river'
       type.setProperty 'color', 'string', 'blue'
       type.setProperty 'affluents', 'array', 'Item'
-      type.save (err) -> 
+      type.save (err) ->
         return done err if err?
         # creates three items of this type.
         item1 = new Item {type: type, affluents: []}
@@ -278,7 +278,7 @@ describe 'ItemType tests', ->
       # when setting a property to a type
       defaultDepth = 30
       type.setProperty 'depth', 'integer', defaultDepth
-      type.save (err) -> 
+      type.save (err) ->
         return done err if err?
         next = ->
           Item.find {type: type.id}, (err, items) ->
@@ -300,7 +300,7 @@ describe 'ItemType tests', ->
       # when setting a property to a type
       defaultDepth = 30
       type.unsetProperty 'color'
-      type.save (err) -> 
+      type.save (err) ->
         return done err if err?
         setTimeout ->
           Item.find {type: type.id}, (err, items) ->
@@ -322,7 +322,7 @@ describe 'ItemType tests', ->
 
       # when setting quantifiable to true
       type.quantifiable = true
-      type.save (err) -> 
+      type.save (err) ->
         return done err if err?
         setTimeout ->
           Item.find {type: type.id}, (err, items) ->
@@ -334,7 +334,7 @@ describe 'ItemType tests', ->
 
             # when setting quantifiable to false
             type.quantifiable = false
-            type.save (err) -> 
+            type.save (err) ->
               return done err if err?
               setTimeout ->
                 Item.find {type: type.id}, (err, items) ->

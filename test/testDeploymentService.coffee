@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 pathUtils = require 'path'
 fs = require 'fs-extra'
@@ -26,7 +26,7 @@ FSItem = require '../hyperion/src/model/FSItem'
 Executable = require '../hyperion/src/model/Executable'
 utils = require '../hyperion/src/util/common'
 front = require '../hyperion/src/web/front'
-Phantom = require 'phantom-proxy'
+Horseman = require 'node-horseman'
 git = require 'gift'
 {expect} = require 'chai'
 service = require('../hyperion/src/service/DeployementService').get()
@@ -42,7 +42,7 @@ notifications = []
 browser = null
 listener = null
 
-describe 'Deployement tests', -> 
+describe 'Deployement tests', ->
 
   before (done) ->
     @timeout 5000
@@ -59,14 +59,14 @@ describe 'Deployement tests', ->
       notifications.push type
       # then notifications are received in the right order
       unless type.match /FAILED$/
-        expect(notifications).to.have.lengthOf number 
+        expect(notifications).to.have.lengthOf number
     done()
 
   afterEach (done) ->
     notifier.removeListener notifier.NOTIFICATION, listener
     return done() unless browser?
-    browser = null
-    Phantom.end -> done() 
+    browser.close()
+    done()
 
   version = '1.0.0'
 
@@ -98,7 +98,7 @@ describe 'Deployement tests', ->
         # when optimizing the game client
         service.deploy version, 'admin', (err) ->
           # then an error is reported
-          expect(err).to.include "46:23: error: unexpected '_showTemplate'"
+          expect(err).to.include "46:23: error: unexpected string"
           # then notifications were properly received
           expect(notifications).to.deep.equal [
             'DEPLOY_START'
@@ -107,7 +107,7 @@ describe 'Deployement tests', ->
             'DEPLOY_FAILED'
           ]
           done()
-    
+
     it 'should stylus compilation errors be reported', (done) ->
       # given a non-compiling stylus sheet
       fs.copy pathUtils.join(__dirname, 'fixtures', 'rheia.styl.error'), pathUtils.join(root, 'style', 'rheia.styl'), (err) ->
@@ -167,7 +167,7 @@ describe 'Deployement tests', ->
     unless process.env.TRAVIS
       it 'should requirejs optimization error be detected', (done) ->
         @timeout 5000
-        
+
         # given a requirejs entry file without error
         fs.copy pathUtils.join(__dirname, 'fixtures', 'Router.coffee.requirejserror'), pathUtils.join(root, 'js', 'Router.coffee'), (err) ->
           return done err if err?
@@ -218,7 +218,7 @@ describe 'Deployement tests', ->
           return done err if err?
           server = http.createServer front()
           server.listen port, 'localhost', done
-      
+
     after (done) ->
       server.close()
       done()
@@ -235,6 +235,7 @@ describe 'Deployement tests', ->
       # when deploying the game client
       service.deploy version, 'admin', (err) ->
         return done "Failed to deploy valid client: #{err}" if err?
+        page = null
         # then notifications were properly received
         expect(notifications).to.deep.equal [
           'DEPLOY_START'
@@ -246,18 +247,18 @@ describe 'Deployement tests', ->
           'DEPLOY_END'
         ]
         # then the client was deployed
-        Phantom.create {}, (_browser) ->
-          browser = _browser.page
-          browser.on 'error', done
-          browser.open "#{rootUrl}/game/", ->
-            # then the resultant url is working, with template rendering and i18n usage
-            browser.waitForSelector '.container', ->
-              browser.evaluate ->
-                $('body').text().trim()
-              , (body) ->
-                expect(body).to.include version
-                expect(body).to.include 'Edition du monde'
-                done()
+        browser = new Horseman()
+        browser.on 'error', done
+        browser.on 'consoleMessage', (message) -> console.log message
+        browser.open "#{rootUrl}/game/"
+          # then the resultant url is working, with template rendering and i18n usage
+          .waitForSelector '.container'
+          .text 'body'
+          .then (body) ->
+            expect(body).to.include version
+            expect(body).to.include 'Edition du monde'
+            done()
+          .catch done
 
     it 'should deploy, save, remove, move and restoreVersion be disabled while deploying', (done) ->
       async.forEach [
@@ -326,7 +327,7 @@ describe 'Deployement tests', ->
         done()
 
     it 'should commit and rollback not invokable outside deploy', (done) ->
-      async.forEach ['Commit', 'Rollback'], (method, next) ->
+      async.each ['Commit', 'Rollback'], (method, next) ->
         # when invoking the medhod
         service[method.toLowerCase()] 'admin', (err) ->
           # then error is throwned
@@ -356,20 +357,20 @@ describe 'Deployement tests', ->
             service.deploy version2, 'admin', (err) ->
               return done "Failed to deploy valid client: #{err}" if err?
               # then the client was deployed
-              Phantom.create {}, (_browser) ->
-                browser = _browser.page
-                browser.on 'error', done
-                browser.open "#{rootUrl}/game/", ->
-                  # then the resultant url is working, with template rendering and i18n usage
-                  browser.waitForSelector '.container', ->
-                    browser.evaluate ->
-                      $('body').text().trim()
-                    , (body) ->
-                      expect(body).to.include version2
-                      expect(body).to.include 'Edition du monde 2'
-                      # then the deployement can be commited
-                      notifications = []
-                      service.commit 'admin', done
+              browser = new Horseman()
+              browser.on 'error', done
+              browser.on 'consoleMessage', (message) -> console.log message
+              browser.open "#{rootUrl}/game/"
+                # then the resultant url is working, with template rendering and i18n usage
+                .waitForSelector '.container'
+                .text 'body'
+                .then (body) ->
+                  expect(body).to.include version2
+                  expect(body).to.include 'Edition du monde 2'
+                  # then the deployement can be commited
+                  notifications = []
+                  service.commit 'admin', done
+                .catch done
 
     it 'should state indicates no deployement from version 2.0.0', (done) ->
       service.deployementState (err, state) ->
@@ -385,22 +386,22 @@ describe 'Deployement tests', ->
       # when restoring version 1
       service.restoreVersion version, (err) ->
         return done err if err?
-        
+
         # then file common.coffee was restored
         fs.readFile pathUtils.join(__dirname, 'fixtures', 'working-client', 'nls', 'common.coffee'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
-            expect(content, 'Version was not restored').to.equal originalContent 
+            expect(content, 'Version was not restored').to.equal originalContent
 
             # then test executable is there and not test2
             fs.readFile pathUtils.join(exeRoot, 'test.coffee'), (err, content) ->
               expect(err).not.to.exist
-              expect(content.toString()).to.equal 'msg = "hello world"' 
+              expect(content.toString()).to.equal 'msg = "hello world"'
 
               expect(fs.existsSync pathUtils.join exeRoot, 'test2.coffee').to.be.false
 
               # then notifications were properly received
               expect(notifications).to.deep.equal ['VERSION_RESTORED']
-              
+
               # then version is now version 1
               service.deployementState (err, state) ->
                 return done err if err?
@@ -418,12 +419,12 @@ describe 'Deployement tests', ->
         # then file common.coffee was restored
         fs.readFile pathUtils.join(__dirname, 'fixtures', 'common.coffee.v2'), 'utf-8', (err, originalContent) ->
           fs.readFile pathUtils.join(root, 'nls', 'common.coffee'), 'utf-8', (err, content) ->
-            expect(content, 'Version was not restored').to.equal originalContent 
+            expect(content, 'Version was not restored').to.equal originalContent
 
             # then test executable was removed and test2 is there
             fs.readFile pathUtils.join(exeRoot, 'test2.coffee'), (err, content) ->
               expect(err).not.to.exist
-              expect(content.toString()).to.equal 'msg2 = "hi there !"' 
+              expect(content.toString()).to.equal 'msg2 = "hi there !"'
 
               expect(fs.existsSync pathUtils.join exeRoot, 'test.coffee').to.be.false
 
@@ -439,7 +440,7 @@ describe 'Deployement tests', ->
                 expect(state).to.have.property('current').that.equal version2
                 expect(state).to.have.property('versions').that.is.deep.equal [version2, version]
                 done()
-    
+
     version3 = '3.0.0'
 
     it 'should deployement be rollbacked', (done) ->
@@ -455,7 +456,7 @@ describe 'Deployement tests', ->
         service.deploy version3, 'admin', (err) ->
           return done err if err?
           notifications = []
-          
+
           # when rollbacking
           service.rollback 'admin', (err) ->
             return done "Failed to rollback: #{err}" if err?
@@ -467,14 +468,14 @@ describe 'Deployement tests', ->
             versionService.repo.tags (err, tags) ->
               return done err if err?
               for tag in tags when tag.name is version3
-                throw new Error "Version #{version2} has been tagged" 
+                throw new Error "Version #{version2} has been tagged"
 
               # then file still modified
               fs.readFile labels, 'utf8', (err, newContent) ->
                 return done err if err?
                 fs.readFile original, 'utf8', (err, content) ->
                   return done err if err?
-                  expect(newContent, "File was modified").to.equal content 
+                  expect(newContent, "File was modified").to.equal content
 
                   # then version is still version 2
                   service.deployementState (err, state) ->
@@ -485,28 +486,28 @@ describe 'Deployement tests', ->
                     expect(state).to.have.property('current').that.equal version2
                     expect(state).to.have.property('versions').that.is.deep.equal [version2, version]
 
-                    # then the save folder do not exists anymore 
+                    # then the save folder do not exists anymore
                     save = pathUtils.resolve pathUtils.normalize utils.confKey 'game.client.save'
                     fs.exists save, (exists) ->
                       expect(exists, "#{save} still exists").to.be.false
 
                       # then the client was deployed
-                      Phantom.create {}, (_browser) ->
-                        browser = _browser.page
-                        browser.on 'error', done
-                        browser.open "#{rootUrl}/game/", ->
-                          # then the resultant url is working, with template rendering and i18n usage
-                          browser.waitForSelector '.container', ->
-                            browser.evaluate ->
-                              $('body').text().trim()
-                            , (body) ->
-                              expect(body).to.include version2
-                              expect(body).to.include 'Edition du monde 2'
-                              done()
+                      browser = new Horseman()
+                      browser.on 'error', done
+                      browser.on 'consoleMessage', (message) -> console.log message
+                      browser.open "#{rootUrl}/game/"
+                        # then the resultant url is working, with template rendering and i18n usage
+                        .waitForSelector '.container'
+                        .text 'body'
+                        .then (body) ->
+                          expect(body).to.include version2
+                          expect(body).to.include 'Edition du monde 2'
+                          done()
+                        .catch done
 
     it 'should version be created', (done) ->
       @timeout 5000
-      
+
       # given a modification on game files
       labels = pathUtils.join root, 'nls', 'common.coffee'
       original = pathUtils.join __dirname, 'fixtures', 'common.coffee.v3'
@@ -524,7 +525,7 @@ describe 'Deployement tests', ->
           versionService.repo.tags (err, tags) ->
             return done "Failed to consult tags: #{err}" if err?
             expect(tags).to.have.lengthOf 3
-            expect(tags[0]).to.have.property('name').that.equal version 
+            expect(tags[0]).to.have.property('name').that.equal version
             done()
 
     it 'should existing version not be created', (done) ->

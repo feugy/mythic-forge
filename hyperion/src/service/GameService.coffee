@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 async = require 'async'
-_ = require 'underscore'
+_ = require 'lodash'
 Item = require '../model/Item'
 Event = require '../model/Event'
 Field = require '../model/Field'
@@ -82,7 +82,7 @@ class _GameService
         next()
     , -> callback null, types
 
-  # Retrieve Items by their ids. 
+  # Retrieve Items by their ids.
   # Each linked objects are resolved, but cyclic dependencies are broken.
   #
   # @param ids [Array<String>] array of ids
@@ -112,7 +112,7 @@ class _GameService
       # break cyclic dependencies, to avoid serialization errors
       Event.fetch events, true, callback
 
-  # Retrieve public information on players from their emails. 
+  # Retrieve public information on players from their emails.
   # Data returned are: email, lastConnection, firstName, lastName, and a connected boolean
   #
   # @param emails [Array<String>] list of consulted emails
@@ -136,7 +136,7 @@ class _GameService
   # @param lowX [Number] abscissa lower bound (included)
   # @param lowY [Number] ordinate lower bound (included)
   # @param upX [Number] abscissa upper bound (included)
-  # @param upY [Number] ordinate upper bound (included)  
+  # @param upY [Number] ordinate upper bound (included)
   # @param callback [Function] callback executed when items where retrieved. Called with parameters:
   # @option callback err [String] an error string, or null if no error occured
   # @option callback items [Array<Item>] list of retrieved items. May be empty
@@ -144,7 +144,7 @@ class _GameService
   consultMap: (mapId, lowX, lowY, upX, upY, callback) =>
     return if fromRule callback
     unless mapId? and lowX? and lowY? and upX? and upY? and callback?
-      return callback 'All parameters are mandatory' 
+      return callback 'All parameters are mandatory'
 
     logger.debug "Consult map #{mapId} between #{lowX}:#{lowY} and #{upX}:#{upY}"
     # first get the items
@@ -166,21 +166,21 @@ class _GameService
             callback null, items, fields
 
   # Trigger the rule engine resolution
-  # 
+  #
   # @see {RuleService.resolve}
   resolveRules: =>
     logger.debug 'Trigger rules resolution'
     ruleService.resolve.apply ruleService, arguments
 
   # Trigger the rule engine execution
-  # 
+  #
   # @see {RuleService.execute}
   executeRule: =>
     logger.debug 'Trigger rules execution'
     ruleService.execute.apply ruleService, arguments
 
   # Export client-side rules
-  # 
+  #
   # @see {RuleService.export}
   importRules: =>
     logger.debug 'Export rules to client'
@@ -206,7 +206,7 @@ class _GameService
   getConf: (base, locale, callback) =>
     return if fromRule callback
     # get information that does not change often
-    conf = 
+    conf =
       separator: sep
       basePath: "#{base}/"
       apiBaseUrl: apiBaseUrl
@@ -227,16 +227,16 @@ class _GameService
     # get default client configuration
     ClientConf.findCached ids, (err, confs) =>
       return callback "Failed to load client configurations: #{err}" if err?
-      def = _.findWhere confs, _id:'default'
+      def = _.find confs, _id:'default'
       result = {}
 
       # first merge with empty configuration
       merge result, def.values if def?
-      
+
       confs = _.chain(confs).without(def).sortBy('_id').value()
       # then merge remaining locale specific configurations, ending by sublocales
       merge result, spec.values for spec in confs
-        
+
       # at last, add default configuration values
       merge result, conf
       # return resulting configuration
@@ -246,5 +246,5 @@ _instance = undefined
 class GameService
   @get: ->
     _instance ?= new _GameService()
-    
+
 module.exports = GameService

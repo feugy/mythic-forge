@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 express = require 'express'
-_ = require 'underscore'
+_ = require 'lodash'
 utils = require '../util/common'
 http = require 'http'
 https = require 'https'
@@ -29,6 +29,10 @@ moment = require 'moment'
 urlParse = require('url').parse
 SocketServer = require 'socket.io'
 corser = require 'corser'
+bodyParser = require 'body-parser'
+cookieParser = require 'cookie-parser'
+methodOverride = require 'method-override'
+session = require 'express-session'
 GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
 TwitterStrategy = require('passport-twitter').Strategy
 GithubStrategy = require('passport-github').Strategy
@@ -51,7 +55,7 @@ logger = LoggerFactory.getLogger 'web'
 app = null
 certPath = utils.confKey 'ssl.certificate', null
 keyPath = utils.confKey 'ssl.key', null
-app = express() 
+app = express()
 
 noSecurity = process.env.NODE_ENV is 'test'
 host = utils.confKey 'server.host'
@@ -71,29 +75,29 @@ sid = {}
 # keeps timer that claim client logged out when socket is closed
 expiration = {}
 
-app.use express.cookieParser utils.confKey 'server.cookieSecret'
-app.use express.urlencoded()
-app.use express.json()
-app.use express.methodOverride()
+app.use cookieParser utils.confKey 'server.cookieSecret'
+app.use bodyParser.urlencoded extended: false
+app.use bodyParser.json()
+app.use methodOverride()
 app.use corser.create
   origins:[
     "http://#{host}:#{staticPort}"
     "http://#{host}:#{bindingPort}"
   ]
   methods: ['GET', 'HEAD', 'POST', 'DELETE', 'PUT']
-app.use express.session secret: 'mythic-forge' # mandatory for OAuth providers
+app.use session resave: false, saveUninitialized: false, secret: 'mythic-forge' # mandatory for OAuth providers
 app.use passport.initialize()
 
 if certPath? and keyPath?
   caPath = utils.confKey 'ssl.ca', null
   logger.info "use SSL certificates: #{certPath}, #{keyPath} and #{if caPath? then caPath else 'no certificate chain'}"
   # Creates the server with SSL certificates
-  opt = 
+  opt =
     cert: fs.readFileSync(certPath).toString()
     key: fs.readFileSync(keyPath).toString()
   opt.ca = fs.readFileSync(caPath).toString() if caPath?
   server = https.createServer opt, app
-else 
+else
   # Creates a plain web server
   server = http.createServer app
 
@@ -121,7 +125,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
   email = if noSecurity then 'admin' else sid[socket.id].email
 
   # exposes all methods
-  for method of service.__proto__ 
+  for method of service.__proto__
     unless method in except
       do(method) ->
         socket.on method, ->
@@ -129,7 +133,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
           args = originalArgs.slice 1
           # first parameter is always request id
           reqId = originalArgs[0]
-          
+
           # add connected email for those who need it.
           args.push email if method in connected
 
@@ -144,7 +148,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
             returnArgs[2] = returnArgs[2].message if utils.isA returnArgs?[2], Error
             socket.emit.apply socket, utils.plainObjects returnArgs
 
-          # invoke the service layer with arguments 
+          # invoke the service layer with arguments
           logger.debug "processing #{method} #{reqId} message with arguments #{originalArgs}"
           service[method].apply service, args
 
@@ -160,7 +164,7 @@ checkAdmin = (socket, callback) ->
   # check connected user rights
   details = sid[socket.id]
   callback if details?.isAdmin then null else new Error 'unauthorized'
-    
+
 # Creates routes to allow authentication from an OAuth/OAuth2 provider:
 #
 # `GET /auth/#{provider}`
@@ -180,7 +184,7 @@ checkAdmin = (socket, callback) ->
 registerOAuthProvider = (provider, Strategy, verify, scopes = null) ->
   if scopes?
     # OAuth2 provider
-    strategy = new Strategy 
+    strategy = new Strategy
       clientID: utils.confKey "authentication.#{provider}.id"
       clientSecret: utils.confKey "authentication.#{provider}.secret"
       callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or apiPort}/auth/#{provider}/callback"
@@ -191,7 +195,7 @@ registerOAuthProvider = (provider, Strategy, verify, scopes = null) ->
     strategy = new Strategy
       consumerKey: utils.confKey "authentication.#{provider}.id"
       consumerSecret: utils.confKey "authentication.#{provider}.secret"
-      callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or server.apiPort}/auth/#{provider}/callback"
+      callbackURL: "#{if certPath? then 'https' else 'http'}://#{host}:#{bindingPort or apiPort}/auth/#{provider}/callback"
     , verify
     args = {}
 
@@ -204,18 +208,18 @@ registerOAuthProvider = (provider, Strategy, verify, scopes = null) ->
     redirects[id] = getRedirect req
     if scopes?
       args.state = id
-    else 
+    else
       req.session.state = id
     passport.authenticate(strategy.name, args) req, res, next
 
   app.get "/auth/#{provider}/callback", (req, res, next) ->
     # reuse redirection url
     if scopes?
-      state = req.param 'state'
+      state = req.query.state
     else
       state = req.session.state
     redirect = redirects[state]
-    
+
     passport.authenticate(strategy.name, (err, token) ->
       # authentication failed
       return res.redirect "#{redirect}?error=#{err}" if err?
@@ -226,7 +230,7 @@ registerOAuthProvider = (provider, Strategy, verify, scopes = null) ->
 
 # Authorization (disabled for tests):
 # Once authenticated, a user has been returned a authorization token.
-# this token is used to allow to connect with socket.io. 
+# this token is used to allow to connect with socket.io.
 # For administraction namespaces, the user rights are to be checked also.
 io.use (socket, callback) ->
   # allways allo access without security
@@ -235,7 +239,7 @@ io.use (socket, callback) ->
   token = socket.request._query?.token or socket.request.query?.token
   if 'string' isnt utils.type(token) or token.length is 0
     logger.debug "socket #{socket.id} received invalid token #{token}"
-    return callback new Error 'invalidToken' 
+    return callback new Error 'invalidToken'
 
   # then identifies player with this token
   playerService.getByToken token, (err, player) ->
@@ -244,11 +248,11 @@ io.use (socket, callback) ->
     if player?
       logger.info "Player #{player.email} connected with token #{player.token} on socket #{socket.id}"
       # this will allow to store connected player into the socket details
-      sid[socket.id] = 
+      sid[socket.id] =
         email: player.email
         isAdmin: player.isAdmin
       return callback null
-    logger.info "socket #{socket.id} received unknown token #{token}" 
+    logger.info "socket #{socket.id} received unknown token #{token}"
     return callback new Error 'invalidToken'
 
 # When a client connects, returns it immediately its token
@@ -257,7 +261,7 @@ io.on 'connection', (socket) ->
   details = unless noSecurity then sid[socket.id] else email:'admin', isAdmin:true
 
   email = details.email
-  logger.debug "socket #{socket.id} established for user #{email}" 
+  logger.debug "socket #{socket.id} established for user #{email}"
 
   # on each connection, generate a key for dev access
   if details.isAdmin
@@ -281,7 +285,7 @@ io.on 'connection', (socket) ->
 
   # message to manually logout the connected player
   socket.on 'logout', ->
-    logger.info "received logout for user #{email}" 
+    logger.info "received logout for user #{email}"
     # manually disconnect and clear the sid to avoid expiration
     delete sid[socket.id]
     socket.disconnect true
@@ -291,7 +295,7 @@ io.on 'connection', (socket) ->
   socket.on 'disconnect', ->
     logger.debug "socket #{socket.id} closed user #{email}"
     # in case of manual logout, socket.id isn't in sid and we don't need expiration
-    if socket.id of sid 
+    if socket.id of sid
       delete sid[socket.id]
       # if client does not returns in within 10 seconds, consider it disconnected
       expiration[email] = _.delay =>
@@ -299,22 +303,22 @@ io.on 'connection', (socket) ->
         playerService.disconnect email, 'logout'
       , logoutDelay*1000
 
-# socket.io `game` namespace 
+# socket.io `game` namespace
 #
 # 'game' namespace exposes all method of GameService, plus a special 'currentPlayer' method.
 # @see {GameService}
 io.of('/game').on 'connection', (socket) ->
   exposeMethods gameService, socket, ['resolveRules', 'executeRule']
 
-# socket.io `admin` namespace 
+# socket.io `admin` namespace
 #
 # configure the differents message allowed
-# 'admin' namespace is associated to AdminService, ImageService, AuthoringService, 
+# 'admin' namespace is associated to AdminService, ImageService, AuthoringService,
 # DeployementService and SearchService
 #
 # send also notification of the Notifier
 # @see {AdminService}
-adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->  
+adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->
   exposeMethods adminService, socket, ['save', 'remove', 'connectAs']
   exposeMethods imagesService, socket
   exposeMethods searchService, socket
@@ -325,19 +329,19 @@ adminNS = io.of('/admin').use(checkAdmin).on 'connection', (socket) ->
   # do not expose all playerService methods, but just disconnection with the 'kick' message
   socket.on 'kick', (reqId, email) ->
     playerService.disconnect email, 'kicked', ->
-      logger.info "kick user #{email}" 
+      logger.info "kick user #{email}"
       # close socket of disconnected user.
       for id, val of sid when val.email is email
         # manually disconnect and clear the sid (disconnect event isn't fired)
         delete sid[id]
-        _.findWhere(io.sockets.sockets, id: id)?.disconnect true
+        _.find(io.sockets.sockets, id: id)?.disconnect true
         break
 
   # add a message to returns connected list
   socket.on 'connectedList', (reqId) ->
     socket.emit 'connectedList-resp', reqId, playerService.connectedList
 
-# socket.io `updates` namespace 
+# socket.io `updates` namespace
 #
 # 'updates' namespace will broadcast all modifications on the database.
 # The event name will be 'creation', 'update' or 'deletion', and as parameter,
@@ -350,7 +354,7 @@ watcher.on 'change', (operation, className, changes) ->
   logger.debug "broadcast of #{operation} on #{changes.id} (#{className})"
   updateNS.emit operation, className, utils.plainObjects changes
   # also update sid if isAdmin status is modified
-  if className is 'Player' 
+  if className is 'Player'
     if operation is 'update' and changes.isAdmin?
       for details of sid when details.email is changes.email
         details.isAdmin = changes.isAdmin
@@ -362,8 +366,8 @@ watcher.on 'change', (operation, className, changes) ->
         break
 
 notifier.on notifier.NOTIFICATION, (scope, event, details...) ->
-  if scope is 'time' 
-    updateNS?.emit 'change', 'time', utils.plainObjects details[0] 
+  if scope is 'time'
+    updateNS?.emit 'change', 'time', utils.plainObjects details[0]
   else
     adminNS?.emit?.apply adminNS, utils.plainObjects [scope, event].concat details
 
@@ -375,19 +379,19 @@ LoggerFactory.on 'log', (details) ->
     # avoid crashing server if a log message cannot be sent
     process.stderr.write "failed to send log to client: #{err}"
 
-# Authentication: 
+# Authentication:
 # Configure a passport strategy to use Google and Twitter Oauth2 mechanism.
 # Configure also a strategy for manually created accounts.
-# Browser will be redirected to success Url with a `token` parameter in case of success 
+# Browser will be redirected to success Url with a `token` parameter in case of success
 # Browser will be redirected to success Url with a `err` parameter in case of failure
-passport.use new LocalStrategy playerService.authenticate, 
+passport.use new LocalStrategy playerService.authenticate,
 registerOAuthProvider 'google', GoogleStrategy, playerService.authenticatedFromGoogle, ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
 registerOAuthProvider 'twitter', TwitterStrategy, playerService.authenticatedFromTwitter
 registerOAuthProvider 'github', GithubStrategy, playerService.authenticatedFromGithub, ['user:email']
 
 # `POST /auth/login`
 #
-# The authentication API for manually created accounts. 
+# The authentication API for manually created accounts.
 # It needs `username` and `password` form parameters
 # Once authenticated, browser is redirected with autorization token in url parameter
 app.post '/auth/login', (req, res, next) ->
@@ -398,7 +402,7 @@ app.post '/auth/login', (req, res, next) ->
     res.format
       html: ->
         res.redirect "#{getRedirect req}?#{if err? then "error=#{err}" else "token=#{token}"}"
-      
+
       json: ->
         result = redirect: getRedirect req
         if err?
@@ -406,7 +410,7 @@ app.post '/auth/login', (req, res, next) ->
         else
           result.token = token
         res.json result
-    
+
   ) req, res, next
 
 # `GET /konami`
@@ -415,8 +419,8 @@ app.post '/auth/login', (req, res, next) ->
 # Responds the conami code in a `<pre>` HTML markup
 app.get '/konami', (req, res) ->
   res.send '<pre>↑ ↑ ↓ ↓ ← → ← → B A</pre>'
-  
+
 # Exports the application.
-module.exports = 
+module.exports =
   server: server
   app: app

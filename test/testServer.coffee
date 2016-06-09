@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 pathUtils = require 'path'
 server = require('../hyperion/src/web/middle').server
 socketClient = require 'socket.io-client'
@@ -77,7 +77,7 @@ describe 'Server tests', ->
 
     it 'should file be created, read, moved and removed', (done) ->
       @timeout 4000
-      
+
       # given a connected socket.io client
       socket = socketClient.connect "#{rootUrl}/admin"
 
@@ -86,14 +86,14 @@ describe 'Server tests', ->
         return done err if err?
         authoringService.init (err) ->
           return done err if err?
-          
-          file = 
+
+          file =
             path: pathUtils.join 'images', 'image1.png'
             isFolder: false
             content: imgData.toString('base64')
 
           newPath = pathUtils.join 'images', 'image2.png'
-          
+
           # then the saved fsItem is returned
           socket.once 'save-resp', (reqId, err, modelName, saved) ->
             expect(rid).to.equal reqId
@@ -154,7 +154,7 @@ describe 'Server tests', ->
 
       beforeEach (done) ->
         # given a clean ItemTypes and Items collections
-        EventType.collection.drop -> Event.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> Map.collection.drop -> Map.loadIdCache ->
+        EventType.remove {}, -> Event.remove {}, -> ItemType.remove {}, -> Item.remove {}, -> Map.remove {}, -> Map.loadIdCache ->
           new Map(id: 'server-test').save (err, saved) ->
             return done err if err?
             map = saved
@@ -215,13 +215,13 @@ describe 'Server tests', ->
           expect(types).to.have.lengthOf 2
           for type in types
             awaited = null
-            if character.equals type 
+            if character.equals type
               awaited = character
               expect(type).to.have.deep.property('properties.name.type').that.is.equal awaited.properties.name.type
             else if life.equals type
               awaited = life
               expect(type).to.have.deep.property('properties.step.type').that.is.equal awaited.properties.step.type
-            else 
+            else
               throw new Error "Unknown returned type, #{type}"
             expect(type).to.have.property('id').that.is.equal awaited.id
           done()
@@ -297,11 +297,11 @@ describe 'Server tests', ->
 
         beforeEach (done) ->
           # Empties the compilation and source folders content
-          utils.empty utils.confKey('game.executable.source'), (err) -> 
-            Executable.resetAll true, (err) -> 
+          utils.empty utils.confKey('game.executable.source'), (err) ->
+            Executable.resetAll true, (err) ->
               return done err if err?
-              script = new Executable 
-                id:'rename', 
+              script = new Executable
+                id:'rename',
                 content: """Rule = require 'hyperion/model/Rule'
                   Item = require 'hyperion/model/Item'
 
@@ -412,7 +412,7 @@ describe 'Server tests', ->
       @bail true
 
       before (done) ->
-        ItemType.collection.drop -> utils.empty utils.confKey('game.image'), -> ItemType.loadIdCache ->
+        ItemType.remove {}, -> utils.empty utils.confKey('game.image'), -> ItemType.loadIdCache ->
           new ItemType(id: 'character').save (err, saved) ->
             return done err if err?
             character = saved

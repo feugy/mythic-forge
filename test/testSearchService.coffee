@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ authoringService = require('../hyperion/src/service/AuthoringService').get()
 service = require('../hyperion/src/service/SearchService').get()
 {expect, Assertion} = require 'chai'
 {flag, inspect} = require 'chai/lib/chai/utils'
- 
+
 Assertion.addMethod 'containsModel', (model, msg) ->
   flag @, 'message', msg if msg?
   array = flag @, 'object'
@@ -54,15 +54,15 @@ describe 'SearchService tests', ->
     talk2 = null
     talk3 = null
     ivanhoe = null
-    roland = null  
-    arthur = null           
+    roland = null
+    arthur = null
     gladius = null
     durandal = null
     excalibur = null
     broken = null
 
     before (done) ->
-      Player.collection.drop -> Map.collection.drop -> EventType.collection.drop -> ItemType.collection.drop -> Item.collection.drop -> Event.collection.drop -> Player.collection.drop -> Map.loadIdCache ->
+      Player.remove {}, -> Map.remove {}, -> EventType.remove {}, -> ItemType.remove {}, -> Item.remove {}, -> Event.remove {}, -> Player.remove {}, -> Map.loadIdCache ->
         # creates some fixtures types
         character = new ItemType id: 'character', desc: 'people a player can embody', quantifiable: false, properties:
           name: {type:'string', def:null}
@@ -397,19 +397,19 @@ describe 'SearchService tests', ->
     itemTypes = []
     eventTypes = []
     fieldTypes = []
-    maps = []    
-    rules = [] 
-    turnRules = [] 
+    maps = []
+    rules = []
+    turnRules = []
 
     before (done) ->
       # Empties the compilation and source folders content
-      utils.empty utils.confKey('game.executable.source'), (err) -> 
-        Executable.resetAll true, (err) -> 
+      utils.empty utils.confKey('game.executable.source'), (err) ->
+        Executable.resetAll true, (err) ->
           return done err if err?
-          Map.collection.drop -> 
-            FieldType.collection.drop -> 
-              EventType.collection.drop -> 
-                ItemType.collection.drop -> ItemType.loadIdCache ->
+          Map.remove {}, ->
+            FieldType.remove {}, ->
+              EventType.remove {}, ->
+                ItemType.remove {}, -> ItemType.loadIdCache ->
                   # creates some fixtures for each searchable objects
                   created = [
                     clazz: ItemType
@@ -424,7 +424,7 @@ describe 'SearchService tests', ->
                     store: itemTypes
                   ,
                     clazz: ItemType
-                    args: 
+                    args:
                       id: 'sword'
                       quantifiable: true
                       properties:
@@ -433,7 +433,7 @@ describe 'SearchService tests', ->
                     store: itemTypes
                   ,
                     clazz: EventType
-                    args: 
+                    args:
                       id: 'penalty'
                       properties:
                         turn: {type:'integer', def:1}
@@ -441,14 +441,14 @@ describe 'SearchService tests', ->
                     store: eventTypes
                   ,
                     clazz: EventType
-                    args: 
+                    args:
                       id: 'talk'
                       properties:
                         content: {type:'string', def:'---'}
                     store: eventTypes
                   ,
                     clazz: FieldType
-                    args: 
+                    args:
                       id: 'plain'
                     store: fieldTypes
                   ,
@@ -458,7 +458,7 @@ describe 'SearchService tests', ->
                     store: fieldTypes
                   ,
                     clazz: Executable
-                    args: 
+                    args:
                       id: 'move'
                       content:"""Rule = require 'hyperion/model/Rule'
                         module.exports = new (class Move extends Rule
@@ -484,7 +484,7 @@ describe 'SearchService tests', ->
                             callback null
                         )()"""
                     store: rules
-                  ,                
+                  ,
                     clazz: Executable
                     args:
                       id: 'sell'
@@ -499,7 +499,7 @@ describe 'SearchService tests', ->
                             callback null
                         )()"""
                     store: turnRules
-                  ,                
+                  ,
                     clazz: Executable
                     args:
                       id: 'monsters'
@@ -515,13 +515,13 @@ describe 'SearchService tests', ->
                     store: turnRules
                   ,
                     clazz: Map
-                    args: 
+                    args:
                       name: 'world_map'
                       kind:'square'
                     store: maps
                   ,
                     clazz: Map
-                    args: 
+                    args:
                       name: 'underworld'
                       kind:'diamond'
                     store: maps
@@ -714,7 +714,7 @@ describe 'SearchService tests', ->
 
     before (done) ->
       # Empties the source folder
-      utils.empty utils.confKey('game.client.dev'), (err) -> 
+      utils.empty utils.confKey('game.client.dev'), (err) ->
         return done err if err?
         authoringService.init (err) ->
           return done err if err?
@@ -743,26 +743,26 @@ describe 'SearchService tests', ->
               path: 'script/app.coffee'
               content: new Buffer '''
 define [
-  'angular', 
+  'angular',
   'util/common'
   'controller/login'
   'angular-route'
 ], (angular, utils, LoginCtrl) ->
 
   app = angular.module 'app', ['ngRoute']
-  
+
   app.config ['$locationProvider', '$routeProvider', (location, route) ->
 
     # use push state
     location.html5Mode true
     # configure routing
-    route.when "#{conf.basePath}login", 
+    route.when "#{conf.basePath}login",
       name: 'login'
       templateUrl: "#{conf.rootPath}template/login.html"
       controller: LoginCtrl
       controllerAs: 'ctrl'
       resolve: LoginCtrl.checkRedirect
-    route.otherwise 
+    route.otherwise
       redirectTo: "#{conf.basePath}login"
   ]
   app
@@ -771,16 +771,16 @@ define [
               path: 'script/controller/login.coffee'
               content: new Buffer '''
 define ['jquery', 'util/common'], ($, {parseError}) ->
-  
+
   class Login
-              
+
     @$inject: ['check', '$location', '$filter']
-    
+
     error: null
-    
+
     location: null
-    
-    constructor: (err, @location, filter) -> 
+
+    constructor: (err, @location, filter) ->
       document.title = filter('i18n') 'titles.login'
       @error = parseError err if err?
               ''')

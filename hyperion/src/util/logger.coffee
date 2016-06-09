@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -20,8 +20,7 @@
 'use strict'
 
 moment = require 'moment'
-_ = require 'underscore'
-_s = require 'underscore.string'
+_ = require 'lodash'
 fs = require 'fs-extra'
 pathUtils = require 'path'
 utils = require '../util/common'
@@ -60,7 +59,7 @@ init = ->
   # enforce file existence
   if conf.path isnt 'console'
     isConsole = false
-    fs.mkdirsSync pathUtils.dirname conf.path 
+    fs.mkdirsSync pathUtils.dirname conf.path
     # opens file stream
     output = fs.createWriteStream conf.path, flags: 'a', encodinf: 'utf8'
   else
@@ -68,7 +67,7 @@ init = ->
     isConsole = true
 
   # process.stdout.write ">>> configure log to output #{conf.path}\n"
-    
+
 # on configuration change, reinit
 utils.on 'confChanged', ->
   init()
@@ -97,9 +96,9 @@ computeLevel = (name) ->
 format = (args, level, name) ->
   # date name level parameter : message
   vals = (for arg in args
-    if _.isObject arg then JSON.stringify(arg) else arg?.toString() 
+    if _.isObject arg then JSON.stringify(arg) else arg?.toString()
   )
-  "#{moment().format conf.dateFormat or defaultDateFormat} #{process.pid} #{_s.pad name, nameMaxLength} #{_s.pad level, levelMaxLength} : #{vals.join ' '}"
+  "#{moment().format conf.dateFormat or defaultDateFormat} #{process.pid} #{_.pad name, nameMaxLength} #{_.pad level, levelMaxLength} : #{vals.join ' '}"
 
 # Logger Factory: creates new (or retrieve existing) logger with the following methods (ordered):
 #  log, debug, info, warn, error
@@ -116,7 +115,7 @@ format = (args, level, name) ->
 # - message: method's arguments, joined with white space
 #
 # All Logger's output goes to the same output, configured in the global configuration.
-# Each logger level can be set in global configuration : 
+# Each logger level can be set in global configuration :
 # {
 #   logger: {
 #     defaultLevel: 'debug',
@@ -140,7 +139,7 @@ emitter.getLogger = (name) ->
     throw new Error "logger with name #{name} exceeds the maximum length of #{nameMaxLength}" unless name.length <= nameMaxLength
 
     # logger level, default to off
-    logger = 
+    logger =
       _level: computeLevel name
       _name: name
 

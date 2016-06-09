@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -25,13 +25,13 @@ watcher = require('../hyperion/src/model/ModelWatcher').get()
 
 type = null
 
-describe 'FieldType tests', -> 
+describe 'FieldType tests', ->
 
   beforeEach (done) ->
     # empty fields and types.
-    Field.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache done
+    Field.remove {}, -> FieldType.remove {}, -> FieldType.loadIdCache done
 
-  it 'should type be created', (done) -> 
+  it 'should type be created', (done) ->
     # given a new FieldType
     id = 'montain'
     type = new FieldType id: id
@@ -51,14 +51,14 @@ describe 'FieldType tests', ->
   describe 'given a type', ->
     beforeEach (done) ->
       # creates a type with a property color which is a string.
-      new FieldType({id: 'river'}).save (err, saved) -> 
+      new FieldType({id: 'river'}).save (err, saved) ->
         return done err if err?
         type = saved
         done()
 
     afterEach (done) ->
       # removes the type at the end.
-      FieldType.collection.drop -> Field.collection.drop -> FieldType.loadIdCache done
+      FieldType.remove {}, -> Field.remove {}, -> FieldType.loadIdCache done
 
     it 'should type be removed', (done) ->
       # when removing an field

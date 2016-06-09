@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 fs = require 'fs-extra'
 async = require 'async'
 {join, sep, normalize, resolve} = require 'path'
@@ -47,7 +47,7 @@ commit = (spec, done) ->
     return done err if err?
     service.repo.commit spec.message, all:true, done
 
-describe 'VersionService tests', -> 
+describe 'VersionService tests', ->
   @timeout 5000
 
   beforeEach (done) ->
@@ -81,12 +81,12 @@ describe 'VersionService tests', ->
               return done err if err?
               # then two tags where retrieved
               expect(tags).to.have.lengthOf 2
-              expect(_.pluck tags, 'name').to.deep.equal [tag2, tag1], 
+              expect(_.map tags, 'name').to.deep.equal [tag2, tag1],
 
               # then commit ids are returned
               service.repo.commits (err, history) ->
                 return done err if err?
-                expect(_.pluck tags, 'id').to.deep.equal _.pluck history, 'id'
+                expect(_.map tags, 'id').to.deep.equal _.map history, 'id'
                 done()
 
   it 'should history returns commits with name, author, message and id', (done) ->
@@ -106,10 +106,10 @@ describe 'VersionService tests', ->
           # then commit details are exact
           service.repo.commits (err, commits) ->
             return done err if err?
-            expect(_.pluck history, 'id').to.deep.equal _.pluck commits, 'id'
-            expect(_.pluck history, 'author').to.deep.equal _.chain(commits).pluck('author').pluck('name').value()
-            expect(_.pluck history, 'message').to.deep.equal _.pluck commits, 'message'
-            expect(_.pluck history, 'date').to.deep.equal _.pluck commits, 'committed_date'
+            expect(_.map history, 'id').to.deep.equal _.map commits, 'id'
+            expect(_.map history, 'author').to.deep.equal _.chain(commits).map('author').map('name').value()
+            expect(_.map history, 'message').to.deep.equal _.map commits, 'message'
+            expect(_.map history, 'date').to.deep.equal _.map commits, 'committed_date'
 
             # when getting file history
             service.history file1, (err, fileHistory) ->
@@ -149,11 +149,11 @@ describe 'VersionService tests', ->
               return done "Cannot list restorable: #{err}" if err?
               # then both files are presents
               expect(restorables).to.have.lengthOf 2
-              paths = _.pluck restorables, 'path'
+              paths = _.map restorables, 'path'
               antislash = new RegExp '\\\\', 'g'
               repository = root.replace antislash, '/'
               expect(paths).to.include file1.replace(antislash, '/').replace "#{repository}/", ''
               expect(paths).to.include file2.replace(antislash, '/').replace "#{repository}/", ''
-              ids = _.pluck restorables, 'id'
+              ids = _.map restorables, 'id'
               expect(ids[0]).to.equal ids[1]
               done()

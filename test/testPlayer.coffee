@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ ItemType = require '../hyperion/src/model/ItemType'
 typeFactory = require '../hyperion/src/model/typeFactory'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
-ObjectId = require('mongodb').BSONPure.ObjectID
+ObjectId = require('mongodb').ObjectID
 {expect} = require 'chai'
 
 player = null
@@ -35,25 +35,25 @@ describe 'Player tests', ->
 
   before (done) ->
     # given an Item type, an item, and an empty Player collection.
-    ItemType.collection.drop -> Player.collection.drop -> ItemType.loadIdCache ->
+    ItemType.remove {}, -> Player.remove {}, -> ItemType.loadIdCache ->
       new ItemType({id: 'character'}).save (err, saved) ->
         return done err if err?
         type = saved
-        Item.collection.drop -> 
+        Item.remove {}, ->
           new Item({type: type}).save (err, saved) ->
             return done err if err?
             item = saved
             done()
-      
+
   beforeEach (done) ->
-    Player.collection.drop ->  Player.loadIdCache done
+    Player.remove {}, ->  Player.loadIdCache done
 
   # Restore admin player for further tests
   after (done) ->
-    ItemType.collection.drop -> Item.collection.drop -> Item.loadIdCache ->
+    ItemType.remove {}, -> Item.remove {}, -> Item.loadIdCache ->
       new Player(email:'admin', password: 'admin', isAdmin:true).save done
 
-  it 'should player be created', (done) -> 
+  it 'should player be created', (done) ->
     # given a new Player
     player = new Player {email:'Joe', characters:[item], password:'toto', prefs: stuff: true}
 

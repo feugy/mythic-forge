@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 {join, dirname, resolve, normalize, sep} = require 'path'
 {expect} = require 'chai'
@@ -35,8 +35,8 @@ gameRules = resolve normalize utils.confKey 'game.executable.source'
 file = null
 oldPath = null
 notifications = []
-        
-describe 'AuthoringService tests', -> 
+
+describe 'AuthoringService tests', ->
 
   before (done) ->
     @timeout 3000
@@ -60,10 +60,10 @@ describe 'AuthoringService tests', ->
     notifier.removeListener notifier.NOTIFICATION, notifListener
     done()
 
-  it 'should file be created', (done) -> 
+  it 'should file be created', (done) ->
     # given a new file
     item = new FSItem 'file.txt', false
-    # when saving it 
+    # when saving it
     service.save item, (err, saved) ->
       return done "Cannot save file: #{err}" if err?
       # then the file was saved
@@ -72,10 +72,10 @@ describe 'AuthoringService tests', ->
         expect(exists, "file #{item.path} wasn't created").to.be.true
         done()
 
-  it 'should folder be created', (done) -> 
+  it 'should folder be created', (done) ->
     # given a new file
     item = new FSItem "folder", true
-    # when saving it 
+    # when saving it
     service.save item, (err, saved) ->
       return done "Cannot save folder: #{err}" if err?
       # then nonotification issued
@@ -130,7 +130,7 @@ describe 'AuthoringService tests', ->
           file = saved
           done()
 
-    it 'should file content be read', (done) -> 
+    it 'should file content be read', (done) ->
       file.content = null
       # when reading the file
       service.read file, (err, read) ->
@@ -140,13 +140,13 @@ describe 'AuthoringService tests', ->
           return done err if err?
           expect(read).to.have.property('content').that.is.equal data.toString 'base64'
           done()
-        
-    it 'should file content be updated', (done) -> 
+
+    it 'should file content be updated', (done) ->
       # given a binary content
       fs.readFile join(__dirname, 'fixtures', 'image2.png'), (err, data) ->
         return done err if err?
         file.content = data
-        # when saving it 
+        # when saving it
         service.save file, (err, saved) ->
           return done "Cannot save existing file: #{err}" if err?
           # then the file was saved
@@ -158,7 +158,7 @@ describe 'AuthoringService tests', ->
             expect(readData.toString 'base64').to.equal data.toString 'base64'
             done()
 
-    it 'should file content be moved', (done) -> 
+    it 'should file content be moved', (done) ->
       # when reading the folder
       oldPath = "#{file.path}"
       service.move file, 'folder5/newFile', (err, moved) ->
@@ -176,7 +176,7 @@ describe 'AuthoringService tests', ->
               file = moved
               done()
 
-    it 'should file be removed', (done) -> 
+    it 'should file be removed', (done) ->
       # when removing the file
       service.remove file, (err, removed) ->
         return done "Cannot remove file: #{err}" if err?
@@ -193,9 +193,9 @@ describe 'AuthoringService tests', ->
 
     before (done) ->
       # cleaning executables and client files
-      utils.empty gameFiles, (err) -> 
+      utils.empty gameFiles, (err) ->
         return done err if err?
-        utils.empty gameRules, (err) -> 
+        utils.empty gameRules, (err) ->
           return done err if err?
           # first version of file and executable
           fs.readFile join(__dirname, 'fixtures', 'common.coffee.v1'), (err, data) ->
@@ -226,7 +226,7 @@ describe 'AuthoringService tests', ->
                             return done err if err?
                             versionService.repo.commit 'second commit', done
 
-    it 'should file content be read at last version', (done) -> 
+    it 'should file content be read at last version', (done) ->
       service.history file, (err, read, history) ->
         return done err if err?
         expect(history).to.have.lengthOf 2
@@ -241,7 +241,7 @@ describe 'AuthoringService tests', ->
             expect(content).to.equal data.toString 'base64'
             done()
 
-    it 'should executable content be read at last version', (done) -> 
+    it 'should executable content be read at last version', (done) ->
       service.history executable, (err, read, history) ->
         return done err if err?
         expect(history).to.have.lengthOf 2
@@ -255,7 +255,7 @@ describe 'AuthoringService tests', ->
           expect(content).to.equal new Buffer(exeContent2).toString 'base64'
           done()
 
-    it 'should file content be read at first version', (done) -> 
+    it 'should file content be read at first version', (done) ->
       service.history file, (err, read, history) ->
         return done err if err?
         expect(history).to.have.lengthOf 2
@@ -270,7 +270,7 @@ describe 'AuthoringService tests', ->
             expect(content).to.equal data.toString 'base64'
             done()
 
-    it 'should executable content be read at first version', (done) -> 
+    it 'should executable content be read at first version', (done) ->
       service.history executable, (err, read, history) ->
         return done err if err?
         expect(history).to.have.lengthOf 2
@@ -293,7 +293,7 @@ describe 'AuthoringService tests', ->
         for i in [0..1]
           expect(history[i]).to.have.property('date').that.is.an.instanceOf Date
           expect(history[i]).to.have.property('author').that.is.equal 'mythic-forge'
-        expect(_.pluck history, 'message').to.deep.equal ['second commit', 'first commit'], 
+        expect(_.map history, 'message').to.deep.equal ['second commit', 'first commit'],
         done()
 
     it 'should executable history be consulted', (done) ->
@@ -305,7 +305,7 @@ describe 'AuthoringService tests', ->
         for i in [0..1]
           expect(history[i]).to.have.property('date').that.is.an.instanceOf Date
           expect(history[i]).to.have.property('author').that.is.equal 'mythic-forge'
-        expect(_.pluck history, 'message').to.deep.equal ['second commit', 'first commit'], 
+        expect(_.map history, 'message').to.deep.equal ['second commit', 'first commit'],
         done()
 
     it 'should removed file and executable appears in restorable list', (done) ->
@@ -343,7 +343,7 @@ describe 'AuthoringService tests', ->
           return done err if err?
           done()
 
-    it 'should folder content be read', (done) -> 
+    it 'should folder content be read', (done) ->
       folder.content = null
       # when reading the folder
       service.read folder, (err, read) ->
@@ -358,7 +358,7 @@ describe 'AuthoringService tests', ->
           expect(found, "file #{file.path} was not read").to.be.true
         done()
 
-    it 'should folder content be moved', (done) -> 
+    it 'should folder content be moved', (done) ->
       # when reading the folder
       oldPath = "#{folder.path}"
       service.move folder, 'folder3/folder4', (err, moved) ->
@@ -372,7 +372,7 @@ describe 'AuthoringService tests', ->
             folder = moved
             done()
 
-    it 'should folder be removed', (done) -> 
+    it 'should folder be removed', (done) ->
       # when removing the folder
       service.remove folder, (err, removed) ->
         return done "Cannot remove folder: #{err}" if err?

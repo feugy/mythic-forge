@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 {relative} = require 'path'
 Rule = require '../../model/Rule'
@@ -33,6 +33,13 @@ Map = require '../../model/Map'
 utils = require '../../util/model'
 logger = require('../../util/logger').getLogger 'executor'
 
+# security mechanism that allows to restr'ict access to DB/services functions
+# set this local variable to true to deny access
+# This only works because this file is executed in a dedicated worker
+isLimited = false
+Object.defineProperty process.env, 'limited',
+  enumerable: true,
+  get: () -> isLimited
 
 # Effectively resolve the applicable rules of the given actor at the specified coordinate.
 #
@@ -40,7 +47,7 @@ logger = require('../../util/logger').getLogger 'executor'
 # @param targets [Array<Item/Event>] array of targets the targeted item and event
 # @param wholeRule [Boolean] true to returns the whole rule and not just id/category
 # @param worker [Object] current object on which _errMsg is set for unexpected errors
-# @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId. 
+# @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId.
 # If an array, only rule that match one of the specified category is resolved.
 # If a single string, only rule that has this id is resolved.
 # Otherwise all rules are resolved.
@@ -55,14 +62,19 @@ logger = require('../../util/logger').getLogger 'executor'
 internalResolve = (actor, targets, wholeRule, worker, restriction, current, callback) ->
   results = {}
   remainingTargets = 0
-  
+
+  end = (args...) =>
+    isLimited = false
+    callback args...
+
   # read all existing executables. @todo: use cached rules.
   Executable.find (err, executables) ->
     throw new Error "Cannot collect rules: #{err}" if err?
     rules = []
     # and for each of them, extract their rule.
+    isLimited = true
     for executable in executables
-      try 
+      try
         # CAUTION ! we need to use relative path. Otherwise, require inside rules will not use the module cache,
         # and singleton (like ModuleWatcher) will be broken.
         obj = require relative __dirname, executable.compiledPath
@@ -79,29 +91,29 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, current, call
         # report require errors
         err = "failed to require executable #{executable.id}: #{err}"
         logger.warn err
-        return callback err
+        return end err
 
     logger.debug "#{rules.length} candidate rules"
     # No targets ? leave immediately.
-    return callback null, results unless targets.length > 0
+    return end null, results unless targets.length > 0
 
     # second part of the resolution, after the actor was resolved
     process = (err) ->
-      return callback "Cannot resolve rule because actor's (#{actor.id}) linked item/event cannot be resolve: #{err}" if err?
+      return end "Cannot resolve rule because actor's (#{actor.id}) linked item/event cannot be resolve: #{err}" if err?
 
       # first, resolve all targets
       async.map targets, (target, next) ->
         # resolve items and events, but not fields
         if target instanceof Item or target instanceof Event
           target.fetch next
-        else 
+        else
           next null, target
       , (err, targets) ->
-        return callback "Cannot resolve rule because target's linked item/event cannot be resolve: #{err}" if err?
+        return end "Cannot resolve rule because target's linked item/event cannot be resolve: #{err}" if err?
         # process all resolved targets in parallel.
         async.each targets, (target, nextTarget) ->
           # resolve all rules for this target.
-          async.each rules, (rule, nextRule) -> 
+          async.each rules, (rule, nextRule) ->
             # message used in case of uncaught exception
             worker._errMsg = "Failed to resolve rule #{rule.id}. Received exception "
 
@@ -120,20 +132,20 @@ internalResolve = (actor, targets, wholeRule, worker, restriction, current, call
                 result.target = target
                 result.params = parameters
                 results[rule.id] = [] unless rule.id of results
-                results[rule.id].push result 
+                results[rule.id].push result
               nextRule()
           , nextTarget
         , (err) ->
           # final callback
-          callback err, results
+          end err, results
 
     # resolve actor, but not player
     if actor instanceof Item
       actor.fetch process
-    else 
+    else
       process null
 
-module.exports = 
+module.exports =
 
   # Resolves the applicable rules for a given situation.
   #
@@ -152,7 +164,7 @@ module.exports =
   #   @param actorId [ObjectId] the concerned item/player id
   #   @param targetId [ObjectId] the targeted item/event id
   #
-  # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId. 
+  # @param restriction [Array<String>|String] restrict resolution to a given categories or ruleId.
   # If an array, only rule that match one of the specified category is resolved.
   # If a single string, only rule that has this id is resolved.
   # Otherwise all rules are resolved.
@@ -169,13 +181,13 @@ module.exports =
     # resolve connected player first
     Player.findOne {email: email}, (err, current) =>
       return callback "Cannot resolve rules. Failed to retrieve current player (#{email}): #{err}" if err?
-      return callback "No player with email #{email}" unless current?      
+      return callback "No player with email #{email}" unless current?
       if args.length is 1
         # only playerId specified. Retrieve corresponding account
         playerId = args[0]
         Player.findOne {_id: playerId}, (err, player) =>
           return callback "Cannot resolve rules. Failed to retrieve player (#{playerId}): #{err}" if err?
-          return callback "No player with id #{playerId}" unless player?      
+          return callback "No player with id #{playerId}" unless player?
           # at last, resolve rules.
           logger.debug "resolve rules for player #{playerId}"
           internalResolve player, [player], false, @, restriction, current, callback
@@ -216,7 +228,7 @@ module.exports =
             actor = result
             findTarget()
 
-      else if args.length is 3 
+      else if args.length is 3
         actorId = args[0]
         x = args[1]
         y = args[2]
@@ -224,7 +236,7 @@ module.exports =
         Item.find {$or:[{_id: actorId},{x: x, y:y}]}, (err, results) =>
           return callback "Cannot resolve rules. Failed to retrieve actor (#{actorId}) or items at position x:#{x} y:#{y}: #{err}" if err?
           actor = null
-          for result,i in results 
+          for result,i in results
             if result.id is actorId
               actor = result
               # remove actor from target unless he's on the map
@@ -240,9 +252,9 @@ module.exports =
             results.splice 0, 0, field if field?
             logger.debug "resolve rules for actor #{actorId} at x:#{x} y:#{y}"
             internalResolve actor, results, false, @, restriction, current, callback
-      else 
+      else
         callback "resolve() must be call with player id or actor and target ids, or actor id and coordinates"
-   
+
   # Execute a particular rule for a given situation.
   # As a first validation, the rule is resolved for the target.
   # All objects modified by the rule will be registered in database.
@@ -268,7 +280,7 @@ module.exports =
     # resolve connected player first
     Player.findOne {email: email}, (err, current) =>
       return callback "Failed to execute rule #{rule.id}. Failed to retrieve current player (#{email}): #{err}" if err?
-      return callback "No player with email #{email}" unless current?   
+      return callback "No player with email #{email}" unless current?
       actor = null
       target = null
       # second part of the process
@@ -281,7 +293,7 @@ module.exports =
           return callback "Cannot resolve rule #{ruleId}: #{err}" if err?
           applicable = null
           applicable = _.find rules[ruleId], (obj) -> target.equals obj.target if ruleId of rules
-          unless applicable? 
+          unless applicable?
             return callback "The rule #{ruleId} of #{actor.id} does not apply any more for #{target.id}"
           rule = applicable.rule
 
@@ -301,7 +313,11 @@ module.exports =
             rule.sendCampaign = (campaign) => campaigns.push campaign
 
             # now execute
-            rule.execute actor, target, parameters, {player: current}, (err, result) => 
+            isLimited = true
+
+            rule.execute actor, target, parameters, {player: current}, (err, result) =>
+              isLimited = false
+
               return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
               saved = []
 
@@ -313,9 +329,9 @@ module.exports =
                 enrich = (err, results) =>
                   return next "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                   # replace found result into rule.removed array
-                  for removed in results 
+                  for removed in results
                     for id, i in rule.removed when id is removed.id
-                      rule.removed[i] = removed 
+                      rule.removed[i] = removed
                       ids = _.without ids, id
                       break
                   next()
@@ -323,19 +339,19 @@ module.exports =
                 # try to load objects from their ids
                 if 'findCached' of Class
                   Class.findCached ids, enrich
-                else 
+                else
                   Class.find {_id: $in: ids}, enrich
               , (err) =>
                 rule.sendCampaign = () ->
                 return callback err if err?
                 # removes objects from mongo (without duplicates)
                 utils.purgeDuplicates rule.removed
-                async.each rule.removed, (obj, end) -> 
+                async.each rule.removed, (obj, end) ->
                   logger.debug "remove #{obj._className} #{obj.id}"
                   obj.remove (err)-> end err
-                , (err) => 
+                , (err) =>
                   return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
-                  
+
                   saved = []
                   # looks for modified linked objects, for every saved object
                   utils.filterModified obj, saved for obj in [actor, target].concat rule.saved
@@ -344,17 +360,17 @@ module.exports =
                   saved.sort (o1, o2) -> if o1.id? and not o2.id? then 1 else if o2.id? and not o1.id? then -1 else 0
 
                   # saves the whole in MongoDB
-                  async.forEach saved, (obj, end) -> 
+                  async.forEach saved, (obj, end) ->
                     # do not re-save models that were already removed !
-                    return end() if _.any rule.removed, (removed) -> removed?.equals?(obj)
+                    return end() if _.some rule.removed, (removed) -> removed?.equals?(obj)
                     logger.debug "save modified #{obj._className} #{obj.id}, #{obj.modifiedPaths().join(',')}"
                     obj.save end
-                  , (err) => 
+                  , (err) =>
                     return callback "Failed to execute rule #{rule.id} of #{actor.id} for #{target.id}: #{err}" if err?
                     # everything was fine, now, send campaigns
                     processCampaigns campaigns
                     return callback null, result
-              
+
       if args.length is 1
         playerId = args[0]
         return callback "Player id is null !" unless playerId?
@@ -401,5 +417,5 @@ module.exports =
             actor = result
             findTarget()
 
-      else 
+      else
         callback 'execute() must be call with player id or actor and target ids'

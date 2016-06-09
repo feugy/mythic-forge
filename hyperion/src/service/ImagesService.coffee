@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 fs = require 'fs-extra'
 {join, normalize, resolve} = require 'path'
 {confKey, fromRule} = require '../util/common'
@@ -57,10 +57,10 @@ class _ImagesService
   uploadImage: (modelName, id, ext, imageData, args...) =>
     return if fromRule()
     switch args.length
-      when 1 
+      when 1
         callback = args[0]
         suffix = 'type'
-      when 2 
+      when 2
         callback = args[1]
         suffix = args[0]
 
@@ -77,9 +77,9 @@ class _ImagesService
       model = models[0]
 
       switch args.length
-        when 1 
+        when 1
           existing = model.descImage
-        when 2 
+        when 2
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.images[suffix]?.file
@@ -93,14 +93,14 @@ class _ImagesService
           # updates correct attribute
           if suffix is 'type'
             model.descImage = fileName
-          else 
+          else
             images = model.images
             if modelName is 'ItemType'
               # save meta data at correct index, keeping existing informations
               previous = images[suffix] || {width:0, height:0}
               previous.file = fileName
               images[suffix] = previous
-            else 
+            else
               # fot other, just keep the name
               images[suffix] = fileName
 
@@ -118,12 +118,12 @@ class _ImagesService
       # removes the existing file if necessary
       if existing
         fs.unlink join(imagesPath, existing), proceed
-      else 
+      else
         proceed()
 
   # Removes an existing image of this type.
-  # Can remove the type image or an instance image. 
-  # For instance images, the file attribute inside the image array is set to null, unless the last images is removed. 
+  # Can remove the type image or an instance image.
+  # For instance images, the file attribute inside the image array is set to null, unless the last images is removed.
   # In this case, the image array is shortened.
   # The model is updated in database.
   #
@@ -142,18 +142,18 @@ class _ImagesService
   removeImage: (modelName, id, args...) =>
     return if fromRule()
     switch args.length
-      when 1 
+      when 1
         callback = args[0]
         suffix = 'type'
-      when 2 
+      when 2
         callback = args[1]
         suffix = args[0]
 
     return callback "No image can be uploaded for #{modelName}" unless modelName in supported
     modelClass = null
     switch modelName
-      when 'ItemType' then modelClass = ItemType      
-      when 'FieldType' then modelClass = FieldType      
+      when 'ItemType' then modelClass = ItemType
+      when 'FieldType' then modelClass = FieldType
       when 'EventType' then modelClass = EventType
 
     # gets the concerned model
@@ -162,9 +162,9 @@ class _ImagesService
       model = models[0]
 
       switch args.length
-        when 1 
+        when 1
           existing = model.descImage
-        when 2 
+        when 2
           # check suffix validity
           return callback "idx argument #{suffix} isn't a positive number" unless _.isNumber(suffix) and suffix >= 0
           existing = model.images[suffix]?.file
@@ -176,17 +176,17 @@ class _ImagesService
         # updates correct attribute
         if args.length is 1
           model.descImage = null
-        else 
+        else
           images = model.images
           # removes correct index
           if suffix is images.length-1
             images.splice suffix, 1
-          else 
-            if modelName is 'ItemType' 
+          else
+            if modelName is 'ItemType'
               images[suffix].file = null
             else
               images[suffix] = null
-              
+
           model.images = images
           model.markModified 'images'
         # save model

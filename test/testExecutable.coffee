@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -28,11 +28,11 @@ executable = null
 listener = null
 root =  utils.confKey 'game.executable.source'
 
-describe 'Executable tests', -> 
+describe 'Executable tests', ->
 
   beforeEach (done) ->
     # Empty the source and compilation folders content
-    utils.empty root, (err) -> 
+    utils.empty root, (err) ->
       return done err if err?
       Executable.resetAll true, (err) ->
         return done err if err?
@@ -43,12 +43,12 @@ describe 'Executable tests', ->
     watcher.removeListener 'change', listener if listener?
     done()
 
-  it 'should executable be created', (done) -> 
+  it 'should executable be created', (done) ->
     # given a new executable
     content = 'greetings = "hello world"'
     id = 'test1'
     executable = new Executable id: id, content: content
-    
+
     awaited = false
 
     # then a creation event was issued
@@ -112,17 +112,17 @@ describe 'Executable tests', ->
         expect(executables[0].meta).to.deep.equal kind: 'Script'
         expect(awaited, 'watcher was\'nt invoked for new executable').to.be.true
         done()
-        
-  it 'should executable compilation error be reported', (done) -> 
+
+  it 'should executable compilation error be reported', (done) ->
     # given a new executable with compilation error
     content = 'console. "hello world"'
     id = 'test3'
     executable = new Executable id: id, content: content
-    
+
     # when saving it
     executable.save (err) ->
       # then an error is reported
-      expect(err).to.include 'unexpected "hello world"'
+      expect(err).to.include 'unexpected string\nconsole. \u001b[1;31m"hello world"'
 
       # then it's not on the file system
       Executable.find (err, executables) ->
@@ -132,16 +132,16 @@ describe 'Executable tests', ->
         expect(executables).to.have.lengthOf 0
         done()
 
-  it 'should js executable compilation error be reported', (done) -> 
+  it 'should js executable compilation error be reported', (done) ->
     # given a new executable with compilation error
     content = 'console.("hello world");'
     id = 'test3'
     executable = new Executable id: id, lang:'js', content: content
-    
+
     # when saving it
     executable.save (err) ->
       # then an error is reported
-      expect(err).to.include "Expected an identifier and instead saw '('."
+      expect(err).to.include "Parsing error: Unexpected token ("
 
       # then it's not on the file system
       Executable.find (err, executables) ->
@@ -150,7 +150,7 @@ describe 'Executable tests', ->
         # then no executables found
         expect(executables).to.have.lengthOf 0
         done()
-      
+
   it 'should resetAll recompile all in once', (done) ->
     # given two interdependant scripts
     new Executable(id: 'first', content: 'module.exports = -> console.log "hello world"').save (err) ->
@@ -164,15 +164,15 @@ describe 'Executable tests', ->
           return done "Failed to reset all executable: #{err}" if err?
           done()
 
-  describe 'given an executable', -> 
+  describe 'given an executable', ->
 
     beforeEach (done) ->
-      executable = new Executable 
+      executable = new Executable
         id: 'test2'
         content:"""
           constant = 10
-          module.exports = 
-            constant: constant, 
+          module.exports =
+            constant: constant,
             utility: (num) -> constant+num"""
       executable.save (err) ->
         # wait a little to avoid to fast save+update that prevent 'updated' to be detected as modified
@@ -182,7 +182,7 @@ describe 'Executable tests', ->
       # when removing an executable
       executable.remove ->
         # then it's in the folder anymore
-        Executable.find (err, executables) -> 
+        Executable.find (err, executables) ->
           return done "Can't find executable file: #{err}" if err?
           expect(executables).to.have.lengthOf 0
           done()
@@ -219,14 +219,14 @@ describe 'Executable tests', ->
       # when removing an executable
       executable.remove ->
         # then it's in the folder anymore
-        Executable.find (err, executables) -> 
+        Executable.find (err, executables) ->
           return done "Can't find executable file: #{err}" if err?
           expect(executables).to.have.lengthOf 0
           done()
 
     it 'should depending executable show updates', (done) ->
       # given another executable depending on the existing one
-      ex2 = new Executable 
+      ex2 = new Executable
         id: 'test3'
         content:"""
           ex1 = require './test2'
@@ -239,8 +239,8 @@ describe 'Executable tests', ->
         # when modifying existing executable
         newContent = """
           constant = 20
-          module.exports = 
-            constant: constant, 
+          module.exports =
+            constant: constant,
             utility: (num) -> constant+num
           """
         executable.content = newContent
@@ -253,7 +253,7 @@ describe 'Executable tests', ->
 
     it 'should dependencies to hyperion modules be replaced', (done) ->
       # given another executable depending on the existing one
-      executable = new Executable 
+      executable = new Executable
         id: 'test4'
         content:"""
           require('hyperion/util/logger').getLogger 'rule'
@@ -268,7 +268,7 @@ describe 'Executable tests', ->
 
     it 'should executable meta for Rule contains category and active', (done) ->
       # given an executable with an inactive Rule 'cat3' category
-      executable = new Executable 
+      executable = new Executable
         id: 'test5'
         content: """Rule = require 'hyperion/model/Rule'
             module.exports = new (class Dumb extends Rule
@@ -278,7 +278,7 @@ describe 'Executable tests', ->
             )() """
       executable.save (err) ->
         return done err if err?
-        expect(executable.meta).to.deep.equal 
+        expect(executable.meta).to.deep.equal
           kind: 'Rule'
           category: 'cat3'
           active: false
@@ -286,8 +286,8 @@ describe 'Executable tests', ->
 
     it 'should executable meta for TurnRule contains rank and active', (done) ->
       # given an executable with an active TurnRule rank 10
-      executable = new Executable 
-          id:'test6', 
+      executable = new Executable
+          id:'test6',
           content: """TurnRule = require 'hyperion/model/TurnRule'
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -295,7 +295,7 @@ describe 'Executable tests', ->
             )() """
       executable.save (err) ->
         return done err if err?
-        expect(executable.meta).to.deep.equal 
+        expect(executable.meta).to.deep.equal
           kind: 'TurnRule'
           rank: 10
           active: true
@@ -303,8 +303,8 @@ describe 'Executable tests', ->
 
     it 'should executable meta for be updated', (done) ->
       # given an executabl with metas
-      executable = new Executable 
-          id:'test7', 
+      executable = new Executable
+          id:'test7',
           content: """TurnRule = require 'hyperion/model/TurnRule'
             module.exports = new (class Dumb extends TurnRule
               constructor: ->
@@ -312,7 +312,7 @@ describe 'Executable tests', ->
             )() """
       executable.save (err) ->
         return done err if err?
-        expect(executable.meta).to.deep.equal 
+        expect(executable.meta).to.deep.equal
           kind: 'TurnRule'
           rank: 0
           active: false
@@ -334,7 +334,7 @@ describe 'Executable tests', ->
           return done err if err?
 
           # then metas were updated
-          expect(executable.meta).to.deep.equal 
+          expect(executable.meta).to.deep.equal
             kind: 'TurnRule'
             rank: 5
             active: true

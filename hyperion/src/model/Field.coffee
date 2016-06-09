@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 mongoose = require 'mongoose'
-ObjectId = require('mongodb').BSONPure.ObjectID
+ObjectId = require('mongodb').ObjectID
 conn = require './connection'
 modelWatcher = require('./ModelWatcher').get()
 Map = require './Map'
@@ -27,33 +27,33 @@ logger = require('../util/logger').getLogger 'model'
 {fromRule} = require '../util/common'
 
 # Define the schema for fields.
-FieldSchema = new mongoose.Schema 
+FieldSchema = new mongoose.Schema
   # manually managed id
   _id: String
 
   # link to map
-  mapId: 
+  mapId:
     type: String
     required: true
 
   # link to type
-  typeId: 
+  typeId:
     type: String
     required: true
 
   # image num
-  num: 
+  num:
     type: Number
     default: 0
 
   # coordinates on the map
-  x: 
+  x:
     type:Number
     default: 0
-  y: 
+  y:
     type:Number
     default: 0
-, 
+,
   strict: true
   _id: false
   # Extends original Mongoose toJSON method to change _id to id.
@@ -64,14 +64,14 @@ FieldSchema = new mongoose.Schema
       delete ret.__v
       ret
 
-# Override the equals() method defined in Document, to check correctly the equality between _ids, 
+# Override the equals() method defined in Document, to check correctly the equality between _ids,
 # with their `equals()` method and not with the strict equality operator.
 #
 # @param other [Object] other object against which the current object is compared
 # @return true if both objects have the same _id, false otherwise
 FieldSchema.methods.equals = (object) ->
   @id is object?.id
-   
+
 # manually manage ids within the 'id' attribute, and store them into the '_id' attribute.
 # Define a virtual getter on model's class name.
 # Handy when models have been serialized to distinguish them
@@ -83,11 +83,11 @@ FieldSchema.post 'init', ->
   originalRemove = @remove
   @remove = (next) ->
     unless fromRule next
-      originalRemove.call @, next 
+      originalRemove.call @, next
   originalSave = @save
   @save = (next) ->
     unless fromRule next
-      originalSave.call @, next 
+      originalSave.call @, next
 
 # pre-save middleware: only allow save of new fields. Do not allow updates
 #

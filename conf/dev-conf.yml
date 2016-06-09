@@ -4,7 +4,7 @@ logger:
   defaultLevel: debug
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10
-  levels: 
+  levels:
     # Do not exceed 10 characters !
     service: warn
     executor: warn
@@ -16,7 +16,7 @@ logger:
     console: all
 
 # Server's configuration
-server:  
+server:
   host: localhost
   staticPort: 8080
   apiPort: 8443
@@ -58,7 +58,7 @@ mailgun:
   domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
   sender: noreply@mythic-forge.com
 
-game: 
+game:
   # location of games files
   repo: ../proto-game
 
@@ -68,7 +68,7 @@ game:
   # localStorage key that will store connection token
   token: game.token
 
-  # Executable scripts 
+  # Executable scripts
   executable:
     source: ../proto-game/rules # must be INSIDE game.repo
     target: ../proto-game/compiled

@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 mongoose = require 'mongoose'
-_ = require 'underscore'
+_ = require 'lodash'
 fs = require 'fs'
 path = require 'path'
 async = require 'async'
@@ -54,9 +54,9 @@ modelWatcher.on 'executableReset', (removed) ->
   delete idCache[id] for id in removed when id of idCache
 
 # Extends _registerHook to construct dynamic properties in Document constructor
-original_registerHooks = mongoose.Document::$__registerHooks
-mongoose.Document::$__registerHooks = ->
-  ret = original_registerHooks.apply @, arguments
+original_registerHooksFromSchema = mongoose.Document::$__registerHooksFromSchema
+mongoose.Document::$__registerHooksFromSchema = ->
+  ret = original_registerHooksFromSchema.apply @, arguments
   @_defineProperties()
   ret
 
@@ -83,18 +83,18 @@ compareObjProperty = (instance, prop) ->
   original = instance["__orig#{prop}"] or "{}"
   current = JSON.stringify instance[prop] or {}
   instance.markModified prop unless original is current
-    
+
 originalIsModified = mongoose.Document::isModified
 mongoose.Document::isModified = (path) ->
   # detect modification on dynamic arrays
   if @type?.properties?
-    for prop, value of @type.properties 
-      switch value.type 
-        when 'array' then compareArrayProperty @, prop 
-        when 'json' then compareObjProperty @, prop 
+    for prop, value of @type.properties
+      switch value.type
+        when 'array' then compareArrayProperty @, prop
+        when 'json' then compareObjProperty @, prop
 
   # detect modification on characters array
-  if @_className is 'Player' 
+  if @_className is 'Player'
     compareArrayProperty @, 'characters'
     compareObjProperty @, 'prefs'
 
@@ -125,7 +125,7 @@ originals = {}
     # forbid if necessary
     return if fromRule args[args.length-1]
     # or process original
-    originals[method].apply @, arguments
+    originals[method].apply @, args
   mongoose.Collection::[method].secured = true
 
 # Factory that creates an abstract type.
@@ -165,7 +165,7 @@ module.exports = (typeName, spec, options = {}) ->
           # partial update
           # do not use setter to avoid marking the instance as modified.
           for attr, value of changes when !(attr in ['id', '__v'])
-            instance._doc[attr] = value  
+            instance._doc[attr] = value
             if "__orig#{attr}" of instance
               if _.isArray instance["__orig#{attr}"]
                 # object array
@@ -173,10 +173,10 @@ module.exports = (typeName, spec, options = {}) ->
               else
                 # arbitrary JSON
                 instance["__orig#{attr}"] = JSON.stringify value or {}
-      when 'deletion' 
+      when 'deletion'
         delete caches[typeName][changes.id]
 
-  
+
   if options.typeProperties
     # event properties definition, stored by names
     # @example property definition include
@@ -191,13 +191,13 @@ module.exports = (typeName, spec, options = {}) ->
 
   if options.instanceProperties
     # link to type, mandatory to retrieve properties definitions
-    spec.type = 
+    spec.type =
       type: {}
       required: true
 
 
   # Extends original Mongoose toObject method to add className when requireing json.
-  options.toObject = 
+  options.toObject =
     transform: (doc, ret, options) ->
       if options?.json
         ret._className = doc._className
@@ -207,7 +207,7 @@ module.exports = (typeName, spec, options = {}) ->
       ret
 
   # Extends original Mongoose toJSON method to add className and changing _id to id.
-  options.toJSON = 
+  options.toJSON =
     transform: (doc, ret, opts) ->
       if options.typeProperties
         # avoid pruning empty json objects (can be default values of properties)
@@ -227,7 +227,7 @@ module.exports = (typeName, spec, options = {}) ->
   # Versionning avoid data erasure, but the single-thread architecture of Hyperion already enforece this.
   # In case of cached values reuse, as we can't handle conflict, we rather prefer to erase data
   options.versionKey = false
-  
+
   # Abstract schema, that can contains i18n attributes
   AbstractType = new mongoose.Schema spec, options
 
@@ -240,7 +240,7 @@ module.exports = (typeName, spec, options = {}) ->
   # Handy when models have been serialized to distinguish them
   AbstractType.virtual('id').set (value) -> @_id = value
 
-  # Override the equals() method defined in Document, to check correctly the equality between ids, 
+  # Override the equals() method defined in Document, to check correctly the equality between ids,
   # with their `equals()` method and not with the strict equality operator.
   #
   # @param other [Object] other object against which the current object is compared
@@ -265,7 +265,7 @@ module.exports = (typeName, spec, options = {}) ->
     notCached = []
     cached = []
     # first look into the cache (order is preserved)
-    for id in ids 
+    for id in ids
       if id of caches[typeName]
         cached.push caches[typeName][id].model
       else
@@ -278,7 +278,7 @@ module.exports = (typeName, spec, options = {}) ->
       callback null, (caches[typeName][id].model for id in ids when caches[typeName][id]?)
 
   # Load the different ids from MongoDB.
-  # **Warning:** this method uses it's own dedicated MongoDB connection. 
+  # **Warning:** this method uses it's own dedicated MongoDB connection.
   # Intended to tests: do not use in production
   #
   # @param callback [Function] loading end callback.
@@ -305,7 +305,7 @@ module.exports = (typeName, spec, options = {}) ->
   #
   # @param id [String] tested id
   # @return true if id is used
-  AbstractType.statics.isUsed = (id) -> 
+  AbstractType.statics.isUsed = (id) ->
     id of idCache or Executable.findCached([id]).length isnt 0
 
   # post-init middleware: populate the cache and secure save/remove method
@@ -314,20 +314,20 @@ module.exports = (typeName, spec, options = {}) ->
     originalRemove = @remove
     @remove = (next) ->
       unless fromRule next
-        originalRemove.call @, next 
+        originalRemove.call @, next
     originalSave = @save
     @save = (next) ->
       unless fromRule next
-        originalSave.call @, next 
+        originalSave.call @, next
 
     # store in cache
-    caches[typeName][@id] = model:@, since: new Date().getTime()
-  
+    caches[typeName][@id] = model:@, since: Date.now()
+
   # post-save middleware: update cache
   AbstractType.post 'save',  ->
     # now that the instance was properly saved, update the cache.
-    caches[typeName][@id] = model:@, since: new Date().getTime()
-    
+    caches[typeName][@id] = model:@, since: Date.now()
+
   # post-remove middleware: now that the type was properly removed, update the cache.
   AbstractType.post 'remove', ->
     # updates the cache
@@ -335,7 +335,7 @@ module.exports = (typeName, spec, options = {}) ->
 
     # to avoid circular dependencies, replace links by their ids in properties
     processLinks @, @type.properties if options.instanceProperties
-        
+
     # broadcast deletion
     modelWatcher.change 'deletion', typeName, @
     if options.hasImages
@@ -375,7 +375,7 @@ module.exports = (typeName, spec, options = {}) ->
 
     # pre-save middleware: update type instances' properties if needed.
     AbstractType.pre 'save', (next) ->
-      return next() unless @_updatedProps? or @_deletedProps?        
+      return next() unless @_updatedProps? or @_deletedProps?
 
       # get type instances
       require("./#{options.instanceClass}").find {type: @id}, (err, instances) =>
@@ -391,7 +391,7 @@ module.exports = (typeName, spec, options = {}) ->
                 when 'array' then def = []
                 when 'object' then def = null
 
-              # check default values              
+              # check default values
               err = checkPropertyType def, prop
               return next new Error err if err?
 
@@ -412,7 +412,7 @@ module.exports = (typeName, spec, options = {}) ->
         delete @_deletedProps
         delete @_updatedProps
         # save all the modified instances
-        async.forEach saved, (instance, done) -> 
+        async.forEach saved, (instance, done) ->
           instance.save done
         , next
 
@@ -427,7 +427,7 @@ module.exports = (typeName, spec, options = {}) ->
       # loads the type from local cache
       require("./#{options.typeClass}").findCached [instance.type], (err, types) ->
         return next(new Error "Unable to init instance #{instance.id}. Error while resolving its type: #{err}") if err?
-        return next(new Error "Unable to init instance #{instance.id} because there is no type with id #{instance.type}") unless types.length is 1    
+        return next(new Error "Unable to init instance #{instance.id} because there is no type with id #{instance.type}") unless types.length is 1
         # do the replacement
         instance.type = types[0]
         next()
@@ -436,16 +436,16 @@ module.exports = (typeName, spec, options = {}) ->
     AbstractType.post 'init', ->
       @_defineProperties()
       # for each array property, add a save with linked ids to allow further comparisons
-      for name, spec of @type.properties 
+      for name, spec of @type.properties
         if spec.type is 'array'
-          @["__orig#{name}"] = @[name]?.concat() or [] 
+          @["__orig#{name}"] = @[name]?.concat() or []
         else if spec.type is 'json'
           @["__orig#{name}"] = JSON.stringify @[name] or {}
 
     # This method retrieves linked objects in properties.
-    # All `object` and `array` properties are resolved. 
+    # All `object` and `array` properties are resolved.
     # Properties that aims at unexisting objects are reset to null.
-    # Works in two modes: 
+    # Works in two modes:
     # - read only from DB (breakCycles = true): it ensure not returning cyclic model trees, but same entity may be presented by two different models
     # - read both in DB and cache (breakCycles = false): ensure entity uniquness, but may return cyclic model trees
     #
@@ -471,7 +471,7 @@ module.exports = (typeName, spec, options = {}) ->
       if _.isFunction breakCycles
         [callback, breakCycles] = [breakCycles, false]
       ids = []
-      # identify each linked properties 
+      # identify each linked properties
       for instance in instances
         logger.debug "search linked ids in #{instance.id}"
         # gets the corresponding properties definitions
@@ -499,14 +499,14 @@ module.exports = (typeName, spec, options = {}) ->
                 # otherwise, only kept unresolved values
                 logger.debug "found #{val} in property #{prop}"
                 ids.push val
-      
+
       # now that we have the linked ids, get the corresponding instances.
       return callback(null, instances) unless ids.length > 0
-      
+
       # resolve in both items and events
       linked = []
       async.forEach [{name: 'Item', clazz:require('./Item')}, {name: 'Event', clazz:require('./Event')}], (spec, end) ->
-        # two modes: 
+        # two modes:
         # - read only from DB (breakCycles = true): it ensure not returning cyclic model trees, but same entity may be presented by two different models
         # - read both in DB and cache (breakCycles = false): ensure entity uniquness, but may return cyclic model trees
         cachedIds = if breakCycles then [] else _.intersection ids, _.keys caches[spec.name]
@@ -549,8 +549,8 @@ module.exports = (typeName, spec, options = {}) ->
 
         # done !
         callback null, instances
-          
-    # pre-save middleware: enforce the existence of each property. 
+
+    # pre-save middleware: enforce the existence of each property.
     # Could be declared in the schema, or in the type's properties
     # Inside the middleware, `this` aims at the saved instance.
     #
@@ -566,31 +566,31 @@ module.exports = (typeName, spec, options = {}) ->
         # not in schema, nor in type
         if attr of properties
           # use not property cause it's not always defined at this moment
-          err = checkPropertyType @_doc[attr], properties[attr] 
+          err = checkPropertyType @_doc[attr], properties[attr]
           next(new Error "Unable to save instance #{@id}. Property #{attr}: #{err}") if err?
         else unless attr of AbstractType.paths
           next new Error "Unable to save instance #{@id}: unknown property #{attr}"
 
       # set the default values
       for prop, value of properties
-      
+
         if undefined is @_doc[prop]
           @_doc[prop] = if value.type is 'array' then [] else if value.type is 'object' then null else value.def
 
         # Do not store strings, store dates instead
         if value.type is 'date' and 'string' is checkType @_doc[prop]
           @_doc[prop] = new Date @_doc[prop]
-          
+
       wasNew = @isNew
       # generate id if necessary
       @id = generateId() unless @id? or !wasNew
       if wasNew
-        # validates id 
+        # validates id
         return next new Error "id #{@id} for model #{typeName} is invalid" unless isValidId @id
         return next new Error "id #{@id} for model #{typeName} is already used" if @id of idCache
       else
         # do not change the id once created
-        return next new Error "id cannot be changed on a #{typeName}" if @isModified '_id' 
+        return next new Error "id cannot be changed on a #{typeName}" if @isModified '_id'
 
       # stores the isNew status and modified paths now, to avoid registering modification on wrong attributes.
       modifiedPaths = @modifiedPaths().concat()
@@ -601,7 +601,7 @@ module.exports = (typeName, spec, options = {}) ->
       @_doc.type = saveType?.id
       next()
       # for each array property, add a save with linked ids to allow further comparisons
-      for name, spec of saveType.properties 
+      for name, spec of saveType.properties
         if spec.type is 'array'
           @["__orig#{name}"] = @_doc[name]?.concat() or []
         else if spec.type is 'json'
@@ -623,13 +623,13 @@ module.exports = (typeName, spec, options = {}) ->
       # generate id if necessary
       @id = generateId() unless @id? or !wasNew
       if wasNew
-        # validates id 
+        # validates id
         return next new Error "id #{@id} for model #{typeName} is invalid" unless isValidId @id
         return next new Error "id #{@id} for model #{typeName} is already used" if @id of idCache
       else
         # do not change the id once created
-        return next new Error "id cannot be changed on a #{typeName}" if @isModified '_id' 
-        
+        return next new Error "id cannot be changed on a #{typeName}" if @isModified '_id'
+
       # stores the isNew status and modified paths.
       modifiedPaths = @modifiedPaths().concat()
       next()

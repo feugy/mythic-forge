@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ cluster = require 'cluster'
 return if cluster.isMaster
 
 pathUtils = require 'path'
-_ = require 'underscore'
+_ = require 'lodash'
 modelWatcher = require('../../model/ModelWatcher').get()
 notifier = require('../Notifier').get()
 Executable = require '../../model/Executable'
@@ -34,10 +34,10 @@ logger = LoggerFactory.getLogger 'worker'
 ready = false
 
 # init worker's rule cache
-Executable.resetAll false, (err) -> 
+Executable.resetAll false, (err) ->
   unless err?
     ready = true
-    return process.emit 'rulesInitialized' 
+    return process.emit 'rulesInitialized'
   logger.error "Failed to initialize worker's executable cache: #{err}"
   process.exit 1
 
@@ -77,7 +77,7 @@ process.on 'message', (msg) ->
   else if msg?.event is 'executableReset'
     ready = false
     # reloads the executable cache
-    Executable.resetAll false, (err) -> 
+    Executable.resetAll false, (err) ->
       return ready = true unless err?
       logger.error "Failed to initialize worker's executable cache: #{err}"
       process.exit 1
@@ -85,15 +85,20 @@ process.on 'message', (msg) ->
     Map.cleanModelCache()
   else if msg?.method of worker
     handler = catchException msg.method, msg.id
-    # invoke the relevant worker method, adding a callback
+    # invoke the relevant worker method, adding a callback, in limited env
+    isLimited = true
     worker[msg.method].apply worker, (msg.args or []).concat (args...) ->
+      isLimited = false
       process.removeListener 'uncaughtException', handler
       # callback send back results to cluster master
       try
+        # error objects can't be serialized, to use strings instead
+        if args[0]?
+          args[0] = if worker._errMsg? then worker._errMsg + args[0].stack else if args[0].stack? then args[0].stack else args[0]
         process.send method: msg.method, id: msg.id, results: args
       catch err
         # master probably dead.
-        console.error "worker #{process.pid}, module #{process.env.module} failed to return message: #{err}"
+        logger.error "worker #{process.pid}, module #{process.env.module} failed to return message: #{err}"
         process.exit 1
 
 # on change events, send them back to master
@@ -104,21 +109,21 @@ modelWatcher.on 'change', (operation, className, changes, wId) ->
     process.send event: 'change', args: [operation, className, changes, process.pid]
   catch err
     # master probably dead.
-    console.error "worker #{process.pid}, module #{process.env.module} failed to relay change #{operation} #{className} due to: #{err}"
+    logger.error "worker #{process.pid}, module #{process.env.module} failed to relay change #{operation} #{className} due to: #{err}"
     process.exit 1
 
 # on notification, send them back to master
 notifier.on notifier.NOTIFICATION, (args...) ->
-  try 
+  try
     process.send event: notifier.NOTIFICATION, args: args, from: process.pid
   catch err
     # master probably dead.
-    console.error "worker #{process.pid}, module #{process.env.module} failed to relay notification due to: #{err}"
+    logger.error "worker #{process.pid}, module #{process.env.module} failed to relay notification due to: #{err}"
     process.exit 1
-  
+
 # on logs, send them back to master
 LoggerFactory.on 'log', (data) ->
-  try 
+  try
     process.send event: 'log', args: data, from: process.pid
   catch err
     # avoid crashing server if a log message cannot be sent

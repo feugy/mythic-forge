@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -31,20 +31,20 @@ imagesPath = require('../hyperion/src/util/common').confKey 'game.image'
 iType = null
 fType = null
 
-describe 'ImagesService tests', -> 
+describe 'ImagesService tests', ->
 
   describe 'given a item type, a field type and no image store', ->
     beforeEach (done) ->
       unless fs.existsSync imagesPath
         fs.mkdirSync imagesPath
       # removes any types and clean image folder
-      ItemType.collection.drop -> FieldType.collection.drop -> FieldType.loadIdCache -> utils.empty imagesPath, ->
+      ItemType.remove {}, -> FieldType.remove {}, -> FieldType.loadIdCache -> utils.empty imagesPath, ->
         # creates an item type
-        new ItemType().save (err, saved) -> 
+        new ItemType().save (err, saved) ->
           throw new Error err if err?
           iType = saved
           # creates an field type
-          new FieldType().save (err, saved) -> 
+          new FieldType().save (err, saved) ->
             throw new Error err if err?
             fType = saved
             done()
@@ -175,9 +175,9 @@ describe 'ImagesService tests', ->
 
     beforeEach (done) ->
       # removes any types and clean image folder
-      ItemType.collection.drop -> ItemType.loadIdCache -> utils.empty imagesPath, ->
+      ItemType.remove {}, -> ItemType.loadIdCache -> utils.empty imagesPath, ->
         # creates a type
-        new ItemType().save (err, saved) -> 
+        new ItemType().save (err, saved) ->
           throw new Error err if err?
           iType = saved
           # saves a type image for it

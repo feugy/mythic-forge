@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 FSItem = require '../model/FSItem'
 Executable = require '../model/Executable'
 {resolve, normalize, join, relative, extname} = require 'path'
@@ -50,7 +50,7 @@ class _AuthoringService
       throw new Error "Failed to init: #{err}" if err?
 
   # Initialize folders and git repository.
-  # 
+  #
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
@@ -98,7 +98,7 @@ class _AuthoringService
     return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
-    try 
+    try
       item = new FSItem item
     catch exc
       return callback "Only FSItem are supported: #{exc}"
@@ -122,7 +122,7 @@ class _AuthoringService
     return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
-    try 
+    try
       item = new FSItem item
     catch exc
       return callback "Only FSItem are supported: #{exc}"
@@ -148,7 +148,7 @@ class _AuthoringService
     return if fromRule callback
     deployed = deployementService.deployedVersion()
     return callback "Deployment of version #{deployed} in progress" if deployed?
-    try 
+    try
       item = new FSItem item
     catch exc
       return callback "Only FSItem are supported: #{exc}"
@@ -171,7 +171,7 @@ class _AuthoringService
   # @option callback read [FSItem] the read fSItem populated with its content
   read: (item, callback) =>
     return if fromRule callback
-    try 
+    try
       item = new FSItem item
     catch exc
       return callback "Only FSItem are supported: #{exc}"
@@ -206,7 +206,7 @@ class _AuthoringService
       catch exc
         return callback "Only Executable and FSItem files are supported: #{exc}"
     else
-      try 
+      try
         # convert into FSItem
         obj = new FSItem item
         path = join root, obj.path
@@ -224,7 +224,7 @@ class _AuthoringService
   # @param filters [Array<String>] result filters, to get only 'Executable', 'FSItem' and or d 'Image'. Empty to get all
   # @param callback [Function] end callback, invoked with two arguments
   # @option callback err [String] error string. Null if no error occured
-  # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty). 
+  # @option callback restorables [Array] array of restorable FSItems|Executables. (may be empty).
   # For each item contains an object with `id` (commit id), `item` (object model) and `className` (model class name) attributes
   restorables: (filters, callback) =>
     return if fromRule callback
@@ -256,7 +256,7 @@ class _AuthoringService
 
         # may filter results to only what's required
         if filters.length is 0 or className in filters
-          results.push 
+          results.push
             item: obj
             className: className
             id: restorable.id
@@ -284,7 +284,7 @@ class _AuthoringService
       catch exc
         return callback "Only Executable and FSItem files are supported: #{exc}"
     else
-      try 
+      try
         # convert into FSItem
         obj = new FSItem item
         path = join root, obj.path

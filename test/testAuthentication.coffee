@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 middle = require '../hyperion/src/web/middle'
 front = require '../hyperion/src/web/front'
 Player = require '../hyperion/src/model/Player'
@@ -33,7 +33,7 @@ rootUrl = "http://localhost:#{port}"
 describe 'Authentication tests', ->
 
   before (done) ->
-    Player.collection.drop (err)->
+    Player.remove {}, (err)->
       front middle.app
       middle.server.listen port, 'localhost', done
 
@@ -47,7 +47,7 @@ describe 'Authentication tests', ->
     token = null
     lastConnection = null
 
-    describe.skip 'given a Twitter account', ->
+    describe 'given a Twitter account', ->
 
       twitterUser = "MythicForgeTest"
       twitterPassword = "toto1818"
@@ -64,22 +64,22 @@ describe 'Authentication tests', ->
           expect(body, 'No password found in response').to.include 'id="password"'
 
           # forge form to log-in
-          form = 
+          form =
             'session[username_or_email]': twitterUser
             'session[password]': twitterPassword
             authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
             oauth_token: body.match(/name\s*=\s*"oauth_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
 
           # when registering with test account
-          request 
+          request
             uri: 'https://api.twitter.com/oauth/authenticate'
             method: 'POST'
             form: form
           , (err, res, body) ->
             return done err if err?
 
-            # manually follow redirection to localhost
-            redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
+            # manually follows redirection to localhost
+            redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
             request redirect, (err, res, body) ->
               return done err if err?
 
@@ -95,7 +95,7 @@ describe 'Authentication tests', ->
                 expect(saved).to.have.property('token').that.equal token
                 expect(saved).to.have.property 'lastConnection'
                 lastConnection = saved.lastConnection
-                done()   
+                done()
 
       it 'should existing logged-in Twitter user be immediately authenticated', (done) ->
         @timeout 10000
@@ -108,7 +108,7 @@ describe 'Authentication tests', ->
           expect(body, "Twitter user is not logged-in").to.include 'auth/twitter/callback?oauth_token'
 
           # manually follow redirection to localhost
-          redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
+          redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
           request redirect, (err, res, body) ->
             return done "Failed to be redirected on localhost target page: #{err}" if err?
 
@@ -124,7 +124,7 @@ describe 'Authentication tests', ->
               expect(saved).to.have.property('token').that.equal token2
               expect(saved).to.have.property 'lastConnection'
               expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
-              done()    
+              done()
 
       it 'should existing Twitter user be authenticated after log-in', (done) ->
         @timeout 20000
@@ -133,7 +133,7 @@ describe 'Authentication tests', ->
         request 'http://twitter.com/logout', (err, res, body) ->
           return done err if err?
 
-          request 
+          request
             uri: 'https://twitter.com/logout'
             method: 'POST'
             form:
@@ -150,7 +150,7 @@ describe 'Authentication tests', ->
               expect(body, 'No password found in response').to.include 'id="password"'
 
               # forge form to log-in
-              form = 
+              form =
                 'session[username_or_email]': twitterUser
                 'session[password]': twitterPassword
                 authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
@@ -158,7 +158,7 @@ describe 'Authentication tests', ->
                 forge_login: 1
 
               # when registering with test account
-              request 
+              request
                 uri: 'https://api.twitter.com/oauth/authenticate'
                 method: 'POST'
                 form: form
@@ -166,7 +166,7 @@ describe 'Authentication tests', ->
                 return done err if err?
 
                 # manually follw redirection
-                redirect = body.match(/<a\s+href\s*=\s*"(http:\/\/localhost:[^"]*)"/)[1]
+                redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
                 request redirect, (err, res, body) ->
                   return done err if err?
 
@@ -199,43 +199,43 @@ describe 'Authentication tests', ->
 
             # then the google authentication page is displayed
             expect(res).to.have.deep.property('request.uri.host').that.equal 'accounts.google.com'
-            expect(body, 'No email found in response').to.include 'id="Email"'
-            expect(body, 'No password found in response').to.include 'id="Passwd"'
+            expect(body, 'No email found in response').to.include 'id="Email'
+            expect(body, 'No password found in response').to.include 'id="Passwd'
 
-            # forge form to log-in
-            form = 
+            # forge form to enter email
+            form =
               Email: googleUser
-              GALX: body.match(/name\s*=\s*"GALX"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
               Passwd: googlePassword
+              GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
+              gxf: body.match(/name\s*=\s*"gxf"\s+value\s*=\s*"([^"]*)"/)[1]
               checkConnection: 'youtube:248:1'
               checkedDomains: 'youtube'
-              continue: body.match(/name\s*=\s*"continue"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+              continue: body.match(/name\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
               pstMsg: 1
               scc: 1
               service: 'lso'
 
             # when registering with test account
-            request 
+            request
               uri: 'https://accounts.google.com/ServiceLoginAuth'
               method: 'POST'
               form: form
             , (err, res, body) ->
               return done err if err?
 
-              # manually follw redirection
+              # manually follows redirection
               return done "Failed to login with google account because Google want your phone !" if -1 is body.indexOf 'window.__CONTINUE_URL'
               redirect = body.match(/window.__CONTINUE_URL\s*=\s*'([^']*)'/)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
-              #redirect = body.match(/<a\s+href\s*=\s*"([^"]*)"/i)[1].replace(/\\x2F/g, '/').replace(/\\x26amp%3B/g, '&')
 
               request redirect, (err, res, body) ->
                 return done err if err?
 
                 # accepts to give access to account informations
-                request 
+                request
                   uri: body.match(/<form\s+.*action="([^"]*)"/)[1].replace(/&amp;/g, '&')
                   method: 'POST'
                   followAllRedirects: true
-                  form: 
+                  form:
                     _utf8: body.match(/name\s*=\s*"_utf8"\s+value\s*=\s*"([^"]*)"/)[1]
                     state_wrapper: body.match(/name\s*=\s*"state_wrapper"\s+value\s*=\s*"([^"]*)"/)[1]
                     submit_access: true
@@ -256,7 +256,7 @@ describe 'Authentication tests', ->
                     expect(saved).to.have.property('token').that.equal token
                     expect(saved).to.have.property 'lastConnection'
                     lastConnection = saved.lastConnection
-                    done()     
+                    done()
 
         it 'should existing logged-in Google user be immediately authenticated', (done) ->
           @timeout 10000
@@ -278,14 +278,14 @@ describe 'Authentication tests', ->
                 expect(saved).to.have.property('token').that.equal token2
                 expect(saved).to.have.property 'lastConnection'
                 expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
-                done()  
-          , 500  
+                done()
+          , 500
 
         it 'should existing Google user be authenticated after log-in', (done) ->
           @timeout 20000
 
           # given an existing but not logged in Google account
-          request "https://code.google.com/apis/console/logout", (err, res, body) ->
+          request "https://accounts.google.com/Logout?service=cloudconsole", (err, res, body) ->
             return done err if err?
 
             # when requesting the google authentication page
@@ -293,23 +293,24 @@ describe 'Authentication tests', ->
               return done err if err?
               # then the google authentication page is displayed
               expect(res).to.have.deep.property('request.uri.host').that.equal 'accounts.google.com'
-              expect(body, 'No email found in response').to.include 'id="Email"'
-              expect(body, 'No password found in response').to.include 'id="Passwd"'
+              expect(body, 'No email found in response').to.include 'id="Email'
+              expect(body, 'No password found in response').to.include 'id="Passwd'
 
               # forge form to log-in
-              form = 
+              form =
                 Email: googleUser
-                GALX: body.match(/name\s*=\s*"GALX"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
                 Passwd: googlePassword
+                GALX: body.match(/name\s*=\s*"GALX"\s+value\s*=\s*"([^"]*)"/)[1]
+                gxf: body.match(/name\s*=\s*"gxf"\s+value\s*=\s*"([^"]*)"/)[1]
                 checkConnection: 'youtube:248:1'
                 checkedDomains: 'youtube'
-                continue: body.match(/name\s*=\s*"continue"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
+                continue: body.match(/name\s*=\s*"continue"\s+value\s*=\s*"([^"]*)"/)[1]
                 pstMsg: 1
                 scc: 1
                 service: 'lso'
 
               # when registering with test account
-              request 
+              request
                 uri: 'https://accounts.google.com/ServiceLoginAuth'
                 method: 'POST'
                 form: form
@@ -351,15 +352,14 @@ describe 'Authentication tests', ->
           expect(body, 'No password found in response').to.include 'id="password"'
 
           # forge form to log-in
-          form = 
+          form =
             authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
             login: githubUser
             password: githubPassword
             commit: 'Sign in'
-            return_to: body.match(/name\s*=\s*"return_to"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
 
           # when registering with test account
-          request 
+          request
             uri: 'https://github.com/session'
             method: 'POST'
             form: form
@@ -367,22 +367,27 @@ describe 'Authentication tests', ->
           , (err, res, body) ->
             return done err if err?
 
-            # then the success page is displayed
-            expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
-            token = parseUrl(res.request.uri.href).query.replace 'token=', ''
-            expect(token).to.exist
+            # manually follows redirection
+            redirect = body.match(/<a href="([^"]*)">click here<\/a> to continue/)[1].replace(/\\x26amp%3B/g, '&')
 
-            # then account has been created and populated
-            Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
-              return done "Failed to find created account in db: #{err}" if err? or saved is null
-              expect(saved).not.to.have.property 'firstName'
-              expect(saved).to.have.property 'id'
-              expect(saved).to.have.property('provider').that.equal 'Github'
-              expect(saved).to.have.property('lastName').that.equal 'mythic-forge-test'
-              expect(saved).to.have.property('token').that.equal token
-              expect(saved).to.have.property 'lastConnection'
-              lastConnection = saved.lastConnection
-              done()
+            request redirect, (err, res, body) ->
+              return done err if err?
+              # then the success page is displayed
+              expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
+              token = parseUrl(res.request.uri.href).query.replace 'token=', ''
+              expect(token).to.exist
+
+              # then account has been created and populated
+              Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
+                return done "Failed to find created account in db: #{err}" if err? or saved is null
+                expect(saved).to.have.property('firstName').that.is.null
+                expect(saved).to.have.property 'id'
+                expect(saved).to.have.property('provider').that.equal 'Github'
+                expect(saved).to.have.property('lastName').that.equal 'mythic-forge-test'
+                expect(saved).to.have.property('token').that.equal token
+                expect(saved).to.have.property 'lastConnection'
+                lastConnection = saved.lastConnection
+                done()
 
       it 'should existing logged-in Github user be immediately authenticated', (done) ->
         @timeout 10000
@@ -405,8 +410,8 @@ describe 'Authentication tests', ->
               expect(saved).to.have.property('token').that.equal token2
               expect(saved).to.have.property 'lastConnection'
               expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
-              done()  
-        , 500  
+              done()
+        , 500
 
       it 'should existing Github user be authenticated after log-in', (done) ->
         @timeout 20000
@@ -432,15 +437,14 @@ describe 'Authentication tests', ->
               expect(body, 'No password found in response').to.include 'id="password"'
 
               # forge form to log-in
-              form = 
+              form =
                 authenticity_token: body.match(/name\s*=\s*"authenticity_token"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
                 login: githubUser
                 password: githubPassword
                 commit: 'Sign in'
-                return_to: body.match(/name\s*=\s*"return_to"\s+type\s*=\s*"hidden"\s+value\s*=\s*"([^"]*)"/)[1]
 
               # when registering with test account
-              request 
+              request
                 uri: 'https://github.com/session'
                 method: 'POST'
                 form: form
@@ -448,20 +452,26 @@ describe 'Authentication tests', ->
               , (err, res, body) ->
                 return done err if err?
 
-                # then the success page is displayed
-                expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
-                token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
-                expect(token2).to.exist
-                expect(token2).not.to.equal token
+                # manually follows redirection
+                redirect = body.match(/<a href="([^"]*)">click here<\/a> to continue/)[1].replace(/\\x26amp%3B/g, '&')
 
-                # then account has been created and populated
-                Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
-                  return done "Failed to find created account in db: #{err}" if err? or saved is null
-                  expect(saved).to.have.property('provider').that.equal 'Github'
-                  expect(saved).to.have.property('token').that.equal token2
-                  expect(saved).to.have.property 'lastConnection'
-                  expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
-                  done()
+                request redirect, (err, res, body) ->
+                  return done err if err?
+
+                  # then the success page is displayed
+                  expect(res).to.have.deep.property('request.uri.host').that.equal "localhost:#{staticPort}"
+                  token2 = parseUrl(res.request.uri.href).query.replace 'token=', ''
+                  expect(token2).to.exist
+                  expect(token2).not.to.equal token
+
+                  # then account has been created and populated
+                  Player.findOne {lastName: 'mythic-forge-test'}, (err, saved) ->
+                    return done "Failed to find created account in db: #{err}" if err? or saved is null
+                    expect(saved).to.have.property('provider').that.equal 'Github'
+                    expect(saved).to.have.property('token').that.equal token2
+                    expect(saved).to.have.property 'lastConnection'
+                    expect(lastConnection.getTime()).not.to.equal saved.lastConnection.getTime()
+                    done()
 
     describe 'given a manually created player', ->
 
@@ -472,7 +482,7 @@ describe 'Authentication tests', ->
         new Player(
           email: 'dams@test.com'
           password: clearPassword
-        ).save (err, saved) -> 
+        ).save (err, saved) ->
           return done err if err?
           player = saved
           done()
@@ -480,7 +490,7 @@ describe 'Authentication tests', ->
       it 'should user be authenticated', (done) ->
 
         # when sending a correct authentication form
-        request 
+        request
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
@@ -500,12 +510,12 @@ describe 'Authentication tests', ->
             expect(saved).to.have.property('token').that.equal token
             expect(saved).to.have.property 'lastConnection'
             lastConnection = saved.lastConnection
-            done()   
+            done()
 
       it 'should user not be authenticated with wrong password', (done) ->
 
         # when sending a wrong password authentication form
-        request 
+        request
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
@@ -517,12 +527,12 @@ describe 'Authentication tests', ->
           url = parseUrl res.headers.location
           expect(url.host).to.equal "localhost:#{staticPort}"
           expect(url.query, "unexpected error #{url.query}").to.include 'wrongCredentials'
-          done()   
+          done()
 
       it 'should unknown user not be authenticated', (done) ->
 
         # when sending an unknown account authentication form
-        request 
+        request
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
@@ -534,12 +544,12 @@ describe 'Authentication tests', ->
           url = parseUrl res.headers.location
           expect(url.host).to.equal "localhost:#{staticPort}"
           expect(url.query).to.include 'wrongCredentials'
-          done()   
+          done()
 
       it 'should user not be authenticated without password', (done) ->
 
         # when sending a wrong password authentication form
-        request 
+        request
           uri: "#{rootUrl}/auth/login"
           method: 'POST'
           form:
@@ -550,4 +560,4 @@ describe 'Authentication tests', ->
           url = parseUrl res.headers.location
           expect(url.host).to.equal "localhost:#{staticPort}"
           expect(url.query, "unexpected error #{url.query}").to.include 'missingCredentials'
-          done()  
+          done()

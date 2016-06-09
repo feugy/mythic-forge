@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 {normalize, join, dirname} = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
@@ -48,12 +48,12 @@ class FSItem
   updated: null
 
   # Create a new fs-item, with its path and folder status
-  # 
+  #
   # @overload new FSItem (path, isFolder)
   #   Creates an FSItem
   #   @param path [String] item's path and name
   #   @param isFolder [Boolean] allows to distinguish folder from files
-  # 
+  #
   # @overload new FSItem (raw)
   #   Creates an FSItem from a JSON Object
   #   @param raw [Object] JSON representation of an FSItem
@@ -63,13 +63,13 @@ class FSItem
   #   @throws error if the raw object does'nt have right fields
   constructor: (args...) ->
     switch args.length
-      when 1 
+      when 1
         raw = args[0]
         throw 'FSItem may be constructed from JSON object' unless 'object' is type raw
         @[attr] = value for attr, value of raw when attr in ['path', 'content', 'isFolder']
       when 2
         @path = args[0]
-        @isFolder = args[1]          
+        @isFolder = args[1]
       else throw 'Can only construct FSItem with arguments `raw` or `path`and `isFolder`'
     # process attributes
     @path = normalize @path
@@ -88,8 +88,8 @@ class FSItem
       return callback "Cannot read item: #{err}" if err?
       # check that folder status do not change
       return callback "Incompatible folder status (#{@isFolder} for #{@path}" if @isFolder isnt stat.isDirectory()
-      
-      # keep last update time 
+
+      # keep last update time
       @updated = stat.mtime
       @updated.setMilliseconds 0
 
@@ -123,7 +123,7 @@ class FSItem
   # Save (or update) a fs-item and its content.
   # Folder status cannot be changed.
   # Folder cannot be saved once created
-  # 
+  #
   # @param callback [Function] called when the save is finished, with three arguments:
   # @option callback err [String] error string. Null if save succeeded
   # @option callback item [FSItem] the saved item
@@ -141,10 +141,10 @@ class FSItem
       if !isNew and @isFolder isnt stat.isDirectory()
         return callback "Cannot save #{if @isFolder then 'file' else 'folder'} #{@path} into #{if @isFolder then 'folder' else 'file'}"
 
-      if @isFolder 
+      if @isFolder
         # Creates folder
         if isNew
-          fs.mkdirs @path, (err) => 
+          fs.mkdirs @path, (err) =>
             return callback "Error while creating new folder #{@path}: #{err}" if err?
             logger.debug "folder #{@path} successfully created"
             # invoke watcher
@@ -163,7 +163,7 @@ class FSItem
             saved = ''
             if Buffer.isBuffer @content
               saved = @content
-              @content = @content.toString 'base64' 
+              @content = @content.toString 'base64'
             else if 'string' is type @content
               saved = new Buffer @content, 'base64'
 
@@ -171,7 +171,7 @@ class FSItem
             fs.writeFile @path, saved, (err) =>
               return callback "Error while saving file #{@path}: #{err}" if err?
 
-              # keep last update time 
+              # keep last update time
               @updated = new Date()
               @updated.setMilliseconds 0
 
@@ -189,7 +189,7 @@ class FSItem
           saveFile()
 
   # Remove an existing fs-item.
-  # 
+  #
   # @param callback [Function] called when the removal is finished, with two arguments:
   #   @param err [String] error string. Null if save succeeded
   #   @param item [FSItem] the removed item
@@ -200,9 +200,9 @@ class FSItem
       return callback "Unexisting item #{@path} cannot be removed" if err?.code is 'ENOENT'
       @isFolder = stat.isDirectory()
 
-      if @isFolder 
+      if @isFolder
         # removes folder and its content
-        fs.remove @path, (err) => 
+        fs.remove @path, (err) =>
           return callback "Error while removing folder #{@path}: #{err}" if err?
           logger.debug "folder #{@path} successfully removed"
           modelWatcher.change 'deletion', 'FSItem', @
@@ -248,7 +248,7 @@ class FSItem
             return callback "Cannot copy item #{@path} to #{newPath}: #{err}" if err?
 
             # and eventually remove old value
-            fs.remove @path, (err) => 
+            fs.remove @path, (err) =>
               return callback "Error while removing olf item #{@path}: #{err}" if err?
 
               logger.debug "item #{@path} successfully moved to #{newPath}"
@@ -259,7 +259,7 @@ class FSItem
               @path = newPath
               @updated = new Date()
               @updated.setMilliseconds 0
-              
+
               modelWatcher.change 'creation', 'FSItem', @
               callback null, @
 

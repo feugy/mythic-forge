@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@ authoringService = require('../hyperion/src/service/AuthoringService').get()
 service = require('../hyperion/src/service/AdminService').get()
 watcher = require('../hyperion/src/model/ModelWatcher').get()
 utils = require '../hyperion/src/util/common'
-     
+
 itemTypes = []
 eventTypes = []
 fieldTypes = []
@@ -52,7 +52,7 @@ listener = null
 awaited = false
 gameClientRoot = utils.confKey 'game.client.dev'
 
-describe 'AdminService tests', -> 
+describe 'AdminService tests', ->
 
   beforeEach (done) ->
     awaited = false
@@ -65,12 +65,12 @@ describe 'AdminService tests', ->
     event = []
     confs = []
     utils.empty utils.confKey('game.executable.source'), ->
-      Executable.resetAll true, (err) -> 
+      Executable.resetAll true, (err) ->
         return done err if err?
-        ItemType.collection.drop -> Item.collection.drop ->
-          FieldType.collection.drop -> Field.collection.drop ->
-            EventType.collection.drop -> Event.collection.drop ->
-              Map.collection.drop -> ClientConf.collection.drop -> Map.loadIdCache ->
+        ItemType.remove {}, -> Item.remove {}, ->
+          FieldType.remove {}, -> Field.remove {}, ->
+            EventType.remove {}, -> Event.remove {}, ->
+              Map.remove {}, -> ClientConf.remove {}, -> Map.loadIdCache ->
                 # creates fixtures
                 created = [
                   {clazz: ItemType, args: {id: 'type1', properties:{strength:{type:'integer', def:10}}}, store: itemTypes}
@@ -191,19 +191,19 @@ describe 'AdminService tests', ->
 
   it 'should list returns fsItems in root', (done) ->
     # given a clean empty folder root
-    utils.remove gameClientRoot, (err) -> 
+    utils.remove gameClientRoot, (err) ->
       return done err if err?
       authoringService.init (err) ->
         return done err if err?
         # creates a single fsItem
-        authoringService.save 
+        authoringService.save
           path: 'folder/test.txt'
           isFolder: false
           content: new Buffer('Hi !').toString 'base64'
         , (err, result) ->
           return callback err if err?
           fsItem = result
-          
+
           # when reading the root
           authoringService.readRoot (err, expected) ->
             return done err if err?
@@ -230,7 +230,7 @@ describe 'AdminService tests', ->
   it 'should save create new item type', (done) ->
     # given new values
     values = {id: 'itemtype3', properties:{health:{def:0, type:'integer'}}}
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'ItemType' and operation is 'creation'
@@ -256,7 +256,7 @@ describe 'AdminService tests', ->
   it 'should save create new event type', (done) ->
     # given new values
     values = {id: 'eventtype3', properties:{weight:{def:5.2, type:'float'}}}
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'EventType' and operation is 'creation'
@@ -282,7 +282,7 @@ describe 'AdminService tests', ->
   it 'should save create new field type', (done) ->
     # given new values
     values = {id: 'fieldtype3'}
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'FieldType' and operation is 'creation'
@@ -307,7 +307,7 @@ describe 'AdminService tests', ->
   it 'should save create new executable', (done) ->
     # given new values
     values = {id: 'rule3', content:'console.log("hello world 3");'}
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Executable' and operation is 'creation'
@@ -334,7 +334,7 @@ describe 'AdminService tests', ->
   it 'should save report executable compilation failure', (done) ->
     # given new values
     values = {id: 'rule6', content:'console. "hello world 3"'}
-   
+
     # then NO creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Executable' and operation is 'creation'
@@ -344,7 +344,7 @@ describe 'AdminService tests', ->
     # when saving new executable
     service.save 'Executable', values, 'admin', (err) ->
       # then the compilation error is reported
-      expect(err).to.include 'unexpected "hello world 3"'
+      expect(err).to.include 'unexpected string\nconsole. \u001b[1;31m"hello world 3"'
 
       # then the model does not exist in cache
       Executable.findCached [values.id], (err, objs) ->
@@ -356,7 +356,7 @@ describe 'AdminService tests', ->
   it 'should save create new map', (done) ->
     # given new values
     values = {id: 'map3'}
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'Map' and operation is 'creation'
@@ -382,7 +382,7 @@ describe 'AdminService tests', ->
   it 'should save create new fsItem', (done) ->
     # given new values
     values = path: 'test2.txt', isFolder: false, content: new Buffer('Hi !').toString('base64')
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'creation'
@@ -411,7 +411,7 @@ describe 'AdminService tests', ->
   it 'should save create new configuration', (done) ->
     # given new values
     values = {id: 'jp', source: "names:\n  river: 'kawa'"}
-   
+
     # then a creation event was issued
     listener = (operation, className, instance)->
       return unless className is 'ClientConf' and operation is 'creation'
@@ -443,7 +443,7 @@ describe 'AdminService tests', ->
     new Item({type: itemTypes[1]}).save (err, item) ->
       return done "Can't save item: #{err}" if err?
       expect(item).to.have.property('strength').that.equal 10
-        
+
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
       delete values.properties.strength
@@ -476,7 +476,7 @@ describe 'AdminService tests', ->
             expect(list).to.have.lengthOf 2
             expect(awaited, 'watcher wasn\'t invoked').to.be.true
 
-            # then the instance has has only property property desc
+            # then the instance has has only property desc
             Item.findById item.id, (err, item) ->
               return done "Can't get item from db #{err}" if err?
               expect(item).to.have.property('desc').that.equal 'to be defined'
@@ -491,7 +491,7 @@ describe 'AdminService tests', ->
     new Event({type: eventTypes[1]}).save (err, event) ->
       return done "Can't save event: #{err}" if err?
       expect(event).to.have.property('content').that.equal 'hello'
-        
+
       # given a property raw change
       values.properties.desc = {type:'string', def:'to be defined'}
       delete values.properties.content
@@ -581,7 +581,7 @@ describe 'AdminService tests', ->
       # then the created values are returned
       expect(model).to.exist
       expect(maps[0]).to.have.property('id').that.equal model.id
-      expect(model).to.have.property('kind').that.equal 'square' 
+      expect(model).to.have.property('kind').that.equal 'square'
 
       # then the model exists in DB
       Map.findById model.id, (err, obj) ->
@@ -626,7 +626,7 @@ describe 'AdminService tests', ->
     # given new values
     newContent = new Buffer('Hi !! 2').toString('base64')
     fsItem.content = newContent
-   
+
     # then a update event was issued
     listener = (operation, className, instance)->
       return unless className is 'FSItem' and operation is 'update'
@@ -950,7 +950,7 @@ describe 'AdminService tests', ->
       expect(confs[1]).to.have.property('id').that.equal model.id
       expect(confs[1]).to.have.property('source').that.equal model.source
       expect(model).to.have.deep.property('values.names.montain').that.equal 'montagne'
-      
+
       # then the model exists in DB
       ClientConf.findById model.id, (err, obj) ->
         return done "Can't find conf in db #{err}" if err?
@@ -1145,7 +1145,7 @@ describe 'AdminService tests', ->
     # given an existing item
     new Item(type: itemTypes[0], map: maps[0], x:0, y:0, strength:20).save (err, item) ->
       return done err if err?
-    
+
       # then a deletion event was issued
       listener = (operation, className, instance)->
         return unless className is 'Item' and operation is 'deletion'
@@ -1171,7 +1171,7 @@ describe 'AdminService tests', ->
     # given an existing event
     new Event(type: eventTypes[0], content: 'héhé').save (err, event) ->
       return done err if err?
-    
+
       # then a deletion event was issued
       listener = (operation, className, instance)->
         return unless className is 'Event' and operation is 'deletion'
@@ -1197,7 +1197,7 @@ describe 'AdminService tests', ->
     # given an existing player
     new Player(email: 'jack', provider: null, password: 'yep').save (err, player) ->
       return done err if err?
-    
+
       # then a deletion event was issued
       listener = (operation, className, instance)->
         return unless operation is 'deletion'
@@ -1254,7 +1254,7 @@ describe 'AdminService tests', ->
     # given an existing field
     new Field({mapId: maps[0].id, typeId: fieldTypes[0].id, x:0, y:0}).save (err, field) ->
       return done "Can't save field: #{err}" if err?
-      
+
       removed = []
 
       # then a deletion event was issued
@@ -1394,7 +1394,8 @@ describe 'AdminService tests', ->
         # then player token was updated
         Player.findById admin.id, (err, result) ->
           return done err if err?
-          expect(result).not.to.have.property 'token'
+          # the getter still exists, but its value is undefined
+          expect(result.token).to.be.undefined
           done()
 
     it 'should not connect as unknown player', (done) ->
@@ -1413,5 +1414,6 @@ describe 'AdminService tests', ->
         # then player token was updated
         Player.findById player.id, (err, result) ->
           return done err if err?
-          expect(result).not.to.have.property 'token'
+          # the getter still exists, but its value is undefined
+          expect(result.token).to.be.undefined
           done()

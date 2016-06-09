@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 {relative} = require 'path'
 {confKey, fromRule, type} = require '../util/common'
 logger = require('../util/logger').getLogger 'watcher'
@@ -34,8 +34,8 @@ class _ModelWatcher extends EventEmitter
   # Method invoked when an instance has created, modified or removed
   #
   # Will trigger an event "change" with as first parameter the operation name,
-  # and as second the changed instance. 
-  # 
+  # and as second the changed instance.
+  #
   # For creation and deletion, the whole instance is passed to the event, minus the
   # type which is replaced by its id.
   # For update, only the id, type's id and modified fields are propagated.
@@ -49,7 +49,7 @@ class _ModelWatcher extends EventEmitter
     changes = {}
     if '_doc' of instance
       changes[key] = value for own key,value of instance._doc
-    else 
+    else
       changes = _.clone instance
 
     if changes._id?
@@ -64,20 +64,20 @@ class _ModelWatcher extends EventEmitter
     if modified and 'map' in modified and (className in ['Item', 'Field'])
       # but send the map if it changed
       unless changes.map?
-        changes.map = null 
+        changes.map = null
       else
         # only the id if we got an object, or itself if already an id
-        changes.map = changes.map.id if 'object' is type changes.map 
+        changes.map = changes.map.id if 'object' is type changes.map
 
     if operation is 'update'
       unless className in ['Executable', 'FSItem']
         # for update, only emit modified datas
-        changes = 
+        changes =
           id: instance.id
         for path in modified
           changes[path] = instance.get(path)
           # init to null if property was removed
-          changes[path] = null unless changes[path]? 
+          changes[path] = null unless changes[path]?
 
     else if operation isnt 'creation' and operation isnt 'deletion'
       throw new Error "Unknown operation #{operation} on instance #{changes.id or changes.path}}"

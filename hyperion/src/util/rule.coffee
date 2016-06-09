@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 moment = require 'moment'
 EventEmitter = require('events').EventEmitter
 
@@ -42,15 +42,15 @@ class Timer extends EventEmitter
   # Returns a read only version of the current time
   #
   # @return the current time (read only)
-  current: => 
-    @_time.clone().add 'ms', @_offset
+  current: =>
+    @_time.clone().add @_offset, 'ms'
 
-  # Set the current time. 
+  # Set the current time.
   # Reset to current time if not a valid time is used as parameter.
   #
   # @param newTime [Object] the new time. May be a moment object, any accepted moment() constructor arguments, or null
   # @return the current time (read only)
-  set: (newTime) => 
+  set: (newTime) =>
     unless moment.isMoment newTime
       newTime = moment newTime
       newTime = moment() unless newTime.isValid()
@@ -65,8 +65,8 @@ class Timer extends EventEmitter
   _step: =>
     now = moment()
     unless @stopped
-      # do not simply add one second: we may have missed several seconds if under heavy load. 
-      @_time.add 's', now.unix()-@_time.unix()
+      # do not simply add one second: we may have missed several seconds if under heavy load.
+      @_time.add now.unix()-@_time.unix(), 's'
       @emit 'change', @current()
     # we need to plan the next step
     process.nextTick =>
@@ -76,11 +76,11 @@ module.exports =
   timer: new Timer()
 
   # Used to send a notification campaign from a rule worker to master thread
-  # Does not crash worker if master is unavailable 
+  # Does not crash worker if master is unavailable
   #
   # @param campaigns [Array<Object>] An array of notifications to be sent, containing properties:
   # @option campaigns msg [String] notification message, with placeholders (use #{} delimiters) to use player's attributes
-  # @option campaigns players [Player|Array<Player>] an array of players to be notified 
+  # @option campaigns players [Player|Array<Player>] an array of players to be notified
   processCampaigns: (campaigns) ->
     if _.isArray campaigns
       try

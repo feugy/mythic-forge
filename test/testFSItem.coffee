@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 pathUtils = require 'path'
 fs = require 'fs-extra'
 async = require 'async'
-_ = require 'underscore'
+_ = require 'lodash'
 FSItem = require '../hyperion/src/model/FSItem'
 utils = require '../hyperion/src/util/common'
 watcher = require('../hyperion/src/model/ModelWatcher').get()
@@ -139,7 +139,7 @@ expectFSItemMoved = (item, newPath, isFolder, content, done) ->
     expect(result.path).to.equal newPath
     expect(result.isFolder).to.equal isFolder
     unless isFolder
-      expect(result.content).to.equal content 
+      expect(result.content).to.equal content
 
     # then the old path does not exists anymore
     fs.exists oldPath, (exists) ->
@@ -162,28 +162,28 @@ cleanRoot = (done) ->
     return done err if err?
     fs.mkdirs root, done
 
-describe 'FSItem tests', -> 
+describe 'FSItem tests', ->
 
   describe 'given an empty root', ->
 
     beforeEach cleanRoot
 
-    it 'should file be created', (done) -> 
+    it 'should file be created', (done) ->
       # given a new file
       item = new FSItem "#{root}/file.txt", false
       expectFSItemSave item, false, done
 
-    it 'should folder be created', (done) -> 
+    it 'should folder be created', (done) ->
       # given a new file
       item = new FSItem "#{root}/folder", true
       expectFSItemSave item, true, done
 
-    it 'should file be created inside new folders', (done) -> 
+    it 'should file be created inside new folders', (done) ->
       # given a new file inside unexisting folders
       item = new FSItem "#{root}/folder/folder/file1.txt", false
       expectFSItemSave item, false, done
 
-    it 'should folder be created inside new folders', (done) -> 
+    it 'should folder be created inside new folders', (done) ->
       # given a new file
       item = new FSItem "#{root}/folder/folder/folder", true
       expectFSItemSave item, true, done
@@ -218,7 +218,7 @@ describe 'FSItem tests', ->
       newContent = new Buffer 'coucou 1'
       file1.content = newContent
       creation = file1.updated
-      # when saginv it         
+      # when saginv it
       expectFSItemSave file1, false, newContent.toString('base64'), false, ->
         # then the content was written on file system
         fs.readFile file1.path, (err, content) ->
@@ -230,9 +230,9 @@ describe 'FSItem tests', ->
 
     it 'should file be renamed', (done) ->
       expectFSItemMoved file1, "#{root}/file.copy", false, file1.content, done
-     
+
     it 'should file be moved into another folder', (done) ->
-      expectFSItemMoved file1, "#{root}/folder2/file.copy2", false, file1.content, done   
+      expectFSItemMoved file1, "#{root}/folder2/file.copy2", false, file1.content, done
 
     it 'should file be removed', (done) ->
       expectFSItemRemove file1, done
@@ -248,7 +248,7 @@ describe 'FSItem tests', ->
           return done err if err?
           folder1 = result
           done()
-          
+
     it 'should folder content be read', (done) ->
       # given several files inside folder
       content = [
@@ -274,9 +274,9 @@ describe 'FSItem tests', ->
 
     it 'should folder be renamed', (done) ->
       expectFSItemMoved folder1, "#{root}/folder2", true, done
-     
+
     it 'should file be moved into another folder', (done) ->
-      expectFSItemMoved folder1, "#{root}/folder3/folder", true, done   
+      expectFSItemMoved folder1, "#{root}/folder3/folder", true, done
 
     it 'should folder be removed', (done) ->
       expectFSItemRemove folder1, done

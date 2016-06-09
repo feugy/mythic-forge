@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,11 +17,11 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 fs = require 'fs-extra'
 moment = require 'moment'
 {join, resolve} = require 'path'
-Phantom = require 'phantom-proxy'
+Horseman = require 'node-horseman'
 utils = require '../hyperion/src/util/common'
 front = require '../hyperion/src/web/front'
 middle = require '../hyperion/src/web/middle'
@@ -31,9 +31,11 @@ port = utils.confKey 'server.apiPort'
 rootUrl = "http://localhost:#{port}"
 root = utils.confKey 'game.client.dev'
 
-describe 'Atlas browser tests', ->
+describe.skip 'Atlas browser tests', ->
 
   results = {}
+
+  browser = null
 
   before (done) ->
     @timeout 30000
@@ -47,25 +49,26 @@ describe 'Atlas browser tests', ->
         middle.server.listen port, 'localhost', (err) ->
           return done "Failed to start server: #{err}" if err
 
-          Phantom.create {debug:false}, (proxy) ->
-            browser = proxy.page
+          browser = new Horseman()
 
-            browser.on 'error', (err, stack)->
-              # do not report mocha's assertion errors
-              #return done "#{err}\n#{_.map(stack, (s) -> "#{s.file}:#{s.line}").join '\n'}" unless err.toString()[0..13] is 'AssertionError'
-            browser.on 'consoleMessage', (message) -> console.log message
+          browser.on 'error', (err, stack)->
+            # do not report mocha's assertion errors
+            done "#{err}\n#{_.map(stack, (s) -> "#{s.file}:#{s.line}").join '\n'}" unless err.toString()[0..13] is 'AssertionError'
+          browser.on 'consoleMessage', (message) -> console.log message
 
-            browser.open "#{rootUrl}/dev/", ->
-              browser.waitForSelector '#mocha-results', -> 
-                browser.evaluate ->
-                  $('#mocha-results').text()
-                , (serialized) ->
-                  results = JSON.parse serialized
-                  done()
+          browser.open "#{rootUrl}/dev/"
+            # then the resultant url is working, with template rendering and i18n usage
+            .waitForSelector '#mocha-results'
+            .text '#mocha-results'
+            .then (serialized) ->
+              results = JSON.parse serialized
+              done()
+            .catch done
 
   after (done) ->
     middle.server.close()
-    Phantom.end -> done() 
+    browser?.close()
+    done()
 
   it 'should tests all passed', (done) ->
     for test in results

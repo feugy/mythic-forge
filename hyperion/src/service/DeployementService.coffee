@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 {resolve, join, normalize, dirname, basename} = require 'path'
 coffee = require 'coffee-script'
 stylus = require 'stylus'
@@ -64,7 +64,7 @@ class _DeployementService
       throw new Error "Failed to init: #{err}" if err?
 
   # Initialize folders and git repository.
-  # 
+  #
   # @param callback [Function] initialization end callback.
   # @option callback err [Sting] error message. Null if no error occured.
   init: (callback) =>
@@ -80,7 +80,7 @@ class _DeployementService
   deployedVersion: => @_pending.name or null
 
   # Performs compilation and optimization of game client, and send 'deployment' notifications
-  # with relevant step name and number: 
+  # with relevant step name and number:
   # 1 - makes a copy to temporary folder (DEPLOY_START)
   # 2 - compiles stylus stylesheets and remove sources (COMPILE_STYLUS)
   # 3 - compiles coffee files and removes sources (COMPILE_COFFEE)
@@ -191,7 +191,7 @@ class _DeployementService
                   _compileCoffee()
 
   # Commit definitively the current deployement, and send 'deployment' notifications
-  # with relevant step name and number: 
+  # with relevant step name and number:
   # 1 - creates a version named after version used in `deploy` (COMMIT_START)
   # 2 - removes the previous game save (COMMIT_END)
   #
@@ -212,7 +212,7 @@ class _DeployementService
     save = resolve normalize confKey 'game.client.save'
 
     notifier.notify 'deployement', 'COMMIT_START', 1
-    
+
     # first create tag
     @createVersion @_pending.name, @_pending.email, 2, (err) =>
       return error "Failed to create version: #{err}" if err?
@@ -231,7 +231,7 @@ class _DeployementService
         callback null
 
   # Rollback the current deployement, and send 'deployment' notifications
-  # with relevant step name and number: 
+  # with relevant step name and number:
   # 1 - remove current deployed game client (ROLLBACK_START)
   # 2 - restore previous game client (ROLLBACK_END)
   #
@@ -251,7 +251,7 @@ class _DeployementService
     error = (err) =>
       notifier.notify 'deployement', 'ROLLBACK_FAILED', err
       callback err
-    
+
     notifier.notify 'deployement', 'ROLLBACK_START', 1
 
     # removes production folder
@@ -275,9 +275,9 @@ class _DeployementService
   # @param callback [Function] invoked with versions:
   # @option callback err [String] an error message, or null if no error occures
   # @option callback state [Object] server state, with:
-  # @option callback state current [String] current version, or null if no version 
+  # @option callback state current [String] current version, or null if no version
   # @option callback state versions [Array<String>] list of known version
-  # @option callback state deployed [String] name of the deployed version, null if no pending deployement 
+  # @option callback state deployed [String] name of the deployed version, null if no pending deployement
   # @option callback state author [String] email of the deployer, null if no pending deployement
   # @option callback state inProgress [Boolean] true if deployement still in progress
   deployementState: (callback) =>
@@ -286,18 +286,18 @@ class _DeployementService
     versionService.tags (err, tags) =>
       return callback "Failed to consult versions: #{err}" if err?
       tags.reverse() # make the last tag comming first
-      tagIds = _.pluck tags, 'id'
-     
+      tagIds = _.map tags, 'id'
+
       # get history
       versionService.history (err, history) =>
         return callback "Failed to consult history: #{err}" if err?
 
-        result = 
+        result =
           deployed: @_pending.name
           inProgress: @_pending.inProgress
           author: @_pending.email
           current: null
-          versions: _.pluck tags, 'name'
+          versions: _.map tags, 'name'
 
         # parse commits from the last one
         for commit in history
@@ -310,7 +310,7 @@ class _DeployementService
         callback null, result
 
   # Creates a given version of the game client, its corresponding rules and images.
-  # 
+  #
   # @param version [String] the desired version
   # @param email [String] the author email, that must be an existing player email
   # @param notifNumber [Integer] notification number, default to 1
@@ -333,7 +333,7 @@ class _DeployementService
       require('./PlayerService').get().getByEmail email, (err, author) =>
         return callback "Failed to get author: #{err}" if err?
         return callback "No author with email #{email}" unless author?
-        
+
         dev = resolve normalize confKey 'game.client.dev'
         rules = resolve normalize confKey 'game.executable.source'
         images = resolve normalize confKey 'game.image'
@@ -345,7 +345,7 @@ class _DeployementService
             # ignore commit warning, for example about line endings
             err = null if err?.code is 1 and -1 isnt "#{err}".indexOf 'warning:'
             return callback "Failed to commit: #{purgeFolder err, root} #{purgeFolder stdout, root}" if err?
-            
+
             # and at last ceates the tag
             versionService.repo.create_tag version, (err) ->
               return callback "Failed to create version: #{err}" if err?
@@ -355,7 +355,7 @@ class _DeployementService
 
   # Restore a given version of the game client.
   # All modification made between the previous version and now will be lost.
-  # 
+  #
   # @param version [String] the desired version
   # @param callback [Function] invoked when game client was restored
   # @option callback err [String] an error message, or null if no error occures
@@ -377,15 +377,15 @@ class _DeployementService
 
         callback null
 
-# Retrieve the list of versions names    
-# 
+# Retrieve the list of versions names
+#
 # @param callback [Function] invoked when versions retrieved, with arguments:
 # @option callback err [String] an error string, or null if no error occured
 # @option callback versions [Array<String>] an array of versions names (may be empty)
 listVersions = (callback) ->
   versionService.tags (err, tags) ->
     return callback "Failed to list existing versions: #{err}" if err?
-    callback null, _.pluck tags, 'name'
+    callback null, _.map tags, 'name'
 
 # Tries to compile stylus sheet, and to creates its compiled css equivalent.
 # Source file is removed
@@ -424,7 +424,7 @@ compileCoffee = (script, callback) ->
   # read the script
   fs.readFile script, (err, content) =>
     return callback "failed to read content for #{script}: #{err}" if err?
-    try 
+    try
       js = coffee.compile content.toString(), bare: false
       # writes destination file
       fs.writeFile destination, js, (err) =>
@@ -471,7 +471,7 @@ optimize = (folder, callback) ->
       if idx isnt -1
         mainFile = mainFile.substring idx+1
         baseUrl = './'+extract?[2].substring 0, idx
-      else 
+      else
         baseUrl = './'
 
       logger.debug "found main requirejs file #{mainFile} in base url #{baseUrl}"
@@ -511,8 +511,8 @@ optimize = (folder, callback) ->
           callback err.message
 
 # Moves game files from optimized folder to production folder.
-# Creates a folder for static assets (every files) named with current timestamp, 
-# and only keeps the main HTML file at root. 
+# Creates a folder for static assets (every files) named with current timestamp,
+# and only keeps the main HTML file at root.
 # Changes its relative path (either '<script>' and '<link>') to aim at new content
 #
 # @param folder [String] the folder containing the optimized game client
@@ -536,7 +536,7 @@ makeCacheable = (folder, main, version, callback) ->
       logger.debug "copy inside #{timestamped}"
       fs.copy folder, timestamped, (err) ->
         return callback "failed to copy to timestamped folder: #{err}" if err?
-        
+
         # removes main file and build.txt
         async.each ['build.txt', basename main], (file, next) ->
           fs.remove join(timestamped, file), next
@@ -552,7 +552,7 @@ makeCacheable = (folder, main, version, callback) ->
             # replaces links from main html file
             fs.readFile newMain, (err, content) ->
               return callback "failed to read new main file: #{err}" if err?
-              
+
               logger.debug "replace links inside #{newMain}"
               # replace version as plain string and load as HTML document
               $ = cheerio.load content.toString().replace /\{\{version\}\}/g, version

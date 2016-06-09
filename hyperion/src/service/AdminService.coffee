@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 ###
 'use strict'
 
-_ = require 'underscore'
+_ = require 'lodash'
 ItemType = require '../model/ItemType'
 FieldType = require '../model/FieldType'
 EventType = require '../model/EventType'
@@ -87,7 +87,7 @@ class _AdminService
           callback null, saved.token
 
   # The list method retrieve all instances of a given model, in:
-  # Map, ItemType, Executable, FieldType, EventType and FSItem (AuthoringService.readRoot()). 
+  # Map, ItemType, Executable, FieldType, EventType and FSItem (AuthoringService.readRoot()).
   # Field and items must be retrieved with `GameService.consult()`.
   #
   # @param modelName [String] class name of the listed models
@@ -127,7 +127,7 @@ class _AdminService
 
     modelClass = null
     switch modelName
-      when 'ClientConf' 
+      when 'ClientConf'
         # do not allow unspecified id for client configurations
         values.id = 'default' unless values.id?
         modelClass = ClientConf
@@ -138,12 +138,12 @@ class _AdminService
       when 'Executable' then modelClass = Executable
       when 'Map' then modelClass = Map
       when 'Player' then modelClass = Player
-      when 'Item' 
+      when 'Item'
         populateTypeAndSave = (model) ->
           # resolve type in db
           ItemType.findCached [model?.type?.id or model?.type], (err, types) ->
             return callback "Failed to save item #{values.id}. Error while resolving its type: #{err}" if err?
-            return callback "Failed to save item #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1    
+            return callback "Failed to save item #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1
             # Do the replacement.
             model.type = types[0]
             _save model
@@ -164,7 +164,7 @@ class _AdminService
                 # resolve map
                 return Map.findCached [values.map.id or values.map], (err, maps) ->
                   return callback "Failed to save item #{values.id}. Error while resolving its map: #{err}" if err?
-                  return callback "Failed to save item #{values.id} because there is no map with id #{item.map}" unless maps.length is 1  
+                  return callback "Failed to save item #{values.id} because there is no map with id #{item.map}" unless maps.length is 1
                   model.map = maps[0]
                   populateTypeAndSave model
               else
@@ -176,11 +176,11 @@ class _AdminService
           model = new Item values
           return populateTypeAndSave model
 
-      when 'Event' 
+      when 'Event'
         populateTypeAndSave = (model) ->
           EventType.findCached [model?.type?.id or model?.type], (err, types) ->
             return callback "Failed to save event #{values.id}. Error while resolving its type: #{err}" if err?
-            return callback "Failed to save event #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1    
+            return callback "Failed to save event #{values.id} because there is no type with id #{values?.type?.id}" unless types.length is 1
             # Do the replacement.
             model.type = types[0]
             _save model
@@ -191,7 +191,7 @@ class _AdminService
             # resolve from item
             return Item.findCached [id], (err, froms) ->
               return callback "Failed to save event #{values.id}. Error while resolving its from: #{err}" if err?
-              return callbacl "Failed to save event #{values.id} because there is no from with id #{id}" unless froms.length is 1  
+              return callbacl "Failed to save event #{values.id} because there is no from with id #{id}" unless froms.length is 1
               model.from = froms[0]
               populateTypeAndSave model
           else
@@ -230,7 +230,7 @@ class _AdminService
           return callback 'Fields cannot be updated', modelName, savedFields if 'id' of field
           new Field(field).save unqueue
 
-        return unqueue null, null 
+        return unqueue null, null
 
       when 'FSItem'
         return authoringService.save values, (err, saved) -> callback err, modelName, saved
@@ -250,7 +250,7 @@ class _AdminService
           # manually set and unset properties
           if key is 'properties'
             # at the begining, all existing properties may be unset
-            unset = _(model.properties).keys()
+            unset = Object.keys model.properties
             set = []
             for name, prop of value
               idx = unset.indexOf(name)
@@ -270,7 +270,7 @@ class _AdminService
             model.unsetProperty name for name in unset
 
         _save model
-    else 
+    else
       # or save new one
       _save new modelClass values
 
@@ -288,7 +288,7 @@ class _AdminService
     return if fromRule callback
     return callback "The #{modelName} model can't be removed", modelName unless modelName in supported
     unless 'Field' is modelName or 'FSItem' is modelName or 'id' of values
-      return callback "Cannot remove #{modelName} because no 'id' specified", modelName 
+      return callback "Cannot remove #{modelName} because no 'id' specified", modelName
     modelClass = null
     switch modelName
       when 'ClientConf' then modelClass = ClientConf
@@ -328,7 +328,7 @@ class _AdminService
       if modelName is 'Player'
         playerService.disconnect models[0].email, 'removal', (err) ->
           return callback err, modelName if err?
-          models[0].remove (err) -> callback err, modelName, Player.purge models[0] 
+          models[0].remove (err) -> callback err, modelName, Player.purge models[0]
       else
         # and removes them
         models[0].remove (err) -> callback err, modelName, models[0]

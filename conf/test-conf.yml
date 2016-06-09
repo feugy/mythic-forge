@@ -4,7 +4,7 @@ logger:
   defaultLevel: error
   dateFormat: YYYY-MM-DDTHH:mm:ss
   nameMaxLength: 10
-  levels: 
+  levels:
     service: error
     executor: error
     scheduler: error
@@ -30,8 +30,8 @@ authentication:
     id: 750195776526-hkrs2b3a7ueltmu10108r6j9kcii1elo.apps.googleusercontent.com
     secret: zXQImGPy5xrZeEp7qEdOFP0g
   twitter:
-    id: LosYMjbW1mompu5Dxkg3Bw
-    secret: COQe0t413fAcMRlU5eK7ZthPxolV5nf2tfs442lZUU
+    id: VgqRw6K1nerez4jrjtK0tIzAb
+    secret: cAdw8rQrnlp0jOz5gfhmqQhjMLuCUc4ZLYzmJrbDKbuNmLw5g6
   github:
     id: dd1794b0ed5c0acbb275
     secret: 866c01643bdaf643195b5eb202c63ffd17f58af1
@@ -54,7 +54,7 @@ mailgun:
   domain: sandboxed84f67e52d0457c8f80876019f9fbe3.mailgun.org
   sender: noreply@mythic-forge.com
 
-game: 
+game:
   # location of games files
   repo: ../tmp
 
@@ -65,7 +65,7 @@ game:
   token: game.token
 
 
-  # Executable scripts 
+  # Executable scripts
   executable:
     source: ../tmp/rules # must be INSIDE game.repo
     target: ../tmp/compiled

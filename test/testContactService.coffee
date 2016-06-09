@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
     along with Mythic-Forge.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-_ = require 'underscore'
+_ = require 'lodash'
 async = require 'async'
 {expect} = require 'chai'
 Mailgun = require 'mailgun-js'
@@ -26,7 +26,7 @@ Player = require '../hyperion/src/model/Player'
 {confKey} = require '../hyperion/src/util/common'
 
 describe 'Contact service tests', ->
-  
+
   # given a mailer configured on sandbox
   domain = confKey 'mailgun.domain'
   mailer = new Mailgun apiKey: confKey('mailgun.key'), domain: domain
@@ -34,7 +34,7 @@ describe 'Contact service tests', ->
   # utility poll method, that waits for query to be fullfilled
   pollEvent = (query, end, _number = 0) ->
     # delay before trying, result are not synchronously delivered
-    _.delay -> 
+    _.delay ->
       mailer.events().get query, (err, events) =>
         return end err if err?
         return end null, events.items if events.items.length > 0
@@ -63,10 +63,8 @@ describe 'Contact service tests', ->
       , done
 
     it 'should performs replacement within body', (done) ->
-      template = _.template 'Yu won !\n<p>Congratulations #{player.firstName} you won the game !</p>', 
-        null, 
-        service._templateSettings
-      
+      template = _.template 'Yu won !\n<p>Congratulations #{player.firstName} you won the game !</p>', service._templateSettings
+
       service._makeMail players[0], template, (err, data) ->
         expect(err).not.to.exist
         expect(data).to.have.property('subject').that.equal 'Yu won !'
@@ -74,10 +72,8 @@ describe 'Contact service tests', ->
         done()
 
     it 'should allow empty subjects', (done) ->
-      template = _.template '\n<p>empty subject for #{player.lastName}</p>', 
-        null, 
-        service._templateSettings
-      
+      template = _.template '\n<p>empty subject for #{player.lastName}</p>', service._templateSettings
+
       service._makeMail players[1], template, (err, data) ->
         expect(err).not.to.exist
         expect(data).to.have.property('subject').that.equal ''
@@ -85,10 +81,8 @@ describe 'Contact service tests', ->
         done()
 
     it 'should allow non intentionnal empty subjects', (done) ->
-      template = _.template 'empty subject for #{player.email}', 
-        null, 
-        service._templateSettings
-      
+      template = _.template 'empty subject for #{player.email}', service._templateSettings
+
       service._makeMail players[2], template, (err, data) ->
         expect(err).not.to.exist
         expect(data).to.have.property('subject').that.equal ''
@@ -96,10 +90,8 @@ describe 'Contact service tests', ->
         done()
 
     it 'should failed on empty body', (done) ->
-      template = _.template '\t\t\n\t\t', 
-        null, 
-        service._templateSettings
-      
+      template = _.template '\t\t\n\t\t', service._templateSettings
+
       service._makeMail players[3], template, (err, data) ->
         expect(err).to.have.property('message').that.include 'body cannot be empty'
         done()
@@ -131,7 +123,7 @@ describe 'Contact service tests', ->
         expect(err).not.to.exist
         expect(report).to.have.lengthOf players.length
         async.each players, (player, next) ->
-          operation = _.findWhere report, endpoint: player.email
+          operation = _.find report, endpoint: player.email
           expect(operation, "#{player.email} has no report").to.exist
           # then unexisting domain are identified
           if player.provider is 'Twitter'

@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -29,11 +29,11 @@ event3 = null
 type = null
 listener = null
 
-describe 'EventType tests', -> 
+describe 'EventType tests', ->
 
   beforeEach (done) ->
     # empty events and types.
-    Event.collection.drop -> EventType.collection.drop -> Event.loadIdCache done
+    Event.remove {}, -> EventType.remove {}, -> Event.loadIdCache done
 
   afterEach (done) ->
     # remove all listeners
@@ -60,7 +60,7 @@ describe 'EventType tests', ->
         expect(type2.properties).to.have.keys ['when']
         done()
 
-  it 'should type be created', (done) -> 
+  it 'should type be created', (done) ->
     # given a new EventType
     id = 'talk'
     type = new EventType id: id
@@ -91,13 +91,13 @@ describe 'EventType tests', ->
       # creates a type with a property color which is a string.
       type = new EventType id: 'talk'
       type.setProperty 'content', 'string', '---'
-      type.save (err, saved) -> 
+      type.save (err, saved) ->
         type = saved
         done()
 
     afterEach (done) ->
       # removes the type at the end.
-      EventType.collection.drop -> Event.collection.drop -> Event.loadIdCache done
+      EventType.remove {}, -> Event.remove {}, -> Event.loadIdCache done
 
     it 'should type be removed', (done) ->
       # when removing an event
@@ -126,7 +126,7 @@ describe 'EventType tests', ->
 
     it 'should type properties be updated', (done) ->
       awaited = false
-      
+
       # then a modification event was issued
       listener = (operation, className, instance) ->
         if operation is 'update' and className is 'EventType'
@@ -138,7 +138,7 @@ describe 'EventType tests', ->
       expect(type).to.have.deep.property('properties.content.type').that.equal 'string'
       expect(type).to.have.deep.property('properties.content.def').that.equal '---'
 
-      # when updating a property 
+      # when updating a property
       type.setProperty 'content', 'integer', 10
       type.save (err, saved) ->
         # then the property was updated
@@ -151,14 +151,14 @@ describe 'EventType tests', ->
       # when removing a property
       type.unsetProperty 'content'
       type.save (err, saved) ->
-        return done err if err? 
+        return done err if err?
 
         # then the property was removed
         expect(saved).not.to.have.deep.property 'properties.content'
         done()
 
     it 'should unknown type properties fail on remove', (done) ->
-      try 
+      try
         # when removing an unknown property
         type.unsetProperty 'unknown'
         throw new Error 'Error must be raised when removing unknwown property'
@@ -174,7 +174,7 @@ describe 'EventType tests', ->
       type = new EventType id: 'talk'
       type.setProperty 'content', 'string', ''
       type.setProperty 'subTalks', 'array', 'Event'
-      type.save (err, saved) -> 
+      type.save (err, saved) ->
         throw new Error(err) if err?
         type = saved
         # creates three events of this type.
@@ -185,14 +185,14 @@ describe 'EventType tests', ->
           event2.save (err) ->
             throw new Error(err) if err?
             event3 = new Event {type: type, subTalks: []}
-            event3.save (err) -> 
+            event3.save (err) ->
               throw new Error(err) if err?
               done()
 
     it 'should existing events be updated when setting a type property', (done) ->
       updates = []
       defaultLength = 30
-      
+
       # then a modification event was issued
       watcher.on 'change', listener = (operation, className, instance)->
         return if className isnt 'Event'
@@ -202,7 +202,7 @@ describe 'EventType tests', ->
 
       # when setting a property to a type
       type.setProperty 'length', 'integer', defaultLength
-      type.save (err) -> 
+      type.save (err) ->
         block = ->
           Event.find {type: type.id}, (err, events) ->
             for event in events
@@ -223,7 +223,7 @@ describe 'EventType tests', ->
 
       # when setting a property to a type
       type.unsetProperty 'content'
-      type.save (err) -> 
+      type.save (err) ->
         block = ->
           Event.find {type: type.id}, (err, events) ->
             for event in events

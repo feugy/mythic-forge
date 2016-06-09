@@ -91,3 +91,15 @@ Therefore, you're free to join and walk a little with me :)
 ## Previous documentation
 
 Have a look at my first [introduction](http://www.mythic-forge.com/intro.html).
+
+# TODO
+
+I've stopped this project from summer 2014 to summer 2016.
+A huge refactor is needed, including:
+
+- allows to develop/test on a dedicated, isolated db and rule set
+- consider embeding CI (strider ?) to build dev, run tests and deliver a package
+- removing Mongoose to have better performances
+- use a coverage tool
+- maybe switch from coffee to ES6
+- use promises instead of callbacks

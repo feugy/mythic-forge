@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,19 +19,19 @@
 'use strict'
 
 {join, resolve, normalize} = require 'path'
-_ = require 'underscore'
+_ = require 'lodash'
 fs = require 'fs-extra'
 async = require 'async'
 git = require 'gift'
 {confKey, enforceFolderSync, removeSync, fromRule} = require '../util/common'
 logger = require('../util/logger').getLogger 'service'
 
-# The VersionService wrapped a Git repository to manage version for rules and 
+# The VersionService wrapped a Git repository to manage version for rules and
 # game client's files
 class _VersionService
 
   # Folder under source control
-  paths: 
+  paths:
     client: null
     images: null
     executables: null
@@ -58,7 +58,7 @@ class _VersionService
     @repo = null
     @_initInProgress = false
     # check that configuration values are correct
-    @paths= 
+    @paths=
       client: resolve normalize confKey 'game.client.dev'
       images: resolve normalize confKey 'game.image'
       executables: resolve normalize confKey 'game.executable.source'
@@ -71,20 +71,20 @@ class _VersionService
     throw new Error "game.image must not be inside game.repo" unless 0 is @paths.images.indexOf @_root
 
   # Initialize game's git repository to store executables, images and game files
-  # 
+  #
   # @param callback [Function] initialization end function. Invoked with:
   # @option callback err [String] and error message, or null if no error occured
-  # 
+  #
   # @overload init(reset, callback)
   #   Init game repo, but removes existing on if reset is true
   #   @param reset [Boolean] true to remove existing repository
   init: (reset, callback) =>
     [callback, reset] = [reset, false] if _.isFunction reset
     return if fromRule callback
-    
+
     # in case of current initialization, retry 250ms later
     if @_initInProgress
-      return _.delay => 
+      return _.delay =>
         @init reset, callback
       , 250
 
@@ -95,12 +95,12 @@ class _VersionService
       return err?
 
     # enforce folders existence at startup, synchronously!
-    try 
+    try
       @_initInProgress = true
       # force removal if specified
       if reset and fs.existsSync @_root
         try
-          removeSync @_root 
+          removeSync @_root
           logger.debug "previous git repository removed..."
         catch err
           @_initInProgress = false
@@ -170,7 +170,7 @@ class _VersionService
       for line in lines
         idx = line.indexOf ' '
         continue if idx is -1
-        tags.push 
+        tags.push
           name: line.substring(idx+1).replace 'refs/tags/', ''
           id: line.substring 0, idx
 
@@ -183,7 +183,7 @@ class _VersionService
   # - author [String] author name
   # - message [String] commit message
   #
-  # First in history means most recent, and a "fake" commit may be present if some modification 
+  # First in history means most recent, and a "fake" commit may be present if some modification
   # are not currently commited, containing null id, author and message.
   #
   # The Gift `repo.commits()` is limited to a certain amount of commits, and gets full details.
@@ -203,7 +203,7 @@ class _VersionService
       file = resolve @_root, file
       fileArg.push '--', file.replace(@_root, './').replace(new RegExp('\\\\', 'g'), '/')
       # track renames and removes
-      options.follow = true 
+      options.follow = true
 
     @repo.git 'log', options, fileArg, (err, stdout, stderr) =>
       # ignore error code 1: means no match
@@ -221,7 +221,7 @@ class _VersionService
         continue unless sep1 isnt -1 and sep2 isnt -1 and sep3 isnt -1
         date = new Date()
         date.setTime Number "#{line.substring sep1+1, sep2}000"
-        history.push 
+        history.push
           id: line.substring 0, sep1
           date: date
           author: line.substring sep2+1, sep3
@@ -240,7 +240,7 @@ class _VersionService
             date: stats.mtime.setMilliseconds 0
             author: null
             message: null
-          
+
           callback null, history
 
   # Utility to list all path that have been deleted and could be restored.
@@ -271,7 +271,7 @@ class _VersionService
 
       for line in lines
         if commitId is null
-          commitId = line 
+          commitId = line
         else if line is ''
           # all lines of this commit were found
           putInRestorables()

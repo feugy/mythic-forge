@@ -1,21 +1,20 @@
 /**
  * Equivalent to makefile, with gulp.
- * The only requirement is to have gulp globally installed `npm install -g gulp`, 
+ * The only requirement is to have gulp globally installed `npm install -g gulp`,
  * and to have retrieved the npm dependencies with `npm install`
  *
- * Available tasks: 
+ * Available tasks:
  *   clean - removed hyperion/lib folder
- *   build - compiles coffee-script from hyperion/src to hyperion/lib 
+ *   build - compiles coffee-script from hyperion/src to hyperion/lib
  *   cleanBuild - clean and then build tasks
  *   test - runs all tests with mocha (configuration in test/mocha.opts)
  *   deploy - compile, minify and make production ready version of rheia administration client
  *   watch (default) - clean, compiles coffee-script, and use watcher to recompile on the fly
  */
-var _ = require('underscore');
 var spawn = require('child_process').spawn;
 var gulp = require('gulp');
 var gutil = require('gulp-util');
-var clean = require('gulp-clean');
+var del = require('del');
 var stylus = require('gulp-stylus');
 var coffee = require('gulp-coffee');
 var plumber = require('gulp-plumber');
@@ -32,8 +31,7 @@ gulp.task('default', ['watch']);
 
 // remove hyperion/lib folder
 gulp.task('clean', function(){
-  return gulp.src(dest, {read: false})
-    .pipe(clean());
+  return del([dest]);
 });
 
 function build() {
@@ -63,8 +61,8 @@ gulp.task('test', ['cleanBuild'], function(callback){
     cmd += '.cmd';
   }
   spawn(cmd, [], {
-    stdio:'inherit', 
-    env: _.extend({}, process.env, {NODE_ENV:"test"})
+    stdio:'inherit',
+    env: Object.Assign({}, process.env, {NODE_ENV:"test"})
   }).on('exit', function(code) {
     if (callback) {
       callback(code === 0 ? null : code);
@@ -85,8 +83,7 @@ var deployTemp = 'rheia-build';
 
 // clean previous build output
 gulp.task('deploy-clean', function() {
-  return gulp.src(deployTarget, {read: false})
-    .pipe(clean());
+  return del([deployTarget]);
 });
 // copy source into temporary folder
 gulp.task('deploy-copySource', ['deploy-clean'], function() {

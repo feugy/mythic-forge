@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -30,10 +30,10 @@ map = null
 awaited = false
 listener = null
 
-describe 'Map and Field tests', -> 
+describe 'Map and Field tests', ->
 
   beforeEach (done) ->
-    Map.collection.drop -> Field.collection.drop -> FieldType.collection.drop -> Map.loadIdCache -> 
+    Map.remove {}, -> Field.remove {}, -> FieldType.remove {}, -> Map.loadIdCache ->
       new FieldType({id: 'plain'}).save (err, saved) ->
         return done err if err?
         fieldType = saved
@@ -44,7 +44,7 @@ describe 'Map and Field tests', ->
     watcher.removeListener 'change', listener if listener?
     done()
 
-  it 'should map be created', (done) -> 
+  it 'should map be created', (done) ->
     # given a new map
     id = 'map1'
     map = new Map {id: id}
@@ -97,7 +97,7 @@ describe 'Map and Field tests', ->
 
     it 'should map be updated', (done) ->
       awaited = false
-      
+
       # then a modification event was issued
       listener = (operation, className, instance) ->
         if operation is 'update' and className is 'Map'
