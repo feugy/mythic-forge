@@ -62,7 +62,7 @@ gulp.task('test', ['cleanBuild'], function(callback){
   }
   spawn(cmd, [], {
     stdio:'inherit',
-    env: Object.Assign({}, process.env, {NODE_ENV:"test"})
+    env: Object.assign({}, process.env, {NODE_ENV:"test"})
   }).on('exit', function(code) {
     if (callback) {
       callback(code === 0 ? null : code);
