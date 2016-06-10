@@ -29,6 +29,7 @@ cookieParser = require 'cookie-parser'
 compression = require 'compression'
 {confKey, fromRule} = require '../util/common'
 stylus = require 'stylus'
+convertSourceMap = require 'convert-source-map'
 gameService = require('../service/GameService').get()
 notifier = require('../service/Notifier').get()
 
@@ -109,11 +110,21 @@ module.exports = (app = null) ->
             return next if 'ENOENT' is err.code then null else err
           # try to compile it
           try
+            filename = path.basename file
             res.header 'Content-Type', 'application/javascript'
-            res.send coffee.compile content.toString()
+
+            # generates with sourcemaps
+            compiled = coffee.compile content.toString(),
+              sourceMap: true
+              filename: filename
+              generatedFile: filename.replace /\.coffee$/, '.js'
+
+            # inline sourcemaps in response
+            sourceMaps = convertSourceMap.fromJSON(compiled.v3SourceMap).setProperty('sources', [filename]).toComment()
+            res.send "#{compiled.js}\n#{sourceMaps}"
           catch exc
             logger.error "Failed to compile #{file}: #{exc}"
-            res.send exc.message, 500
+            res.send(exc.message).status 500
 
       # on-the-fly stylus compilation. Must be after static configuration to avoid compiling js external libraries
       app.get new RegExp("^#{base}/(.*)\.css$") , (req, res, next) ->
@@ -128,7 +139,7 @@ module.exports = (app = null) ->
           stylus(content.toString(), {compress:true, cache:false}).include(parent).render (err, css) ->
             if err?
               logger.error "Failed to compile #{file}: #{err}"
-              return res.send err, 500
+              return res.send(err).status 500
             res.header 'Content-Type', 'text/css'
             res.send css
 
