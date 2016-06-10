@@ -47,7 +47,7 @@ describe 'Authentication tests', ->
     token = null
     lastConnection = null
 
-    describe.only 'given a Twitter account', ->
+    describe 'given a Twitter account', ->
 
       twitterUser = "MythicForgeTest"
       twitterPassword = "toto1818"
@@ -78,9 +78,8 @@ describe 'Authentication tests', ->
           , (err, res, body) ->
             return done err if err?
 
-            console.log body
             # manually follows redirection to localhost
-            redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
+            redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*oauth_token=[^"]*)">/)[1]
             request redirect, (err, res, body) ->
               return done err if err?
 
@@ -109,7 +108,7 @@ describe 'Authentication tests', ->
           expect(body, "Twitter user is not logged-in").to.include 'auth/twitter/callback?oauth_token'
 
           # manually follow redirection to localhost
-          redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
+          redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*oauth_token=[^"]*)">/)[1]
           request redirect, (err, res, body) ->
             return done "Failed to be redirected on localhost target page: #{err}" if err?
 
@@ -167,7 +166,7 @@ describe 'Authentication tests', ->
                 return done err if err?
 
                 # manually follw redirection
-                redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
+                redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*oauth_token=[^"]*)">/)[1]
                 request redirect, (err, res, body) ->
                   return done err if err?
 
@@ -369,7 +368,7 @@ describe 'Authentication tests', ->
             return done err if err?
 
             # manually follows redirection
-            redirect = body.match(/<a href="([^"]*)">click here<\/a> to continue/)[1].replace(/\\x26amp%3B/g, '&')
+            redirect = body.match(/<a href="(http:\/\/localhost:[^"]*code=[^"]*)">/)[1].replace(/\\x26amp%3B/g, '&')
 
             request redirect, (err, res, body) ->
               return done err if err?
@@ -454,7 +453,7 @@ describe 'Authentication tests', ->
                 return done err if err?
 
                 # manually follows redirection
-                redirect = body.match(/<a href="([^"]*)">click here<\/a> to continue/)[1].replace(/\\x26amp%3B/g, '&')
+                redirect = body.match(/<a href="(http:\/\/localhost:[^"]*code=[^"]*)/)[1].replace(/\\x26amp%3B/g, '&')
 
                 request redirect, (err, res, body) ->
                   return done err if err?
