@@ -47,7 +47,7 @@ describe 'Authentication tests', ->
     token = null
     lastConnection = null
 
-    describe 'given a Twitter account', ->
+    describe.only 'given a Twitter account', ->
 
       twitterUser = "MythicForgeTest"
       twitterPassword = "toto1818"
@@ -78,6 +78,7 @@ describe 'Authentication tests', ->
           , (err, res, body) ->
             return done err if err?
 
+            console.log body
             # manually follows redirection to localhost
             redirect = body.match(/\s+href\s*=\s*"(http:\/\/localhost:[^"]*)">cliquer ici pour continuer<\/a>/)[1]
             request redirect, (err, res, body) ->
