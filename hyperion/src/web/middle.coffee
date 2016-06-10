@@ -122,18 +122,16 @@ getRedirect = (req) ->
 # @param except [Array] optionnal array of ignored method. default to empty array
 exposeMethods = (service, socket, connected = [], except = []) ->
   # Get the connected player email, unless noSecurity specified. In this case, admin is always connected.
-  email = if noSecurity then 'admin' else sid[socket.id].email
+  # remove namespace prefix to get socket default id
+  id = socket.id.replace /^\/(.*)?#/, '/#'
+  email = if noSecurity then 'admin' else sid[id]?.email
+  return logger.warn "tried to expose methods for unknown socket #{id}" unless email?
 
   # exposes all methods
   for method of service.__proto__
     unless method in except
       do(method) ->
-        socket.on method, ->
-          originalArgs = Array.prototype.slice.call arguments
-          args = originalArgs.slice 1
-          # first parameter is always request id
-          reqId = originalArgs[0]
-
+        socket.on method, (reqId, args...) ->
           # add connected email for those who need it.
           args.push email if method in connected
 
@@ -149,7 +147,7 @@ exposeMethods = (service, socket, connected = [], except = []) ->
             socket.emit.apply socket, utils.plainObjects returnArgs
 
           # invoke the service layer with arguments
-          logger.debug "processing #{method} #{reqId} message with arguments #{originalArgs}"
+          logger.debug "processing #{method} #{reqId} message with arguments #{args[...-1]}"
           service[method].apply service, args
 
 # Authorization method for namespaces.
@@ -161,9 +159,10 @@ exposeMethods = (service, socket, connected = [], except = []) ->
 checkAdmin = (socket, callback) ->
   # always give access for tests
   return callback null if noSecurity
+  # remove namespace prefix to get socket default id
+  id = socket.id.replace /^\/(.*)?#/, '/#'
   # check connected user rights
-  details = sid[socket.id]
-  callback if details?.isAdmin then null else new Error 'unauthorized'
+  callback if sid[id]?.isAdmin then null else new Error 'unauthorized'
 
 # Creates routes to allow authentication from an OAuth/OAuth2 provider:
 #
@@ -240,6 +239,8 @@ io.use (socket, callback) ->
   if 'string' isnt utils.type(token) or token.length is 0
     logger.debug "socket #{socket.id} received invalid token #{token}"
     return callback new Error 'invalidToken'
+
+  logger.debug "socket #{socket.id} received token #{token}..."
 
   # then identifies player with this token
   playerService.getByToken token, (err, player) ->

@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -45,17 +45,17 @@ define [
     # @param options [Object] addition options
     add: (models, options) =>
       existings = []
-      
+
       models = if Array.isArray models then models else [models]
       # keep existing models that will be merged
       existings.push @_byId[model.id] for model in models when @_byId?[model.id]?
-            
+
       options = {} unless options?
       options.merge = true
-      
+
       # superclass behaviour
       super models, options
-      
+
       # trigger existing model re-addition
       model.trigger 'add', model, @, options for model in existings
 
@@ -96,7 +96,7 @@ define [
     @linkedCandidateClasses: ['model/Event']
 
     # Local cache for models.
-    # **Caution** must be defined after @linkedCandidateClasses to allow loading 
+    # **Caution** must be defined after @linkedCandidateClasses to allow loading
     @collection: new _Items @
 
     # **private**
@@ -109,7 +109,7 @@ define [
     _transition: null
 
     # **private**
-    # FIXME: for some unknown reason, BAckbone Model does not detect changes on attributes, andwe must
+    # FIXME: for some unknown reason, Backbone Model does not detect changes on attributes, andwe must
     # detect them manually
     _transitionChanged: false
 
@@ -136,11 +136,11 @@ define [
           # construct it directly because it does not exist
           if 'string' is utils.type attributes.map
             # do not add it: just temporary
-            @map = new Map id: id 
+            @map = new Map id: id
           else
             @map = new Map attributes.map
             Map.collection.add @map
-        else 
+        else
           @map = map
 
     # Overrides inherited setter to handle transition
@@ -152,12 +152,12 @@ define [
       super attr, value, options
       @_transitionChanged = true if attr is 'transition'
 
-    # **private** 
+    # **private**
     # Method used to serialize a model when saving and removing it
     # Removes transition if no modification detected
     #
     # @return a serialized version of this model
-    _serialize: => 
+    _serialize: =>
       result = super()
       result.map = result.map._serialize() if result.map?._serialize
       result.type = result.type?.id or result.type
@@ -169,6 +169,6 @@ define [
     #
     # @return the current transition, or null if no transition available.
     getTransition: =>
-      transition = @_transition 
+      transition = @_transition
       @_transition = null
       transition

@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 'use strict'
 
 # configure requireJs
-requirejs.config  
+requirejs.config
   paths:
     'ace': '../vendor/ace-1.1.3-min'
     'async': '../vendor/async-0.1.22-min'
@@ -38,7 +38,7 @@ requirejs.config
     'mousewheel': '../vendor/jquery-mousewheel-3.0.6-min'
     'nls': '../nls'
     'numeric': '../vendor/jquery-ui-numeric-1.2-min'
-    'socket.io': '../vendor/socket.io-1.0.4-min'
+    'socket.io': '../vendor/socket.io-1.4.6-min'
     'text': '../vendor/text-2.0.0-min'
     'timepicker': '../vendor/jquery-timepicker-addon-1.0.1-min'
     'tpl': '../template'
@@ -47,22 +47,22 @@ requirejs.config
     'underscore.string': '../vendor/underscore.string-2.3.0-min'
     'utf8': '../vendor/utf8'
     'hyperion': './'
-    
+
   shim:
     'ace/ace':
       exports: 'ace'
-    'async': 
+    'async':
       exports: 'async'
-    'backbone': 
+    'backbone':
       deps: ['underscore', 'jquery']
       exports: 'Backbone'
-    'backbone-queryparams': 
+    'backbone-queryparams':
       deps: ['backbone']
-    'hogan': 
+    'hogan':
       exports: 'Hogan'
     'hotkeys':
       deps: ['jquery']
-    'jquery': 
+    'jquery':
       exports: '$'
     'jquery-ui':
       deps: ['jquery']
@@ -76,13 +76,13 @@ requirejs.config
       exports: 'moment'
     'mousewheel':
       deps: ['jquery']
-    'socket.io': 
+    'socket.io':
       exports: 'io'
     'timepicker':
       deps: ['jquery-ui']
     'transit':
       deps: ['jquery']
-    'underscore': 
+    'underscore':
       exports: '_'
     'utf8':
       exports: 'UTF8'
@@ -91,7 +91,7 @@ requirejs.config
 window.app = {}
 
 # Mapping between socket.io error reasons and i18n error messages
-errorMapping = 
+errorMapping =
   'unauthorized': 'unauthorized'
   'invalidToken': 'invalidToken'
   'expiredToken': 'expiredToken'
@@ -104,7 +104,7 @@ errorMapping =
 
 define [
   'underscore'
-  'jquery' 
+  'jquery'
   'socket.io'
   'async'
   'backbone'
@@ -112,8 +112,8 @@ define [
   'i18n!nls/common'
   'utils/utilities'
   'service/ImagesService'
-  'service/SearchService' 
-  'service/AdminService' 
+  'service/SearchService'
+  'service/AdminService'
   'model/Item'
   'view/admin/Perspective'
   'view/edition/Perspective'
@@ -124,8 +124,8 @@ define [
   'backbone-queryparams'
   'utils/extensions'
   'jquery-ui'
-  'jquery-punch' 
-  'numeric' 
+  'jquery-punch'
+  'numeric'
   'transit'
   'timepicker'
   'hotkeys'
@@ -137,7 +137,7 @@ define [
   AdminPerspective, EditionPerspective, AuthoringPerspective, ModerationPerspective, LayoutView) ->
 
   version = parseInt $.browser.version
-  return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or 
+  return $('.disclaimer').show() unless ($.browser.mozilla and version >= 14) or
     ($.browser.webkit and version >= 530) or
     ($.browser.chrome and version >= 20)
 
@@ -156,8 +156,8 @@ define [
     admin: null
     updates: null
 
-  # the connect function will try to connect with server. 
-  # 
+  # the connect function will try to connect with server.
+  #
   # @param token [String] the autorization token, obtained during authentication
   # @param callback [Function] invoked when all namespaces have been connected, with arguments
   # @option callback err [String] the error detailed case, or null if no error occured
@@ -166,19 +166,19 @@ define [
     connecting = true
 
     # wire logout facilities
-    app.router.on 'logout', -> 
+    app.router.on 'logout', ->
       localStorage.removeItem 'rheia.token'
       isLoggingOut = true
       socket.emit 'logout'
       app.router.navigate 'login', trigger: true
 
-    socket = io.connect conf.apiBaseUrl, query:"token=#{token}", transports: ['websocket', 'polling', 'flashsocket']
+    socket = io.connect conf.apiBaseUrl, query: {token}, transports: ['websocket', 'polling', 'flashsocket']
 
     # only report error during connection phase
     socket.on 'error', (err) ->
       if connecting
-        connecting = false 
-        callback err 
+        connecting = false
+        callback err
 
     socket.on 'disconnect', (reason) ->
       return if isLoggingOut
@@ -199,7 +199,7 @@ define [
       # close previous error (for example connection lost message)
       $('#loginError').dialog 'close'
 
-      connecting = false 
+      connecting = false
       # On connection, retrieve current connected player immediately
       socket.emit 'getConnected', (err, player) ->
         # stores the token to allow re-connection
@@ -209,15 +209,17 @@ define [
         if player.key
           document.cookie = "key=#{player.key}; max-age=#{1000*60*60*24}; path=/"
         # update socket.io query to allow reconnection with new token value
-        socket.io.opts.query = "token=#{player.token}"
+        socket.io.opts.query = {token: player.token}
+        console.log "socket for player #{player.email} successfully connected with token #{player.token}"
 
       # connect on existing namespaces
       names = Object.keys app.sockets
       async.forEach names, (name, next) ->
+        # ignore if already connected
         return next null if app.sockets[name]?
         app.sockets[name] = socket.io.socket "/#{name}"
         app.sockets[name].on 'connect', next
-        app.sockets[name].on 'connect_error', next
+        app.sockets[name].on 'error', next
       , callback
 
   class Router extends Backbone.Router
@@ -251,7 +253,7 @@ define [
       @on 'serverError', (err, details) ->
         console.error "server error: #{if typeof err is 'object' then err.message else err}"
         console.dir details
-      
+
       # route link special behaviour
       $('body').on 'click', 'a[data-route]', (event) =>
         event.preventDefault()
@@ -300,12 +302,12 @@ define [
         @_onLoginError params.error
       else if params?.token?
         @_onLoggedIn params.token
-      else 
+      else
         if params?.redirect?
           localStorage.setItem 'rheia.redirect', decodeURIComponent params.redirect
         else
           localStorage.removeItem 'rheia.redirect'
-          
+
         form = $('#loginStock').detach()
         $('body').empty().append new LoginView(form).render().$el
 
@@ -350,7 +352,7 @@ define [
 
     # **private**
     # Invoked when the login mecanism failed. Display details to user and go back to login
-    # 
+    #
     # @param err [String] error details
     _onLoginError: (err) =>
       err = decodeURIComponent err
@@ -360,15 +362,15 @@ define [
         break
 
       utils.popup i18n.titles.loginError, msg, 'warning', [
-        text: i18n.buttons.ok, 
+        text: i18n.buttons.ok,
         icon:'valid'
-        click: => 
+        click: =>
           @navigate 'login', trigger:true unless err is 'disconnected'
       ], 0, 'loginError'
 
     # **private**
     # Invoked when a route that doesn't exists has been run.
-    # 
+    #
     # @param route [String] the unknown route
     _onNotFound: (route) =>
       console.error "Unknown route #{route}"

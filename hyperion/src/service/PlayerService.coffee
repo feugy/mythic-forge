@@ -302,7 +302,7 @@ class _PlayerService
     player.lastConnection = now
     player.save (err, newPlayer) =>
       return callback "Failed to update player: #{err}" if err?
-      logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email}"
+      logger.info "#{provider} player (#{newPlayer.id}) authenticated with email: #{player.email} and token #{token}"
       unless newPlayer.email in @connectedList
         @connectedList.push newPlayer.email
       # always notify new connection to refresh token caches

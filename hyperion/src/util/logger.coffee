@@ -98,7 +98,7 @@ format = (args, level, name) ->
   vals = (for arg in args
     if _.isObject arg then JSON.stringify(arg) else arg?.toString()
   )
-  "#{moment().format conf.dateFormat or defaultDateFormat} #{process.pid} #{_.pad name, nameMaxLength} #{_.pad level, levelMaxLength} : #{vals.join ' '}"
+  "#{moment().format conf.dateFormat or defaultDateFormat} #{_.pad(process.pid, 5)} #{_.pad name, nameMaxLength} #{_.pad level, levelMaxLength} : #{vals.join ' '}"
 
 # Logger Factory: creates new (or retrieve existing) logger with the following methods (ordered):
 #  log, debug, info, warn, error

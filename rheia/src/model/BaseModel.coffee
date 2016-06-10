@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -27,7 +27,7 @@ define [
   # BaseCollection provides common behaviour for model collections.
   #
   # The `sync`method is wired to server Api `list` when reading the collection.
-  # Collection will be automatically updated when receiving updates from server, 
+  # Collection will be automatically updated when receiving updates from server,
   # and relevant events will be fired.
   class BaseCollection extends Backbone.Collection
 
@@ -44,8 +44,8 @@ define [
     #
     # @param model [Object] the managed model
     # @param options [Object] unused
-    constructor: (@model, @options) ->
-      super options
+    constructor: (@model, options = {}) ->
+      super [], options
 
       utils.onRouterReady =>
         # bind _onGetList response
@@ -54,7 +54,7 @@ define [
           # ignore errors
           unless err?
             # add returned models of the current class
-            @_onAdd type._className, type for type in types 
+            @_onAdd type._className, type for type in types
 
         # bind updates
         app.sockets.updates.on 'creation', @_onAdd
@@ -68,7 +68,7 @@ define [
     # @option callback err [String] an error string, or null if no error occured
     # @option callback obj [Array] the found types. May be empty.
     findCached: (ids, callback) =>
-      _.defer => 
+      _.defer =>
         # keep id order if possible
         results = []
         for model, i in @models when model?.id in ids
@@ -134,7 +134,7 @@ define [
       for key, value of changes
         unless key in @_notUpdated
           modified = true
-          model.set key, value 
+          model.set key, value
           # console.log "update property #{key}"
 
       # emit a change.
@@ -155,7 +155,7 @@ define [
       removed = @get model[@model.prototype.idAttribute]
       # removes the deleted item
       if removed
-        @remove removed 
+        @remove removed
         removed.trigger 'destroy', removed, @, options
         # propagates changes on collection to global change event
         app.router.trigger 'modelChanged', 'remove', removed
@@ -171,7 +171,7 @@ define [
 
     # Constructor.
     # Requires at least candidate classes
-    constructor: (@model, @options) ->
+    constructor: (@model, options = {}) ->
       super @model, options
       # require linked cnadidate if needed
       require @model.linkedCandidateClassesScript
@@ -232,7 +232,7 @@ define [
     _fixedAttributes: []
 
     # Initialization logic: declare dynamic properties for each of model's attributes
-    initialize: =>    
+    initialize: =>
       names = _.keys @attributes
       # define property on attributes that must be present
       names = _.uniq names.concat @_fixedAttributes
@@ -269,7 +269,7 @@ define [
         attr = obj
       else
         options = value
-    
+
       single attrName for attrName of attr
 
       # supperclass processing
@@ -282,8 +282,8 @@ define [
     # @param args [Object] arguments
     sync: (method, collection, args) =>
       rid = utils.rid();
-      switch method 
-        when 'create', 'update' 
+      switch method
+        when 'create', 'update'
           # add object to collection to listen to events
           @constructor.collection.add @ unless @constructor.collection.get(@id)?
           # ask save on server
@@ -292,7 +292,7 @@ define [
             app.sockets.admin.removeListener 'save-resp', listener
             app.router.trigger 'serverError', err, method:"#{@_className}.sync", details:method, id:@id if err?
           app.sockets.admin.emit 'save', rid, @_className, @_serialize()
-        when 'delete' 
+        when 'delete'
           app.sockets.admin.on 'remove-resp', listener = (reqId, err) =>
             return unless rid is reqId
             app.sockets.admin.removeListener 'remove-resp', listener
@@ -307,7 +307,7 @@ define [
       options.wait = true
       super options
 
-    # **private** 
+    # **private**
     # Method used to serialize a model when saving and removing it
     # Uses the Backbone @toJSON() existing method
     #
@@ -322,7 +322,7 @@ define [
       @id is other?.id
 
   # BaseLinkedModel provides common behaviour for model with linked properties.
-  # 
+  #
   # It resolve type during construction (and trigger `typeFetched` when finished if type was not available).
   # It adds a `fetch` instance method to resolve linked properties
   class BaseLinkedModel extends BaseModel
@@ -365,12 +365,12 @@ define [
             type = {}
             type[@idAttribute] = typeId
             new @constructor.typeClass(type).fetch()
-        else 
+        else
           @type = type
           _.defer => @trigger 'typeFetched', @
-      
+
       # update if one of linked model is removed
-      app.router.on 'modelChanged', (kind, model) => 
+      app.router.on 'modelChanged', (kind, model) =>
         return unless kind is 'remove' and !@equals model
 
         properties = @type.properties
@@ -382,10 +382,10 @@ define [
           if def.type is 'object' and model.equals value
             @[prop] = null
             changes[prop] = null
-          else if def.type is 'array' 
+          else if def.type is 'array'
             value = [] unless value?
             modified = false
-            value = _.filter value, (linked) -> 
+            value = _.filter value, (linked) ->
               if model.equals linked
                 modified = true
                 false
@@ -402,7 +402,7 @@ define [
 
     # Handler of type retrieval. Updates the current type with last values
     #
-    # @param type [Type] an added type.      
+    # @param type [Type] an added type.
     _onTypeFetched: (type) =>
       if type.id is @type
         console.log "type #{type.id} successfully fetched from server for #{@_className.toLowerCase()} #{@id}"
@@ -423,7 +423,7 @@ define [
       declareProps = =>
         # define property if needed
         for name of @type.properties when name isnt 'id' and !(Object.getOwnPropertyDescriptor(@, name)?)
-          ((name) => 
+          ((name) =>
             Object.defineProperty @, name,
               enumerable: true
               configurable: true
@@ -455,16 +455,16 @@ define [
             obj = new clazz val
             clazz.collection.add obj
           processed[i] = obj
-            
+
         attr[name] = processed[0] if modified and 'object' is def.type
-      
+
       # supperclass processing
       super attr, options
 
       declareProps() if attr?.type?
 
     # This method retrieves linked Event in properties.
-    # All `object` and `array` properties are resolved. 
+    # All `object` and `array` properties are resolved.
     # Properties that aims at unexisting linked are reset to null.
     #
     # @param callback [Function] callback invoked when all linked objects where resolved. Takes two parameters
@@ -472,7 +472,7 @@ define [
     # @option callback instance [BaseLinkedModel] the root instance on which linked were resolved.
     fetch: (callback) =>
       needResolution = false
-      # identify each linked properties 
+      # identify each linked properties
       console.log "search linked ids in #{@_className.toLowerCase()} #{@id}"
       # gets the corresponding properties definitions
       properties = @type.properties
@@ -492,7 +492,7 @@ define [
             # linked not found: ask to server
             needResolution = true
             break
-        else if def.type is 'array' 
+        else if def.type is 'array'
           value = [] unless value?
           for linked, i in value when 'string' is utils.type linked
             # try to get it locally first in same class and in other candidate classes
@@ -508,12 +508,12 @@ define [
               needResolution = true
               break
           break if needResolution
-      
-      # exit immediately if no resolution needed  
+
+      # exit immediately if no resolution needed
       unless needResolution
-        return _.defer => 
+        return _.defer =>
           console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved from cache"
-          callback null, @ 
+          callback null, @
 
       rid = utils.rid()
       # now that we have the linked ids, get the corresponding instances.
@@ -543,7 +543,7 @@ define [
               obj = null
             # update current object
             @[prop] = obj
-          else if def.type is 'array' 
+          else if def.type is 'array'
             value = [] unless value?
             @[prop] = []
             for val in value when val?
@@ -563,12 +563,12 @@ define [
         console.log "linked ids for #{@_className.toLowerCase()} #{@id} resolved"
         callback null, @
 
-    # **private** 
+    # **private**
     # Method used to serialize a model when saving and removing it
-    # Only keeps ids in linked properties to avoid recursion, before returning JSON representation 
+    # Only keeps ids in linked properties to avoid recursion, before returning JSON representation
     #
     # @return a serialized version of this model
-    _serialize: => 
+    _serialize: =>
       properties = @type.properties
       attrs = {}
       for name, value of @attributes
@@ -588,7 +588,7 @@ define [
     #
     # @param model [Object] the managed model
     # @param options [Object] unused
-    constructor: (model, @options) ->
+    constructor: (model, options) ->
       super model, options
       utils.onRouterReady =>
         # history() and readVersion() handlers
@@ -657,7 +657,7 @@ define [
       if model?.history?
         if model.history[0]?.id isnt ''
           # add a fake history entry for current version
-          model.history.splice 0, 0, 
+          model.history.splice 0, 0,
             id: ''
             author: null
             message: null
@@ -666,9 +666,9 @@ define [
         model.trigger 'history', model
 
     # **private**
-    # Model history retrieval handler. 
+    # Model history retrieval handler.
     # Triggers an 'history' event on the concerned model after having filled its history attribute
-    # Wired on collection to avoid multiple listeners. 
+    # Wired on collection to avoid multiple listeners.
     #
     # @param reqId [String] client request id
     # @param err [String] error string, or null if no error occured
@@ -679,7 +679,7 @@ define [
       # can occur when displaying file not yet saved on server
       # and when restoring version that do not include an opened file
       return if err?.toString()?.indexOf('Unexisting item') >= 0
-      return app.router.trigger 'serverError', err, method:"#{@_className}.fetchHistory" if err? 
+      return app.router.trigger 'serverError', err, method:"#{@_className}.fetchHistory" if err?
       model = @get model[@model::idAttribute]
       if model?
         model.history = history
@@ -689,16 +689,16 @@ define [
         model.trigger 'history', model
 
     # **private**
-    # File version retrieval handler. 
+    # File version retrieval handler.
     # Triggers an 'version' event on the concerned FSItem with its content as parameter
-    # Wired on collection to avoid multiple listeners. 
+    # Wired on collection to avoid multiple listeners.
     #
     # @param reqId [String] client request id
     # @param err [String] error string, or null if no error occured
     # @param item [FSItem] raw concerned FSItem
     # @param content [String] utf8 encoded file content
     _onReadVersion: (reqId, err, model, content) =>
-      return app.router.trigger 'serverError', err, method:"#{@_className}.fetchVersion" if err? 
+      return app.router.trigger 'serverError', err, method:"#{@_className}.fetchVersion" if err?
       model = @get model[@model::idAttribute]
       if model?
         model.restored = true

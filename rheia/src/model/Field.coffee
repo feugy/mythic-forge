@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -33,8 +33,8 @@ define [
     #
     # @param model [Object] the managed model
     # @param options [Object] unused
-    constructor: (@model, @options) ->
-      super options
+    constructor: (@model, options = {}) ->
+      super [], options
       # bind updates
       utils.onRouterReady =>
         app.sockets.updates.on 'creation', @_onAdd
@@ -154,7 +154,7 @@ define [
     # @param collection [Items] the current collection
     # @param args [Object] arguments
     sync: (method, collection, args) =>
-      switch method 
+      switch method
         when 'create' then Field.collection.save [@]
         when 'delete' then Field.collection.destroy [@]
         else throw new Error "Unsupported #{method} operation on #{@_className}"

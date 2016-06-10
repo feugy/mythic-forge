@@ -1,6 +1,6 @@
 ###
   Copyright 2010~2014 Damien Feugas
-  
+
     This file is part of Mythic-Forge.
 
     Myth is free software: you can redistribute it and/or modify
@@ -33,19 +33,19 @@ define [
     # **private**
     # Class name of the managed model, for wiring to server and debugging purposes
     _className: 'FSItem'
-      
+
     # Collection constructor, that wired on events.
     #
     # @param model [Object] the managed model
     # @param options [Object] unused
-    constructor: (model, @options) ->
+    constructor: (model, options = {}) ->
       super model, options
-      
+
       utils.onRouterReady =>
         # bind consultation response
         app.sockets.admin.on 'read-resp', @_onRead
         app.sockets.admin.on 'move-resp', (reqId, err) =>
-          return app.router.trigger 'serverError', err, method:'FSItem.sync', details:'move' if err? 
+          return app.router.trigger 'serverError', err, method:'FSItem.sync', details:'move' if err?
           @moveInProgress = false
 
     # Provide a custom sync method to wire FSItems to the server.
@@ -70,7 +70,7 @@ define [
     # @param model [Object] created model.
     _onAdd: (className, model) =>
       return unless className is @_className
-      
+
       # manage restored state
       existing = @get model.path
       if existing?
@@ -102,7 +102,7 @@ define [
       return unless className is @_className
       # removes also models under the removed one
       if model.isFolder
-        subModels = @find (item) -> 0 is item.id.indexOf model.path  
+        subModels = @find (item) -> 0 is item.id.indexOf model.path
         @remove new @model(removed), silent:true for removed in subModels
 
       # at last, removes from its parent content
@@ -130,7 +130,7 @@ define [
       if rawItem.isFolder
         # add all folder content inside collection
         @add rawItem.content
-        
+
         # replace raw content by models
         rawItem.content[i] = @get subItem.path for subItem, i in rawItem.content
 
@@ -138,7 +138,7 @@ define [
         item = @get rawItem.path
         @add rawItem unless item?
 
-      # trigger update 
+      # trigger update
       @_onUpdate 'FSItem', rawItem
 
   # Modelisation of a single File System Item.
@@ -190,12 +190,12 @@ define [
       return if @get 'isFolder'
       super version
 
-    # **private** 
+    # **private**
     # Method used to serialize a model when saving and removing it
     # Enhanced to encode in base64 file content.
     #
     # @return a serialized version of this model
-    _serialize: => 
+    _serialize: =>
       raw = super()
       # transforms from utf8 to base64 string
       raw.content = btoa raw.content unless raw.isFolder or raw.content is null
